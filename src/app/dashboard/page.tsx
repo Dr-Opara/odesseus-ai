@@ -31,6 +31,7 @@ export default async function DashboardPage() {
   const [
     { data: profile },
     { data: credits },
+    { data: jobPreferences },
     { data: jobs },
     { data: applications },
     { data: interviews },
@@ -38,7 +39,8 @@ export default async function DashboardPage() {
     { data: externalSignals },
   ] = await Promise.all([
     supabase.from("profiles").select("full_name,headline,onboarding_completed").eq("id", userId).maybeSingle(),
-    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("application_credits,interview_passes,live_unlimited_until").eq("user_id", userId).maybeSingle(),
+    supabase.from("job_preferences").select("min_match_score").eq("user_id", userId).maybeSingle(),
     supabase.from("job_opportunities").select("id,company_name,role_title,location,match_score,status").eq("user_id", userId).order("match_score", { ascending: false }).limit(5),
     supabase.from("applications").select("id,company_name,role_title,status,last_event_at,submitted_at").eq("user_id", userId).order("last_event_at", { ascending: false }).limit(20),
     supabase.from("interviews").select("id,stage,scheduled_at,status,meeting_provider,readiness_generated_at,applications(company_name,role_title)").eq("user_id", userId).in("status", ["invited","scheduled","ready","live"]).order("scheduled_at", { ascending: true }).limit(3),
@@ -50,8 +52,12 @@ export default async function DashboardPage() {
 
   const appCredits = credits?.application_credits ?? 0;
   const interviewPasses = credits?.interview_passes ?? 0;
+  const liveAnnualActive = Boolean(
+    credits?.live_unlimited_until && new Date(credits.live_unlimited_until) > new Date()
+  );
+  const matchThreshold = jobPreferences?.min_match_score ?? 85;
   const recentApplications = applications || [];
-  const strongMatches = (jobs || []).filter((job) => (job.match_score ?? 0) >= 85);
+  const strongMatches = (jobs || []).filter((job) => (job.match_score ?? 0) >= matchThreshold);
   const bestJob = strongMatches[0] || jobs?.[0] || null;
   const nextInterview = interviews?.[0] || null;
 
@@ -210,6 +216,11 @@ export default async function DashboardPage() {
                 <div><strong>{appCredits}</strong><span className="muted">Application credits</span></div>
                 <div><strong>{interviewPasses}</strong><span className="muted">Interview passes</span></div>
               </div>
+              {liveAnnualActive ? (
+                <div className="badge" style={{ marginTop: 14 }}>
+                  Odysseus Live Annual active through {new Date(credits!.live_unlimited_until!).toLocaleDateString()}
+                </div>
+              ) : null}
             </section>
           </aside>
         </div>
