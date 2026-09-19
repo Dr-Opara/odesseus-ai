@@ -18,7 +18,7 @@ export default async function BillingPage({
   const [{ data: credits }, { data: transactions }] = await Promise.all([
     supabase
       .from("credit_balances")
-      .select("application_credits,interview_passes")
+      .select("application_credits,interview_passes,live_unlimited_until")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -74,6 +74,12 @@ export default async function BillingPage({
           </div>
         </div>
 
+        {credits?.live_unlimited_until && new Date(credits.live_unlimited_until) > new Date() ? (
+          <div className="billing-success" style={{ marginTop: 18 }}>
+            Odysseus Live Annual is active through {new Date(credits.live_unlimited_until).toLocaleDateString()}.
+          </div>
+        ) : null}
+
         <section style={{ marginTop: 34 }}>
           <div className="billing-pack-grid">
             <form className="card billing-pack" action={createCheckoutSession.bind(null, "app_1")}>
@@ -106,6 +112,52 @@ export default async function BillingPage({
               </div>
               <button className="btn btn-primary" type="submit">Buy an interview pass</button>
             </form>
+          </div>
+        </section>
+
+        <section style={{ marginTop: 34 }}>
+          <div className="muted" style={{ fontSize: 13 }}>Save with bundles</div>
+          <h2 style={{ fontSize: 24, margin: "7px 0 18px" }}>Application credits</h2>
+          <div className="card bundle-band">
+            <p className="muted" style={{ margin: "0 0 4px" }}>1 application credit = 1 successfully submitted application.</p>
+            <div className="bundle-row">
+              <form className="bundle-option" action={createCheckoutSession.bind(null, "app_25")}>
+                <div className="bundle-option-quantity">25 credits</div>
+                <div className="bundle-option-price">$20</div>
+                <button className="btn btn-secondary" type="submit">Buy</button>
+              </form>
+              <form className="bundle-option is-featured" action={createCheckoutSession.bind(null, "app_50")}>
+                <div className="bundle-option-quantity">50 credits</div>
+                <div className="bundle-option-price">$35</div>
+                <button className="btn btn-primary" type="submit">Buy</button>
+              </form>
+              <form className="bundle-option" action={createCheckoutSession.bind(null, "app_100")}>
+                <div className="bundle-option-quantity">100 credits</div>
+                <div className="bundle-option-price">$59</div>
+                <button className="btn btn-secondary" type="submit">Buy</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginTop: 34 }}>
+          <h2 style={{ fontSize: 24, margin: "0 0 18px" }}>Interview passes</h2>
+          <div className="card bundle-band">
+            <p className="muted" style={{ margin: "0 0 4px" }}>1 interview pass = 1 successfully activated Odysseus Live interview round.</p>
+            <div className="bundle-row bundle-row-2">
+              <form className="bundle-option" action={createCheckoutSession.bind(null, "interview_3")}>
+                <div className="bundle-option-quantity">3 passes</div>
+                <div className="bundle-option-price">$59.99</div>
+                <button className="btn btn-secondary" type="submit">Buy</button>
+              </form>
+              <form className="bundle-option is-featured" action={createCheckoutSession.bind(null, "interview_annual")}>
+                <div className="bundle-option-quantity">Odysseus Live Annual</div>
+                <div className="bundle-option-price">$499</div>
+                <div className="bundle-option-unit">per year</div>
+                <button className="btn btn-primary" type="submit">Buy</button>
+              </form>
+            </div>
+            <p className="bundle-fine-print">Odysseus Live Annual is subject to fair use.</p>
           </div>
         </section>
 
