@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin, partnerService } from "@/lib/partners/service";
@@ -34,7 +35,7 @@ export default async function AdminPartnerDetailPage({
 
   return (
     <main className="shell admin-partner-detail">
-      <a href="/admin/partners" className="muted">← Partner applications</a>
+      <Link href="/admin/partners" className="muted">← Partner applications</Link>
 
       <div className="admin-partner-detail-heading">
         <div>
