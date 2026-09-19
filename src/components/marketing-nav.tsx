@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "#how-it-works", label: "How It Works" },
-  { href: "#apply", label: "Apply" },
-  { href: "#live", label: "Live" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#about", label: "About" },
+  { href: "/how-it-works", label: "How It Works" },
+  { href: "/apply", label: "Apply" },
+  { href: "/live", label: "Live" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/about", label: "About" },
 ];
 
 export default function MarketingNav() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <header className="marketing-nav">
@@ -21,13 +23,19 @@ export default function MarketingNav() {
 
         <nav className="marketing-nav-links">
           {links.map((link) => (
-            <a key={link.href} href={link.href}>{link.label}</a>
+            <Link
+              key={link.href}
+              href={link.href}
+              className={pathname === link.href ? "is-active" : undefined}
+            >
+              {link.label}
+            </Link>
           ))}
         </nav>
 
         <div className="marketing-nav-actions">
           <Link className="btn btn-secondary" href="/login">Sign In</Link>
-          <Link className="btn btn-primary" href="/onboarding">Get Started →</Link>
+          <Link className="btn btn-primary" href="/signup">Get Started →</Link>
         </div>
 
         <button
@@ -44,15 +52,15 @@ export default function MarketingNav() {
       {open ? (
         <div className="marketing-nav-mobile-panel shell">
           {links.map((link) => (
-            <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
+            <Link key={link.href} href={link.href} onClick={() => setOpen(false)}>
               {link.label}
-            </a>
+            </Link>
           ))}
           <div className="marketing-nav-mobile-actions">
             <Link className="btn btn-secondary" href="/login" onClick={() => setOpen(false)}>
               Sign In
             </Link>
-            <Link className="btn btn-primary" href="/onboarding" onClick={() => setOpen(false)}>
+            <Link className="btn btn-primary" href="/signup" onClick={() => setOpen(false)}>
               Get Started →
             </Link>
           </div>
