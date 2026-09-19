@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { billingCatalog, type BillingSku } from "@/lib/billing/catalog";
 import { createClient } from "@supabase/supabase-js";
+import { partnerService } from "@/lib/partners/service";
 
 export const runtime = "nodejs";
 
@@ -26,6 +27,43 @@ export async function POST(request: Request) {
     event = getStripe().webhooks.constructEvent(body, signature, webhookSecret);
   } catch {
     return NextResponse.json({ error: "Invalid signature." }, { status: 400 });
+  }
+
+  if (event.type === "charge.refunded") {
+    const charge = event.data.object as Stripe.Charge;
+    const paymentIntent =
+      typeof charge.payment_intent === "string" ? charge.payment_intent : null;
+
+    if (paymentIntent) {
+      const service = partnerService();
+      const { data: billingEvent } = await service
+        .from("billing_events")
+        .select("id")
+        .contains("metadata", { payment_intent: paymentIntent })
+        .maybeSingle();
+
+      if (billingEvent) {
+        const { data: conversion } = await service
+          .from("partner_conversions")
+          .select("id")
+          .eq("billing_event_id", billingEvent.id)
+          .maybeSingle();
+
+        if (conversion) {
+          await service
+            .from("partner_conversions")
+            .update({ status: "reversed", reversed_at: new Date().toISOString() })
+            .eq("id", conversion.id);
+          await service
+            .from("partner_earnings")
+            .update({ status: "reversed", updated_at: new Date().toISOString() })
+            .eq("conversion_id", conversion.id)
+            .neq("status", "paid");
+        }
+      }
+    }
+
+    return NextResponse.json({ received: true });
   }
 
   if (event.type !== "checkout.session.completed") return NextResponse.json({ received: true });
@@ -55,6 +93,70 @@ export async function POST(request: Request) {
   if (error) {
     if (error.code === "23505") return NextResponse.json({ received: true, duplicate: true });
     return NextResponse.json({ error: "Could not fulfill purchase." }, { status: 500 });
+  }
+
+  // Attribute a paid purchase to a valid referred signup. Partner earnings
+  // are intentionally ledger-only for launch; payouts remain manual.
+  const service = partnerService();
+  const { data: billingEvent } = await service
+    .from("billing_events")
+    .select("id")
+    .eq("stripe_event_id", event.id)
+    .single();
+
+  if (billingEvent) {
+    const { data: referral } = await service
+      .from("partner_referrals")
+      .select("id,partner_id,created_at,partners!inner(id,email,user_id,status,commission_bps,attribution_days)")
+      .eq("signup_user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const partner = referral?.partners;
+    if (referral && partner?.status === "approved") {
+      const attributionCutoff = new Date(
+        Date.now() - Number(partner.attribution_days || 30) * 24 * 60 * 60 * 1000
+      );
+      const { data: referredUser } = await service.auth.admin.getUserById(userId);
+      const referredEmail = referredUser?.user?.email?.toLowerCase() || null;
+      const selfReferral =
+        partner.user_id === userId ||
+        (referredEmail && partner.email?.toLowerCase() === referredEmail);
+
+      if (!selfReferral && new Date(referral.created_at) >= attributionCutoff) {
+        const commissionBps = Number(partner.commission_bps || 0);
+        const amountCents = session.amount_total ?? item.amountCents;
+        const commissionCents = Math.floor((amountCents * commissionBps) / 10_000);
+
+        const { data: conversion } = await service
+          .from("partner_conversions")
+          .insert({
+            partner_id: partner.id,
+            referral_id: referral.id,
+            user_id: userId,
+            billing_event_id: billingEvent.id,
+            amount_cents: amountCents,
+            currency: session.currency ?? "usd",
+            commission_cents: commissionCents,
+            status: "qualified",
+            qualified_at: new Date().toISOString(),
+          })
+          .select("id")
+          .maybeSingle();
+
+        if (conversion && commissionCents > 0) {
+          await service.from("partner_earnings").insert({
+            partner_id: partner.id,
+            conversion_id: conversion.id,
+            amount_cents: commissionCents,
+            currency: session.currency ?? "usd",
+            status: "pending",
+            reason: `Qualified referral purchase: ${sku}`,
+          });
+        }
+      }
+    }
   }
 
   return NextResponse.json({ received: true });
