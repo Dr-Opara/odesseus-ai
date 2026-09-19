@@ -3,8 +3,8 @@ import { openai } from "@ai-sdk/openai";
 import { postInterviewAnalysisSchema } from "./schemas";
 
 const MODEL =
-  process.env.KERNOR_POST_INTERVIEW_MODEL ||
-  process.env.KERNOR_MATCH_MODEL ||
+  process.env.ODYSSEUS_POST_INTERVIEW_MODEL ||
+  process.env.ODYSSEUS_MATCH_MODEL ||
   "gpt-5.6-luna";
 
 export const POST_INTERVIEW_ANALYSIS_SYSTEM_PROMPT = `
@@ -51,7 +51,7 @@ export async function generatePostInterviewAnalysis(input: {
   const result = await generateText({
     model: openai(MODEL),
     output: Output.object({
-      name: "KernorPostInterviewAnalysis",
+      name: "OdysseusPostInterviewAnalysis",
       description:
         "A factual, non-predictive analysis of a completed job interview.",
       schema: postInterviewAnalysisSchema,

@@ -21,7 +21,7 @@ export default async function InterviewsPage() {
 
   return (
     <main className="shell" style={{ padding: "54px 0 90px" }}>
-      <Link href="/dashboard" className="wordmark">Kernor</Link>
+      <Link href="/dashboard" className="wordmark">Odysseus</Link>
 
       <div style={{ width: "min(820px,100%)", margin: "66px auto 0" }}>
         <div className="muted" style={{ fontSize: 14 }}>Interviews</div>
@@ -75,7 +75,7 @@ export default async function InterviewsPage() {
               Your interview workspace will appear here.
             </h2>
             <p className="muted" style={{ lineHeight: 1.6 }}>
-              When Kernor detects an interview for a tracked application, it will connect the job, submitted resume, and application history automatically.
+              When Odysseus detects an interview for a tracked application, it will connect the job, submitted resume, and application history automatically.
             </p>
           </div>
         )}

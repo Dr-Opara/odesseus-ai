@@ -3,7 +3,7 @@ import { openai } from "@ai-sdk/openai";
 import { matchAssessmentSchema, type ResumeProfile } from "./schemas";
 import { calculateMatchScore } from "./scoring";
 
-const MODEL = process.env.KERNOR_MATCH_MODEL || "gpt-5.6-luna";
+const MODEL = process.env.ODYSSEUS_MATCH_MODEL || "gpt-5.6-luna";
 
 type Preferences = {
   min_match_score: number;
@@ -27,12 +27,12 @@ export async function assessJobMatch(input: {
   const result = await generateText({
     model: openai(MODEL),
     output: Output.object({
-      name: "KernorMatchAssessment",
+      name: "OdysseusMatchAssessment",
       description: "Evidence-grounded comparison of a verified candidate profile against a job description.",
       schema: matchAssessmentSchema,
     }),
     system: `
-You are Kernor's job-match evaluator.
+You are Odysseus's job-match evaluator.
 
 Compare a job description only against the verified candidate information provided.
 

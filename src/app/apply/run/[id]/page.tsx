@@ -18,9 +18,9 @@ function statusCopy(status: string) {
     case "preflight":
       return "Preparing secure browser…";
     case "running":
-      return "Kernor is completing the application.";
+      return "Odysseus is completing the application.";
     case "needs_user":
-      return "Kernor needs you for a moment.";
+      return "Odysseus needs you for a moment.";
     case "ready_to_submit":
       return "Application is ready for your approval.";
     case "submitting":
@@ -78,7 +78,7 @@ export default async function ApplyRunPage({
 
   return (
     <main className="shell" style={{ padding: "54px 0 100px" }}>
-      <Link href="/dashboard" className="wordmark">Kernor</Link>
+      <Link href="/dashboard" className="wordmark">Odysseus</Link>
 
       <div style={{ width: "min(920px,100%)", margin: "58px auto 0" }}>
         <div className="apply-run-heading">
@@ -144,7 +144,7 @@ export default async function ApplyRunPage({
               <div className="muted" style={{ fontSize: 13 }}>Need to take over?</div>
               <h3 style={{ fontSize: 21, margin: "6px 0" }}>Use the live browser.</h3>
               <p className="muted" style={{ margin: 0, lineHeight: 1.55 }}>
-                Complete login, MFA, CAPTCHA, identity confirmation, or any other step Kernor intentionally leaves to you. Then return here and continue.
+                Complete login, MFA, CAPTCHA, identity confirmation, or any other step Odysseus intentionally leaves to you. Then return here and continue.
               </p>
             </div>
             <a
@@ -176,7 +176,7 @@ export default async function ApplyRunPage({
                 </div>
               </div>
             )) : (
-              <div className="muted" style={{ padding: 22 }}>Kernor is preparing the application.</div>
+              <div className="muted" style={{ padding: 22 }}>Odysseus is preparing the application.</div>
             )}
           </div>
         </section>

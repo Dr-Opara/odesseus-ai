@@ -109,7 +109,7 @@ async function createCaptureStream(mode: CaptureMode) {
   return mixed;
 }
 
-export default function KernorLiveClient({
+export default function OdysseusLiveClient({
   interviewId,
   interviewPasses,
 }: {
@@ -182,7 +182,7 @@ export default function KernorLiveClient({
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Kernor could not process the transcript.");
+        throw new Error(data.error || "Odysseus could not process the transcript.");
       }
 
       const item: TranscriptItem = {
@@ -260,7 +260,7 @@ export default function KernorLiveClient({
           setError(
             err instanceof Error
               ? err.message
-              : "Kernor could not process a transcript segment."
+              : "Odysseus could not process a transcript segment."
           );
         }
         return;
@@ -314,7 +314,7 @@ export default function KernorLiveClient({
       const prepareData = await prepareResponse.json();
       if (!prepareResponse.ok) {
         throw new Error(
-          prepareData.error || "Kernor could not prepare the Live session."
+          prepareData.error || "Odysseus could not prepare the Live session."
         );
       }
 
@@ -396,7 +396,7 @@ export default function KernorLiveClient({
       const connected = await waitForPeerConnected(peer);
       if (!connected) {
         throw new Error(
-          "Kernor could not establish a stable realtime connection. Please try again."
+          "Odysseus could not establish a stable realtime connection. Please try again."
         );
       }
 
@@ -415,12 +415,12 @@ export default function KernorLiveClient({
       const activateData = await activateResponse.json();
       if (!activateResponse.ok) {
         throw new Error(
-          activateData.error || "Kernor could not activate the Live session."
+          activateData.error || "Odysseus could not activate the Live session."
         );
       }
 
       setState("live");
-      setStatusText("Kernor Live is listening for interview questions.");
+      setStatusText("Odysseus Live is listening for interview questions.");
       router.refresh();
     } catch (err) {
       stream?.getTracks().forEach((track) => track.stop());
@@ -432,7 +432,7 @@ export default function KernorLiveClient({
       setState("error");
       setStatusText("Live did not start.");
       setError(
-        err instanceof Error ? err.message : "Kernor Live could not start."
+        err instanceof Error ? err.message : "Odysseus Live could not start."
       );
     }
   }
@@ -457,7 +457,7 @@ export default function KernorLiveClient({
       if (data?.guidance) setGuidance(data.guidance);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Kernor could not refresh guidance."
+        err instanceof Error ? err.message : "Odysseus could not refresh guidance."
       );
     } finally {
       setBusyMode(null);
@@ -494,7 +494,7 @@ export default function KernorLiveClient({
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Kernor could not end Live cleanly.");
+        throw new Error(data.error || "Odysseus could not end Live cleanly.");
       }
 
       setState("ended");
@@ -503,7 +503,7 @@ export default function KernorLiveClient({
     } catch (err) {
       setState("error");
       setError(
-        err instanceof Error ? err.message : "Kernor could not close the session."
+        err instanceof Error ? err.message : "Odysseus could not close the session."
       );
     }
   }
@@ -516,7 +516,7 @@ export default function KernorLiveClient({
             Audio source
           </div>
           <h2 style={{ fontSize: 24, margin: "7px 0 6px" }}>
-            What should Kernor listen to?
+            What should Odysseus listen to?
           </h2>
           <p className="muted" style={{ margin: 0, lineHeight: 1.55 }}>
             {modeCopy}
@@ -574,7 +574,7 @@ export default function KernorLiveClient({
               onClick={startLive}
               disabled={!consent || interviewPasses < 1}
             >
-              {state === "error" ? "Try again" : "Start Kernor Live"}
+              {state === "error" ? "Try again" : "Start Odysseus Live"}
             </button>
           ) : null}
 
@@ -657,7 +657,7 @@ export default function KernorLiveClient({
         ) : (
           <div className="live-waiting">
             <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
-              Kernor only surfaces guidance when it identifies a question or clear request for you to respond.
+              Odysseus only surfaces guidance when it identifies a question or clear request for you to respond.
             </p>
           </div>
         )}

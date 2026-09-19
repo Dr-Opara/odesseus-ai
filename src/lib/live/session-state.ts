@@ -1,7 +1,7 @@
 export type LiveClientState = "idle" | "connecting" | "live" | "ending" | "ended" | "error";
 
 // Retrying after a failed start must not be blocked by an idle-only gate:
-// the "Start Kernor Live" / "Try again" button renders in both "idle" and
+// the "Start Odysseus Live" / "Try again" button renders in both "idle" and
 // "error", so whether a click actually starts a connection attempt must
 // agree with that, or the button silently does nothing after a failure.
 export function canStartLive(

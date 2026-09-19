@@ -20,7 +20,7 @@ export default function TailorButton({ jobId }: { jobId: string }) {
       });
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.error || "Kernor could not tailor your resume.");
+      if (!response.ok) throw new Error(data.error || "Odysseus could not tailor your resume.");
 
       router.push(`/resume-tailoring/${data.id}`);
     } catch (err) {

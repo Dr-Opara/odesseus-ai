@@ -16,7 +16,7 @@ export async function POST() {
     return NextResponse.json({ ok: true, ...result });
   } catch {
     return NextResponse.json(
-      { error: "Kernor could not sync Google. Reconnect the integration if needed." },
+      { error: "Odysseus could not sync Google. Reconnect the integration if needed." },
       { status: 500 }
     );
   }

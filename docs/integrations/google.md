@@ -1,6 +1,6 @@
 # Google integration
 
-Kernor uses Vercel Connect with a generic Google OAuth connector.
+Odysseus uses Vercel Connect with a generic Google OAuth connector.
 
 ## Required OAuth scopes
 

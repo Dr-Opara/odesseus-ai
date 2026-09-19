@@ -35,7 +35,7 @@ export default async function ResumeTailoringPage({
 
   return (
     <main className="shell" style={{ padding: "54px 0 100px" }}>
-      <Link href="/dashboard" className="wordmark">Kernor</Link>
+      <Link href="/dashboard" className="wordmark">Odysseus</Link>
 
       <div style={{ width: "min(1040px,100%)", margin: "58px auto 0" }}>
         <Link href={`/match/${tailoring.job_id}`} className="muted" style={{ fontSize: 14 }}>
@@ -61,7 +61,7 @@ export default async function ResumeTailoringPage({
         </div>
 
         <div className="review-note">
-          Kernor can improve wording and relevance, but it cannot add experience or qualifications that are not already verified in your profile.
+          Odysseus can improve wording and relevance, but it cannot add experience or qualifications that are not already verified in your profile.
         </div>
 
         <div className="resume-preview card">
@@ -146,7 +146,7 @@ export default async function ResumeTailoringPage({
                 </div>
 
                 <div className="diff-reason">
-                  <strong>Why Kernor changed it</strong>
+                  <strong>Why Odysseus changed it</strong>
                   <p className="muted">{change.reason}</p>
                   <div className="evidence-box">
                     <div className="muted" style={{ fontSize: 12, marginBottom: 7 }}>Verified evidence</div>
@@ -166,11 +166,11 @@ export default async function ResumeTailoringPage({
               <div className="muted" style={{ fontSize: 13 }}>Next step</div>
               <h2 style={{ fontSize: 24, margin: "7px 0 5px" }}>Ready to apply.</h2>
               <p className="muted" style={{ margin: 0 }}>
-                Kernor will use this exact approved PDF and pause whenever your input is required.
+                Odysseus will use this exact approved PDF and pause whenever your input is required.
               </p>
             </div>
             <Link className="btn btn-primary" href={`/apply/start?job=${tailoring.job_id}`}>
-              Apply with Kernor
+              Apply with Odysseus
             </Link>
           </div>
         ) : null}
@@ -183,7 +183,7 @@ export default async function ResumeTailoringPage({
             </h2>
             <p className="muted" style={{ margin: 0 }}>
               {tailoring.status === "approved"
-                ? "Kernor has frozen this version for the application workflow."
+                ? "Odysseus has frozen this version for the application workflow."
                 : "Approve this version or regenerate another one."}
             </p>
           </div>

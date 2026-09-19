@@ -160,7 +160,7 @@ export default async function ApplicationDetailPage({
 
           <div className="card track-context-card">
             <div className="muted" style={{ fontSize: 13 }}>Frozen application context</div>
-            <h3 style={{ margin: "8px 0 8px" }}>What Kernor remembers</h3>
+            <h3 style={{ margin: "8px 0 8px" }}>What Odysseus remembers</h3>
             <p className="muted" style={{ lineHeight: 1.55, margin: 0 }}>
               The exact job and approved resume used for this application stay attached to this record even if your profile changes later.
             </p>

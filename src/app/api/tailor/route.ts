@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   ]);
 
   if (!job?.description) {
-    return NextResponse.json({ error: "Kernor could not find this job description." }, { status: 404 });
+    return NextResponse.json({ error: "Odysseus could not find this job description." }, { status: 404 });
   }
 
   if (!resume?.storage_path) {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
         .from("resumes")
         .download(resume.storage_path);
 
-      if (downloadError || !file) throw new Error("Kernor could not read your resume.");
+      if (downloadError || !file) throw new Error("Odysseus could not read your resume.");
 
       const extracted = await parseResume({
         bytes: new Uint8Array(await file.arrayBuffer()),
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
         .eq("id", resume.id)
         .eq("user_id", userId);
 
-      if (cacheError) throw new Error("Kernor could not save the parsed resume.");
+      if (cacheError) throw new Error("Odysseus could not save the parsed resume.");
     }
 
     const tailored = await tailorResume({
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError || !tailoring) {
-      throw new Error("Kernor could not save the tailored resume.");
+      throw new Error("Odysseus could not save the tailored resume.");
     }
 
     return NextResponse.json({
@@ -121,9 +121,9 @@ export async function POST(request: Request) {
       version: tailoring.version_number,
     });
   } catch (error) {
-    console.error("Kernor Resume tailoring failed:", error);
+    console.error("Odysseus Resume tailoring failed:", error);
     return NextResponse.json(
-      { error: "Kernor could not tailor this resume." },
+      { error: "Odysseus could not tailor this resume." },
       { status: 500 }
     );
   }

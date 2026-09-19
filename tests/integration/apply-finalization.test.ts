@@ -54,7 +54,7 @@ describe("finalizeConfirmedExistingSubmission (atomic Apply finalization)", () =
     });
 
     expect(result).toEqual({ terminal: true, status: "submitted" });
-    expect(rpc).toHaveBeenCalledWith("kernor_finalize_successful_application", {
+    expect(rpc).toHaveBeenCalledWith("odysseus_finalize_successful_application", {
       p_run_id: run.id,
       p_user_id: run.user_id,
       p_confirmation_text: "Thank you for applying! We received your application.",

@@ -41,13 +41,13 @@ export async function POST(
     return NextResponse.json({ error: "Live session not found." }, { status: 404 });
   }
 
-  const { error } = await service.rpc("kernor_end_live_session", {
+  const { error } = await service.rpc("odysseus_end_live_session", {
     p_session_id: input.sessionId,
     p_user_id: userId,
   });
 
   if (error) {
-    return NextResponse.json({ error: "Kernor could not end the session cleanly." }, { status: 500 });
+    return NextResponse.json({ error: "Odysseus could not end the session cleanly." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

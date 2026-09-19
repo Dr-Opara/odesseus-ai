@@ -39,7 +39,7 @@ export default function ApplicationStatusForm({
     const data = await response.json();
 
     if (!response.ok) {
-      setMessage(data.error || "Kernor could not update the application.");
+      setMessage(data.error || "Odysseus could not update the application.");
       setBusy(false);
       return;
     }
@@ -78,7 +78,7 @@ export default function ApplicationStatusForm({
           className="input track-note"
           value={note}
           onChange={(event) => setNote(event.target.value)}
-          placeholder="Add context you want Kernor to remember…"
+          placeholder="Add context you want Odysseus to remember…"
         />
       </label>
 

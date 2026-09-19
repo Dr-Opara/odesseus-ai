@@ -23,7 +23,7 @@ if (process.env.VERCEL) {
     "CRON_SECRET",
   ];
   const missing = required.filter((key) => !process.env[key]);
-  console.log("[KERNOR_CONFIG_AUDIT]", JSON.stringify({
+  console.log("[ODYSSEUS_CONFIG_AUDIT]", JSON.stringify({
     environment: process.env.VERCEL_ENV ?? "unknown",
     missing,
   }));

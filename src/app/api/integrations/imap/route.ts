@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     const service = createServiceClient();
 
     const { data: secretId, error: secretError } = await service.rpc(
-      "kernor_store_integration_secret",
+      "odysseus_store_integration_secret",
       {
         p_user_id: userId,
         p_secret: input.secret,
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     );
 
     if (secretError || !secretId) {
-      throw new Error("Kernor could not secure the mail credential.");
+      throw new Error("Odysseus could not secure the mail credential.");
     }
 
     const { error } = await service
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
         error:
           error instanceof Error
             ? error.message
-            : "Kernor could not connect this mailbox.",
+            : "Odysseus could not connect this mailbox.",
       },
       { status: 400 }
     );

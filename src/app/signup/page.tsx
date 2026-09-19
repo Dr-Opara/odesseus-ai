@@ -11,10 +11,10 @@ export default async function SignupPage({
   return (
     <main className="shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "50px 0" }}>
       <div style={{ width: "min(430px,100%)" }}>
-        <Link href="/" style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.04em" }}>Kernor</Link>
+        <Link href="/" style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.04em" }}>Odysseus</Link>
         <div style={{ marginTop: 50 }}>
           <div className="badge">Start free</div>
-          <h1 style={{ fontSize: 42, letterSpacing: "-0.045em", margin: "16px 0 10px" }}>Meet Kernor.</h1>
+          <h1 style={{ fontSize: 42, letterSpacing: "-0.045em", margin: "16px 0 10px" }}>Meet Odysseus.</h1>
           <p className="muted" style={{ marginBottom: 30 }}>Create your account. Your career profile comes next.</p>
 
           <form className="card" style={{ padding: 24 }} action={signup}>

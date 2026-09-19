@@ -42,7 +42,7 @@ export async function POST(
     return NextResponse.json({ error: "Live session not found." }, { status: 404 });
   }
 
-  const { data, error } = await service.rpc("kernor_activate_live_session", {
+  const { data, error } = await service.rpc("odysseus_activate_live_session", {
     p_session_id: input.sessionId,
     p_user_id: userId,
     p_openai_session_id: input.openaiSessionId,
@@ -51,7 +51,7 @@ export async function POST(
   if (error) {
     const insufficient = error.message?.toLowerCase().includes("insufficient");
     return NextResponse.json(
-      { error: insufficient ? "No interview pass is available." : "Kernor could not activate Live." },
+      { error: insufficient ? "No interview pass is available." : "Odysseus could not activate Live." },
       { status: insufficient ? 402 : 500 }
     );
   }

@@ -50,7 +50,7 @@ export default function FollowUpEditor({
     const data = await response.json();
 
     if (!response.ok) {
-      setMessage(data.error || "Kernor could not save the follow-up.");
+      setMessage(data.error || "Odysseus could not save the follow-up.");
       setBusy(null);
       return false;
     }
@@ -105,7 +105,7 @@ export default function FollowUpEditor({
       return;
     }
 
-    setMessage(data.error || "Kernor could not send the follow-up.");
+    setMessage(data.error || "Odysseus could not send the follow-up.");
     setBusy(null);
   }
 

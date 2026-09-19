@@ -2,7 +2,7 @@ import { generateText, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { roundHandoffSchema } from "./schemas";
 
-const MODEL = process.env.KERNOR_MATCH_MODEL || "gpt-5.6-luna";
+const MODEL = process.env.ODYSSEUS_MATCH_MODEL || "gpt-5.6-luna";
 
 export const ROUND_HANDOFF_SYSTEM_PROMPT = `
 You maintain memory across rounds of a real job interview.
@@ -31,7 +31,7 @@ export async function generateRoundHandoff(input: {
   const result = await generateText({
     model: openai(MODEL),
     output: Output.object({
-      name: "KernorRoundHandoff",
+      name: "OdysseusRoundHandoff",
       description:
         "A concise, factual handoff from one interview round to the next.",
       schema: roundHandoffSchema,

@@ -25,4 +25,4 @@ User supplies mailbox address, IMAP host, port, and an app/mail password.
 The credential is encrypted in Supabase Vault.
 
 ## Product behavior
-Email and calendar connections are independent. Kernor normalizes all provider updates into one application signal model.
+Email and calendar connections are independent. Odysseus normalizes all provider updates into one application signal model.

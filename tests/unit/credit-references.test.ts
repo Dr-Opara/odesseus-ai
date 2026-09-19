@@ -23,7 +23,7 @@ describe("applicationCreditReference", () => {
 });
 
 describe("liveInterviewCreditReference", () => {
-  it("is deterministic for the same live session id, matching the kernor_activate_live_session RPC's convention", () => {
+  it("is deterministic for the same live session id, matching the odysseus_activate_live_session RPC's convention", () => {
     const sessionId = "22222222-2222-2222-2222-222222222222";
     expect(liveInterviewCreditReference(sessionId)).toBe(`live:${sessionId}`);
     expect(liveInterviewCreditReference(sessionId)).toBe(

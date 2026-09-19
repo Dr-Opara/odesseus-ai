@@ -61,7 +61,7 @@ export async function POST(
     .eq("user_id", userId);
 
   if (error) {
-    return NextResponse.json({ error: "Kernor could not save the follow-up." }, { status: 500 });
+    return NextResponse.json({ error: "Odysseus could not save the follow-up." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

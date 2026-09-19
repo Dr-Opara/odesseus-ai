@@ -16,7 +16,7 @@ export async function POST() {
     return NextResponse.json({ ok: true, ...result });
   } catch {
     return NextResponse.json(
-      { error: "Kernor could not sync connected accounts." },
+      { error: "Odysseus could not sync connected accounts." },
       { status: 500 }
     );
   }

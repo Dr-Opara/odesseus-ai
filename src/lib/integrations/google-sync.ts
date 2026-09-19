@@ -186,8 +186,8 @@ export async function upsertInterview(input: {
       to_status: "interview",
       title: "Interview workspace created",
       detail: input.scheduledAt
-        ? "Kernor connected the scheduled interview to this application."
-        : "Kernor created an interview workspace from the employer invitation.",
+        ? "Odysseus connected the scheduled interview to this application."
+        : "Odysseus created an interview workspace from the employer invitation.",
       source: input.source,
       metadata: { interview_id: interview.id, signal_id: input.signalId },
     });

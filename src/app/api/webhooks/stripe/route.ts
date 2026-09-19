@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   const session = event.data.object as Stripe.Checkout.Session;
   if (session.payment_status !== "paid") return NextResponse.json({ received: true });
 
-  const userId = session.metadata?.kernor_user_id;
+  const userId = session.metadata?.odysseus_user_id;
   const sku = session.metadata?.sku as BillingSku | undefined;
   if (!userId || !sku || !billingCatalog[sku]) return NextResponse.json({ error: "Invalid checkout metadata." }, { status: 400 });
 

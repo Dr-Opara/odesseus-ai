@@ -18,7 +18,7 @@ export default function GoogleSyncButton() {
     const data = await response.json();
 
     if (!response.ok) {
-      setMessage(data.error || "Kernor could not sync Google.");
+      setMessage(data.error || "Odysseus could not sync Google.");
       setBusy(false);
       return;
     }

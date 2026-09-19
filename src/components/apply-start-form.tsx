@@ -33,7 +33,7 @@ export default function ApplyStartForm({
         router.push(`/apply/run/${data.runId}`);
         return;
       }
-      setError(data.error || "Kernor could not start this application.");
+      setError(data.error || "Odysseus could not start this application.");
       setBusy(false);
       return;
     }
@@ -56,7 +56,7 @@ export default function ApplyStartForm({
       </label>
 
       <div className="apply-boundaries">
-        <strong>Kernor can handle the repetitive parts.</strong>
+        <strong>Odysseus can handle the repetitive parts.</strong>
         <span>It will pause for login, MFA, CAPTCHA, identity checks, sensitive questions, or anything it cannot answer from verified information.</span>
       </div>
 

@@ -137,7 +137,7 @@ export default function OnboardingForm({ fullName }: { fullName?: string | null 
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 22 }}>
         <button className="btn btn-primary" disabled={busy} type="submit">
-          {busy ? "Setting up Kernor…" : "Continue"}
+          {busy ? "Setting up Odysseus…" : "Continue"}
         </button>
       </div>
     </form>

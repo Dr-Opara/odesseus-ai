@@ -42,7 +42,7 @@ export default function ApplyRunControls({
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error || "Kernor could not continue.");
+      setError(data.error || "Odysseus could not continue.");
       setBusy(false);
       return;
     }
@@ -69,7 +69,7 @@ export default function ApplyRunControls({
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error || "Kernor could not save your answers.");
+      setError(data.error || "Odysseus could not save your answers.");
       setBusy(false);
       return;
     }
@@ -83,7 +83,7 @@ export default function ApplyRunControls({
       <div className="card apply-question-card">
         <div>
           <div className="muted" style={{ fontSize: 13 }}>Your input</div>
-          <h2 style={{ margin: "7px 0 6px" }}>Kernor needs a few answers.</h2>
+          <h2 style={{ margin: "7px 0 6px" }}>Odysseus needs a few answers.</h2>
           <p className="muted" style={{ margin: 0 }}>Answer only what the employer is asking. Sensitive answers are never saved for reuse.</p>
         </div>
 
@@ -162,7 +162,7 @@ export default function ApplyRunControls({
   }
 
   if (!["submitted", "failed", "cancelled"].includes(status)) {
-    return <span className="muted">Kernor is working…</span>;
+    return <span className="muted">Odysseus is working…</span>;
   }
 
   return null;

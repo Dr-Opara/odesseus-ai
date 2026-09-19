@@ -41,7 +41,7 @@ export default async function ApplicationsPage({
 
   return (
     <main className="shell" style={{ padding: "54px 0 90px" }}>
-      <Link href="/dashboard" className="wordmark">Kernor</Link>
+      <Link href="/dashboard" className="wordmark">Odysseus</Link>
 
       <div className="page-heading" style={{ marginTop: 52 }}>
         <div>

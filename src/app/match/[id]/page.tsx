@@ -53,7 +53,7 @@ export default async function MatchResultPage({
 
   return (
     <main className="shell" style={{ padding: "54px 0 90px" }}>
-      <Link href="/dashboard" className="wordmark">Kernor</Link>
+      <Link href="/dashboard" className="wordmark">Odysseus</Link>
 
       <div style={{ width: "min(900px,100%)", margin: "64px auto 0" }}>
         <Link href="/match" className="muted" style={{ fontSize: 14 }}>← Check another role</Link>
@@ -76,7 +76,7 @@ export default async function MatchResultPage({
         </div>
 
         <div className="card" style={{ padding: 28, marginTop: 30 }}>
-          <h2 style={{ fontSize: 24, margin: "0 0 8px" }}>Kernor’s read</h2>
+          <h2 style={{ fontSize: 24, margin: "0 0 8px" }}>Odysseus’s read</h2>
           <p className="muted" style={{ lineHeight: 1.65, margin: 0 }}>{assessment.conciseSummary}</p>
 
           {criticalMissing.length ? (
@@ -166,7 +166,7 @@ export default async function MatchResultPage({
               {score >= 85 ? "This role cleared your match target." : "You decide whether this role is worth pursuing."}
             </h2>
             <p className="muted" style={{ margin: 0 }}>
-              Kernor can tailor your resume to this role using only the experience and qualifications already verified in your profile.
+              Odysseus can tailor your resume to this role using only the experience and qualifications already verified in your profile.
             </p>
           </div>
           <TailorButton jobId={job.id} />

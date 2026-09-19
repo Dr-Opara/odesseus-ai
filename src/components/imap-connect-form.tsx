@@ -36,7 +36,7 @@ export default function ImapConnectForm({
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error || "Kernor could not connect this mailbox.");
+      setError(data.error || "Odysseus could not connect this mailbox.");
       setBusy(false);
       return;
     }

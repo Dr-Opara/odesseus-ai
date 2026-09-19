@@ -2,7 +2,7 @@ import { generateText, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { interviewReadinessSchema } from "./schemas";
 
-const MODEL = process.env.KERNOR_MATCH_MODEL || "gpt-5.6-luna";
+const MODEL = process.env.ODYSSEUS_MATCH_MODEL || "gpt-5.6-luna";
 
 export async function generateInterviewReadiness(input: {
   companyName: string;
@@ -17,7 +17,7 @@ export async function generateInterviewReadiness(input: {
   const result = await generateText({
     model: openai(MODEL),
     output: Output.object({
-      name: "KernorInterviewReadiness",
+      name: "OdysseusInterviewReadiness",
       description:
         "Evidence-grounded preparation for an upcoming real interview.",
       schema: interviewReadinessSchema,

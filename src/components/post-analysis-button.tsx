@@ -26,7 +26,7 @@ export default function PostAnalysisButton({
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error || "Kernor could not analyze this interview.");
+      setError(data.error || "Odysseus could not analyze this interview.");
       setBusy(false);
       return;
     }

@@ -1,6 +1,6 @@
-# Developing Kernor with Codex in VS Code
+# Developing Odysseus with Codex in VS Code
 
-Kernor v0.1-v0.11 has been feature-built. The next Codex phase is **integration and stabilization**, not greenfield feature development.
+Odysseus v0.1-v0.11 has been feature-built. The next Codex phase is **integration and stabilization**, not greenfield feature development.
 
 Before changing code, read:
 
@@ -13,9 +13,9 @@ Before changing code, read:
 Start from:
 
 ```bash
-git checkout build/kernor-post-interview-v0.11
+git checkout build/odysseus-post-interview-v0.11
 git pull
-git checkout -b stabilize/kernor-v0.11
+git checkout -b stabilize/odysseus-v0.11
 ```
 
 Do not merge the 11 stacked milestone PRs into `main` before the stabilization branch builds and passes tests.
@@ -57,7 +57,7 @@ Afterward:
 
 Use this prompt after opening the stabilization branch:
 
-> Read AGENTS.md, docs/development/integration-audit.md, README.md, package.json, and the current branch before editing anything. Kernor v0.1-v0.11 is already feature-built. Your job is to stabilize it for a real local build and Vercel Preview deployment without redesigning the product. Start with P0 items only. Install dependencies and commit a lockfile, run lint/typecheck/build, fix compile errors, baseline the current Supabase remote schema into reproducible migrations, generate Supabase TypeScript types, add tests/CI, fix the documented Kernor Live state/WebRTC/order/graceful-close issues, and make Apply successful-submission plus credit accounting atomic. Preserve all product/security rules in AGENTS.md. Report every change, command run, test result, and remaining blocker.
+> Read AGENTS.md, docs/development/integration-audit.md, README.md, package.json, and the current branch before editing anything. Odysseus v0.1-v0.11 is already feature-built. Your job is to stabilize it for a real local build and Vercel Preview deployment without redesigning the product. Start with P0 items only. Install dependencies and commit a lockfile, run lint/typecheck/build, fix compile errors, baseline the current Supabase remote schema into reproducible migrations, generate Supabase TypeScript types, add tests/CI, fix the documented Odysseus Live state/WebRTC/order/graceful-close issues, and make Apply successful-submission plus credit accounting atomic. Preserve all product/security rules in AGENTS.md. Report every change, command run, test result, and remaining blocker.
 
 ## External services
 
@@ -78,7 +78,7 @@ Use Vercel Preview first. Keep Production credentials separate.
 ## Git workflow
 
 - Never commit directly to `main`.
-- Make stabilization changes on `stabilize/kernor-v0.11`.
+- Make stabilization changes on `stabilize/odysseus-v0.11`.
 - Review diffs before commit.
 - Require passing build/lint/typecheck/tests before opening the final PR.
 - Prefer one consolidated stabilization PR to `main` after the stacked feature chain has been validated.
@@ -89,12 +89,12 @@ Use Vercel Preview first. Keep Production credentials separate.
 - v0.2 — Match
 - v0.3 — Resume Tailoring
 - v0.4 — Credits + Stripe
-- v0.5 — Kernor Apply
-- v0.6 — Kernor Track
+- v0.5 — Odysseus Apply
+- v0.6 — Odysseus Track
 - v0.7 — Provider-neutral Email + Calendar
 - v0.8 — Interview Workspace / Readiness
 - v0.9 — Multi-Round Interview Memory
-- v0.10 — Kernor Live
+- v0.10 — Odysseus Live
 - v0.11 — Post-Interview Analysis + Follow-Up
 
 The next milestone is **v0.11 stabilization + Preview deployment**, not v0.12 feature expansion.

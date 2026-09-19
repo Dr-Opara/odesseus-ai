@@ -101,7 +101,7 @@ export default async function PostInterviewPage({
         <div className="card post-empty-card">
           <div className="badge">Transcript required</div>
           <h2 style={{ fontSize: 28, margin: "16px 0 7px" }}>
-            Complete Kernor Live first.
+            Complete Odysseus Live first.
           </h2>
           <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
             Post-interview analysis uses the completed Live transcript so it can stay grounded in what actually happened.
@@ -114,7 +114,7 @@ export default async function PostInterviewPage({
             Turn the transcript into useful memory.
           </h2>
           <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
-            Kernor will summarize the discussion, extract clearly supported questions and topics, update round memory, and draft a follow-up without predicting the hiring outcome.
+            Odysseus will summarize the discussion, extract clearly supported questions and topics, update round memory, and draft a follow-up without predicting the hiring outcome.
           </p>
         </div>
       ) : (
@@ -252,7 +252,7 @@ export default async function PostInterviewPage({
 
             <div className="card post-boundary-card">
               <div className="muted" style={{ fontSize: 13 }}>
-                What Kernor does not claim
+                What Odysseus does not claim
               </div>
               <p className="muted" style={{ margin: "8px 0 0", lineHeight: 1.6 }}>
                 No interview score, no hiring probability, and no assumption about interviewer intent. The purpose is memory, preparation, and follow-through.

@@ -3,7 +3,7 @@ import { generateText, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { resumeProfileSchema, type ResumeProfile } from "./schemas";
 
-const MODEL = process.env.KERNOR_MATCH_MODEL || "gpt-5.6-luna";
+const MODEL = process.env.ODYSSEUS_MATCH_MODEL || "gpt-5.6-luna";
 
 const instructions = `
 You extract a candidate's professional history from a resume for a job-matching product.

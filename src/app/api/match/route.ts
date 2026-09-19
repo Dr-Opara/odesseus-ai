@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   ]);
 
   if (profileError || !profile?.onboarding_completed) {
-    return NextResponse.json({ error: "Complete your Kernor profile first." }, { status: 400 });
+    return NextResponse.json({ error: "Complete your Odysseus profile first." }, { status: 400 });
   }
 
   if (resumeError || !resume?.storage_path) {
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
         .download(resume.storage_path);
 
       if (downloadError || !file) {
-        throw new Error("Kernor could not read your resume.");
+        throw new Error("Odysseus could not read your resume.");
       }
 
       const parsed = await parseResume({
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
       ]);
 
       if (resumeUpdate.error || profileUpdate.error) {
-        throw new Error("Kernor parsed your resume but could not save the verified profile.");
+        throw new Error("Odysseus parsed your resume but could not save the verified profile.");
       }
     }
 
@@ -143,12 +143,12 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError || !job) {
-      throw new Error("Kernor could not save this match.");
+      throw new Error("Odysseus could not save this match.");
     }
 
     return NextResponse.json({ id: job.id, score: job.match_score });
   } catch (error) {
-    console.error("Kernor Match failed:", error);
-    return NextResponse.json({ error: "Kernor could not analyze this role." }, { status: 500 });
+    console.error("Odysseus Match failed:", error);
+    return NextResponse.json({ error: "Odysseus could not analyze this role." }, { status: 500 });
   }
 }

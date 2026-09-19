@@ -2,7 +2,7 @@ import { generateText, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { liveGuidanceSchema } from "./schemas";
 
-const MODEL = process.env.KERNOR_LIVE_GUIDANCE_MODEL || process.env.KERNOR_MATCH_MODEL || "gpt-5.6-luna";
+const MODEL = process.env.ODYSSEUS_LIVE_GUIDANCE_MODEL || process.env.ODYSSEUS_MATCH_MODEL || "gpt-5.6-luna";
 
 export const LIVE_GUIDANCE_SYSTEM_PROMPT = `
 You are a real-time interview support assistant for the candidate.
@@ -32,7 +32,7 @@ export async function generateLiveGuidance(input: {
   const result = await generateText({
     model: openai(MODEL),
     output: Output.object({
-      name: "KernorLiveGuidance",
+      name: "OdysseusLiveGuidance",
       description: "Grounded, concise interview answer guidance.",
       schema: liveGuidanceSchema,
     }),

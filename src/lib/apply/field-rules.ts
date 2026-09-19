@@ -76,8 +76,8 @@ export function decideField(label: string, type: string, context: ApplyContext):
   }
 
   if (/phone|mobile/.test(key)) {
-    return { action: "pause", category: "contact", reason: "Phone number is not verified in the current Kernor profile." };
+    return { action: "pause", category: "contact", reason: "Phone number is not verified in the current Odysseus profile." };
   }
 
-  return { action: "pause", category: "custom", reason: "Kernor does not have a pre-approved answer for this question." };
+  return { action: "pause", category: "custom", reason: "Odysseus does not have a pre-approved answer for this question." };
 }

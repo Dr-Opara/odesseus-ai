@@ -25,7 +25,7 @@ export default function ReadinessButton({
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error || "Kernor could not prepare this interview.");
+      setError(data.error || "Odysseus could not prepare this interview.");
       setBusy(false);
       return;
     }

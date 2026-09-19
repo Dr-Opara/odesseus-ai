@@ -97,7 +97,7 @@ export async function POST(
   form.set("session", JSON.stringify(sessionConfig));
 
   const safetyId = createHash("sha256")
-    .update(`kernor:${userId}`)
+    .update(`odysseus:${userId}`)
     .digest("hex");
 
   const response = await fetch("https://api.openai.com/v1/realtime/calls", {

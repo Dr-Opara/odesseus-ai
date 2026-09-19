@@ -89,7 +89,7 @@ export async function POST(
   }
 
   if (!run.resume_token) {
-    return NextResponse.json({ error: "Kernor is not ready to resume yet." }, { status: 409 });
+    return NextResponse.json({ error: "Odysseus is not ready to resume yet." }, { status: 409 });
   }
 
   await resumeHook(run.resume_token, { action: "continue" });

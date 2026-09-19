@@ -44,7 +44,7 @@ export default async function ApplyStartPage({
 
   return (
     <main className="shell" style={{ padding: "54px 0 100px" }}>
-      <Link href="/dashboard" className="wordmark">Kernor</Link>
+      <Link href="/dashboard" className="wordmark">Odysseus</Link>
 
       <div style={{ width: "min(760px,100%)", margin: "64px auto 0" }}>
         <Link href={`/match/${job.id}`} className="muted" style={{ fontSize: 14 }}>
@@ -52,7 +52,7 @@ export default async function ApplyStartPage({
         </Link>
 
         <div style={{ marginTop: 22 }}>
-          <div className="badge">Kernor Apply</div>
+          <div className="badge">Odysseus Apply</div>
           <h1 style={{ fontSize: 48, letterSpacing: "-0.05em", margin: "16px 0 8px" }}>
             Ready to apply?
           </h1>
@@ -91,7 +91,7 @@ export default async function ApplyStartPage({
 
         <div className="apply-charge-note">
           <strong>No credit is used when this starts.</strong>
-          <span>One application credit is consumed only after Kernor verifies a successful submission.</span>
+          <span>One application credit is consumed only after Odysseus verifies a successful submission.</span>
         </div>
       </div>
     </main>

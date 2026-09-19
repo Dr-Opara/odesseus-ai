@@ -26,7 +26,7 @@ export default function MatchForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Kernor could not analyze this role.");
+        throw new Error(data.error || "Odysseus could not analyze this role.");
       }
 
       router.push(`/match/${data.id}`);
@@ -75,7 +75,7 @@ export default function MatchForm() {
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 18, marginTop: 18, flexWrap: "wrap" }}>
           <span className="muted" style={{ fontSize: 13 }}>
-            Kernor compares this only against your verified profile and resume.
+            Odysseus compares this only against your verified profile and resume.
           </span>
           <button className="btn btn-primary" type="submit" disabled={busy}>
             {busy ? "Analyzing match…" : "Analyze match"}

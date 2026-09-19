@@ -18,7 +18,7 @@ export default function IntegrationSyncButton() {
     const data = await response.json();
 
     if (!response.ok) {
-      setMessage(data.error || "Kernor could not sync your accounts.");
+      setMessage(data.error || "Odysseus could not sync your accounts.");
       setBusy(false);
       return;
     }

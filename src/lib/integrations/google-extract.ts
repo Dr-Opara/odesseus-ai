@@ -2,7 +2,7 @@ import { generateText, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 
-const MODEL = process.env.KERNOR_MATCH_MODEL || "gpt-5.6-luna";
+const MODEL = process.env.ODYSSEUS_MATCH_MODEL || "gpt-5.6-luna";
 
 const emailSignalSchema = z.object({
   signalType: z.enum([
@@ -34,7 +34,7 @@ export async function extractEmailSignal(input: {
   const result = await generateText({
     model: openai(MODEL),
     output: Output.object({
-      name: "KernorEmployerSignal",
+      name: "OdysseusEmployerSignal",
       description: "A conservative extraction of an employer recruiting email.",
       schema: emailSignalSchema,
     }),

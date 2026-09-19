@@ -7,7 +7,7 @@ export default function CheckEmailPage() {
         <div style={{ fontSize: 36 }}>✉</div>
         <h1 style={{ fontSize: 34, letterSpacing: "-0.04em", marginBottom: 10 }}>Check your email.</h1>
         <p className="muted" style={{ lineHeight: 1.6 }}>
-          Confirm your email address, then come back to Kernor and sign in.
+          Confirm your email address, then come back to Odysseus and sign in.
         </p>
         <Link className="btn btn-primary" href="/login" style={{ marginTop: 16 }}>Back to sign in</Link>
       </div>

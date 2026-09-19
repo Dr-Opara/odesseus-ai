@@ -85,7 +85,7 @@ export async function POST(
       .single();
 
     if (error || !inserted) {
-      return NextResponse.json({ error: "Kernor could not save the transcript." }, { status: 500 });
+      return NextResponse.json({ error: "Odysseus could not save the transcript." }, { status: 500 });
     }
 
     transcriptItemId = inserted.id;

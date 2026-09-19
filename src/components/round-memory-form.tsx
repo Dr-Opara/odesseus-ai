@@ -81,7 +81,7 @@ export default function RoundMemoryForm({
     const data = await response.json();
 
     if (!response.ok) {
-      setMessage(data.error || "Kernor could not save round memory.");
+      setMessage(data.error || "Odysseus could not save round memory.");
       setBusy(false);
       return;
     }
@@ -98,7 +98,7 @@ export default function RoundMemoryForm({
           Round memory
         </div>
         <h2 style={{ fontSize: 24, margin: "7px 0 6px" }}>
-          What should Kernor remember?
+          What should Odysseus remember?
         </h2>
         <p className="muted" style={{ margin: 0, lineHeight: 1.55 }}>
           One item per line. This becomes context for the next round.

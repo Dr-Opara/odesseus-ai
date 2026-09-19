@@ -7,12 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
-  kernor_private: {
+  odysseus_private: {
     Tables: {
       billing_customers: {
         Row: {
@@ -466,18 +461,21 @@ export type Database = {
         Row: {
           application_credits: number
           interview_passes: number
+          live_unlimited_until: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           application_credits?: number
           interview_passes?: number
+          live_unlimited_until?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           application_credits?: number
           interview_passes?: number
+          live_unlimited_until?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1454,7 +1452,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      kernor_activate_live_session: {
+      odysseus_activate_live_session: {
         Args: {
           p_openai_session_id: string
           p_session_id: string
@@ -1486,7 +1484,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      kernor_end_live_session: {
+      odysseus_end_live_session: {
         Args: { p_session_id: string; p_user_id: string }
         Returns: {
           activated_at: string | null
@@ -1514,7 +1512,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      kernor_finalize_successful_application: {
+      odysseus_finalize_successful_application: {
         Args: {
           p_confirmation_text: string
           p_page_url?: string
@@ -1527,11 +1525,11 @@ export type Database = {
           run_id: string
         }[]
       }
-      kernor_get_integration_secret: {
+      odysseus_get_integration_secret: {
         Args: { p_secret_id: string }
         Returns: string
       }
-      kernor_store_integration_secret: {
+      odysseus_store_integration_secret: {
         Args: { p_name: string; p_secret: string; p_user_id: string }
         Returns: string
       }
@@ -1663,10 +1661,11 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  kernor_private: {
+  odysseus_private: {
     Enums: {},
   },
   public: {
     Enums: {},
   },
 } as const
+

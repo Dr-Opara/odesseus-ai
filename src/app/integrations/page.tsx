@@ -150,7 +150,7 @@ export default async function IntegrationsPage({
               Recruiter and employer messages
             </h2>
             <p className="muted" style={{ margin: 0 }}>
-              Kernor reads only enough context to match updates to your tracked applications.
+              Odysseus reads only enough context to match updates to your tracked applications.
             </p>
           </div>
 
@@ -228,10 +228,10 @@ export default async function IntegrationsPage({
           <div>
             <div className="muted" style={{ fontSize: 13 }}>Optional follow-up sending</div>
             <h2 style={{ fontSize: 28, margin: "7px 0 6px" }}>
-              Send approved follow-ups from Kernor
+              Send approved follow-ups from Odysseus
             </h2>
             <p className="muted" style={{ margin: 0 }}>
-              This permission is separate from read-only detection. Skip it if you prefer Kernor to open approved drafts in your normal email app.
+              This permission is separate from read-only detection. Skip it if you prefer Odysseus to open approved drafts in your normal email app.
             </p>
           </div>
 

@@ -185,7 +185,7 @@ async function resolveField(
             fieldKey: key,
             question: cleanLabel(field.label || field.name || "Checkbox question"),
             category: "custom",
-            reason: "Kernor needs the user to confirm this checkbox.",
+            reason: "Odysseus needs the user to confirm this checkbox.",
           },
           source: null,
         };
@@ -207,7 +207,7 @@ async function resolveField(
         fieldKey: key,
         question: cleanLabel(field.label || field.name || field.placeholder || "Application question"),
         category: "custom",
-        reason: "Kernor could not confidently complete this field.",
+        reason: "Odysseus could not confidently complete this field.",
       },
       source: null,
     };
@@ -310,7 +310,7 @@ export async function finalizeConfirmedExistingSubmission(input: {
 }) {
   const supabase = createServiceClient();
 
-  const { error } = await supabase.rpc("kernor_finalize_successful_application", {
+  const { error } = await supabase.rpc("odysseus_finalize_successful_application", {
     p_run_id: input.run.id,
     p_user_id: input.run.user_id,
     p_confirmation_text: input.confirmation,
@@ -318,7 +318,7 @@ export async function finalizeConfirmedExistingSubmission(input: {
   });
 
   if (error) {
-    throw new Error("Application confirmed, but Kernor could not finalize it: " + error.message);
+    throw new Error("Application confirmed, but Odysseus could not finalize it: " + error.message);
   }
 
   await logEvent(input.run.id, input.run.user_id, "submitted", "Application submission confirmed.", {
@@ -556,7 +556,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
       const reason =
         pauses.some((item) => item.category === "sensitive")
           ? "Sensitive or unverified application questions need your input."
-          : "Kernor needs your input for one or more application questions.";
+          : "Odysseus needs your input for one or more application questions.";
 
       await supabase
         .from("application_runs")
@@ -597,7 +597,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
     }
 
     if (!actionButton) {
-      const reason = "Kernor could not identify the next or final application control. Review the page in the live browser.";
+      const reason = "Odysseus could not identify the next or final application control. Review the page in the live browser.";
       await supabase
         .from("application_runs")
         .update({
@@ -651,7 +651,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
 
     if (!confirmationMatch) {
       const reason =
-        "The submit action completed, but Kernor could not verify a success confirmation. Please review the live browser before any credit is charged.";
+        "The submit action completed, but Odysseus could not verify a success confirmation. Please review the live browser before any credit is charged.";
 
       await supabase
         .from("application_runs")
@@ -673,7 +673,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
     }
 
     const { error: finalizeError } = await supabase.rpc(
-      "kernor_finalize_successful_application",
+      "odysseus_finalize_successful_application",
       {
         p_run_id: runId,
         p_user_id: run.user_id,
@@ -684,7 +684,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
 
     if (finalizeError) {
       throw new Error(
-        "Application submitted, but Kernor could not finalize it: " + finalizeError.message
+        "Application submitted, but Odysseus could not finalize it: " + finalizeError.message
       );
     }
 

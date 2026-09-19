@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import KernorLiveClient from "@/components/kernor-live-client";
+import OdysseusLiveClient from "@/components/odysseus-live-client";
 
-export default async function KernorLivePage({
+export default async function OdysseusLivePage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -51,7 +51,7 @@ export default async function KernorLivePage({
           </Link>
 
           <div style={{ marginTop: 16 }} className="badge">
-            Kernor Live
+            Odysseus Live
           </div>
 
           <h1
@@ -85,12 +85,12 @@ export default async function KernorLivePage({
       <div className="live-boundary-note">
         <strong>You remain the interviewee.</strong>
         <span>
-          Kernor listens only after you start it, shows private on-screen guidance,
+          Odysseus listens only after you start it, shows private on-screen guidance,
           and never joins the meeting or speaks for you.
         </span>
       </div>
 
-      <KernorLiveClient
+      <OdysseusLiveClient
         interviewId={interview.id}
         interviewPasses={credits?.interview_passes ?? 0}
       />

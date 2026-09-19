@@ -4,7 +4,7 @@ import { execSync } from "node:child_process";
 // Regression test for a bug found during local runtime QA: the dashboard
 // header rendered a plain, non-interactive avatar div with no logout
 // control anywhere in the UI, even though the `logout` server action was
-// already implemented — there was simply no way to sign out of Kernor.
+// already implemented — there was simply no way to sign out of Odysseus.
 // Requires a running local Supabase stack (see docs/development/*.md).
 //
 // Onboarding completion (which needs a real resume upload) is exercised
@@ -29,7 +29,7 @@ test("a signed-up user can log out from the dashboard, and the session is really
   ]);
 
   execSync(
-    `docker exec supabase_db_Kernor-ai psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c ` +
+    `docker exec supabase_db_Odysseus-ai psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c ` +
       `"update public.profiles set onboarding_completed = true from auth.users where profiles.id = auth.users.id and auth.users.email = '${email}';"`,
     { stdio: "inherit" }
   );

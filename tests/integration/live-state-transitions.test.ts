@@ -154,7 +154,7 @@ describe("POST /api/interviews/[id]/live/activate", () => {
     expect(response.status).toBe(200);
     expect(body.session.status).toBe("active");
     expect(rpc).toHaveBeenCalledWith(
-      "kernor_activate_live_session",
+      "odysseus_activate_live_session",
       expect.objectContaining({ p_session_id: sessionId, p_user_id: "user-1" })
     );
   });
@@ -209,7 +209,7 @@ describe("POST /api/interviews/[id]/live/end", () => {
     const response = await POST(jsonRequest({ sessionId }), params);
     expect(response.status).toBe(200);
     expect(rpc).toHaveBeenCalledWith(
-      "kernor_end_live_session",
+      "odysseus_end_live_session",
       expect.objectContaining({ p_session_id: sessionId, p_user_id: "user-1" })
     );
   });

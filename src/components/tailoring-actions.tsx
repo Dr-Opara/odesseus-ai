@@ -23,7 +23,7 @@ export default function TailoringActions({
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error || "Kernor could not approve this resume.");
+      setError(data.error || "Odysseus could not approve this resume.");
       setBusy(null);
       return;
     }
@@ -42,7 +42,7 @@ export default function TailoringActions({
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error || "Kernor could not create another version.");
+      setError(data.error || "Odysseus could not create another version.");
       setBusy(null);
       return;
     }

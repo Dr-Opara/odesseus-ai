@@ -124,7 +124,7 @@ export async function POST(
         error:
           error instanceof Error
             ? error.message
-            : "Kernor could not save round memory.",
+            : "Odysseus could not save round memory.",
       },
       { status: 500 }
     );

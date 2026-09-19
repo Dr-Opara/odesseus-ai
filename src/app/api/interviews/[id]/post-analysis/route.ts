@@ -124,7 +124,7 @@ export async function POST(
       .single();
 
     if (analysisError || !savedAnalysis) {
-      throw new Error("Kernor could not save the analysis.");
+      throw new Error("Odysseus could not save the analysis.");
     }
 
     const interviewerDetails =
@@ -155,7 +155,7 @@ export async function POST(
       .single();
 
     if (followUpError || !followUp) {
-      throw new Error("Kernor could not save the follow-up draft.");
+      throw new Error("Odysseus could not save the follow-up draft.");
     }
 
     const merged = mergeRoundMemory({
@@ -225,7 +225,7 @@ export async function POST(
         error:
           error instanceof Error
             ? error.message
-            : "Kernor could not analyze this interview.",
+            : "Odysseus could not analyze this interview.",
       },
       { status: 500 }
     );
