@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   odysseus_private: {
     Tables: {
       billing_customers: {
@@ -466,18 +461,21 @@ export type Database = {
         Row: {
           application_credits: number
           interview_passes: number
+          live_unlimited_until: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           application_credits?: number
           interview_passes?: number
+          live_unlimited_until?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           application_credits?: number
           interview_passes?: number
+          live_unlimited_until?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1670,3 +1668,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
