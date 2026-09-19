@@ -22,6 +22,7 @@ export default function MarketingFooter() {
         <div className="marketing-footer-col">
           <div className="marketing-footer-heading">Company</div>
           <Link href="/about">About</Link>
+          <Link href="/partners">Partner Program</Link>
         </div>
 
         <div className="marketing-footer-col">
