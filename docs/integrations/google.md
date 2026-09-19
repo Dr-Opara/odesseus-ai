@@ -14,7 +14,7 @@ Phase 7 does not need Email send/modify or Calendar write access.
 ## Environment
 
 ```
-VERCEL_CONNECT_GOOGLE_CONNECTOR=
+ODYSSEUS_CONNECT_GOOGLE_CONNECTOR=
 CRON_SECRET=
 NEXT_PUBLIC_SITE_URL=
 ```
