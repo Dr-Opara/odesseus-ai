@@ -116,7 +116,7 @@ export async function runAutomaticJobDiscovery(options?: {
             user_id: user.userId,
             external_id: posting.externalId,
             source: posting.sourceKey,
-            source_url: posting.applyUrl || posting.sourceUrl,
+            source_url: posting.sourceUrl,
             company_name: posting.companyName,
             role_title: posting.title,
             location: posting.location,
