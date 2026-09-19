@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
 import JobDiscoveryButton from "@/components/job-discovery-button";
+import JobDiscoveryActions from "@/components/job-discovery-actions";
 
 function sourceLabel(source: string | null) {
   if (!source) return "Job source";
@@ -111,6 +112,7 @@ export default async function JobsPage() {
                       View original
                     </a>
                   ) : null}
+                  <JobDiscoveryActions jobId={job.id} isSaved={job.status === "saved"} />
                 </div>
               </article>
             ))}
