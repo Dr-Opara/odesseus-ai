@@ -47,6 +47,7 @@ export async function runAutomaticJobDiscovery(options?: {
     skippedExisting: 0,
     skippedPrefilter: 0,
     skippedMissingResume: 0,
+    closedStaleListings: 0,
     errors: [],
   };
 
@@ -66,6 +67,25 @@ export async function runAutomaticJobDiscovery(options?: {
         source: sourceKey(source),
         message: error instanceof Error ? error.message : "Source fetch failed",
       });
+    }
+  }
+
+  for (const [key, postings] of fetched.entries()) {
+    const currentIds = new Set(postings.map((posting) => posting.externalId));
+    const { data: prior } = await service
+      .from("job_opportunities")
+      .select("id,external_id,status")
+      .eq("source", key)
+      .in("status", ["discovered", "reviewing", "saved", "rejected"]);
+
+    for (const row of prior || []) {
+      if (row.external_id && !currentIds.has(row.external_id)) {
+        await service
+          .from("job_opportunities")
+          .update({ status: "closed", updated_at: new Date().toISOString() })
+          .eq("id", row.id);
+        summary.closedStaleListings += 1;
+      }
     }
   }
 
