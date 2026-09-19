@@ -22,8 +22,8 @@ export async function GET(request: Request) {
 
   const connector =
     provider === "google"
-      ? process.env.VERCEL_CONNECT_GOOGLE_SEND_CONNECTOR
-      : process.env.VERCEL_CONNECT_MICROSOFT_SEND_CONNECTOR;
+      ? process.env.ODYSSEUS_CONNECT_GOOGLE_SEND_CONNECTOR
+      : process.env.ODYSSEUS_CONNECT_MICROSOFT_SEND_CONNECTOR;
 
   if (!connector) {
     return NextResponse.redirect(
