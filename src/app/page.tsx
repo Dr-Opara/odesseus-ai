@@ -1,5 +1,6 @@
 import Link from "next/link";
 import MarketingNav from "@/components/marketing-nav";
+import MarketingFooter from "@/components/marketing-footer";
 
 const platforms = [
   "Workday",
@@ -22,28 +23,24 @@ const activityMoments = [
 
 const howItWorks = [
   {
-    id: undefined,
     n: "01",
     title: "Build Your Profile",
     body: "Upload your resume once. Odysseus learns your verified experience, skills, education, certifications, and preferences.",
     pills: [],
   },
   {
-    id: undefined,
     n: "02",
     title: "Find Your Matches",
     body: "Odysseus finds relevant opportunities and explains why they fit.",
     pills: ["85%+ Match", "Hard Requirements Checked", "No Fabricated Qualifications"],
   },
   {
-    id: "apply",
     n: "03",
     title: "Review & Apply",
     body: "Odysseus tailors the resume and prepares the application for approval.",
     pills: ["ATS-Ready Resume", "Cover Letter When Needed", "Cross-Platform Applications", "$0.99 Only After Successful Submission"],
   },
   {
-    id: "live",
     n: "04",
     title: "Interview",
     body: "Employer responses flow into the Interview Workspace.",
@@ -60,14 +57,14 @@ export default function Home() {
 
       <section className="shell hero-section">
         <div>
-          <div className="badge">A calmer way to move your career forward</div>
+          <div className="badge">A more connected way to move your career forward</div>
           <h1 className="font-display hero-headline">Your next move, handled.</h1>
           <p className="muted hero-copy">
             Odysseus finds strong-match jobs, tailors your resume, applies across supported platforms, and tracks every application — then prepares you for the interview and stays with you live when it begins.
           </p>
           <div className="hero-ctas">
-            <Link className="btn btn-primary" href="/onboarding">Get Started Free →</Link>
-            <a className="btn btn-secondary" href="#how-it-works">See How It Works</a>
+            <Link className="btn btn-primary" href="/signup">Get Started Free →</Link>
+            <Link className="btn btn-secondary" href="/how-it-works">See How It Works</Link>
           </div>
         </div>
 
@@ -117,21 +114,24 @@ export default function Home() {
             ))}
           </div>
         </div>
+        <div style={{ textAlign: "center", marginTop: 26 }}>
+          <Link className="btn btn-secondary" href="/apply">See supported platforms →</Link>
+        </div>
       </section>
 
-      <section id="how-it-works" className="shell" style={{ padding: "10px 0 30px" }}>
+      <section className="shell" style={{ padding: "10px 0 30px" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <p className="muted" style={{ fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em" }}>
             How Odysseus Works
           </p>
           <h2 className="font-display" style={{ fontSize: 40, letterSpacing: "-0.02em", margin: "10px 0" }}>
-            One calm flow, start to offer.
+            One connected flow, start to offer.
           </h2>
         </div>
 
         <div className="how-it-works-grid">
           {howItWorks.map((step) => (
-            <div className="card how-it-works-card" id={step.id} key={step.n}>
+            <div className="card how-it-works-card" key={step.n}>
               <div className="how-it-works-number">{step.n}</div>
               <h3 style={{ fontSize: 21, margin: "16px 0 8px" }}>{step.title}</h3>
               <p className="muted" style={{ lineHeight: 1.55, margin: 0 }}>{step.body}</p>
@@ -145,6 +145,10 @@ export default function Home() {
             </div>
           ))}
         </div>
+
+        <div style={{ textAlign: "center", marginTop: 30 }}>
+          <Link className="btn btn-secondary" href="/how-it-works">See the full lifecycle →</Link>
+        </div>
       </section>
 
       <section className="shell activity-strip-section">
@@ -155,7 +159,33 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="pricing" className="shell" style={{ padding: "10px 0 110px" }}>
+      <section className="shell" style={{ padding: "10px 0 20px" }}>
+        <div className="page-cta-band card">
+          <div>
+            <div className="badge">$0.99 · Apply with Odysseus</div>
+            <h2 style={{ fontSize: 26, margin: "14px 0 8px" }}>Apply anywhere your next opportunity lives.</h2>
+            <p className="muted" style={{ margin: 0, maxWidth: 520 }}>
+              Odysseus matches the role, tailors your resume, completes the application, and tracks it — charged only after a successful submission.
+            </p>
+          </div>
+          <Link className="btn btn-primary" href="/apply">Explore Apply →</Link>
+        </div>
+      </section>
+
+      <section className="shell" style={{ padding: "0 0 20px" }}>
+        <div className="page-cta-band card">
+          <div>
+            <div className="badge">$24.99 · Odysseus Live</div>
+            <h2 style={{ fontSize: 26, margin: "14px 0 8px" }}>Go into your interview with your entire application behind you.</h2>
+            <p className="muted" style={{ margin: 0, maxWidth: 520 }}>
+              Free preparation, private real-time guidance, and a complete post-interview recap — one pass, everything included.
+            </p>
+          </div>
+          <Link className="btn btn-primary" href="/live">Explore Live →</Link>
+        </div>
+      </section>
+
+      <section className="shell" style={{ padding: "10px 0 110px" }}>
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <p className="muted" style={{ fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em" }}>
             Pricing
@@ -183,23 +213,13 @@ export default function Home() {
             </p>
           </div>
         </div>
-      </section>
 
-      <section id="about" className="shell about-section">
-        <div className="about-inner">
-          <h2 className="font-display" style={{ fontSize: 34, letterSpacing: "-0.02em", margin: "0 0 16px" }}>
-            About Odysseus
-          </h2>
-          <p className="muted" style={{ lineHeight: 1.7 }}>
-            Odysseus is a calm, AI-assisted career workspace built to remove the busywork of job searching. It matches you to strong-fit roles, tailors your resume with your approval, applies on your behalf across supported job boards and employer career sites, and stays with you from the first interview question through the final follow-up — grounded only in your verified experience.
-          </p>
+        <div style={{ textAlign: "center", marginTop: 30 }}>
+          <Link className="btn btn-secondary" href="/pricing">See full pricing →</Link>
         </div>
       </section>
 
-      <footer className="shell marketing-footer">
-        <div className="marketing-wordmark">ODYSSEUS</div>
-        <p className="muted" style={{ fontSize: 13, margin: 0 }}>Your next move, handled.</p>
-      </footer>
+      <MarketingFooter />
     </main>
   );
 }
