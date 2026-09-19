@@ -5,13 +5,17 @@ import PostAnalysisButton from "@/components/post-analysis-button";
 import FollowUpEditor from "@/components/follow-up-editor";
 import { postInterviewAnalysisSchema } from "@/lib/ai/schemas";
 import AppShell from "@/components/app-shell";
+import { deleteTranscript } from "@/app/actions/account";
 
 export default async function PostInterviewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ status?: string }>;
 }) {
   const { id } = await params;
+  const { status } = await searchParams;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims?.sub;
@@ -82,6 +86,10 @@ export default async function PostInterviewPage({
       <Link href={`/interviews/${id}`} className="muted" style={{ fontSize: 14 }}>
         ← Interview workspace
       </Link>
+
+      {status === "transcript_deleted" ? (
+        <div className="billing-success" style={{ marginTop: 18 }}>Transcript deleted.</div>
+      ) : null}
 
       <div className="post-heading">
         <div>
@@ -269,9 +277,26 @@ export default async function PostInterviewPage({
                 No interview score, no hiring probability, and no assumption about interviewer intent. The purpose is memory, preparation, and follow-through.
               </p>
             </div>
+
           </aside>
         </div>
       )}
+
+      {canAnalyze ? (
+        <div className="card post-boundary-card" style={{ marginTop: 18, maxWidth: 380 }}>
+          <div className="muted" style={{ fontSize: 13 }}>Privacy</div>
+          <p className="muted" style={{ margin: "8px 0 14px", lineHeight: 1.6 }}>
+            Delete the raw transcript for this interview. Your saved analysis and round
+            memory stay intact; only the underlying transcript text is removed.
+          </p>
+          <form action={deleteTranscript}>
+            <input type="hidden" name="interviewId" value={id} />
+            <button type="submit" className="account-menu-logout" style={{ width: "auto", padding: "8px 14px", border: "1px solid var(--line)" }}>
+              Delete transcript
+            </button>
+          </form>
+        </div>
+      ) : null}
       </section>
     </AppShell>
   );

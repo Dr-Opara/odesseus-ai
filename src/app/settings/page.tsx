@@ -4,8 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
 import PasswordChangeForm from "@/components/password-change-form";
 import JobPreferencesForm from "@/components/job-preferences-form";
+import DeleteAccountForm from "@/components/delete-account-form";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims?.sub;
@@ -39,6 +45,10 @@ export default async function SettingsPage() {
             Manage your account, security, and how Odysseus searches on your behalf.
           </p>
 
+          {error ? (
+            <div style={{ marginBottom: 18, padding: 14, borderRadius: 12, background: "#fff1ef" }}>{error}</div>
+          ) : null}
+
           <div className="card" style={{ padding: 26, marginBottom: 18 }}>
             <div className="muted" style={{ fontSize: 13 }}>Account</div>
             <h2 style={{ fontSize: 22, margin: "7px 0 16px" }}>{profile?.full_name || "Your account"}</h2>
@@ -59,7 +69,27 @@ export default async function SettingsPage() {
             <PasswordChangeForm />
           </div>
 
-          <JobPreferencesForm userId={userId} initial={jobPreferences} />
+          <div style={{ marginBottom: 18 }}>
+            <JobPreferencesForm userId={userId} initial={jobPreferences} />
+          </div>
+
+          <div className="card" style={{ padding: 26, marginBottom: 18 }}>
+            <div className="muted" style={{ fontSize: 13 }}>Data &amp; privacy</div>
+            <h2 style={{ fontSize: 22, margin: "7px 0 16px" }}>Your data</h2>
+            <p className="muted" style={{ margin: "0 0 16px", lineHeight: 1.55 }}>
+              Download a copy of everything Odysseus has on file for you, including your
+              profile, applications, interviews, and job matches.
+            </p>
+            <a className="btn btn-secondary" href="/api/account/export" download>
+              Export my data
+            </a>
+          </div>
+
+          <div className="card" style={{ padding: 26 }}>
+            <div className="muted" style={{ fontSize: 13 }}>Danger zone</div>
+            <h2 style={{ fontSize: 22, margin: "7px 0 16px" }}>Delete account</h2>
+            <DeleteAccountForm />
+          </div>
         </div>
       </section>
     </AppShell>

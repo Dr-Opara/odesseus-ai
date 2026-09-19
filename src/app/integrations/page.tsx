@@ -11,6 +11,7 @@ import {
 import IntegrationSyncButton from "@/components/integration-sync-button";
 import ImapConnectForm from "@/components/imap-connect-form";
 import AppShell from "@/components/app-shell";
+import { disconnectIntegration } from "@/app/actions/account";
 
 function providerLabel(provider: string) {
   return (
@@ -26,9 +27,10 @@ export default async function IntegrationsPage({
     connected?: string;
     error?: string;
     outbound?: string;
+    disconnected?: string;
   }>;
 }) {
-  const { connected, error, outbound } = await searchParams;
+  const { connected, error, outbound, disconnected } = await searchParams;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims?.sub;
@@ -139,6 +141,12 @@ export default async function IntegrationsPage({
           </div>
         ) : null}
 
+        {disconnected ? (
+          <div className="billing-success" style={{ marginTop: 18 }}>
+            Account disconnected.
+          </div>
+        ) : null}
+
         <div className="integration-summary-row">
           <div>
             <strong>{accounts?.filter((item) => item.status === "connected").length || 0}</strong>
@@ -177,6 +185,12 @@ export default async function IntegrationsPage({
                       ? `Last sync ${new Date(account.last_sync_at).toLocaleString()}`
                       : account.status}
                   </div>
+                  <form action={disconnectIntegration}>
+                    <input type="hidden" name="accountId" value={account.id} />
+                    <button type="submit" className="account-menu-logout" style={{ width: "auto", padding: "8px 14px", border: "1px solid var(--line)" }}>
+                      Disconnect
+                    </button>
+                  </form>
                 </div>
               ))}
             </div>
@@ -294,6 +308,12 @@ export default async function IntegrationsPage({
                       ? `Last sync ${new Date(account.last_sync_at).toLocaleString()}`
                       : account.status}
                   </div>
+                  <form action={disconnectIntegration}>
+                    <input type="hidden" name="accountId" value={account.id} />
+                    <button type="submit" className="account-menu-logout" style={{ width: "auto", padding: "8px 14px", border: "1px solid var(--line)" }}>
+                      Disconnect
+                    </button>
+                  </form>
                 </div>
               ))}
             </div>
