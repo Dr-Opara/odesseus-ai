@@ -12,6 +12,9 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test"
   },
+  "overrides": {
+    "nanoid": "5.1.16"
+  },
   "dependencies": {
     "@ai-sdk/openai": "4.0.69",
     "@browserbasehq/sdk": "2.20.0",

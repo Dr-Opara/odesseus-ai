@@ -1,7 +1,7 @@
 import { getToken, startAuthorization } from "@vercel/connect";
 
 function connectorId() {
-  const connector = process.env.VERCEL_CONNECT_GOOGLE_CONNECTOR;
+  const connector = process.env.ODYSSEUS_CONNECT_GOOGLE_CONNECTOR;
   if (!connector) {
     throw new Error("Google connector is not configured.");
   }
