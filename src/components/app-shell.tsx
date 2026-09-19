@@ -15,11 +15,12 @@ export default function AppShell({
   fullName?: string | null;
   applicationCredits: number;
   interviewPasses: number;
-  active?: "home" | "applications" | "interviews" | "profile";
+  active?: "home" | "jobs" | "applications" | "interviews" | "profile";
   children: React.ReactNode;
 }) {
   const nav = [
     ["home", "/dashboard", "Home"],
+    ["jobs", "/jobs", "Jobs"],
     ["applications", "/applications", "Applications"],
     ["interviews", "/interviews", "Interviews"],
     ["profile", "/profile", "Profile"],

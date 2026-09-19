@@ -52,6 +52,7 @@ export default async function JobsPage() {
       fullName={profile.full_name}
       applicationCredits={credits?.application_credits ?? 0}
       interviewPasses={credits?.interview_passes ?? 0}
+      active="jobs"
     >
       <section className="shell" style={{ padding: "54px 0 100px" }}>
         <div className="jobs-heading">
