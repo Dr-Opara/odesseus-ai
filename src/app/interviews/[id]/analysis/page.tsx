@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import PostAnalysisButton from "@/components/post-analysis-button";
 import FollowUpEditor from "@/components/follow-up-editor";
 import { postInterviewAnalysisSchema } from "@/lib/ai/schemas";
+import AppShell from "@/components/app-shell";
 
 export default async function PostInterviewPage({
   params,
@@ -29,6 +30,8 @@ export default async function PostInterviewPage({
   const [
     { data: liveSession },
     { data: analysisRow },
+    { data: profile },
+    { data: credits },
   ] = await Promise.all([
     supabase
       .from("live_interview_sessions")
@@ -44,6 +47,8 @@ export default async function PostInterviewPage({
       .order("version_number", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
   ]);
 
   const parsed = analysisRow
@@ -67,7 +72,13 @@ export default async function PostInterviewPage({
   const canAnalyze = liveSession?.status === "ended";
 
   return (
-    <main className="shell" style={{ padding: "54px 0 100px" }}>
+    <AppShell
+      fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
+      interviewPasses={credits?.interview_passes ?? 0}
+      active="interviews"
+    >
+      <section className="shell" style={{ padding: "54px 0 100px" }}>
       <Link href={`/interviews/${id}`} className="muted" style={{ fontSize: 14 }}>
         ← Interview workspace
       </Link>
@@ -261,6 +272,7 @@ export default async function PostInterviewPage({
           </aside>
         </div>
       )}
-    </main>
+      </section>
+    </AppShell>
   );
 }

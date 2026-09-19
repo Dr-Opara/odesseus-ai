@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createCheckoutSession } from "@/app/actions/billing";
+import AppShell from "@/components/app-shell";
 
 export default async function BillingPage({
   searchParams,
@@ -15,7 +15,7 @@ export default async function BillingPage({
 
   if (!userId) redirect("/login");
 
-  const [{ data: credits }, { data: transactions }, { data: annualPurchases }] = await Promise.all([
+  const [{ data: credits }, { data: transactions }, { data: annualPurchases }, { data: profile }] = await Promise.all([
     supabase
       .from("credit_balances")
       .select("application_credits,interview_passes,live_unlimited_until")
@@ -38,6 +38,7 @@ export default async function BillingPage({
       .eq("sku", "interview_annual")
       .order("created_at", { ascending: false })
       .limit(8),
+    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
   ]);
 
   const activity = [
@@ -60,10 +61,13 @@ export default async function BillingPage({
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
-    <main className="shell" style={{ padding: "54px 0 100px" }}>
-      <Link href="/dashboard" className="wordmark">Odysseus</Link>
-
-      <div style={{ width: "min(980px,100%)", margin: "64px auto 0" }}>
+    <AppShell
+      fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
+      interviewPasses={credits?.interview_passes ?? 0}
+    >
+      <section className="shell" style={{ padding: "54px 0 100px" }}>
+      <div style={{ width: "min(980px,100%)", margin: "20px auto 0" }}>
         <div>
           <div className="badge">Billing</div>
           <h1 style={{ fontSize: 48, letterSpacing: "-0.05em", margin: "16px 0 8px" }}>
@@ -224,6 +228,7 @@ export default async function BillingPage({
           </div>
         </section>
       </div>
-    </main>
+      </section>
+    </AppShell>
   );
 }

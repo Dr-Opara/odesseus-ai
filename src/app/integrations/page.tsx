@@ -10,6 +10,7 @@ import {
 } from "@/lib/integrations/providers";
 import IntegrationSyncButton from "@/components/integration-sync-button";
 import ImapConnectForm from "@/components/imap-connect-form";
+import AppShell from "@/components/app-shell";
 
 function providerLabel(provider: string) {
   return (
@@ -77,7 +78,7 @@ export default async function IntegrationsPage({
     }
   }
 
-  const [{ data: accounts }, { count: signals }] = await Promise.all([
+  const [{ data: accounts }, { count: signals }, { data: profile }, { data: credits }] = await Promise.all([
     supabase
       .from("integration_accounts")
       .select("id,service_type,provider,account_email,status,last_sync_at,last_error")
@@ -87,6 +88,8 @@ export default async function IntegrationsPage({
       .from("external_signals")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId),
+    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
   ]);
 
   const emailAccounts =
@@ -95,12 +98,17 @@ export default async function IntegrationsPage({
     accounts?.filter((account) => account.service_type === "calendar") || [];
 
   return (
-    <main className="shell" style={{ padding: "54px 0 100px" }}>
+    <AppShell
+      fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
+      interviewPasses={credits?.interview_passes ?? 0}
+    >
+      <section className="shell" style={{ padding: "54px 0 100px" }}>
       <Link href="/profile" className="muted" style={{ fontSize: 14 }}>
         ← Profile
       </Link>
 
-      <div style={{ width: "min(900px,100%)", margin: "52px auto 0" }}>
+      <div style={{ width: "min(900px,100%)", margin: "20px auto 0" }}>
         <div className="badge">Integrations</div>
         <h1
           style={{
@@ -316,6 +324,7 @@ export default async function IntegrationsPage({
           </div>
         </section>
       </div>
-    </main>
+      </section>
+    </AppShell>
   );
 }

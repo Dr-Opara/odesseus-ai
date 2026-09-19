@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import AppShell from "@/components/app-shell";
 
 export default async function InterviewsPage() {
   const supabase = await createClient();
@@ -8,11 +9,15 @@ export default async function InterviewsPage() {
   const userId = auth?.claims?.sub;
   if (!userId) redirect("/login");
 
-  const { data: interviews } = await supabase
-    .from("interviews")
-    .select("id,stage,scheduled_at,status,meeting_provider,source,readiness_generated_at,applications(company_name,role_title)")
-    .eq("user_id", userId)
-    .order("scheduled_at", { ascending: true });
+  const [{ data: interviews }, { data: profile }, { data: credits }] = await Promise.all([
+    supabase
+      .from("interviews")
+      .select("id,stage,scheduled_at,status,meeting_provider,source,readiness_generated_at,applications(company_name,role_title)")
+      .eq("user_id", userId)
+      .order("scheduled_at", { ascending: true }),
+    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
+  ]);
 
   const upcoming =
     interviews?.filter((item) =>
@@ -20,10 +25,14 @@ export default async function InterviewsPage() {
     ) || [];
 
   return (
-    <main className="shell" style={{ padding: "54px 0 90px" }}>
-      <Link href="/dashboard" className="wordmark">Odysseus</Link>
-
-      <div style={{ width: "min(820px,100%)", margin: "66px auto 0" }}>
+    <AppShell
+      fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
+      interviewPasses={credits?.interview_passes ?? 0}
+      active="interviews"
+    >
+      <section className="shell" style={{ padding: "54px 0 90px" }}>
+      <div style={{ width: "min(820px,100%)", margin: "30px auto 0" }}>
         <div className="muted" style={{ fontSize: 14 }}>Interviews</div>
         <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: "10px 0 6px" }}>
           Your interview workspace.
@@ -80,6 +89,7 @@ export default async function InterviewsPage() {
           </div>
         )}
       </div>
-    </main>
+      </section>
+    </AppShell>
   );
 }

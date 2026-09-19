@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { matchAssessmentSchema } from "@/lib/ai/schemas";
 import TailorButton from "@/components/tailor-button";
+import AppShell from "@/components/app-shell";
 
 const dimensionLabels: Record<string, string> = {
   requiredQualifications: "Required qualifications",
@@ -33,12 +34,16 @@ export default async function MatchResultPage({
 
   if (!userId) redirect("/login");
 
-  const { data: job } = await supabase
-    .from("job_opportunities")
-    .select("id,company_name,role_title,location,match_score,match_breakdown,status")
-    .eq("id", id)
-    .eq("user_id", userId)
-    .maybeSingle();
+  const [{ data: job }, { data: profile }, { data: credits }] = await Promise.all([
+    supabase
+      .from("job_opportunities")
+      .select("id,company_name,role_title,location,match_score,match_breakdown,status")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
+  ]);
 
   if (!job) notFound();
 
@@ -52,10 +57,13 @@ export default async function MatchResultPage({
   );
 
   return (
-    <main className="shell" style={{ padding: "54px 0 90px" }}>
-      <Link href="/dashboard" className="wordmark">Odysseus</Link>
-
-      <div style={{ width: "min(900px,100%)", margin: "64px auto 0" }}>
+    <AppShell
+      fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
+      interviewPasses={credits?.interview_passes ?? 0}
+    >
+      <section className="shell" style={{ padding: "54px 0 90px" }}>
+      <div style={{ width: "min(900px,100%)", margin: "20px auto 0" }}>
         <Link href="/match" className="muted" style={{ fontSize: 14 }}>← Check another role</Link>
 
         <div className="match-result-header">
@@ -172,6 +180,7 @@ export default async function MatchResultPage({
           <TailorButton jobId={job.id} />
         </div>
       </div>
-    </main>
+      </section>
+    </AppShell>
   );
 }

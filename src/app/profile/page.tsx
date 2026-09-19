@@ -1,7 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import ProfileForm from "@/components/profile-form";
 import { createClient } from "@/lib/supabase/server";
+import AppShell from "@/components/app-shell";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -9,16 +10,24 @@ export default async function ProfilePage() {
   const userId = auth?.claims?.sub;
   if (!userId) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name,headline,location,work_preference")
-    .eq("id", userId)
-    .maybeSingle();
+  const [{ data: profile }, { data: credits }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("full_name,headline,location,work_preference")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
+  ]);
 
   return (
-    <main className="shell" style={{ padding: "54px 0 90px" }}>
-      <Link href="/dashboard" className="wordmark">Odysseus</Link>
-      <div style={{ width: "min(760px,100%)", margin: "60px auto 0" }}>
+    <AppShell
+      fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
+      interviewPasses={credits?.interview_passes ?? 0}
+      active="profile"
+    >
+      <section className="shell" style={{ padding: "54px 0 90px" }}>
+      <div style={{ width: "min(760px,100%)", margin: "20px auto 0" }}>
         <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", marginBottom: 10 }}>Profile</h1>
         <p className="muted">The verified information Odysseus uses on your behalf.</p>
         <ProfileForm userId={userId} initial={profile} />
@@ -36,6 +45,7 @@ export default async function ProfilePage() {
           </Link>
         </div>
       </div>
-    </main>
+      </section>
+    </AppShell>
   );
 }

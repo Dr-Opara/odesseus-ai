@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { resumeProfileSchema, tailoredResumeSchema } from "@/lib/ai/schemas";
 import TailoringActions from "@/components/tailoring-actions";
+import AppShell from "@/components/app-shell";
 
 export default async function ResumeTailoringPage({
   params,
@@ -16,12 +17,16 @@ export default async function ResumeTailoringPage({
 
   if (!userId) redirect("/login");
 
-  const { data: tailoring } = await supabase
-    .from("resume_tailorings")
-    .select("*,job_opportunities(company_name,role_title,match_score),resumes!resume_tailorings_source_resume_id_fkey(parsed_data)")
-    .eq("id", id)
-    .eq("user_id", userId)
-    .maybeSingle();
+  const [{ data: tailoring }, { data: profile }, { data: credits }] = await Promise.all([
+    supabase
+      .from("resume_tailorings")
+      .select("*,job_opportunities(company_name,role_title,match_score),resumes!resume_tailorings_source_resume_id_fkey(parsed_data)")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
+  ]);
 
   if (!tailoring) notFound();
 
@@ -34,10 +39,13 @@ export default async function ResumeTailoringPage({
   const job = tailoring.job_opportunities;
 
   return (
-    <main className="shell" style={{ padding: "54px 0 100px" }}>
-      <Link href="/dashboard" className="wordmark">Odysseus</Link>
-
-      <div style={{ width: "min(1040px,100%)", margin: "58px auto 0" }}>
+    <AppShell
+      fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
+      interviewPasses={credits?.interview_passes ?? 0}
+    >
+      <section className="shell" style={{ padding: "54px 0 100px" }}>
+      <div style={{ width: "min(1040px,100%)", margin: "20px auto 0" }}>
         <Link href={`/match/${tailoring.job_id}`} className="muted" style={{ fontSize: 14 }}>
           ← Back to match
         </Link>
@@ -194,6 +202,7 @@ export default async function ResumeTailoringPage({
           />
         </div>
       </div>
-    </main>
+      </section>
+    </AppShell>
   );
 }

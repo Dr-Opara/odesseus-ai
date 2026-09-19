@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ApplicationStatusForm from "@/components/application-status-form";
 import { statusLabel } from "@/lib/applications/status";
+import AppShell from "@/components/app-shell";
 
 export default async function ApplicationDetailPage({
   params,
@@ -15,7 +16,7 @@ export default async function ApplicationDetailPage({
   const userId = auth?.claims?.sub;
   if (!userId) redirect("/login");
 
-  const [{ data: application }, { data: events }, { data: interviews }] = await Promise.all([
+  const [{ data: application }, { data: events }, { data: interviews }, { data: profile }, { data: credits }] = await Promise.all([
     supabase
       .from("applications")
       .select("*,job_opportunities(match_score,location),resumes(file_name)")
@@ -34,6 +35,8 @@ export default async function ApplicationDetailPage({
       .eq("application_id", id)
       .eq("user_id", userId)
       .order("scheduled_at", { ascending: true }),
+    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
   ]);
 
   if (!application) notFound();
@@ -44,7 +47,13 @@ export default async function ApplicationDetailPage({
     null;
 
   return (
-    <main className="shell" style={{ padding: "54px 0 100px" }}>
+    <AppShell
+      fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
+      interviewPasses={credits?.interview_passes ?? 0}
+      active="applications"
+    >
+      <section className="shell" style={{ padding: "54px 0 100px" }}>
       <Link href="/applications" className="muted" style={{ fontSize: 14 }}>
         ← Applications
       </Link>
@@ -167,6 +176,7 @@ export default async function ApplicationDetailPage({
           </div>
         </aside>
       </div>
-    </main>
+      </section>
+    </AppShell>
   );
 }

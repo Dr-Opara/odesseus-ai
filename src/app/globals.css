@@ -1890,6 +1890,61 @@ button, input, textarea { font: inherit; }
 .app-logout:hover { color: var(--text); }
 .app-nav-active { color: var(--text) !important; font-weight: 750; }
 
+.account-menu { position: relative; }
+.account-menu > summary.avatar {
+  cursor: pointer;
+  list-style: none;
+}
+.account-menu > summary.avatar::-webkit-details-marker { display: none; }
+.account-menu[open] > summary.avatar { outline: 2px solid var(--line); outline-offset: 2px; }
+.account-menu-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 190px;
+  background: var(--card, #fff);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.1);
+  z-index: 30;
+}
+.account-menu-name {
+  padding: 8px 10px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.account-menu-panel a {
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.account-menu-panel a:hover { background: var(--background); }
+.account-menu-logout {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #b3261e;
+}
+.account-menu-logout:hover { background: var(--background); }
+
 .dashboard-v2 { padding: 54px 0 92px; }
 .dashboard-title {
   font-size: clamp(38px,5vw,52px);

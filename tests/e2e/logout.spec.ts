@@ -37,6 +37,7 @@ test("a signed-up user can log out from the dashboard, and the session is really
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/dashboard$/);
 
+  await page.locator(".account-menu summary").click();
   const logoutButton = page.getByRole("button", { name: "Log out" });
   await expect(logoutButton).toBeVisible();
 

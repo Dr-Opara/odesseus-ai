@@ -10,6 +10,7 @@ import type {
   JobSnapshot,
   ResumeSnapshot,
 } from "@/types/json-fields";
+import AppShell from "@/components/app-shell";
 
 export default async function InterviewWorkspacePage({
   params,
@@ -41,6 +42,8 @@ export default async function InterviewWorkspacePage({
     { data: allRoundMemory },
     { data: liveSession },
     { data: postAnalysis },
+    { data: profile },
+    { data: credits },
   ] = await Promise.all([
     supabase
       .from("interview_readiness")
@@ -83,6 +86,8 @@ export default async function InterviewWorkspacePage({
       .order("version_number", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
   ]);
 
   const parsedReadiness = readiness
@@ -118,7 +123,13 @@ export default async function InterviewWorkspacePage({
     "Not provided";
 
   return (
-    <main className="shell" style={{ padding: "54px 0 100px" }}>
+    <AppShell
+      fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
+      interviewPasses={credits?.interview_passes ?? 0}
+      active="interviews"
+    >
+      <section className="shell" style={{ padding: "54px 0 100px" }}>
       <Link href="/interviews" className="muted" style={{ fontSize: 14 }}>
         ← Interviews
       </Link>
@@ -468,6 +479,7 @@ export default async function InterviewWorkspacePage({
           </div>
         </aside>
       </div>
-    </main>
+      </section>
+    </AppShell>
   );
 }

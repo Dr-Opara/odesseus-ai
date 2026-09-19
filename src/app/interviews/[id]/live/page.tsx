@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import OdysseusLiveClient from "@/components/odysseus-live-client";
+import AppShell from "@/components/app-shell";
 
 export default async function OdysseusLivePage({
   params,
@@ -15,7 +16,7 @@ export default async function OdysseusLivePage({
 
   if (!userId) redirect("/login");
 
-  const [{ data: interview }, { data: credits }, { data: liveSession }] =
+  const [{ data: interview }, { data: credits }, { data: liveSession }, { data: profile }] =
     await Promise.all([
       supabase
         .from("interviews")
@@ -25,7 +26,7 @@ export default async function OdysseusLivePage({
         .maybeSingle(),
       supabase
         .from("credit_balances")
-        .select("interview_passes")
+        .select("application_credits,interview_passes")
         .eq("user_id", userId)
         .maybeSingle(),
       supabase
@@ -34,6 +35,7 @@ export default async function OdysseusLivePage({
         .eq("interview_id", id)
         .eq("user_id", userId)
         .maybeSingle(),
+      supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
     ]);
 
   if (!interview) notFound();
@@ -43,7 +45,13 @@ export default async function OdysseusLivePage({
   }
 
   return (
-    <main className="shell" style={{ padding: "36px 0 90px" }}>
+    <AppShell
+      fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
+      interviewPasses={credits?.interview_passes ?? 0}
+      active="interviews"
+    >
+      <section className="shell" style={{ padding: "36px 0 90px" }}>
       <div className="live-page-heading">
         <div>
           <Link href={`/interviews/${id}`} className="muted" style={{ fontSize: 14 }}>
@@ -94,6 +102,7 @@ export default async function OdysseusLivePage({
         interviewId={interview.id}
         interviewPasses={credits?.interview_passes ?? 0}
       />
-    </main>
+      </section>
+    </AppShell>
   );
 }

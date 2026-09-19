@@ -49,12 +49,20 @@ export default function AppShell({
               <span>{applicationCredits} app credits</span>
               <span>{interviewPasses} live passes</span>
             </Link>
-            <div className="avatar" title={fullName || undefined}>
-              {firstName(fullName).slice(0, 1).toUpperCase()}
-            </div>
-            <form action={logout}>
-              <button type="submit" className="app-logout">Log out</button>
-            </form>
+            <details className="account-menu">
+              <summary className="avatar" title={fullName || undefined}>
+                {firstName(fullName).slice(0, 1).toUpperCase()}
+              </summary>
+              <div className="account-menu-panel">
+                <div className="account-menu-name">{fullName || "Your account"}</div>
+                <Link href="/billing">Billing</Link>
+                <Link href="/integrations">Integrations</Link>
+                <Link href="/settings">Settings</Link>
+                <form action={logout}>
+                  <button type="submit" className="account-menu-logout">Log out</button>
+                </form>
+              </div>
+            </details>
           </div>
         </div>
       </header>

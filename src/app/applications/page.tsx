@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { statusLabel } from "@/lib/applications/status";
+import AppShell from "@/components/app-shell";
 
 const filterStatuses = [
   ["all", "All"],
@@ -37,13 +38,21 @@ export default async function ApplicationsPage({
     );
   }
 
-  const { data: applications } = await query;
+  const [{ data: applications }, { data: profile }, { data: credits }] = await Promise.all([
+    query,
+    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
+  ]);
 
   return (
-    <main className="shell" style={{ padding: "54px 0 90px" }}>
-      <Link href="/dashboard" className="wordmark">Odysseus</Link>
-
-      <div className="page-heading" style={{ marginTop: 52 }}>
+    <AppShell
+      fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
+      interviewPasses={credits?.interview_passes ?? 0}
+      active="applications"
+    >
+      <section className="shell" style={{ padding: "54px 0 90px" }}>
+      <div className="page-heading" style={{ marginTop: 20 }}>
         <div>
           <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: 0 }}>Applications</h1>
           <p className="muted">Everything you have in motion.</p>
@@ -113,6 +122,7 @@ export default async function ApplicationsPage({
           </div>
         )}
       </div>
-    </main>
+      </section>
+    </AppShell>
   );
 }
