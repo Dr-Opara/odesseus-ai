@@ -159,6 +159,7 @@ export default async function InterviewWorkspacePage({
         />
       </div>
 
+      <div className="dashboard-eyebrow" style={{ marginTop: 30, marginBottom: 10 }}>Overview</div>
       <div className="interview-facts-grid">
         <div className="card interview-fact">
           <span className="muted">When</span>
@@ -202,6 +203,7 @@ export default async function InterviewWorkspacePage({
         </div>
       ) : null}
 
+      <div className="dashboard-eyebrow" style={{ marginTop: 34, marginBottom: 4 }}>Prepare</div>
       <div className="interview-workspace-grid">
         <section>
           {briefing ? (
@@ -315,7 +317,7 @@ export default async function InterviewWorkspacePage({
           {allRoundMemory?.length ? (
             <div className="card interview-section-card">
               <div className="muted" style={{ fontSize: 13 }}>
-                Multi-round memory
+                Previous rounds
               </div>
               <h2 style={{ fontSize: 22, margin: "7px 0 8px" }}>
                 What prior rounds already covered
@@ -430,7 +432,7 @@ export default async function InterviewWorkspacePage({
 
           <div className="card interview-live-card">
             <div className="muted" style={{ fontSize: 13 }}>
-              {liveSession?.status === "ended" ? "Post-interview" : "Odysseus Live"}
+              {liveSession?.status === "ended" ? "After interview" : "Odysseus Live"}
             </div>
             <h3 style={{ fontSize: 22, margin: "7px 0 7px" }}>
               {liveSession?.status === "ended"
