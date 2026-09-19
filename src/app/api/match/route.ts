@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { parseResume } from "@/lib/ai/resume";
 import { resumeProfileSchema } from "@/lib/ai/schemas";
 import { assessJobMatch } from "@/lib/ai/match";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,14 @@ export async function POST(request: Request) {
 
   if (!userId) {
     return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
+  }
+
+  const rateLimit = checkRateLimit(`match:user:${userId}`, 20, 60 * 60 * 1000);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "You've checked a lot of matches recently. Please wait a bit and try again." },
+      { status: 429 }
+    );
   }
 
   let input: z.infer<typeof requestSchema>;
