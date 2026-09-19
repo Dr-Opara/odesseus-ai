@@ -102,9 +102,9 @@ export default async function DashboardPage() {
       : {
           eyebrow: "Get started",
           title: "Find your next strong match",
-          detail: "Paste a role or job description and let Odysseus check it against your verified profile.",
-          href: "/match",
-          cta: "Check a job",
+          detail: "Let Odysseus search configured job sources and surface roles that clear your match target.",
+          href: "/jobs",
+          cta: "Find matches",
         };
 
   return (
@@ -123,7 +123,7 @@ export default async function DashboardPage() {
               {profile.headline || "Here’s what needs your attention."}
             </p>
           </div>
-          <Link className="btn btn-primary" href="/match">Find jobs</Link>
+          <Link className="btn btn-primary" href="/jobs">Find jobs</Link>
         </div>
 
         <div className="card dashboard-next-card">
