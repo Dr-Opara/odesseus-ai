@@ -2076,3 +2076,16 @@ button, input, textarea { font: inherit; }
     grid-template-columns: 1fr;
   }
 }
+
+.job-discovery-secondary-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+@media (max-width: 560px) {
+  .job-discovery-secondary-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+}
