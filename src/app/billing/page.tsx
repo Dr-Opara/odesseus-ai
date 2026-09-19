@@ -15,7 +15,7 @@ export default async function BillingPage({
 
   if (!userId) redirect("/login");
 
-  const [{ data: credits }, { data: transactions }] = await Promise.all([
+  const [{ data: credits }, { data: transactions }, { data: annualPurchases }] = await Promise.all([
     supabase
       .from("credit_balances")
       .select("application_credits,interview_passes,live_unlimited_until")
@@ -27,7 +27,37 @@ export default async function BillingPage({
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(8),
+    // Odysseus Live Annual is a time-boxed entitlement, not a discrete
+    // credit grant — it never writes a credit_transactions row (see
+    // add_live_annual_entitlement migration), so without this it would
+    // never appear in "Recent activity" despite being a real purchase.
+    supabase
+      .from("billing_events")
+      .select("id,amount_cents,created_at")
+      .eq("user_id", userId)
+      .eq("sku", "interview_annual")
+      .order("created_at", { ascending: false })
+      .limit(8),
   ]);
+
+  const activity = [
+    ...(transactions ?? []).map((t) => ({
+      id: `credit:${t.id}`,
+      createdAt: t.created_at,
+      label: `${t.delta > 0 ? "Purchased" : "Used"} ${Math.abs(t.delta)} ${
+        t.credit_type === "application" ? "application credit" : "interview pass"
+      }${Math.abs(t.delta) === 1 ? "" : "es"}`,
+      amountText: t.delta > 0 && t.amount_cents ? `$${(t.amount_cents / 100).toFixed(2)}` : null,
+      deltaText: `${t.delta > 0 ? "+" : ""}${t.delta}`,
+    })),
+    ...(annualPurchases ?? []).map((purchase) => ({
+      id: `annual:${purchase.id}`,
+      createdAt: purchase.created_at,
+      label: "Purchased Odysseus Live Annual",
+      amountText: `$${(purchase.amount_cents / 100).toFixed(2)}`,
+      deltaText: "12 mo",
+    })),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <main className="shell" style={{ padding: "54px 0 100px" }}>
@@ -166,28 +196,24 @@ export default async function BillingPage({
           <h2 style={{ fontSize: 24, margin: "7px 0 12px" }}>Credits</h2>
 
           <div className="card">
-            {transactions?.length ? transactions.map((transaction, index) => (
+            {activity.length ? activity.slice(0, 8).map((item, index) => (
               <div
                 className="billing-history-row"
-                key={transaction.id}
+                key={item.id}
                 style={{ borderTop: index ? "1px solid var(--line)" : "none" }}
               >
                 <div>
-                  <strong>
-                    {transaction.delta > 0 ? "Purchased" : "Used"} {Math.abs(transaction.delta)}{" "}
-                    {transaction.credit_type === "application" ? "application credit" : "interview pass"}
-                    {Math.abs(transaction.delta) === 1 ? "" : "es"}
-                  </strong>
+                  <strong>{item.label}</strong>
                   <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-                    {new Date(transaction.created_at).toLocaleString()}
+                    {new Date(item.createdAt).toLocaleString()}
                   </div>
                 </div>
 
                 <div style={{ textAlign: "right" }}>
-                  <strong>{transaction.delta > 0 ? "+" : ""}{transaction.delta}</strong>
-                  {transaction.amount_cents ? (
+                  <strong>{item.deltaText}</strong>
+                  {item.amountText ? (
                     <div className="muted" style={{ fontSize: 13 }}>
-                      ${(transaction.amount_cents / 100).toFixed(2)}
+                      {item.amountText}
                     </div>
                   ) : null}
                 </div>
