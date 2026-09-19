@@ -3,7 +3,18 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database";
 import { publicSupabaseUrl, publicSupabasePublishableKey } from "@/lib/supabase/public-config";
 
-const publicPaths = ["/", "/login", "/signup", "/check-email", "/auth"];
+const publicExactPaths = [
+  "/",
+  "/login",
+  "/signup",
+  "/check-email",
+  "/how-it-works",
+  "/apply",
+  "/live",
+  "/pricing",
+  "/about",
+];
+const publicPrefixPaths = ["/auth"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -36,11 +47,9 @@ export async function updateSession(request: NextRequest) {
   );
 
   const { data } = await supabase.auth.getClaims();
-  const isPublic = publicPaths.some(
-    (path) =>
-      request.nextUrl.pathname === path ||
-      request.nextUrl.pathname.startsWith(path + "/")
-  );
+  const isPublic =
+    publicExactPaths.includes(request.nextUrl.pathname) ||
+    publicPrefixPaths.some((path) => request.nextUrl.pathname.startsWith(path + "/"));
 
   if (!data?.claims && !isPublic) {
     const url = request.nextUrl.clone();
