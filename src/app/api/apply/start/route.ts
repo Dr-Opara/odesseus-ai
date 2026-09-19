@@ -4,6 +4,8 @@ import { start } from "workflow/api";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { applicationWorkflow } from "@/workflows/application";
+import { isSafeExternalUrl } from "@/lib/security/url-safety";
+import { isTrustedOrigin } from "@/lib/security/origin-check";
 
 const schema = z.object({
   jobId: z.string().uuid(),
@@ -11,6 +13,10 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  if (!isTrustedOrigin(request)) {
+    return NextResponse.json({ error: "Request origin could not be verified." }, { status: 403 });
+  }
+
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims?.sub;
@@ -26,9 +32,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Enter a valid application URL." }, { status: 400 });
   }
 
-  const target = new URL(input.targetUrl);
-  if (target.protocol !== "https:") {
-    return NextResponse.json({ error: "Odysseus only opens secure HTTPS application pages." }, { status: 400 });
+  const urlCheck = await isSafeExternalUrl(input.targetUrl);
+  if (!urlCheck.safe) {
+    return NextResponse.json({ error: "Odysseus only opens secure, public application pages." }, { status: 400 });
   }
 
   const [{ data: job }, { data: credits }, { data: tailoring }, { data: activeRun }] = await Promise.all([
