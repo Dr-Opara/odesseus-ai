@@ -134,3 +134,62 @@ export async function recordPartnerPayout(formData: FormData) {
 
   revalidatePath("/admin/partners");
 }
+
+
+export async function createPartnerCampaign(formData: FormData) {
+  const { userId } = await requireAdmin();
+  const title = text(formData, "title");
+  const description = text(formData, "description");
+  if (!title || !description) return;
+
+  const platforms = formData.getAll("platform").map(String).filter((value) =>
+    ["instagram", "facebook", "tiktok"].includes(value)
+  );
+
+  const service = partnerService();
+  await service.from("partner_campaigns").insert({
+    title,
+    description,
+    brief: text(formData, "brief") || null,
+    platforms,
+    requirements: text(formData, "requirements") || null,
+    reward_terms: text(formData, "reward_terms") || null,
+    status: "active",
+    created_by: userId,
+  });
+
+  revalidatePath("/admin/partners");
+}
+
+export async function reviewPartnerContent(formData: FormData) {
+  const { userId } = await requireAdmin();
+  const contentId = text(formData, "content_id");
+  const status = text(formData, "status");
+  if (!contentId || !["approved", "changes_requested", "rejected"].includes(status)) return;
+
+  const service = partnerService();
+  await service.from("partner_content").update({
+    status,
+    admin_notes: text(formData, "admin_notes") || null,
+    reviewed_by: userId,
+    reviewed_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }).eq("id", contentId);
+
+  revalidatePath("/admin/partners");
+}
+
+export async function reviewPartnerEarning(formData: FormData) {
+  await requireAdmin();
+  const earningId = text(formData, "earning_id");
+  const status = text(formData, "status");
+  if (!earningId || !["approved", "reversed"].includes(status)) return;
+
+  const service = partnerService();
+  await service.from("partner_earnings").update({
+    status,
+    updated_at: new Date().toISOString(),
+  }).eq("id", earningId).neq("status", "paid");
+
+  revalidatePath("/admin/partners");
+}
