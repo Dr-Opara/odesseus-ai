@@ -10,7 +10,7 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: "Odysseus — Your next move, handled.",
-  description: "Discover, tailor, apply, track, and interview with one calm career workspace.",
+  description: "Discover, tailor, apply, track, and interview with one connected career workspace.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
