@@ -6,11 +6,16 @@ import { test, expect } from "@playwright/test";
 // or Browserbase credentials — only Supabase auth's redirect behavior.
 
 test.describe("landing page", () => {
+  // The header's Sign In link is replaced by a hamburger menu below 680px
+  // (covered separately in marketing-pages.spec.ts) — force a desktop
+  // viewport here so this content check is viewport-independent.
+  test.use({ viewport: { width: 1280, height: 800 } });
+
   test("loads and shows the primary calls to action", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Your next move, handled." })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Start with your resume" })).toBeVisible();
+    await expect(page.locator("header").getByRole("link", { name: "Sign In" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Get Started Free" })).toBeVisible();
   });
 });
 
@@ -51,12 +56,27 @@ test.describe("protected route boundary", () => {
     "/interviews",
     "/billing",
     "/integrations",
+    // Regression coverage: /apply became a public marketing route, but the
+    // authenticated Apply workflow nested under it must remain gated.
+    "/apply/start",
   ];
 
   for (const route of protectedRoutes) {
     test(`redirects an unauthenticated visitor from ${route} to /login`, async ({ page }) => {
       await page.goto(route);
       await expect(page).toHaveURL(/\/login/);
+    });
+  }
+});
+
+test.describe("public marketing routes", () => {
+  const publicRoutes = ["/how-it-works", "/apply", "/live", "/pricing", "/about"];
+
+  for (const route of publicRoutes) {
+    test(`does not redirect an unauthenticated visitor away from ${route}`, async ({ page }) => {
+      await page.goto(route);
+      await expect(page).toHaveURL(new RegExp(`${route}$`));
+      await expect(page).not.toHaveURL(/\/login/);
     });
   }
 });
