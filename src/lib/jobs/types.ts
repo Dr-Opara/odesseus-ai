@@ -36,5 +36,6 @@ export type DiscoverySummary = {
   skippedExisting: number;
   skippedPrefilter: number;
   skippedMissingResume: number;
+  closedStaleListings: number;
   errors: Array<{ source: string; message: string }>;
 };
