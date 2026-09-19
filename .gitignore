@@ -7,3 +7,5 @@ node_modules/
 npm-debug.log*
 /.swc
 *.tsbuildinfo
+/test-results/
+/playwright-report/
