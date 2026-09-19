@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces } from "next/font/google";
 import "./globals.css";
+import ReferralCapture from "@/components/referral-capture";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -14,5 +15,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" className={fraunces.variable}><body>{children}</body></html>;
+  return <html lang="en" className={fraunces.variable}><body><ReferralCapture />{children}</body></html>;
 }
