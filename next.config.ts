@@ -8,7 +8,7 @@ const supabasePublishableKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
   "sb_publishable_hMfxFg7BFyTfdWYb6ofFKg_7Fkf1c1d";
 
-if (process.env.VERCEL) {
+if (process.env.VERCEL && process.env.VERCEL_ENV !== "production") {
   const required = [
     "NEXT_PUBLIC_SITE_URL",
     "SUPABASE_SERVICE_ROLE_KEY",

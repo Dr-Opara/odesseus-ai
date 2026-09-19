@@ -24,6 +24,10 @@ const optional = [
 ] as const;
 
 export async function GET() {
+  if (process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+
   const configured = Object.fromEntries(
     required.map((key) => [key, Boolean(process.env[key])])
   );
