@@ -3,16 +3,16 @@
 ## Google
 Email: Gmail API, read-only.
 Calendar: Google Calendar API, events read-only.
-Connector: `VERCEL_CONNECT_GOOGLE_CONNECTOR`.
+Connector: `ODYSSEUS_CONNECT_GOOGLE_CONNECTOR`.
 
 ## Microsoft
 Email: Microsoft Graph `Mail.Read`.
 Calendar: Microsoft Graph `Calendars.Read`.
-Connector: `VERCEL_CONNECT_MICROSOFT_CONNECTOR`.
+Connector: `ODYSSEUS_CONNECT_MICROSOFT_CONNECTOR`.
 
 ## Yahoo
 Email: OAuth connector with Yahoo Mail read access, then IMAP over TLS on port 993.
-Connector: `VERCEL_CONNECT_YAHOO_CONNECTOR`.
+Connector: `ODYSSEUS_CONNECT_YAHOO_CONNECTOR`.
 
 ## iCloud Mail
 Email: IMAP over TLS on `imap.mail.me.com:993`.

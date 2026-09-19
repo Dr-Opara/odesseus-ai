@@ -487,7 +487,7 @@ export async function syncGoogleForUser(userId: string) {
       user_id: userId,
       provider: "google",
       status: "connected",
-      connector_id: process.env.VERCEL_CONNECT_GOOGLE_CONNECTOR || null,
+      connector_id: process.env.ODYSSEUS_CONNECT_GOOGLE_CONNECTOR || null,
       last_sync_at: new Date().toISOString(),
       last_error: null,
       connected_at: new Date().toISOString(),
@@ -503,7 +503,7 @@ export async function syncGoogleForUser(userId: string) {
       user_id: userId,
       provider: "google",
       status: "error",
-      connector_id: process.env.VERCEL_CONNECT_GOOGLE_CONNECTOR || null,
+      connector_id: process.env.ODYSSEUS_CONNECT_GOOGLE_CONNECTOR || null,
       last_error: message,
       updated_at: new Date().toISOString(),
     });

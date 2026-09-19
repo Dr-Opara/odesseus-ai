@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     user_id: userId,
     provider: "google",
     status: "connecting",
-    connector_id: process.env.VERCEL_CONNECT_GOOGLE_CONNECTOR || null,
+    connector_id: process.env.ODYSSEUS_CONNECT_GOOGLE_CONNECTOR || null,
     updated_at: new Date().toISOString(),
   });
 

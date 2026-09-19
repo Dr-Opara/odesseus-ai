@@ -56,10 +56,10 @@ export async function POST(
   const providers = (accounts || []).map((item) => item.provider);
   const canGoogle =
     providers.includes("google") &&
-    Boolean(process.env.VERCEL_CONNECT_GOOGLE_SEND_CONNECTOR);
+    Boolean(process.env.ODYSSEUS_CONNECT_GOOGLE_SEND_CONNECTOR);
   const canMicrosoft =
     providers.includes("microsoft") &&
-    Boolean(process.env.VERCEL_CONNECT_MICROSOFT_SEND_CONNECTOR);
+    Boolean(process.env.ODYSSEUS_CONNECT_MICROSOFT_SEND_CONNECTOR);
 
   const provider = canGoogle
     ? "google"
