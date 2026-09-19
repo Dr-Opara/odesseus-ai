@@ -1,11 +1,15 @@
 import { withWorkflow } from "workflow/next";
 
+// `||` (not `??`) is deliberate: an env var configured as an empty string
+// must fall back the same as an unset one, or a blank NEXT_PUBLIC_SUPABASE_URL
+// silently produces an empty Supabase client URL app-wide (see the incident
+// where this var existed in Vercel but was set to "").
 const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
   "https://ievsjfudakeugfalihzq.supabase.co";
 
 const supabasePublishableKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   "sb_publishable_hMfxFg7BFyTfdWYb6ofFKg_7Fkf1c1d";
 
 if (process.env.VERCEL && process.env.VERCEL_ENV !== "production") {
