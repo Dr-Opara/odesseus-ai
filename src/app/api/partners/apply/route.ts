@@ -3,6 +3,7 @@ import { z } from "zod";
 import { clientIp, checkRateLimit } from "@/lib/security/rate-limit";
 import { isTrustedOrigin } from "@/lib/security/origin-check";
 import { partnerService } from "@/lib/partners/service";
+import { sendPartnerEmail } from "@/lib/partners/email";
 
 export const runtime = "nodejs";
 
@@ -101,6 +102,15 @@ export async function POST(request: Request) {
     console.error("[ODYSSEUS_PARTNERS] social insert failed", socialError);
     return NextResponse.json({ error: "We could not submit your application." }, { status: 500 });
   }
+
+  await sendPartnerEmail({
+    to: input.email.toLowerCase(),
+    subject: "We received your Odysseus Partner application",
+    heading: "Application received.",
+    body: "Thanks for applying to the Odysseus Partner Program. Our team will review your profile and contact you if there’s a fit.",
+    ctaLabel: "View the Partner Program",
+    ctaHref: "/partners",
+  });
 
   return NextResponse.json({ ok: true, applicationId: application.id });
 }
