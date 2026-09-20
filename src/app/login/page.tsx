@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BrandLogo from "@/components/brand-logo";
 import { login } from "./actions";
 
 export default async function LoginPage({
@@ -11,7 +12,7 @@ export default async function LoginPage({
   return (
     <main className="shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "50px 0" }}>
       <div style={{ width: "min(430px,100%)" }}>
-        <Link href="/" style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.04em" }}>Odysseus</Link>
+        <BrandLogo width={190} priority />
         <div style={{ marginTop: 60 }}>
           <h1 style={{ fontSize: 42, letterSpacing: "-0.045em", marginBottom: 10 }}>Welcome back.</h1>
           <p className="muted" style={{ marginBottom: 30 }}>Pick up where you left off.</p>
