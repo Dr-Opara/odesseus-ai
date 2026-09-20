@@ -5,6 +5,7 @@ import { fetchLeverJobs } from "./lever";
 import { fetchWorkableJobs } from "./workable";
 import { fetchSmartRecruitersJobs } from "./smartrecruiters";
 import { fetchRecruiteeJobs } from "./recruitee";
+import { fetchWorkdayJobs } from "./workday";
 
 export async function fetchSourceJobs(
   source: JobSourceConfig
@@ -22,5 +23,7 @@ export async function fetchSourceJobs(
       return fetchSmartRecruitersJobs(source);
     case "recruitee":
       return fetchRecruiteeJobs(source);
+    case "workday":
+      return fetchWorkdayJobs(source);
   }
 }
