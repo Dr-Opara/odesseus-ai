@@ -1,4 +1,4 @@
-export type JobProvider = "greenhouse" | "lever" | "ashby";
+export type JobProvider = "greenhouse" | "lever" | "ashby" | "workable";
 
 export type JobSourceConfig = {
   provider: JobProvider;
