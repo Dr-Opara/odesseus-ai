@@ -5,11 +5,6 @@ Email: Gmail API, read-only.
 Calendar: Google Calendar API, events read-only.
 Connector: `ODESSEUS_CONNECT_GOOGLE_CONNECTOR`.
 
-## Microsoft
-Email: Microsoft Graph `Mail.Read`.
-Calendar: Microsoft Graph `Calendars.Read`.
-Connector: `ODESSEUS_CONNECT_MICROSOFT_CONNECTOR`.
-
 ## Yahoo
 Email: OAuth connector with Yahoo Mail read access, then IMAP over TLS on port 993.
 Connector: `ODESSEUS_CONNECT_YAHOO_CONNECTOR`.
@@ -26,3 +21,9 @@ The credential is encrypted in Supabase Vault.
 
 ## Product behavior
 Email and calendar connections are independent. Odesseus normalizes all provider updates into one application signal model.
+
+## Job board connectors (not email/calendar)
+
+### Indeed
+App-level MCP connector: `ODESSEUS_CONNECT_INDEED_CONNECTOR`.
+Server-only; no application-submission behavior is assumed until the connector's exposed MCP tools are confirmed to support it.

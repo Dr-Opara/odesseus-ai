@@ -69,8 +69,8 @@ Connect services only after the local build and database baseline are stable:
 - Stripe
 - Browserbase
 - Google OAuth
-- Microsoft OAuth
 - Yahoo OAuth
+- Indeed (Vercel Connect, MCP)
 - optional outbound email connectors
 
 Use Vercel Preview first. Keep Production credentials separate.

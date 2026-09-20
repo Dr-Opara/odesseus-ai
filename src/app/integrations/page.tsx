@@ -209,17 +209,6 @@ export default async function IntegrationsPage({
             </div>
 
             <div className="card integration-provider-card">
-              <strong>Microsoft</strong>
-              <span className="muted">Outlook / Hotmail / Microsoft 365</span>
-              <a
-                className="btn btn-secondary"
-                href="/api/integrations/oauth/connect?provider=microsoft&service=email"
-              >
-                Connect
-              </a>
-            </div>
-
-            <div className="card integration-provider-card">
               <strong>Yahoo</strong>
               <span className="muted">OAuth + Yahoo Mail</span>
               <form method="get" action="/api/integrations/oauth/connect" className="integration-mini-form">
@@ -264,17 +253,6 @@ export default async function IntegrationsPage({
               <a
                 className="btn btn-secondary"
                 href="/api/integrations/outbound/connect?provider=google"
-              >
-                Enable sending
-              </a>
-            </div>
-
-            <div className="card integration-provider-card">
-              <strong>Microsoft send</strong>
-              <span className="muted">Optional Outlook / Microsoft 365 send permission for approved follow-ups only.</span>
-              <a
-                className="btn btn-secondary"
-                href="/api/integrations/outbound/connect?provider=microsoft"
               >
                 Enable sending
               </a>
@@ -326,17 +304,6 @@ export default async function IntegrationsPage({
               <a
                 className="btn btn-secondary"
                 href="/api/integrations/oauth/connect?provider=google&service=calendar"
-              >
-                Connect
-              </a>
-            </div>
-
-            <div className="card integration-provider-card">
-              <strong>Microsoft Calendar</strong>
-              <span className="muted">Outlook / Microsoft 365</span>
-              <a
-                className="btn btn-secondary"
-                href="/api/integrations/oauth/connect?provider=microsoft&service=calendar"
               >
                 Connect
               </a>

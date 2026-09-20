@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LiveInterviewPreview from "@/components/live-interview-preview";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 
@@ -55,47 +56,8 @@ export default function Home() {
         <MarketingNav />
       </div>
 
-      <section className="shell hero-section">
-        <div>
-          <div className="badge">A more connected way to move your career forward</div>
-          <h1 className="font-display hero-headline">Your next move, handled.</h1>
-          <p className="muted hero-copy">
-            Odesseus finds strong-match jobs, tailors your resume, applies across supported platforms, and tracks every application — then prepares you for the interview and stays with you live when it begins.
-          </p>
-          <div className="hero-ctas">
-            <Link className="btn btn-primary" href="/signup">Get Started Free →</Link>
-            <Link className="btn btn-secondary" href="/how-it-works">See How It Works</Link>
-          </div>
-        </div>
-
-        <div className="card agent-visual">
-          <div className="agent-visual-score">94% Match</div>
-          <div className="agent-visual-role">Senior Compliance Analyst</div>
-          <div className="muted" style={{ marginTop: 2 }}>Remote</div>
-
-          <div className="agent-visual-status">
-            <span className="agent-visual-dot" />
-            <span>Odesseus Agent — Active</span>
-          </div>
-
-          <div className="agent-visual-steps">
-            <div className="agent-visual-step">
-              <span className="agent-visual-check">✓</span> Strong match found
-            </div>
-            <div className="agent-visual-step">
-              <span className="agent-visual-check">✓</span> Resume tailored
-            </div>
-            <div className="agent-visual-step">
-              <span className="agent-visual-check">✓</span> Cover letter prepared
-            </div>
-            <div className="agent-visual-step">
-              <span className="agent-visual-check">✓</span> Application approved
-            </div>
-            <div className="agent-visual-step active-step">
-              <span>→</span> Applying on Workday...
-            </div>
-          </div>
-        </div>
+      <section className="shell home-live-hero">
+        <LiveInterviewPreview />
       </section>
 
       <section className="shell platform-strip-section">

@@ -2,7 +2,7 @@ import { getToken } from "@vercel/connect";
 
 type SendInput = {
   userId: string;
-  provider: "google" | "microsoft";
+  provider: "google";
   recipient: string;
   subject: string;
   body: string;
@@ -51,54 +51,6 @@ async function sendGoogle(input: SendInput) {
   }
 }
 
-async function sendMicrosoft(input: SendInput) {
-  const connector = process.env.ODESSEUS_CONNECT_MICROSOFT_SEND_CONNECTOR;
-  if (!connector) {
-    throw new Error("Microsoft follow-up sending is not configured.");
-  }
-
-  const token = await getToken(connector, {
-    subject: { type: "user", id: input.userId },
-  });
-
-  const response = await fetch(
-    "https://graph.microsoft.com/v1.0/me/sendMail",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: {
-          subject: input.subject,
-          body: {
-            contentType: "Text",
-            content: input.body,
-          },
-          toRecipients: [
-            {
-              emailAddress: {
-                address: input.recipient,
-              },
-            },
-          ],
-        },
-        saveToSentItems: true,
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Microsoft send failed: ${response.status}`);
-  }
-}
-
 export async function sendFollowUp(input: SendInput) {
-  if (input.provider === "google") {
-    await sendGoogle(input);
-    return;
-  }
-
-  await sendMicrosoft(input);
+  await sendGoogle(input);
 }

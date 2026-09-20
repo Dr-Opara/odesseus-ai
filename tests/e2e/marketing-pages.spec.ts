@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
 // claims). Requires no auth/backend credentials — these are all public pages.
 
 const pages = [
-  { path: "/", title: /Odesseus/, heading: "Your next move, handled." },
+  { path: "/", title: /Odesseus/, heading: "Go into your interview with your entire application behind you." },
   { path: "/how-it-works", title: /How Odesseus Works/, heading: "The complete Odesseus lifecycle." },
   { path: "/apply", title: /Apply with Odesseus/, heading: "Apply anywhere your next opportunity lives." },
   { path: "/live", title: /Odesseus Live/, heading: "Go into your interview with your entire application behind you." },
@@ -20,7 +20,7 @@ test.describe("marketing page titles and headings", () => {
     test(`${path} has the expected title and heading`, async ({ page }) => {
       await page.goto(path);
       await expect(page).toHaveTitle(title);
-      await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+      await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible();
     });
   }
 });

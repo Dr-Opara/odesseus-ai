@@ -4,10 +4,6 @@ import {
   syncGoogleCalendar,
   syncGoogleEmail,
 } from "./google-sync";
-import {
-  syncMicrosoftCalendar,
-  syncMicrosoftEmail,
-} from "./microsoft";
 import { syncImapEmailAccount } from "./imap-sync";
 import type {
   IntegrationProvider,
@@ -75,19 +71,6 @@ export async function syncIntegrationAccount(
               token,
               applications,
               account.id
-            );
-    } else if (account.provider === "microsoft") {
-      count =
-        account.service_type === "email"
-          ? await syncMicrosoftEmail(
-              account.user_id,
-              account.id,
-              applications
-            )
-          : await syncMicrosoftCalendar(
-              account.user_id,
-              account.id,
-              applications
             );
     } else if (
       account.service_type === "email" &&

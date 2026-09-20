@@ -279,7 +279,6 @@ Phase 7 is provider-agnostic.
 ### Email providers
 
 - Google / Gmail / Google Workspace
-- Microsoft Outlook / Hotmail / Microsoft 365
 - Yahoo Mail
 - iCloud Mail
 - Custom IMAP-compatible mailboxes
@@ -287,9 +286,8 @@ Phase 7 is provider-agnostic.
 ### Calendar providers
 
 - Google Calendar
-- Microsoft Outlook / Microsoft 365 Calendar
 
-Email and Calendar are separate connection types. A user can connect Yahoo for email and Google Calendar for interviews, Microsoft email with no calendar, or any other supported combination.
+Email and Calendar are separate connection types. A user can connect Yahoo for email and Google Calendar for interviews, or any other supported combination.
 
 OAuth providers use Vercel Connect. iCloud/custom IMAP secrets are stored in Supabase Vault; normal application tables store only the Vault secret reference.
 
@@ -422,8 +420,6 @@ Odesseus creates an editable follow-up draft from actual interview context.
 
 The candidate must review/approve it before sending.
 
-If an outbound Google or Microsoft connector is configured, Odesseus can send the approved draft through that provider.
-
-Otherwise Odesseus opens the approved draft in the user's normal email app using a mailto handoff.
+If an outbound Google connector is configured, Odesseus can send the approved draft through Gmail. Otherwise Odesseus opens the approved draft in the user's normal email app using a mailto handoff.
 
 Read-only Email/Calendar connectors remain separate from optional outbound-send connectors.

@@ -57,15 +57,8 @@ export async function POST(
   const canGoogle =
     providers.includes("google") &&
     Boolean(process.env.ODESSEUS_CONNECT_GOOGLE_SEND_CONNECTOR);
-  const canMicrosoft =
-    providers.includes("microsoft") &&
-    Boolean(process.env.ODESSEUS_CONNECT_MICROSOFT_SEND_CONNECTOR);
 
-  const provider = canGoogle
-    ? "google"
-    : canMicrosoft
-      ? "microsoft"
-      : null;
+  const provider = canGoogle ? "google" : null;
 
   if (!provider) {
     return NextResponse.json({
