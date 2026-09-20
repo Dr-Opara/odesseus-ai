@@ -1,7 +1,6 @@
 export type IntegrationService = "email" | "calendar";
 export type IntegrationProvider =
   | "google"
-  | "microsoft"
   | "yahoo"
   | "icloud"
   | "imap";
@@ -22,13 +21,6 @@ export const integrationProviders: Record<
     authMethod: "oauth",
     emailConnectorEnv: "ODYSSEUS_CONNECT_GOOGLE_CONNECTOR",
     calendarConnectorEnv: "ODYSSEUS_CONNECT_GOOGLE_CONNECTOR",
-  },
-  microsoft: {
-    label: "Microsoft",
-    services: ["email", "calendar"],
-    authMethod: "oauth",
-    emailConnectorEnv: "ODYSSEUS_CONNECT_MICROSOFT_CONNECTOR",
-    calendarConnectorEnv: "ODYSSEUS_CONNECT_MICROSOFT_CONNECTOR",
   },
   yahoo: {
     label: "Yahoo",
