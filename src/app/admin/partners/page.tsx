@@ -35,10 +35,7 @@ export default async function AdminPartnersPage() {
           <h1>Partner applications</h1>
           <p className="muted">Review creators before they receive referral access or campaign assignments.</p>
         </div>
-        <div className="card admin-partner-count">
-          <strong>{partners?.length || 0}</strong>
-          <span className="muted">Approved partners</span>
-        </div>
+        <div className="admin-partner-heading-actions"><Link className="btn btn-secondary" href="/admin/system">System Readiness</Link><div className="card admin-partner-count"><strong>{partners?.length || 0}</strong><span className="muted">Approved partners</span></div></div>
       </div>
 
       <div className="card admin-partner-table">
