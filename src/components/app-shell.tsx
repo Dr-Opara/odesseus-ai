@@ -31,7 +31,7 @@ export default function AppShell({
     <main className="app-surface">
       <header className="app-header">
         <div className="shell app-header-inner">
-          <BrandLogo href="/dashboard" width={158} priority />
+          <BrandLogo href="/dashboard" width={118} priority />
 
           <nav className="app-nav" aria-label="App navigation">
             {nav.map(([key, href, label]) => (
