@@ -2,6 +2,7 @@ import type { JobSourceConfig, NormalizedJobPosting } from "../types";
 import { fetchAshbyJobs } from "./ashby";
 import { fetchGreenhouseJobs } from "./greenhouse";
 import { fetchLeverJobs } from "./lever";
+import { fetchWorkableJobs } from "./workable";
 
 export async function fetchSourceJobs(
   source: JobSourceConfig
@@ -13,5 +14,7 @@ export async function fetchSourceJobs(
       return fetchLeverJobs(source);
     case "ashby":
       return fetchAshbyJobs(source);
+    case "workable":
+      return fetchWorkableJobs(source);
   }
 }
