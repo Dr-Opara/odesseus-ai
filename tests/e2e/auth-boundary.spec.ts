@@ -59,6 +59,9 @@ test.describe("protected route boundary", () => {
     // Regression coverage: /apply became a public marketing route, but the
     // authenticated Apply workflow nested under it must remain gated.
     "/apply/start",
+    "/partners/dashboard",
+    "/admin/partners",
+    "/admin/system",
   ];
 
   for (const route of protectedRoutes) {
@@ -70,7 +73,7 @@ test.describe("protected route boundary", () => {
 });
 
 test.describe("public marketing routes", () => {
-  const publicRoutes = ["/how-it-works", "/apply", "/live", "/pricing", "/about"];
+  const publicRoutes = ["/how-it-works", "/apply", "/live", "/pricing", "/about", "/partners", "/partners/apply", "/partners/terms"];
 
   for (const route of publicRoutes) {
     test(`does not redirect an unauthenticated visitor away from ${route}`, async ({ page }) => {

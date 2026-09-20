@@ -2263,3 +2263,80 @@ button, input, textarea { font: inherit; }
   .admin-partner-row { grid-template-columns: 1.5fr .9fr; }
   .admin-partner-row > span:nth-child(2) { display: none; }
 }
+
+
+/* Admin system readiness */
+.admin-system-shell { padding: 54px 0 100px; }
+.admin-system-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.admin-system-heading h1 {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5vw, 56px);
+  letter-spacing: -.05em;
+  margin: 12px 0 8px;
+}
+.admin-system-heading p { max-width: 720px; line-height: 1.6; }
+.admin-system-links, .admin-partner-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.admin-system-summary {
+  margin-top: 24px;
+  padding: 22px;
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 16px;
+}
+.admin-system-summary > div { display: grid; gap: 4px; }
+.admin-system-summary strong { font-size: 30px; letter-spacing: -.04em; }
+.system-readiness { margin-top: 18px; display: grid; gap: 18px; }
+.system-readiness-tests { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+.system-readiness-test {
+  padding: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+.system-readiness-test-name { font-weight: 800; font-size: 17px; }
+.system-readiness-result { margin-top: 5px; line-height: 1.45; }
+.system-readiness-test-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; justify-content: flex-end; }
+.readiness-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.readiness-status.good { background: #ecfdf3; color: #166534; }
+.readiness-status.bad { background: #fff1f2; color: #9f1239; }
+.system-config-groups { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+.system-config-card { padding: 22px; }
+.system-config-card h2 { margin: 0 0 12px; font-size: 20px; }
+.system-config-list { display: grid; }
+.system-config-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+  font-size: 13px;
+}
+.system-config-row:first-child { border-top: 0; }
+@media (max-width: 800px) {
+  .admin-system-heading { flex-direction: column; }
+  .system-readiness-tests, .system-config-groups { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .admin-system-summary { grid-template-columns: 1fr; }
+  .system-readiness-test { align-items: flex-start; flex-direction: column; }
+  .system-readiness-test-actions { justify-content: flex-start; }
+}
