@@ -37,7 +37,7 @@ export async function deleteResume(formData: FormData) {
   if (error) {
     const message = error.code === "23503"
       ? "This resume is attached to a submitted application and can't be deleted."
-      : "Odysseus could not delete this resume.";
+      : "Odesseus could not delete this resume.";
     redirect(`/profile?error=${encodeURIComponent(message)}`);
   }
 
@@ -71,7 +71,7 @@ export async function disconnectIntegration(formData: FormData) {
     .eq("user_id", userId);
 
   if (error) {
-    redirect("/integrations?error=Odysseus%20could%20not%20disconnect%20this%20account");
+    redirect("/integrations?error=Odesseus%20could%20not%20disconnect%20this%20account");
   }
 
   revalidatePath("/integrations");
@@ -128,7 +128,7 @@ export async function deleteAccount(formData: FormData) {
   const { error } = await service.auth.admin.deleteUser(userId);
 
   if (error) {
-    redirect("/settings?error=Odysseus%20could%20not%20delete%20your%20account.%20Please%20contact%20support.");
+    redirect("/settings?error=Odesseus%20could%20not%20delete%20your%20account.%20Please%20contact%20support.");
   }
 
   await supabase.auth.signOut();

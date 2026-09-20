@@ -1,8 +1,8 @@
-# Odysseus
+# Odesseus
 
 **Your next move, handled.**
 
-Odysseus is a calm AI-assisted career workspace that helps a candidate move through:
+Odesseus is a calm AI-assisted career workspace that helps a candidate move through:
 
 **Find → Review → Apply → Track → Interview → Follow up**
 
@@ -36,7 +36,7 @@ Public user-data tables:
 - `interviews`
 - `credit_balances`
 
-Private server-only billing tables live in `odysseus_private`.
+Private server-only billing tables live in `odesseus_private`.
 
 Every exposed user-data table has Row Level Security enabled. Candidate records are scoped to the authenticated user. Credit balances are intentionally read-only from the user-facing client so paid credits cannot be self-issued.
 
@@ -57,23 +57,23 @@ Do not add Supabase secret/service-role keys to browser environment variables.
 ## Product principles
 
 1. One screen, one obvious next action.
-2. Show what needs attention, not everything Odysseus knows.
+2. Show what needs attention, not everything Odesseus knows.
 3. Keep AI behavior understandable and reviewable.
 4. Never fabricate candidate qualifications.
 5. Charge application credits only after confirmed successful submission.
-6. Keep interview workspace free; consume an interview pass only when Odysseus Live starts.
+6. Keep interview workspace free; consume an interview pass only when Odesseus Live starts.
 
 ## Pricing direction
 
-No subscription. Pay when Odysseus works for you.
+No subscription. Pay when Odesseus works for you.
 
 - $0.99 per successfully submitted application, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
-- $24.99 per successfully activated Odysseus Live interview session
+- $24.99 per successfully activated Odesseus Live interview session
 - No required subscription
 
 ## Next milestone
 
-Odysseus Match:
+Odesseus Match:
 
 1. Ingest the verified candidate profile and master resume.
 2. Accept/discover job descriptions.
@@ -82,9 +82,9 @@ Odysseus Match:
 5. Pass the selected job into resume tailoring.
 
 
-## Odysseus Match v0.2
+## Odesseus Match v0.2
 
-Odysseus Match adds the first real AI workflow.
+Odesseus Match adds the first real AI workflow.
 
 ### Flow
 
@@ -92,7 +92,7 @@ Odysseus Match adds the first real AI workflow.
 2. The first match request parses the resume into verified structured facts.
 3. The parsed profile is cached in Supabase for reuse.
 4. The user pastes a complete job description.
-5. Odysseus compares the job only against verified candidate facts and preferences.
+5. Odesseus compares the job only against verified candidate facts and preferences.
 6. The final score is calculated deterministically from weighted dimensions.
 7. Explicit critical missing requirements cap an otherwise high semantic score.
 8. The match and explanation are saved to `job_opportunities`.
@@ -117,7 +117,7 @@ Resume parsing and match assessment are performed server-side. The OpenAI API ke
 PDF resumes are passed as file input. DOCX resumes are converted to raw text server-side before structured extraction.
 
 
-## Odysseus Resume v0.3
+## Odesseus Resume v0.3
 
 Resume Tailoring adds:
 
@@ -129,7 +129,7 @@ Resume Tailoring adds:
 - explicit user approval
 - approved resume version frozen for the future application workflow
 
-Odysseus never adds unsupported qualifications to improve a match.
+Odesseus never adds unsupported qualifications to improve a match.
 
 ## Codex development
 
@@ -138,7 +138,7 @@ The repository includes `AGENTS.md` with persistent product, security, AI, billi
 See `docs/development/codex.md` for the recommended VS Code + Codex workflow.
 
 
-## Odysseus Billing v0.4
+## Odesseus Billing v0.4
 
 Billing adds prepaid application credits and interview passes without a subscription.
 
@@ -151,7 +151,7 @@ Application credits are not consumed at purchase time. The Apply workflow consum
 
 ### Interview pass
 
-- 1 Odysseus Live interview pass — $24.99
+- 1 Odesseus Live interview pass — $24.99
 - Workspace setup remains free
 - The pass will be consumed only when the live interview assistant starts
 
@@ -162,18 +162,18 @@ Stripe Checkout creates one-time payment sessions. A signed Stripe webhook recor
 The browser can read its own balances/history but cannot create or modify credits.
 
 
-## Odysseus Apply v0.5
+## Odesseus Apply v0.5
 
-Odysseus Apply is an assisted, human-in-the-loop application browser.
+Odesseus Apply is an assisted, human-in-the-loop application browser.
 
 ### Flow
 
 1. Candidate approves a tailored resume.
-2. Odysseus generates a private PDF artifact for that exact approved version.
-3. Candidate opens **Apply with Odysseus** and provides the employer application URL.
-4. Odysseus starts a durable browser session.
+2. Odesseus generates a private PDF artifact for that exact approved version.
+3. Candidate opens **Apply with Odesseus** and provides the employer application URL.
+4. Odesseus starts a durable browser session.
 5. Known fields are filled only from verified profile facts or reusable Q&A answers.
-6. Odysseus pauses for:
+6. Odesseus pauses for:
    - login
    - MFA / verification codes
    - CAPTCHA / human verification
@@ -181,19 +181,19 @@ Odysseus Apply is an assisted, human-in-the-loop application browser.
    - sensitive demographic questions
    - unknown or unverified application questions
 7. Candidate can open the live browser and take over when needed.
-8. Odysseus pauses again before final submission.
+8. Odesseus pauses again before final submission.
 9. Candidate explicitly presses **Submit application**.
 10. One application credit is consumed only after a success confirmation is detected.
 
 ### Coverage
 
-Odysseus applies across supported job boards and direct employer career sites, including Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites — at the same $0.99 price regardless of which platform the job is on. This is not a claim of universal technical compatibility with every site; coverage is scoped to supported job boards and employer career sites.
+Odesseus applies across supported job boards and direct employer career sites, including Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites — at the same $0.99 price regardless of which platform the job is on. This is not a claim of universal technical compatibility with every site; coverage is scoped to supported job boards and employer career sites.
 
 ### Browser runtime
 
 The current provider adapter uses Browserbase with Playwright and keeps the integration isolated under `src/lib/apply` so a different hosted browser provider can be substituted later.
 
-Odysseus does not enable CAPTCHA solving or bypass MFA/identity controls.
+Odesseus does not enable CAPTCHA solving or bypass MFA/identity controls.
 
 ### Durable execution
 
@@ -210,9 +210,9 @@ Phase 5 adds:
 User-facing run/event data is protected by RLS. System-created run records remain server controlled.
 
 
-## Odysseus Track v0.6
+## Odesseus Track v0.6
 
-Odysseus Track turns submitted applications into a persistent lifecycle.
+Odesseus Track turns submitted applications into a persistent lifecycle.
 
 ### Lifecycle
 
@@ -239,11 +239,11 @@ The application timeline stores system, user, Email, and Calendar events in one 
 
 ## Google Interview Detection v0.7
 
-Phase 7 connects read-only Email and Google Calendar context to Odysseus Track.
+Phase 7 connects read-only Email and Google Calendar context to Odesseus Track.
 
 ### Detection
 
-Odysseus can detect:
+Odesseus can detect:
 - recruiter / employer responses
 - assessments and take-home requests
 - interview invitations and scheduling updates
@@ -251,9 +251,9 @@ Odysseus can detect:
 - rejections
 - Google Calendar interview events
 
-Signals are deduplicated and linked to an existing tracked application before Odysseus changes the pipeline.
+Signals are deduplicated and linked to an existing tracked application before Odesseus changes the pipeline.
 
-When an interview is detected, Odysseus creates an interview record connected to:
+When an interview is detected, Odesseus creates an interview record connected to:
 - the application
 - exact submitted resume
 - job context
@@ -298,7 +298,7 @@ The normalized downstream signal type is always either `email` or `calendar`; pr
 
 ## Interview Workspace v0.8
 
-The Interview Workspace is free and does not consume a Odysseus Live pass.
+The Interview Workspace is free and does not consume a Odesseus Live pass.
 
 It combines:
 - detected meeting date/time/platform/link
@@ -321,12 +321,12 @@ Readiness can generate:
 - questions to ask
 - gaps to handle honestly
 
-Odysseus does not run mock interviews in this phase.
+Odesseus does not run mock interviews in this phase.
 
 
 ## Multi-Round Interview Memory v0.9
 
-Phase 9 carries interview context across rounds before Odysseus Live exists.
+Phase 9 carries interview context across rounds before Odesseus Live exists.
 
 After a round, the candidate can record:
 - questions asked
@@ -336,7 +336,7 @@ After a round, the candidate can record:
 - commitments and follow-ups
 - additional notes
 
-Odysseus creates a factual handoff that captures:
+Odesseus creates a factual handoff that captures:
 - what to build on
 - what not to repeat unnecessarily
 - open discussion threads
@@ -346,25 +346,25 @@ Later interview readiness automatically includes prior-round memory.
 
 Phase 9 does not grade interview performance or predict hiring outcomes.
 
-When Odysseus Live is introduced in Phase 10, transcript-derived memory can populate this same model automatically. Full post-interview analysis and follow-up remain Phase 11.
+When Odesseus Live is introduced in Phase 10, transcript-derived memory can populate this same model automatically. Full post-interview analysis and follow-up remain Phase 11.
 
 
-## Odysseus Live v0.10
+## Odesseus Live v0.10
 
-Odysseus Live provides private, on-screen interview guidance while the candidate remains the speaker.
+Odesseus Live provides private, on-screen interview guidance while the candidate remains the speaker.
 
 ### Flow
 
 1. Candidate opens the existing Interview Workspace.
-2. Candidate explicitly starts Odysseus Live and consents to audio transcription.
+2. Candidate explicitly starts Odesseus Live and consents to audio transcription.
 3. Candidate selects:
    - shared interview audio
    - shared audio + microphone
    - microphone only
 4. The browser creates an OpenAI Realtime WebRTC connection.
 5. Audio is transcribed with `gpt-live-transcribe`.
-6. Completed transcript turns are sent to Odysseus's server.
-7. Odysseus determines whether the turn is an interview question.
+6. Completed transcript turns are sent to Odesseus's server.
+7. Odesseus determines whether the turn is an interview question.
 8. If so, it generates grounded guidance using the frozen application, submitted resume, readiness brief, and prior rounds.
 9. The candidate can request STAR, shorter, more technical, or follow-up guidance.
 10. The candidate ends the session; transcript context remains attached to the interview.
@@ -379,20 +379,20 @@ Reconnecting the same active session does not consume another pass.
 
 ### Boundaries
 
-- Odysseus does not join the meeting as a participant.
-- Odysseus does not speak for the candidate.
-- Odysseus requires explicit audio consent.
+- Odesseus does not join the meeting as a participant.
+- Odesseus does not speak for the candidate.
+- Odesseus requires explicit audio consent.
 - Shared video is immediately discarded; only the shared audio track is used.
 - Guidance may use only verified candidate context.
 
 
 ## Post-Interview Analysis + Follow-Up v0.11
 
-Phase 11 closes the interview loop after Odysseus Live.
+Phase 11 closes the interview loop after Odesseus Live.
 
 ### Analysis
 
-After a completed Live session, Odysseus can generate:
+After a completed Live session, Odesseus can generate:
 - factual interview summary
 - transcript limitations
 - clearly supported questions asked
@@ -402,7 +402,7 @@ After a completed Live session, Odysseus can generate:
 - answers that could be strengthened in a future round
 - possible next-round preparation topics
 
-Odysseus does not:
+Odesseus does not:
 - score the interview
 - predict whether the candidate will advance
 - infer hidden interviewer intent
@@ -418,12 +418,12 @@ The updated handoff becomes context for future interview readiness.
 
 ### Follow-up
 
-Odysseus creates an editable follow-up draft from actual interview context.
+Odesseus creates an editable follow-up draft from actual interview context.
 
 The candidate must review/approve it before sending.
 
-If an outbound Google or Microsoft connector is configured, Odysseus can send the approved draft through that provider.
+If an outbound Google or Microsoft connector is configured, Odesseus can send the approved draft through that provider.
 
-Otherwise Odysseus opens the approved draft in the user's normal email app using a mailto handoff.
+Otherwise Odesseus opens the approved draft in the user's normal email app using a mailto handoff.
 
 Read-only Email/Calendar connectors remain separate from optional outbound-send connectors.

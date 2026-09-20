@@ -20,8 +20,8 @@ export async function createApplicationBrowserSession(input: {
     keepAlive: true,
     api_timeout: 3600,
     userMetadata: {
-      odysseus_run_id: input.runId,
-      odysseus_user_id: input.userId,
+      odesseus_run_id: input.runId,
+      odesseus_user_id: input.userId,
     },
   });
 

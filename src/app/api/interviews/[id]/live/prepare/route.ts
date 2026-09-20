@@ -27,7 +27,7 @@ export async function POST(
     input = schema.parse(await request.json());
   } catch {
     return NextResponse.json(
-      { error: "Audio consent is required to start Odysseus Live." },
+      { error: "Audio consent is required to start Odesseus Live." },
       { status: 400 }
     );
   }
@@ -67,7 +67,7 @@ export async function POST(
 
   if (!existing && (credits?.interview_passes ?? 0) < 1) {
     return NextResponse.json(
-      { error: "You need one interview pass to start Odysseus Live." },
+      { error: "You need one interview pass to start Odesseus Live." },
       { status: 402 }
     );
   }
@@ -107,8 +107,8 @@ export async function POST(
       capture_mode: input.captureMode,
       transcription_model: "gpt-live-transcribe",
       guidance_model:
-        process.env.ODYSSEUS_LIVE_GUIDANCE_MODEL ||
-        process.env.ODYSSEUS_MATCH_MODEL ||
+        process.env.ODESSEUS_LIVE_GUIDANCE_MODEL ||
+        process.env.ODESSEUS_MATCH_MODEL ||
         "gpt-5.6-luna",
       consented_at: now,
       context_snapshot: context,
@@ -118,7 +118,7 @@ export async function POST(
 
   if (error || !created) {
     return NextResponse.json(
-      { error: "Odysseus could not prepare the Live session." },
+      { error: "Odesseus could not prepare the Live session." },
       { status: 500 }
     );
   }

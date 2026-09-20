@@ -1,8 +1,8 @@
-# Odysseus v0.11 Integration Audit
+# Odesseus v0.11 Integration Audit
 
 Date: 2026-09-18
 
-Odysseus is feature-complete through the planned v0.11 product lifecycle, but it has not yet completed a real local build, runtime integration test, or production deployment. Treat the next phase as **stabilization**, not new feature development.
+Odesseus is feature-complete through the planned v0.11 product lifecycle, but it has not yet completed a real local build, runtime integration test, or production deployment. Treat the next phase as **stabilization**, not new feature development.
 
 ## Current product coverage
 
@@ -17,7 +17,7 @@ Implemented in the stacked v0.1-v0.11 branches:
 - Provider-neutral email/calendar detection
 - Interview workspace and readiness brief
 - Multi-round interview memory
-- Odysseus Live realtime transcription and grounded guidance
+- Odesseus Live realtime transcription and grounded guidance
 - Post-interview analysis, round-memory enrichment, and follow-up drafts
 
 ## P0 — blockers before merge/deploy
@@ -52,7 +52,7 @@ Required before merge:
 
 Fix every build/type error before runtime testing.
 
-### 4. Fix Odysseus Live state/realtime issues
+### 4. Fix Odesseus Live state/realtime issues
 
 Known issues to address:
 
@@ -93,8 +93,8 @@ PRs #1 through #11 are all open and stacked.
 Do not blindly merge them one at a time before validation.
 
 Recommended:
-1. checkout `build/odysseus-post-interview-v0.11`
-2. create `stabilize/odysseus-v0.11`
+1. checkout `build/odesseus-post-interview-v0.11`
+2. create `stabilize/odesseus-v0.11`
 3. perform all build/test/migration/runtime fixes there
 4. open one final stabilization PR to `main`
 5. after that PR is accepted, close/supersede the old stacked milestone PRs or preserve them only as historical references
@@ -103,7 +103,7 @@ Recommended:
 
 ### Automated job discovery
 
-The product vision includes Odysseus finding strong-match jobs automatically. The current Match MVP is still primarily manual/pasted-job-description driven.
+The product vision includes Odesseus finding strong-match jobs automatically. The current Match MVP is still primarily manual/pasted-job-description driven.
 
 Add a compliant job-ingestion layer beginning with official/public ATS sources where feasible, such as Greenhouse, Lever, and Ashby. Include:
 - provenance/source URL
@@ -184,7 +184,7 @@ Configure and test real environments for:
 - OpenAI API billing/quota + Realtime
 - Supabase production auth URLs/redirects/SMTP as needed
 - Vercel Cron cadence
-- Odysseus domain
+- Odesseus domain
 
 Test OAuth callback URLs in Preview and Production separately.
 
@@ -278,8 +278,8 @@ The global stylesheet is now large; consider breaking repeated patterns into com
 ## VS Code + Codex first-session checklist
 
 1. Clone/open the repo.
-2. Checkout `build/odysseus-post-interview-v0.11`.
-3. Create `stabilize/odysseus-v0.11`.
+2. Checkout `build/odesseus-post-interview-v0.11`.
+3. Create `stabilize/odesseus-v0.11`.
 4. Read `AGENTS.md`, this audit, and `README.md`.
 5. Install dependencies and commit the lockfile.
 6. Run lint/typecheck/build.
@@ -297,7 +297,7 @@ The global stylesheet is now large; consider breaking repeated patterns into com
 
 ## Definition of integration-ready
 
-Odysseus is integration-ready when:
+Odesseus is integration-ready when:
 
 - fresh install succeeds from a committed lockfile
 - fresh database can be reproduced from committed migrations

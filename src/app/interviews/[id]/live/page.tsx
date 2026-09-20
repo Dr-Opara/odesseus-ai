@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import OdysseusLiveClient from "@/components/odysseus-live-client";
+import OdesseusLiveClient from "@/components/odesseus-live-client";
 import AppShell from "@/components/app-shell";
 
-export default async function OdysseusLivePage({
+export default async function OdesseusLivePage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -59,7 +59,7 @@ export default async function OdysseusLivePage({
           </Link>
 
           <div style={{ marginTop: 16 }} className="badge">
-            Odysseus Live
+            Odesseus Live
           </div>
 
           <h1
@@ -93,12 +93,12 @@ export default async function OdysseusLivePage({
       <div className="live-boundary-note">
         <strong>You remain the interviewee.</strong>
         <span>
-          Odysseus listens only after you start it, shows private on-screen guidance,
+          Odesseus listens only after you start it, shows private on-screen guidance,
           and never joins the meeting or speaks for you.
         </span>
       </div>
 
-      <OdysseusLiveClient
+      <OdesseusLiveClient
         interviewId={interview.id}
         interviewPasses={credits?.interview_passes ?? 0}
       />

@@ -47,7 +47,7 @@ function checkoutCompletedEvent(overrides: {
         currency: "usd",
         customer: "cus_test_1",
         payment_intent: "pi_test_1",
-        metadata: { odysseus_user_id: userId, sku },
+        metadata: { odesseus_user_id: userId, sku },
       },
     },
   };
@@ -103,7 +103,7 @@ describe("Stripe webhook fulfillment", () => {
 
   it("does not fulfill when checkout metadata is missing a user id", async () => {
     const event = checkoutCompletedEvent({});
-    delete (event.data.object.metadata as { odysseus_user_id?: string }).odysseus_user_id;
+    delete (event.data.object.metadata as { odesseus_user_id?: string }).odesseus_user_id;
     constructEventMock.mockReturnValue(event);
 
     const { POST } = await import("@/app/api/webhooks/stripe/route");

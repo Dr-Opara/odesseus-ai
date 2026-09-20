@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
   const urlCheck = await isSafeExternalUrl(input.targetUrl);
   if (!urlCheck.safe) {
-    return NextResponse.json({ error: "Odysseus only opens secure, public application pages." }, { status: 400 });
+    return NextResponse.json({ error: "Odesseus only opens secure, public application pages." }, { status: 400 });
   }
 
   const [{ data: job }, { data: credits }, { data: tailoring }, { data: activeRun }] = await Promise.all([
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     .single();
 
   if (runError || !run) {
-    return NextResponse.json({ error: "Odysseus could not create the application run." }, { status: 500 });
+    return NextResponse.json({ error: "Odesseus could not create the application run." }, { status: 500 });
   }
 
   await service.from("application_run_events").insert({
@@ -125,20 +125,20 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ runId: run.id });
   } catch (error) {
-    console.error("Odysseus Apply could not start:", error);
+    console.error("Odesseus Apply could not start:", error);
 
     await service
       .from("application_runs")
       .update({
         status: "failed",
-        stop_reason: "Odysseus could not start the application workflow.",
+        stop_reason: "Odesseus could not start the application workflow.",
         finished_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", run.id);
 
     return NextResponse.json(
-      { error: "Odysseus could not start Apply." },
+      { error: "Odesseus could not start Apply." },
       { status: 500 }
     );
   }

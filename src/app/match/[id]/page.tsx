@@ -84,7 +84,7 @@ export default async function MatchResultPage({
         </div>
 
         <div className="card" style={{ padding: 28, marginTop: 30 }}>
-          <h2 style={{ fontSize: 24, margin: "0 0 8px" }}>Odysseus’s read</h2>
+          <h2 style={{ fontSize: 24, margin: "0 0 8px" }}>Odesseus’s read</h2>
           <p className="muted" style={{ lineHeight: 1.65, margin: 0 }}>{assessment.conciseSummary}</p>
 
           {criticalMissing.length ? (
@@ -174,7 +174,7 @@ export default async function MatchResultPage({
               {score >= 85 ? "This role cleared your match target." : "You decide whether this role is worth pursuing."}
             </h2>
             <p className="muted" style={{ margin: 0 }}>
-              Odysseus can tailor your resume to this role using only the experience and qualifications already verified in your profile.
+              Odesseus can tailor your resume to this role using only the experience and qualifications already verified in your profile.
             </p>
           </div>
           <TailorButton jobId={job.id} />

@@ -70,7 +70,7 @@ export default function InterviewSettingsForm({
           Interview settings
         </div>
         <h2 style={{ fontSize: 22, margin: "7px 0 0" }}>
-          How should Odysseus prepare?
+          How should Odesseus prepare?
         </h2>
       </div>
 

@@ -1,6 +1,6 @@
 # Google integration
 
-Odysseus uses Vercel Connect with a generic Google OAuth connector.
+Odesseus uses Vercel Connect with a generic Google OAuth connector.
 
 ## Required OAuth scopes
 
@@ -14,7 +14,7 @@ Phase 7 does not need Email send/modify or Calendar write access.
 ## Environment
 
 ```
-ODYSSEUS_CONNECT_GOOGLE_CONNECTOR=
+ODESSEUS_CONNECT_GOOGLE_CONNECTOR=
 CRON_SECRET=
 NEXT_PUBLIC_SITE_URL=
 ```

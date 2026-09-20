@@ -4,27 +4,27 @@ import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 
 export const metadata: Metadata = {
-  title: "How Odysseus Works — Odysseus",
-  description: "The complete Odysseus lifecycle: build your profile, find strong matches, apply, track responses, prepare, go live, and follow up.",
+  title: "How Odesseus Works — Odesseus",
+  description: "The complete Odesseus lifecycle: build your profile, find strong matches, apply, track responses, prepare, go live, and follow up.",
 };
 
 const stages = [
   {
     n: "01",
     title: "Build Your Profile",
-    body: "Upload your resume once. Odysseus learns your verified experience, skills, education, certifications, and preferences.",
+    body: "Upload your resume once. Odesseus learns your verified experience, skills, education, certifications, and preferences.",
     pills: [],
   },
   {
     n: "02",
     title: "Find Strong Matches",
-    body: "Odysseus finds relevant opportunities and explains why they fit — a match score, hard-requirement checks, and skills/experience alignment.",
+    body: "Odesseus finds relevant opportunities and explains why they fit — a match score, hard-requirement checks, and skills/experience alignment.",
     pills: ["85%+ Match", "Hard Requirements Checked", "No Fabricated Qualifications"],
   },
   {
     n: "03",
     title: "Review & Apply",
-    body: "Odysseus tailors your resume, prepares a cover letter when needed, and waits for your approval before completing the application on the employer's site.",
+    body: "Odesseus tailors your resume, prepares a cover letter when needed, and waits for your approval before completing the application on the employer's site.",
     pills: ["ATS-Ready Resume", "Cross-Platform Applications", "$0.99 Only After Successful Submission"],
   },
   {
@@ -41,14 +41,14 @@ const stages = [
   },
   {
     n: "06",
-    title: "Odysseus Live",
-    body: "During the interview, Odysseus transcribes in real time and offers private, grounded guidance. You remain the speaker throughout.",
+    title: "Odesseus Live",
+    body: "During the interview, Odesseus transcribes in real time and offers private, grounded guidance. You remain the speaker throughout.",
     pills: ["Realtime Guidance", "STAR / Shorter / Technical / Follow-Up"],
   },
   {
     n: "07",
     title: "Follow Up",
-    body: "After the interview, Odysseus produces a factual recap and transcript, enriches your round memory, and drafts a contextual follow-up email for you to edit, approve, and send.",
+    body: "After the interview, Odesseus produces a factual recap and transcript, enriches your round memory, and drafts a contextual follow-up email for you to edit, approve, and send.",
     pills: ["Post-Interview Analysis", "Follow-Up Email Draft"],
   },
 ];
@@ -61,8 +61,8 @@ export default function HowItWorksPage() {
       </div>
 
       <section className="shell page-hero">
-        <div className="badge">How Odysseus Works</div>
-        <h1 className="font-display page-hero-headline">The complete Odysseus lifecycle.</h1>
+        <div className="badge">How Odesseus Works</div>
+        <h1 className="font-display page-hero-headline">The complete Odesseus lifecycle.</h1>
         <p className="muted page-hero-copy">
           From your first resume upload to your next offer, your context stays connected — nothing gets re-entered at every stage.
         </p>

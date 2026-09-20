@@ -25,26 +25,26 @@ const howItWorks = [
   {
     n: "01",
     title: "Build Your Profile",
-    body: "Upload your resume once. Odysseus learns your verified experience, skills, education, certifications, and preferences.",
+    body: "Upload your resume once. Odesseus learns your verified experience, skills, education, certifications, and preferences.",
     pills: [],
   },
   {
     n: "02",
     title: "Find Your Matches",
-    body: "Odysseus finds relevant opportunities and explains why they fit.",
+    body: "Odesseus finds relevant opportunities and explains why they fit.",
     pills: ["85%+ Match", "Hard Requirements Checked", "No Fabricated Qualifications"],
   },
   {
     n: "03",
     title: "Review & Apply",
-    body: "Odysseus tailors the resume and prepares the application for approval.",
+    body: "Odesseus tailors the resume and prepares the application for approval.",
     pills: ["ATS-Ready Resume", "Cover Letter When Needed", "Cross-Platform Applications", "$0.99 Only After Successful Submission"],
   },
   {
     n: "04",
     title: "Interview",
     body: "Employer responses flow into the Interview Workspace.",
-    pills: ["Free Interview Preparation", "Odysseus Live", "Multi-Round Memory", "Post-Interview Follow-Up"],
+    pills: ["Free Interview Preparation", "Odesseus Live", "Multi-Round Memory", "Post-Interview Follow-Up"],
   },
 ];
 
@@ -60,7 +60,7 @@ export default function Home() {
           <div className="badge">A more connected way to move your career forward</div>
           <h1 className="font-display hero-headline">Your next move, handled.</h1>
           <p className="muted hero-copy">
-            Odysseus finds strong-match jobs, tailors your resume, applies across supported platforms, and tracks every application — then prepares you for the interview and stays with you live when it begins.
+            Odesseus finds strong-match jobs, tailors your resume, applies across supported platforms, and tracks every application — then prepares you for the interview and stays with you live when it begins.
           </p>
           <div className="hero-ctas">
             <Link className="btn btn-primary" href="/signup">Get Started Free →</Link>
@@ -75,7 +75,7 @@ export default function Home() {
 
           <div className="agent-visual-status">
             <span className="agent-visual-dot" />
-            <span>Odysseus Agent — Active</span>
+            <span>Odesseus Agent — Active</span>
           </div>
 
           <div className="agent-visual-steps">
@@ -104,7 +104,7 @@ export default function Home() {
             Apply wherever the opportunity lives
           </h2>
           <p className="muted" style={{ marginTop: 10 }}>
-            One Odysseus. Across supported job boards and employer career sites.
+            One Odesseus. Across supported job boards and employer career sites.
           </p>
         </div>
         <div className="platform-strip-track-wrap">
@@ -122,7 +122,7 @@ export default function Home() {
       <section className="shell" style={{ padding: "10px 0 30px" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <p className="muted" style={{ fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em" }}>
-            How Odysseus Works
+            How Odesseus Works
           </p>
           <h2 className="font-display" style={{ fontSize: 40, letterSpacing: "-0.02em", margin: "10px 0" }}>
             One connected flow, start to offer.
@@ -162,10 +162,10 @@ export default function Home() {
       <section className="shell" style={{ padding: "10px 0 20px" }}>
         <div className="page-cta-band card">
           <div>
-            <div className="badge">$0.99 · Apply with Odysseus</div>
+            <div className="badge">$0.99 · Apply with Odesseus</div>
             <h2 style={{ fontSize: 26, margin: "14px 0 8px" }}>Apply anywhere your next opportunity lives.</h2>
             <p className="muted" style={{ margin: 0, maxWidth: 520 }}>
-              Odysseus matches the role, tailors your resume, completes the application, and tracks it — charged only after a successful submission.
+              Odesseus matches the role, tailors your resume, completes the application, and tracks it — charged only after a successful submission.
             </p>
           </div>
           <Link className="btn btn-primary" href="/apply">Explore Apply →</Link>
@@ -175,7 +175,7 @@ export default function Home() {
       <section className="shell" style={{ padding: "0 0 20px" }}>
         <div className="page-cta-band card">
           <div>
-            <div className="badge">$24.99 · Odysseus Live</div>
+            <div className="badge">$24.99 · Odesseus Live</div>
             <h2 style={{ fontSize: 26, margin: "14px 0 8px" }}>Go into your interview with your entire application behind you.</h2>
             <p className="muted" style={{ margin: 0, maxWidth: 520 }}>
               Free preparation, private real-time guidance, and a complete post-interview recap — one pass, everything included.
@@ -191,14 +191,14 @@ export default function Home() {
             Pricing
           </p>
           <h2 className="font-display" style={{ fontSize: 40, letterSpacing: "-0.02em", margin: "10px 0" }}>
-            No subscription. Pay when Odysseus works for you.
+            No subscription. Pay when Odesseus works for you.
           </h2>
         </div>
 
         <div className="pricing-preview-grid">
           <div className="card" style={{ padding: 28 }}>
             <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-0.05em" }}>$0.99</div>
-            <h3 style={{ fontSize: 22, margin: "10px 0 4px" }}>Apply with Odysseus</h3>
+            <h3 style={{ fontSize: 22, margin: "10px 0 4px" }}>Apply with Odesseus</h3>
             <p className="pricing-flow-chain">Match → Tailor → Apply → Track</p>
             <p className="muted" style={{ lineHeight: 1.6, margin: 0 }}>
               Charged only after successful submission.
@@ -206,7 +206,7 @@ export default function Home() {
           </div>
           <div className="card" style={{ padding: 28 }}>
             <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-0.05em" }}>$24.99</div>
-            <h3 style={{ fontSize: 22, margin: "10px 0 4px" }}>Odysseus Live</h3>
+            <h3 style={{ fontSize: 22, margin: "10px 0 4px" }}>Odesseus Live</h3>
             <p className="pricing-flow-chain">Prepare → Live Guidance → Transcript → Analysis → Follow-Up</p>
             <p className="muted" style={{ lineHeight: 1.6, margin: 0 }}>
               One interview. One pass. Everything included.

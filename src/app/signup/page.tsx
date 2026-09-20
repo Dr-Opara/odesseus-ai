@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { signup } from "@/app/login/actions";
 
@@ -11,10 +12,12 @@ export default async function SignupPage({
   return (
     <main className="shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "50px 0" }}>
       <div style={{ width: "min(430px,100%)" }}>
-        <Link href="/" style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.04em" }}>Odysseus</Link>
+        <Link href="/" style={{ display: "inline-flex" }}>
+          <Image src="/odesseus-logo.png" alt="Odesseus.ai" width={172} height={28} priority style={{ height: 28, width: "auto" }} />
+        </Link>
         <div style={{ marginTop: 50 }}>
           <div className="badge">Start free</div>
-          <h1 style={{ fontSize: 42, letterSpacing: "-0.045em", margin: "16px 0 10px" }}>Meet Odysseus.</h1>
+          <h1 style={{ fontSize: 42, letterSpacing: "-0.045em", margin: "16px 0 10px" }}>Meet Odesseus.</h1>
           <p className="muted" style={{ marginBottom: 30 }}>Create your account. Your career profile comes next.</p>
 
           <form className="card" style={{ padding: 24 }} action={signup}>
@@ -45,7 +48,7 @@ export default async function SignupPage({
           </form>
 
           <p className="muted" style={{ textAlign: "center", fontSize: 14, marginTop: 18 }}>
-            Already have an account? <Link href="/login" style={{ color: "var(--text)", fontWeight: 700 }}>Sign in</Link>
+            Already have an account? <Link href="/login" className="link">Sign in</Link>
           </p>
         </div>
       </div>

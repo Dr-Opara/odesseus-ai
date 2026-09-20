@@ -81,7 +81,7 @@ export async function POST(
       .single();
 
     if (error || !created) {
-      throw new Error("Odysseus could not save interview readiness.");
+      throw new Error("Odesseus could not save interview readiness.");
     }
 
     await service
@@ -104,7 +104,7 @@ export async function POST(
         error:
           error instanceof Error
             ? error.message
-            : "Odysseus could not prepare this interview.",
+            : "Odesseus could not prepare this interview.",
       },
       { status: 500 }
     );

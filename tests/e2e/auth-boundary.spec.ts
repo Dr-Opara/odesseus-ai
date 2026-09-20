@@ -30,7 +30,7 @@ test.describe("login and signup pages", () => {
 
   test("signup page renders the account-creation form", async ({ page }) => {
     await page.goto("/signup");
-    await expect(page.getByRole("heading", { name: "Meet Odysseus." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Meet Odesseus." })).toBeVisible();
     await expect(page.getByLabel("Name")).toBeVisible();
     await expect(page.getByLabel("Email")).toBeVisible();
     await expect(page.getByLabel("Password")).toBeVisible();

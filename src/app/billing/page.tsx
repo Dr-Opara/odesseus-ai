@@ -27,7 +27,7 @@ export default async function BillingPage({
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(8),
-    // Odysseus Live Annual is a time-boxed entitlement, not a discrete
+    // Odesseus Live Annual is a time-boxed entitlement, not a discrete
     // credit grant — it never writes a credit_transactions row (see
     // add_live_annual_entitlement migration), so without this it would
     // never appear in "Recent activity" despite being a real purchase.
@@ -54,7 +54,7 @@ export default async function BillingPage({
     ...(annualPurchases ?? []).map((purchase) => ({
       id: `annual:${purchase.id}`,
       createdAt: purchase.created_at,
-      label: "Purchased Odysseus Live Annual",
+      label: "Purchased Odesseus Live Annual",
       amountText: `$${(purchase.amount_cents / 100).toFixed(2)}`,
       deltaText: "12 mo",
     })),
@@ -74,7 +74,7 @@ export default async function BillingPage({
             Pay for progress, not access.
           </h1>
           <p className="muted" style={{ fontSize: 18, lineHeight: 1.6, maxWidth: 650 }}>
-            No subscription. Pay when Odysseus works for you.
+            No subscription. Pay when Odesseus works for you.
           </p>
         </div>
 
@@ -104,13 +104,13 @@ export default async function BillingPage({
           <div className="card billing-balance-card">
             <div className="muted" style={{ fontSize: 13 }}>Interview passes</div>
             <strong>{credits?.interview_passes ?? 0}</strong>
-            <span className="muted">One pass is used when Odysseus Live starts.</span>
+            <span className="muted">One pass is used when Odesseus Live starts.</span>
           </div>
         </div>
 
         {credits?.live_unlimited_until && new Date(credits.live_unlimited_until) > new Date() ? (
           <div className="billing-success" style={{ marginTop: 18 }}>
-            Odysseus Live Annual is active through {new Date(credits.live_unlimited_until).toLocaleDateString()}.
+            Odesseus Live Annual is active through {new Date(credits.live_unlimited_until).toLocaleDateString()}.
           </div>
         ) : null}
 
@@ -118,10 +118,10 @@ export default async function BillingPage({
           <div className="billing-pack-grid">
             <form className="card billing-pack" action={createCheckoutSession.bind(null, "app_1")}>
               <div>
-                <div className="muted" style={{ fontSize: 13 }}>Apply with Odysseus</div>
+                <div className="muted" style={{ fontSize: 13 }}>Apply with Odesseus</div>
                 <div className="billing-pack-number">$0.99</div>
                 <p className="muted" style={{ lineHeight: 1.55 }}>
-                  Odysseus matches the role, tailors your resume, completes the application, submits it, and tracks it.
+                  Odesseus matches the role, tailors your resume, completes the application, submits it, and tracks it.
                 </p>
                 <p className="muted" style={{ lineHeight: 1.55 }}>
                   $0.99 only after successful submission.
@@ -135,7 +135,7 @@ export default async function BillingPage({
 
             <form className="card billing-pack" action={createCheckoutSession.bind(null, "interview_1")}>
               <div>
-                <div className="muted" style={{ fontSize: 13 }}>Odysseus Live</div>
+                <div className="muted" style={{ fontSize: 13 }}>Odesseus Live</div>
                 <div className="billing-pack-number">$24.99</div>
                 <p className="muted" style={{ lineHeight: 1.55 }}>
                   Your AI interview companion—from preparation through follow-up.
@@ -177,7 +177,7 @@ export default async function BillingPage({
         <section style={{ marginTop: 34 }}>
           <h2 style={{ fontSize: 24, margin: "0 0 18px" }}>Interview passes</h2>
           <div className="card bundle-band">
-            <p className="muted" style={{ margin: "0 0 4px" }}>1 interview pass = 1 successfully activated Odysseus Live interview round.</p>
+            <p className="muted" style={{ margin: "0 0 4px" }}>1 interview pass = 1 successfully activated Odesseus Live interview round.</p>
             <div className="bundle-row bundle-row-2">
               <form className="bundle-option" action={createCheckoutSession.bind(null, "interview_3")}>
                 <div className="bundle-option-quantity">3 passes</div>
@@ -185,13 +185,13 @@ export default async function BillingPage({
                 <button className="btn btn-secondary" type="submit">Buy</button>
               </form>
               <form className="bundle-option is-featured" action={createCheckoutSession.bind(null, "interview_annual")}>
-                <div className="bundle-option-quantity">Odysseus Live Annual</div>
+                <div className="bundle-option-quantity">Odesseus Live Annual</div>
                 <div className="bundle-option-price">$499</div>
                 <div className="bundle-option-unit">per year</div>
                 <button className="btn btn-primary" type="submit">Buy</button>
               </form>
             </div>
-            <p className="bundle-fine-print">Odysseus Live Annual is subject to fair use.</p>
+            <p className="bundle-fine-print">Odesseus Live Annual is subject to fair use.</p>
           </div>
         </section>
 

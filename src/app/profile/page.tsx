@@ -40,7 +40,7 @@ export default async function ProfilePage({
       <section className="shell" style={{ padding: "54px 0 90px" }}>
       <div style={{ width: "min(760px,100%)", margin: "20px auto 0" }}>
         <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", marginBottom: 10 }}>Profile</h1>
-        <p className="muted">The verified information Odysseus uses on your behalf.</p>
+        <p className="muted">The verified information Odesseus uses on your behalf.</p>
 
         {status === "resume_deleted" ? (
           <div className="billing-success" style={{ marginTop: 18 }}>Resume deleted.</div>
@@ -88,7 +88,7 @@ export default async function ProfilePage({
             <div className="muted" style={{ fontSize: 13 }}>Integrations</div>
             <h2 style={{ fontSize: 22, margin: "7px 0 6px" }}>Email + Calendar</h2>
             <p className="muted" style={{ margin: 0, lineHeight: 1.55 }}>
-              Let Odysseus detect employer responses, assessments, interview invitations, and scheduled interviews.
+              Let Odesseus detect employer responses, assessments, interview invitations, and scheduled interviews.
             </p>
           </div>
           <Link href="/integrations" className="btn btn-secondary">

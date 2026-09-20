@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -19,7 +20,9 @@ export default function MarketingNav() {
   return (
     <header className="marketing-nav">
       <div className="marketing-nav-inner shell">
-        <Link href="/" className="marketing-wordmark">ODYSSEUS</Link>
+        <Link href="/" className="marketing-wordmark">
+          <Image src="/odesseus-logo.png" alt="Odesseus.ai" width={122} height={20} priority style={{ height: 20, width: "auto" }} />
+        </Link>
 
         <nav className="marketing-nav-links">
           {links.map((link) => (

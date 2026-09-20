@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const result = await runAutomaticJobDiscovery();
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    console.error("[ODYSSEUS_JOB_DISCOVERY] scheduled discovery failed", error);
+    console.error("[ODESSEUS_JOB_DISCOVERY] scheduled discovery failed", error);
     return NextResponse.json(
       { error: "Scheduled discovery failed." },
       { status: 500 }

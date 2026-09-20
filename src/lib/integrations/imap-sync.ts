@@ -25,12 +25,12 @@ type IntegrationAccount = {
 async function getVaultSecret(secretId: string) {
   const service = createServiceClient();
   const { data, error } = await service.rpc(
-    "odysseus_get_integration_secret",
+    "odesseus_get_integration_secret",
     { p_secret_id: secretId }
   );
 
   if (error || !data) {
-    throw new Error("Odysseus could not retrieve the mail credential.");
+    throw new Error("Odesseus could not retrieve the mail credential.");
   }
 
   return String(data);

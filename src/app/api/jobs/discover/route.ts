@@ -27,9 +27,9 @@ export async function POST() {
     const result = await runAutomaticJobDiscovery({ userIds: [userId] });
     return NextResponse.json(result);
   } catch (error) {
-    console.error("[ODYSSEUS_JOB_DISCOVERY] manual discovery failed", error);
+    console.error("[ODESSEUS_JOB_DISCOVERY] manual discovery failed", error);
     return NextResponse.json(
-      { error: "Odysseus could not refresh job matches." },
+      { error: "Odesseus could not refresh job matches." },
       { status: 500 }
     );
   }

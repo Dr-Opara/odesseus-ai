@@ -5,7 +5,7 @@ import {
   type ResumeProfile,
 } from "./schemas";
 
-const MODEL = process.env.ODYSSEUS_MATCH_MODEL || "gpt-5.6-luna";
+const MODEL = process.env.ODESSEUS_MATCH_MODEL || "gpt-5.6-luna";
 
 export async function tailorResume(input: {
   resume: ResumeProfile;
@@ -17,13 +17,13 @@ export async function tailorResume(input: {
   const result = await generateText({
     model: openai(MODEL),
     output: Output.object({
-      name: "OdysseusResumeTailoring",
+      name: "OdesseusResumeTailoring",
       description:
         "A job-targeted resume rewrite grounded entirely in verified candidate facts.",
       schema: resumeTailoringOutputSchema,
     }),
     system: `
-You are Odysseus's resume tailoring engine.
+You are Odesseus's resume tailoring engine.
 
 Your job is to improve relevance and presentation without changing the truth.
 

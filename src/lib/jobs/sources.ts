@@ -11,13 +11,13 @@ const sourceSchema = z.object({
 const sourceListSchema = z.array(sourceSchema).max(500);
 
 export function configuredJobSources(): JobSourceConfig[] {
-  const raw = process.env.ODYSSEUS_JOB_SOURCES_JSON?.trim();
+  const raw = process.env.ODESSEUS_JOB_SOURCES_JSON?.trim();
   if (!raw) return [];
 
   try {
     return sourceListSchema.parse(JSON.parse(raw));
   } catch (error) {
-    console.error("[ODYSSEUS_JOB_DISCOVERY] invalid source catalog", error);
+    console.error("[ODESSEUS_JOB_DISCOVERY] invalid source catalog", error);
     return [];
   }
 }

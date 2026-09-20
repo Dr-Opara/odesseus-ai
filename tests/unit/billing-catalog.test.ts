@@ -24,7 +24,7 @@ describe("billingCatalog", () => {
     expect(billingCatalog.interview_3).toMatchObject({ amountCents: 5999, creditDelta: 3, creditType: "interview" });
   });
 
-  it("prices Odysseus Live Annual at $499/year", () => {
+  it("prices Odesseus Live Annual at $499/year", () => {
     expect(billingCatalog.interview_annual.amountCents).toBe(49900);
     expect(billingCatalog.interview_annual.creditType).toBe("interview");
   });

@@ -84,7 +84,7 @@ export default async function InterviewsPage() {
               Your interview workspace will appear here.
             </h2>
             <p className="muted" style={{ lineHeight: 1.6 }}>
-              When Odysseus detects an interview for a tracked application, it will connect the job, submitted resume, and application history automatically.
+              When Odesseus detects an interview for a tracked application, it will connect the job, submitted resume, and application history automatically.
             </p>
           </div>
         )}

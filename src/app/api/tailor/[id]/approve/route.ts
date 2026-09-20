@@ -45,7 +45,7 @@ export async function POST(
 
   const company = tailoring.job_opportunities?.company_name || "Company";
   const role = tailoring.job_opportunities?.role_title || "Role";
-  const fileName = `${slug(company)}_${slug(role)}_Odysseus_v${tailoring.version_number}.pdf`;
+  const fileName = `${slug(company)}_${slug(role)}_Odesseus_v${tailoring.version_number}.pdf`;
   const storagePath = `${userId}/approved/${Date.now()}-${fileName}`;
 
   try {
@@ -84,7 +84,7 @@ export async function POST(
 
     if (resumeError || !approvedResume) {
       await supabase.storage.from("resumes").remove([storagePath]);
-      throw new Error("Odysseus could not save the approved resume.");
+      throw new Error("Odesseus could not save the approved resume.");
     }
 
     const now = new Date().toISOString();
@@ -113,9 +113,9 @@ export async function POST(
 
     return NextResponse.json({ resumeId: approvedResume.id });
   } catch (error) {
-    console.error("Odysseus Resume approval failed:", error);
+    console.error("Odesseus Resume approval failed:", error);
     return NextResponse.json(
-      { error: "Odysseus could not approve this resume." },
+      { error: "Odesseus could not approve this resume." },
       { status: 500 }
     );
   }

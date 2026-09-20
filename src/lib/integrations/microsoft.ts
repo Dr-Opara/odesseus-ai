@@ -307,7 +307,7 @@ export async function syncMicrosoftCalendar(
           to_status: "interview",
           title: "Interview workspace created",
           detail:
-            "Odysseus connected the Microsoft Calendar interview to this application.",
+            "Odesseus connected the Microsoft Calendar interview to this application.",
           source: "calendar",
           metadata: { interview_id: created.id, signal_id: signal.id },
         });

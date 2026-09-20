@@ -108,7 +108,7 @@ export default async function DashboardPage() {
       : {
           eyebrow: "Get started",
           title: "Find your next strong match",
-          detail: "Let Odysseus search configured job sources and surface roles that clear your match target.",
+          detail: "Let Odesseus search configured job sources and surface roles that clear your match target.",
           href: "/jobs",
           cta: "Find matches",
         };
@@ -218,7 +218,7 @@ export default async function DashboardPage() {
               </div>
               {liveAnnualActive ? (
                 <div className="badge" style={{ marginTop: 14 }}>
-                  Odysseus Live Annual active through {new Date(credits!.live_unlimited_until!).toLocaleDateString()}
+                  Odesseus Live Annual active through {new Date(credits!.live_unlimited_until!).toLocaleDateString()}
                 </div>
               ) : null}
             </section>
@@ -228,7 +228,7 @@ export default async function DashboardPage() {
         <section className="card dashboard-panel dashboard-activity">
           <div className="dashboard-panel-heading">
             <div>
-              <div className="dashboard-eyebrow">Odysseus activity</div>
+              <div className="dashboard-eyebrow">Odesseus activity</div>
               <h2>What changed</h2>
             </div>
           </div>
@@ -246,7 +246,7 @@ export default async function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="dashboard-empty">Odysseus activity will appear here as your search moves forward.</div>
+            <div className="dashboard-empty">Odesseus activity will appear here as your search moves forward.</div>
           )}
         </section>
       </section>

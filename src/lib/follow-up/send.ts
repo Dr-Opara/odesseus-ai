@@ -17,7 +17,7 @@ function base64Url(value: string) {
 }
 
 async function sendGoogle(input: SendInput) {
-  const connector = process.env.ODYSSEUS_CONNECT_GOOGLE_SEND_CONNECTOR;
+  const connector = process.env.ODESSEUS_CONNECT_GOOGLE_SEND_CONNECTOR;
   if (!connector) {
     throw new Error("Google follow-up sending is not configured.");
   }
@@ -52,7 +52,7 @@ async function sendGoogle(input: SendInput) {
 }
 
 async function sendMicrosoft(input: SendInput) {
-  const connector = process.env.ODYSSEUS_CONNECT_MICROSOFT_SEND_CONNECTOR;
+  const connector = process.env.ODESSEUS_CONNECT_MICROSOFT_SEND_CONNECTOR;
   if (!connector) {
     throw new Error("Microsoft follow-up sending is not configured.");
   }
