@@ -221,7 +221,7 @@ describe("Workday provider", () => {
       "https://example.wd5.myworkdayjobs.com/wday/cxs/example/External/jobs"
     );
     expect(fetchMock.mock.calls[1][0]).toBe(
-      "https://example.wd5.myworkdayjobs.com/wday/cxs/example/External/job/job/Texas/Principal-Cloud-Security-Engineer_R-12345"
+      "https://example.wd5.myworkdayjobs.com/wday/cxs/example/External/job/Texas/Principal-Cloud-Security-Engineer_R-12345"
     );
   });
 
