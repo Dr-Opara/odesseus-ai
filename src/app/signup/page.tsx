@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BrandLogo from "@/components/brand-logo";
 import { signup } from "@/app/login/actions";
 
 export default async function SignupPage({
@@ -11,7 +12,7 @@ export default async function SignupPage({
   return (
     <main className="shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "50px 0" }}>
       <div style={{ width: "min(430px,100%)" }}>
-        <Link href="/" style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.04em" }}>Odysseus</Link>
+        <BrandLogo width={190} priority />
         <div style={{ marginTop: 50 }}>
           <div className="badge">Start free</div>
           <h1 style={{ fontSize: 42, letterSpacing: "-0.045em", margin: "16px 0 10px" }}>Meet Odysseus.</h1>
