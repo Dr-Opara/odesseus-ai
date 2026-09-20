@@ -18,12 +18,12 @@ export default function BrandLogo({
     <Link
       href={href}
       className={className}
-      aria-label="Odysseus.ai home"
+      aria-label="Odesseus.ai home"
       style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
     >
       <Image
         src="/brand/odysseus-wordmark.svg"
-        alt="Odysseus.ai"
+        alt="Odesseus.ai"
         width={width}
         height={height}
         priority={priority}
