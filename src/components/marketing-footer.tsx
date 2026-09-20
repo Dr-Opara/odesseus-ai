@@ -1,11 +1,12 @@
 import Link from "next/link";
+import BrandLogo from "@/components/brand-logo";
 
 export default function MarketingFooter() {
   return (
     <footer className="shell marketing-footer">
       <div className="marketing-footer-top">
         <div className="marketing-footer-brand">
-          <div className="marketing-wordmark">ODYSSEUS</div>
+          <BrandLogo href="/" width={174} />
           <p className="muted" style={{ fontSize: 13, margin: "10px 0 0", maxWidth: 260 }}>
             Your next move, handled.
           </p>
