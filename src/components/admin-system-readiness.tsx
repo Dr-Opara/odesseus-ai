@@ -2,7 +2,20 @@
 
 import { useState } from "react";
 
-type Provider = "supabase" | "browserbase" | "openai" | "stripe" | "job_discovery";
+type Provider =
+  | "supabase"
+  | "browserbase"
+  | "openai"
+  | "stripe"
+  | "stripe_webhook"
+  | "job_discovery"
+  | "cron"
+  | "google"
+  | "microsoft"
+  | "yahoo"
+  | "google_send"
+  | "microsoft_send"
+  | "resend";
 
 type ConfigItem = {
   key: string;
@@ -21,8 +34,16 @@ const testable: Array<{ provider: Provider; label: string }> = [
   { provider: "supabase", label: "Supabase" },
   { provider: "browserbase", label: "Browserbase" },
   { provider: "openai", label: "OpenAI" },
-  { provider: "stripe", label: "Stripe" },
+  { provider: "stripe", label: "Stripe API" },
+  { provider: "stripe_webhook", label: "Stripe Webhook" },
   { provider: "job_discovery", label: "Job Discovery" },
+  { provider: "cron", label: "Scheduled Jobs" },
+  { provider: "google", label: "Google Connector" },
+  { provider: "microsoft", label: "Microsoft Connector" },
+  { provider: "yahoo", label: "Yahoo Connector" },
+  { provider: "google_send", label: "Google Send Connector" },
+  { provider: "microsoft_send", label: "Microsoft Send Connector" },
+  { provider: "resend", label: "Resend" },
 ];
 
 export default function AdminSystemReadiness({
@@ -72,9 +93,7 @@ export default function AdminSystemReadiness({
               <div>
                 <div className="system-readiness-test-name">{item.label}</div>
                 <div className="muted system-readiness-result">
-                  {result
-                    ? result.detail
-                    : "Not tested in this session."}
+                  {result ? result.detail : "Not tested in this session."}
                 </div>
                 {result?.latencyMs != null ? (
                   <small className="muted">{result.latencyMs} ms</small>
