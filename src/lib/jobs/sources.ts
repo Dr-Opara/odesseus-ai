@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { JobSourceConfig } from "./types";
 
 const sourceSchema = z.object({
-  provider: z.enum(["greenhouse", "lever", "ashby"]),
+  provider: z.enum(["greenhouse", "lever", "ashby", "workable"]),
   companyName: z.string().trim().min(1).max(160),
   slug: z.string().trim().min(1).max(200),
   region: z.enum(["global", "eu"]).optional(),
