@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin, makeReferralCode, partnerService } from "@/lib/partners/service";
+import { sendPartnerEmail } from "@/lib/partners/email";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -52,6 +53,8 @@ export async function reviewPartnerApplication(formData: FormData) {
     updated_at: new Date().toISOString(),
   }).eq("id", applicationId);
 
+  let approvedPartner: any = null;
+
   if (status === "approved") {
     let partner = (
       await service.from("partners").select("*").eq("application_id", applicationId).maybeSingle()
@@ -75,11 +78,43 @@ export async function reviewPartnerApplication(formData: FormData) {
     }
 
     if (partner) {
+      approvedPartner = partner;
       await service.from("partner_social_accounts")
         .update({ partner_id: partner.id })
         .eq("application_id", applicationId)
         .is("partner_id", null);
     }
+  }
+
+  if (status === "approved") {
+    await sendPartnerEmail({
+      to: application.email,
+      subject: "Welcome to the Odysseus Partner Program",
+      heading: "You’re approved.",
+      body: approvedPartner
+        ? "Your Odysseus Partner application has been approved. Your referral code is " + approvedPartner.referral_code + ". Sign in with this email to access your Partner Dashboard."
+        : "Your Odysseus Partner application has been approved. Sign in with this email to access your Partner Dashboard.",
+      ctaLabel: "Open Partner Dashboard",
+      ctaHref: "/partners/dashboard",
+    });
+  } else if (status === "waitlisted") {
+    await sendPartnerEmail({
+      to: application.email,
+      subject: "Odysseus Partner Program update",
+      heading: "You’re on our partner waitlist.",
+      body: "Thanks for applying. We’d like to keep your profile on our waitlist while we plan upcoming creator campaigns.",
+      ctaLabel: "View the Partner Program",
+      ctaHref: "/partners",
+    });
+  } else if (status === "rejected") {
+    await sendPartnerEmail({
+      to: application.email,
+      subject: "Odysseus Partner Program update",
+      heading: "Thank you for applying.",
+      body: "We’ve completed our review and won’t be moving forward with this Partner Program application at this time. We appreciate your interest in Odysseus.",
+      ctaLabel: "Visit Odysseus",
+      ctaHref: "/",
+    });
   }
 
   revalidatePath("/admin/partners");
@@ -97,6 +132,23 @@ export async function assignPartnerCampaign(formData: FormData) {
     { partner_id: partnerId, campaign_id: campaignId, status: "assigned" },
     { onConflict: "campaign_id,partner_id" }
   );
+
+  const [{ data: partner }, { data: campaign }] = await Promise.all([
+    service.from("partners").select("email,full_name").eq("id", partnerId).maybeSingle(),
+    service.from("partner_campaigns").select("title").eq("id", campaignId).maybeSingle(),
+  ]);
+
+  if (partner?.email && campaign?.title) {
+    await sendPartnerEmail({
+      to: partner.email,
+      subject: "New Odysseus partner campaign",
+      heading: "You have a new campaign.",
+      body: "You’ve been assigned to “" + campaign.title + "”. Open your Partner Dashboard to review the brief and requirements.",
+      ctaLabel: "View campaign",
+      ctaHref: "/partners/dashboard",
+    });
+  }
+
   revalidatePath("/admin/partners");
 }
 
@@ -107,6 +159,12 @@ export async function recordPartnerPayout(formData: FormData) {
   if (!partnerId || !Number.isFinite(amount) || amount <= 0) return;
 
   const service = partnerService();
+  const { data: payoutPartner } = await service
+    .from("partners")
+    .select("email,full_name")
+    .eq("id", partnerId)
+    .maybeSingle();
+
   await service.from("partner_payouts").insert({
     partner_id: partnerId,
     amount_cents: amount,
@@ -130,6 +188,17 @@ export async function recordPartnerPayout(formData: FormData) {
       .update({ status: "paid", updated_at: new Date().toISOString() })
       .eq("id", earning.id);
     remaining -= earning.amount_cents;
+  }
+
+  if (payoutPartner?.email) {
+    await sendPartnerEmail({
+      to: payoutPartner.email,
+      subject: "Odysseus partner payout recorded",
+      heading: "Your payout was recorded.",
+      body: "A partner payout of $" + (amount / 100).toFixed(2) + " has been recorded. You can review your payout history in your Partner Dashboard.",
+      ctaLabel: "View payout history",
+      ctaHref: "/partners/dashboard",
+    });
   }
 
   revalidatePath("/admin/partners");
@@ -168,6 +237,12 @@ export async function reviewPartnerContent(formData: FormData) {
   if (!contentId || !["approved", "changes_requested", "rejected"].includes(status)) return;
 
   const service = partnerService();
+  const { data: contentItem } = await service
+    .from("partner_content")
+    .select("platform,content_url,partners(email,full_name)")
+    .eq("id", contentId)
+    .maybeSingle();
+
   await service.from("partner_content").update({
     status,
     admin_notes: text(formData, "admin_notes") || null,
@@ -175,6 +250,32 @@ export async function reviewPartnerContent(formData: FormData) {
     reviewed_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }).eq("id", contentId);
+
+  const contentPartner = contentItem?.partners;
+  if (contentPartner?.email) {
+    const approved = status === "approved";
+    const changes = status === "changes_requested";
+    await sendPartnerEmail({
+      to: contentPartner.email,
+      subject: approved
+        ? "Your Odysseus partner content was approved"
+        : changes
+          ? "Changes requested on your Odysseus partner content"
+          : "Odysseus partner content review update",
+      heading: approved
+        ? "Content approved."
+        : changes
+          ? "We need a few changes."
+          : "Content review complete.",
+      body: approved
+        ? "Your " + contentItem.platform + " content has been approved. Thanks for helping introduce Odysseus to your audience."
+        : changes
+          ? "Our team reviewed your " + contentItem.platform + " content and requested changes. Open your Partner Dashboard for the latest status."
+          : "Our team reviewed your submitted content and won’t be using it for this campaign.",
+      ctaLabel: "Open Partner Dashboard",
+      ctaHref: "/partners/dashboard",
+    });
+  }
 
   revalidatePath("/admin/partners");
 }
