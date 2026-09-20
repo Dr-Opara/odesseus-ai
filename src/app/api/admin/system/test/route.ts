@@ -100,13 +100,13 @@ export async function POST(request: Request) {
       }
 
       case "stripe": {
-        const account = await getStripe().accounts.retrieve();
+        const customers = await getStripe().customers.list({ limit: 1 });
 
         return NextResponse.json({
-          ok: Boolean(account.id),
+          ok: Array.isArray(customers.data),
           provider: input.provider,
           latencyMs: Date.now() - started,
-          detail: `Stripe account reachable · ${account.charges_enabled ? "charges enabled" : "charges not enabled"}`,
+          detail: "Stripe API reachable · read-only customer list succeeded.",
         });
       }
 
