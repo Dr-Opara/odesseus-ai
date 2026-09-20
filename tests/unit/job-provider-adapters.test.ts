@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { fetchRecruiteeJobs } from "@/lib/jobs/providers/recruitee";
 import { fetchSmartRecruitersJobs } from "@/lib/jobs/providers/smartrecruiters";
 import { configuredJobSources } from "@/lib/jobs/sources";
+import { fetchWorkdayJobs } from "@/lib/jobs/providers/workday";
 
 const originalSources = process.env.ODYSSEUS_JOB_SOURCES_JSON;
 const originalSr = process.env.SMARTRECRUITERS_TOKEN;
@@ -158,5 +159,79 @@ describe("Recruitee provider", () => {
       workArrangement: "hybrid",
       sourceUrl: "https://example.recruitee.com/o/security-architect",
     });
+  });
+});
+
+
+describe("Workday provider", () => {
+  it("normalizes public CXS listings and details", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            total: 1,
+            jobPostings: [
+              {
+                title: "Principal Cloud Security Engineer",
+                externalPath: "/job/Texas/Principal-Cloud-Security-Engineer_R-12345",
+                locationsText: "US, Texas",
+                postedOn: "Posted Today",
+              },
+            ],
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            jobPostingInfo: {
+              jobReqId: "R-12345",
+              location: "Houston, TX",
+              timeType: "Full time",
+              jobDescription:
+                "<p>Lead cloud security architecture, identity, threat detection, secure engineering, governance, compliance, and enterprise platform security across critical services.</p>",
+            },
+          }),
+          { status: 200 }
+        )
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const jobs = await fetchWorkdayJobs({
+      provider: "workday",
+      companyName: "Example Enterprise",
+      slug: "example-workday",
+      careerUrl: "https://example.wd5.myworkdayjobs.com/en-US/External",
+      maxJobs: 20,
+    });
+
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({
+      provider: "workday",
+      externalId: "R-12345",
+      title: "Principal Cloud Security Engineer",
+      location: "Houston, TX",
+      employmentType: "Full time",
+    });
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://example.wd5.myworkdayjobs.com/wday/cxs/example/External/jobs"
+    );
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      "https://example.wd5.myworkdayjobs.com/wday/cxs/example/External/job/job/Texas/Principal-Cloud-Security-Engineer_R-12345"
+    );
+  });
+
+  it("requires a real Workday careers URL", async () => {
+    await expect(
+      fetchWorkdayJobs({
+        provider: "workday",
+        companyName: "Example",
+        slug: "example",
+      })
+    ).rejects.toThrow("Workday sources require careerUrl.");
   });
 });
