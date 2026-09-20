@@ -20,7 +20,7 @@ export default function MarketingNav() {
   return (
     <header className="marketing-nav">
       <div className="marketing-nav-inner shell">
-        <BrandLogo width={170} priority />
+        <BrandLogo width={118} priority />
 
         <nav className="marketing-nav-links">
           {links.map((link) => (
