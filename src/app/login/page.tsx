@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import BrandLogo from "@/components/brand-logo";
 import { login } from "./actions";
 
 export default async function LoginPage({

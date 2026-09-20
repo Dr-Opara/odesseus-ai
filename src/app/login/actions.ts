@@ -1,9 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { partnerService } from "@/lib/partners/service";
 
 function clean(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
@@ -66,6 +67,20 @@ export async function signup(formData: FormData) {
 
   if (error) {
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (data.user) {
+    const cookieStore = await cookies();
+    const visitorId = cookieStore.get("odysseus_ref")?.value;
+    if (visitorId) {
+      const service = partnerService();
+      await service
+        .from("partner_referrals")
+        .update({ signup_user_id: data.user.id, signup_at: new Date().toISOString() })
+        .eq("visitor_id", visitorId)
+        .is("signup_user_id", null);
+      cookieStore.delete("odysseus_ref");
+    }
   }
 
   if (data.session) {

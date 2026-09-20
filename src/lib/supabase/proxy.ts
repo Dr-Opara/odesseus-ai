@@ -13,8 +13,11 @@ const publicExactPaths = [
   "/live",
   "/pricing",
   "/about",
+  "/partners",
+  "/partners/apply",
+  "/partners/terms",
 ];
-const publicPrefixPaths = ["/auth"];
+const publicPrefixPaths = ["/auth", "/api/partners", "/api/referrals"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

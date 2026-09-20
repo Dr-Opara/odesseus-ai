@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import BrandLogo from "@/components/brand-logo";
 
 const links = [
   { href: "/how-it-works", label: "How It Works" },

@@ -2,6 +2,7 @@ import Link from "next/link";
 import LiveInterviewPreview from "@/components/live-interview-preview";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
+import LiveInterviewPreview from "@/components/live-interview-preview";
 
 const platforms = [
   "Workday",

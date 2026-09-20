@@ -26,6 +26,12 @@ describe("authenticated route protection", () => {
     createClientMock.mockResolvedValue(fakeAuthedClient({ userId: null }));
   });
 
+  it("rejects an admin system readiness test with no session", async () => {
+    const { POST } = await import("@/app/api/admin/system/test/route");
+    const response = await POST(jsonRequest({ provider: "supabase" }));
+    expect(response.status).toBe(401);
+  });
+
   it("rejects an application status update with no session", async () => {
     const { POST } = await import("@/app/api/applications/[id]/status/route");
     const response = await POST(

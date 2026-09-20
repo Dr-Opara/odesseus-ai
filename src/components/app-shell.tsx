@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { logout } from "@/app/login/actions";
+import BrandLogo from "@/components/brand-logo";
 
 function firstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "there";
