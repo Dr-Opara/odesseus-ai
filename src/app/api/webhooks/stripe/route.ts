@@ -63,7 +63,7 @@ export async function POST(request: Request) {
           }
         }
       } catch (error) {
-        console.error("[ODYSSEUS_PARTNERS] refund attribution reversal failed", error);
+        console.error("[ODESSEUS_PARTNERS] refund attribution reversal failed", error);
       }
     }
 
@@ -165,7 +165,7 @@ export async function POST(request: Request) {
       }
     }
   } catch (error) {
-    console.error("[ODYSSEUS_PARTNERS] paid conversion attribution failed", error);
+    console.error("[ODESSEUS_PARTNERS] paid conversion attribution failed", error);
   }
 
   return NextResponse.json({ received: true });

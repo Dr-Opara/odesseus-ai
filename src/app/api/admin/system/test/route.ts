@@ -29,20 +29,16 @@ const schema = z.object({
     "job_discovery",
     "cron",
     "google",
-    "microsoft",
     "yahoo",
     "google_send",
-    "microsoft_send",
     "resend",
   ]),
 });
 
 type ConnectorProvider =
   | "google"
-  | "microsoft"
   | "yahoo"
-  | "google_send"
-  | "microsoft_send";
+  | "google_send";
 
 function siteUrl() {
   const value = process.env.NEXT_PUBLIC_SITE_URL?.trim();
@@ -52,16 +48,10 @@ function siteUrl() {
 
 function connectorId(provider: ConnectorProvider) {
   if (provider === "google") return connectorFor("google", "email");
-  if (provider === "microsoft") return connectorFor("microsoft", "email");
   if (provider === "yahoo") return connectorFor("yahoo", "email");
-  if (provider === "google_send") {
-    const value = process.env.ODYSSEUS_CONNECT_GOOGLE_SEND_CONNECTOR?.trim();
-    if (!value) throw new Error("Google outbound connector is not configured.");
-    return value;
-  }
 
-  const value = process.env.ODYSSEUS_CONNECT_MICROSOFT_SEND_CONNECTOR?.trim();
-  if (!value) throw new Error("Microsoft outbound connector is not configured.");
+  const value = process.env.ODESSEUS_CONNECT_GOOGLE_SEND_CONNECTOR?.trim();
+  if (!value) throw new Error("Google outbound connector is not configured.");
   return value;
 }
 
@@ -144,7 +134,7 @@ export async function POST(request: Request) {
       }
 
       case "openai": {
-        const model = process.env.ODYSSEUS_MATCH_MODEL || "gpt-5.6-luna";
+        const model = process.env.ODESSEUS_MATCH_MODEL || "gpt-5.6-luna";
         const result = await generateText({
           model: openai(model),
           prompt: "Reply with exactly: OK",
@@ -230,10 +220,8 @@ export async function POST(request: Request) {
       }
 
       case "google":
-      case "microsoft":
       case "yahoo":
-      case "google_send":
-      case "microsoft_send": {
+      case "google_send": {
         const connector = await testConnector(userId, input.provider);
         return NextResponse.json({
           ok: true,
@@ -245,7 +233,7 @@ export async function POST(request: Request) {
 
       case "resend": {
         const apiKey = process.env.RESEND_API_KEY?.trim();
-        const from = process.env.ODYSSEUS_PARTNER_FROM_EMAIL?.trim();
+        const from = process.env.ODESSEUS_PARTNER_FROM_EMAIL?.trim();
         if (!apiKey || !from) {
           throw new Error("Resend API key or Partner sender address is not configured.");
         }
@@ -272,7 +260,7 @@ export async function POST(request: Request) {
       }
     }
   } catch (error) {
-    console.error("[ODYSSEUS_READINESS]", input.provider, error);
+    console.error("[ODESSEUS_READINESS]", input.provider, error);
     return NextResponse.json(
       {
         ok: false,

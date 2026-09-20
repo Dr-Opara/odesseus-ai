@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import BrandLogo from "@/components/brand-logo";
 import OnboardingForm from "@/components/onboarding-form";
 import { createClient } from "@/lib/supabase/server";
 

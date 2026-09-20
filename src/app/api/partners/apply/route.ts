@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error || !application) {
-    console.error("[ODYSSEUS_PARTNERS] application insert failed", error);
+    console.error("[ODESSEUS_PARTNERS] application insert failed", error);
     return NextResponse.json({ error: "We could not submit your application." }, { status: 500 });
   }
 
@@ -99,15 +99,15 @@ export async function POST(request: Request) {
 
   if (socialError) {
     await service.from("partner_applications").delete().eq("id", application.id);
-    console.error("[ODYSSEUS_PARTNERS] social insert failed", socialError);
+    console.error("[ODESSEUS_PARTNERS] social insert failed", socialError);
     return NextResponse.json({ error: "We could not submit your application." }, { status: 500 });
   }
 
   await sendPartnerEmail({
     to: input.email.toLowerCase(),
-    subject: "We received your Odysseus Partner application",
+    subject: "We received your Odesseus Partner application",
     heading: "Application received.",
-    body: "Thanks for applying to the Odysseus Partner Program. Our team will review your profile and contact you if there’s a fit.",
+    body: "Thanks for applying to the Odesseus Partner Program. Our team will review your profile and contact you if there’s a fit.",
     ctaLabel: "View the Partner Program",
     ctaHref: "/partners",
   });

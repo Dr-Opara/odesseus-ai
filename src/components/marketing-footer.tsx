@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import BrandLogo from "@/components/brand-logo";
 
 export default function MarketingFooter() {
   return (

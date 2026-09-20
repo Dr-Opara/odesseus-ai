@@ -17,7 +17,7 @@ export async function isAdmin(userId: string) {
 
   if (data?.role) return data.role;
 
-  const allowed = (process.env.ODYSSEUS_ADMIN_EMAILS || "")
+  const allowed = (process.env.ODESSEUS_ADMIN_EMAILS || "")
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);

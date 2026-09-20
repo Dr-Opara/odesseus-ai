@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   });
 
   const response = NextResponse.json({ ok: true });
-  response.cookies.set("odysseus_ref", visitorId, {
+  response.cookies.set("odesseus_ref", visitorId, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

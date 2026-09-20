@@ -229,7 +229,7 @@ test.describe("Partner Program public experience", () => {
   test("/partners explains the creator program without fixed commission claims", async ({ page }) => {
     await page.goto("/partners");
     await expect(page).toHaveTitle(/Partner Program/);
-    await expect(page.getByRole("heading", { name: "Partner with Odysseus." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Partner with Odesseus." })).toBeVisible();
     await expect(page.getByText("Instagram", { exact: true })).toBeVisible();
     await expect(page.getByText("Facebook", { exact: true })).toBeVisible();
     await expect(page.getByText("TikTok", { exact: true })).toBeVisible();
@@ -249,7 +249,7 @@ test.describe("Partner Program public experience", () => {
 
   test("/partners/terms renders disclosure and commission eligibility rules", async ({ page }) => {
     await page.goto("/partners/terms");
-    await expect(page.getByRole("heading", { name: "Clear expectations for Odysseus partners." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Clear expectations for Odesseus partners." })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Disclosure" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Commission eligibility" })).toBeVisible();
   });

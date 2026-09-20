@@ -71,7 +71,7 @@ export async function signup(formData: FormData) {
 
   if (data.user) {
     const cookieStore = await cookies();
-    const visitorId = cookieStore.get("odysseus_ref")?.value;
+    const visitorId = cookieStore.get("odesseus_ref")?.value;
     if (visitorId) {
       const service = partnerService();
       await service
@@ -79,7 +79,7 @@ export async function signup(formData: FormData) {
         .update({ signup_user_id: data.user.id, signup_at: new Date().toISOString() })
         .eq("visitor_id", visitorId)
         .is("signup_user_id", null);
-      cookieStore.delete("odysseus_ref");
+      cookieStore.delete("odesseus_ref");
     }
   }
 

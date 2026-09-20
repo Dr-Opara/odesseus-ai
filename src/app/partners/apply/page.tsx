@@ -2,7 +2,7 @@ import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 import PartnerApplicationForm from "@/components/partner-application-form";
 
-export const metadata = { title: "Apply — Odysseus Partner Program" };
+export const metadata = { title: "Apply — Odesseus Partner Program" };
 
 export default async function PartnerApplyPage({
   searchParams,
@@ -25,7 +25,7 @@ export default async function PartnerApplyPage({
             <div className="partner-apply-heading">
               <div className="badge">Partner application</div>
               <h1>Tell us about you and your audience.</h1>
-              <p className="muted">We review applications manually. You do not need to already be an Odysseus customer.</p>
+              <p className="muted">We review applications manually. You do not need to already be an Odesseus customer.</p>
             </div>
             <PartnerApplicationForm />
           </>

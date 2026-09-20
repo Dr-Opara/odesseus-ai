@@ -4,13 +4,13 @@ import { fetchSmartRecruitersJobs } from "@/lib/jobs/providers/smartrecruiters";
 import { configuredJobSources } from "@/lib/jobs/sources";
 import { fetchWorkdayJobs } from "@/lib/jobs/providers/workday";
 
-const originalSources = process.env.ODYSSEUS_JOB_SOURCES_JSON;
+const originalSources = process.env.ODESSEUS_JOB_SOURCES_JSON;
 const originalSr = process.env.SMARTRECRUITERS_TOKEN;
 const originalRecruitee = process.env.RECRUITEE_CAREERS_TOKEN;
 
 afterEach(() => {
-  if (originalSources === undefined) delete process.env.ODYSSEUS_JOB_SOURCES_JSON;
-  else process.env.ODYSSEUS_JOB_SOURCES_JSON = originalSources;
+  if (originalSources === undefined) delete process.env.ODESSEUS_JOB_SOURCES_JSON;
+  else process.env.ODESSEUS_JOB_SOURCES_JSON = originalSources;
 
   if (originalSr === undefined) delete process.env.SMARTRECRUITERS_TOKEN;
   else process.env.SMARTRECRUITERS_TOKEN = originalSr;
@@ -23,7 +23,7 @@ afterEach(() => {
 
 describe("expanded job source catalog", () => {
   it("parses SmartRecruiters and Recruitee sources with server-side token references", () => {
-    process.env.ODYSSEUS_JOB_SOURCES_JSON = JSON.stringify([
+    process.env.ODESSEUS_JOB_SOURCES_JSON = JSON.stringify([
       {
         provider: "smartrecruiters",
         companyName: "Example SR",
@@ -42,7 +42,7 @@ describe("expanded job source catalog", () => {
   });
 
   it("rejects unsafe token environment names", () => {
-    process.env.ODYSSEUS_JOB_SOURCES_JSON = JSON.stringify([
+    process.env.ODESSEUS_JOB_SOURCES_JSON = JSON.stringify([
       {
         provider: "recruitee",
         companyName: "Example",

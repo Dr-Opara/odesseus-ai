@@ -148,7 +148,7 @@ export default function PartnerApplicationForm() {
           </select>
         </label>
         <label>Tell us about your audience<textarea className="input" name="audience_description" rows={5} minLength={20} required /></label>
-        <label>Why do you want to partner with Odysseus?<textarea className="input" name="motivation" rows={5} minLength={20} required /></label>
+        <label>Why do you want to partner with Odesseus?<textarea className="input" name="motivation" rows={5} minLength={20} required /></label>
         <div className="partner-form-grid">
           <label>Best content link<input className="input" type="url" name="sample_1" required /></label>
           <label>Second content link <span className="muted">(optional)</span><input className="input" type="url" name="sample_2" /></label>
@@ -173,7 +173,7 @@ export default function PartnerApplicationForm() {
         </div>
         <label className="partner-terms-check">
           <input type="checkbox" name="accepted_terms" required />
-          <span>I agree to the <a href="/partners/terms" target="_blank" rel="noreferrer">Odysseus Partner Program Terms</a>.</span>
+          <span>I agree to the <a href="/partners/terms" target="_blank" rel="noreferrer">Odesseus Partner Program Terms</a>.</span>
         </label>
       </div>
 
