@@ -14,7 +14,26 @@ export async function isAdmin(userId: string) {
     .select("role")
     .eq("user_id", userId)
     .maybeSingle();
-  return data?.role || null;
+
+  if (data?.role) return data.role;
+
+  const allowed = (process.env.ODYSSEUS_ADMIN_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (!allowed.length) return null;
+
+  const { data: authUser } = await service.auth.admin.getUserById(userId);
+  const email = authUser?.user?.email?.trim().toLowerCase();
+  if (!email || !allowed.includes(email)) return null;
+
+  await service.from("admin_users").upsert({
+    user_id: userId,
+    role: "admin",
+  });
+
+  return "admin";
 }
 
 export async function getOrLinkPartner(userId: string, email?: string | null) {
