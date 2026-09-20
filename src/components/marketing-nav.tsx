@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import BrandLogo from "@/components/brand-logo";
 
 const links = [
   { href: "/how-it-works", label: "How It Works" },
@@ -19,7 +20,7 @@ export default function MarketingNav() {
   return (
     <header className="marketing-nav">
       <div className="marketing-nav-inner shell">
-        <Link href="/" className="marketing-wordmark">ODYSSEUS</Link>
+        <BrandLogo href="/" width={184} priority />
 
         <nav className="marketing-nav-links">
           {links.map((link) => (
