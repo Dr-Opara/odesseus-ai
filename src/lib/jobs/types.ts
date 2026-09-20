@@ -1,4 +1,4 @@
-export type JobProvider = "greenhouse" | "lever" | "ashby" | "workable" | "smartrecruiters" | "recruitee";
+export type JobProvider = "greenhouse" | "lever" | "ashby" | "workable" | "smartrecruiters" | "recruitee" | "workday";
 
 export type JobSourceConfig = {
   provider: JobProvider;
@@ -6,6 +6,8 @@ export type JobSourceConfig = {
   slug: string;
   region?: "global" | "eu";
   tokenEnv?: string;
+  careerUrl?: string;
+  maxJobs?: number;
 };
 
 export type NormalizedJobPosting = {
