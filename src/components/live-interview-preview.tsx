@@ -1,63 +1,65 @@
+import styles from "./live-interview-preview.module.css";
+
 export default function LiveInterviewPreview() {
   return (
-    <div className="live-video-preview card" aria-label="Odesseus Live video interview preview">
-      <div className="live-video-stage">
-        <div className="live-video-feed" role="img" aria-label="Candidate in a live video interview">
-          <div className="live-video-topbar">
-            <span className="live-video-live"><span /> Live Preview</span>
-            <span className="live-video-timer">00:12</span>
+    <div className={`card ${styles.preview}`} aria-label="Odesseus Live video interview preview">
+      <div className={styles.stage}>
+        <div className={styles.feed} role="img" aria-label="Candidate in a live video interview">
+          <div className={styles.topbar}>
+            <span className={styles.pill}><span className={styles.liveDot} /> Live Preview</span>
+            <span className={styles.pill}>00:12</span>
           </div>
 
-          <div className="live-video-person" aria-hidden="true">
-            <div className="live-video-person-head" />
-            <div className="live-video-person-body" />
+          <div className={styles.person} aria-hidden="true">
+            <div className={styles.head} />
+            <div className={styles.body} />
           </div>
 
-          <div className="live-video-interviewer">
-            <div className="live-video-interviewer-avatar">I</div>
+          <div className={styles.interviewer}>
+            <div className={styles.avatar}>I</div>
             <span>Interviewer</span>
           </div>
 
-          <div className="live-video-name">
+          <div className={styles.name}>
             <span>You</span>
-            <span className="live-video-audio">▮▮▮</span>
+            <span className={styles.audio}>▮▮▮</span>
           </div>
 
-          <div className="live-video-controls" aria-hidden="true">
-            <span>●</span>
-            <span>▣</span>
-            <span>⌁</span>
-            <span>•••</span>
-            <span className="live-video-end">⌕</span>
+          <div className={styles.controls} aria-hidden="true">
+            <span className={styles.control}>●</span>
+            <span className={styles.control}>▣</span>
+            <span className={styles.control}>⌁</span>
+            <span className={styles.control}>•••</span>
+            <span className={`${styles.control} ${styles.end}`}>⌕</span>
           </div>
         </div>
 
-        <aside className="live-video-assistant">
-          <div className="live-video-tabs">
+        <aside className={styles.assistant}>
+          <div className={styles.tabs}>
             <strong>AI Assistant</strong>
             <span>Job Details</span>
             <span>My Resume</span>
           </div>
 
-          <div className="live-video-suggestion">
-            <div className="live-video-suggestion-label">Real-time suggestion</div>
+          <div className={styles.suggestion}>
+            <div className={styles.suggestionLabel}>Real-time suggestion</div>
             <p>
               Lead with the outcome, then explain how you aligned the system owner and technical team
               to close the compliance gap.
             </p>
           </div>
 
-          <div className="live-video-question">Tell me about yourself</div>
-          <div className="live-video-question">Why are you a great fit for this role?</div>
-          <div className="live-video-question">How do you handle tight deadlines?</div>
-          <div className="live-video-question">Give an example of a challenge you solved</div>
+          <div className={styles.question}>Tell me about yourself</div>
+          <div className={styles.question}>Why are you a great fit for this role?</div>
+          <div className={styles.question}>How do you handle tight deadlines?</div>
+          <div className={styles.question}>Give an example of a challenge you solved</div>
 
-          <div className="live-video-prompt">
+          <div className={styles.prompt}>
             <span>Ask Odesseus anything...</span>
-            <strong>➜</strong>
+            <strong className={styles.send}>➜</strong>
           </div>
 
-          <div className="live-video-context-note">
+          <div className={styles.context}>
             Resume, job description, and application context loaded.
           </div>
         </aside>
