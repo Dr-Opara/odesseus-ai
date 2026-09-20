@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
+import LiveInterviewPreview from "@/components/live-interview-preview";
 
 export const metadata: Metadata = {
   title: "Odysseus Live — $24.99 per interview",
@@ -32,9 +33,10 @@ export default function LivePage() {
         <p className="muted page-hero-copy">
           The resume you submitted, the job you applied to, and everything Odysseus prepared — all in one place when it matters.
         </p>
-        <div className="hero-ctas" style={{ marginTop: 26 }}>
-          <Link className="btn btn-primary" href="/signup">Get Started Free →</Link>
-        </div>
+      </section>
+
+      <section className="shell" style={{ padding: "0 0 34px" }}>
+        <LiveInterviewPreview />
       </section>
 
       <section className="shell" style={{ padding: "10px 0 20px" }}>
