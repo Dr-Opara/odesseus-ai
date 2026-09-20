@@ -56,19 +56,7 @@ export default function Home() {
         <MarketingNav />
       </div>
 
-      <section className="shell hero-section">
-        <div>
-          <div className="badge">A more connected way to move your career forward</div>
-          <h1 className="font-display hero-headline">Your next move, handled.</h1>
-          <p className="muted hero-copy">
-            Odysseus finds strong-match jobs, tailors your resume, applies across supported platforms, and tracks every application — then prepares you for the interview and stays with you live when it begins.
-          </p>
-          <div className="hero-ctas">
-            <Link className="btn btn-primary" href="/signup">Get Started Free →</Link>
-            <Link className="btn btn-secondary" href="/how-it-works">See How It Works</Link>
-          </div>
-        </div>
-
+      <section className="shell" style={{ padding: "54px 0 70px" }}>
         <LiveInterviewPreview />
       </section>
 
