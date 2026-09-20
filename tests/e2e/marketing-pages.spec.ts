@@ -97,6 +97,7 @@ test.describe("shared marketing footer", () => {
       await expect(footer.getByRole("link", { name: "Live" })).toBeVisible();
       await expect(footer.getByRole("link", { name: "Pricing" })).toBeVisible();
       await expect(footer.getByRole("link", { name: "About" })).toBeVisible();
+      await expect(footer.getByRole("link", { name: "Partner Program" })).toHaveAttribute("href", "/partners");
       await expect(footer.getByRole("link", { name: "Sign In" })).toBeVisible();
       await expect(footer.getByRole("link", { name: "Get Started" })).toBeVisible();
     });
@@ -209,8 +210,8 @@ test.describe("marketing copy constraints", () => {
       expect(text).not.toMatch(/\bcalm\b/);
       expect(text).not.toContain("kernor");
       expect(text).not.toContain("trusted by");
-      expect(text).not.toContain("partner");
-      expect(text).not.toContain("endorse");
+      expect(text).not.toContain("endorsed by");
+      expect(text).not.toContain("official partner of");
       expect(text).not.toContain("universal compatibility");
     });
   }
@@ -220,5 +221,36 @@ test.describe("marketing copy constraints", () => {
       await page.goto(path);
       await expect(page.getByText(/supported job boards/i).first()).toBeVisible();
     }
+  });
+});
+
+
+test.describe("Partner Program public experience", () => {
+  test("/partners explains the creator program without fixed commission claims", async ({ page }) => {
+    await page.goto("/partners");
+    await expect(page).toHaveTitle(/Partner Program/);
+    await expect(page.getByRole("heading", { name: "Partner with Odysseus." })).toBeVisible();
+    await expect(page.getByText("Instagram", { exact: true })).toBeVisible();
+    await expect(page.getByText("Facebook", { exact: true })).toBeVisible();
+    await expect(page.getByText("TikTok", { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Apply to partner" })).toHaveAttribute("href", "/partners/apply");
+    const body = (await page.locator("body").innerText()).toLowerCase();
+    expect(body).not.toContain("guaranteed commission");
+    expect(body).not.toContain("official partner of");
+  });
+
+  test("/partners/apply renders creator application fields", async ({ page }) => {
+    await page.goto("/partners/apply");
+    await expect(page.getByRole("heading", { name: "Tell us about you and your audience." })).toBeVisible();
+    await expect(page.getByLabel("Full name")).toBeVisible();
+    await expect(page.getByLabel("Email")).toBeVisible();
+    await expect(page.getByText("Instagram", { exact: true }).first()).toBeVisible();
+  });
+
+  test("/partners/terms renders disclosure and commission eligibility rules", async ({ page }) => {
+    await page.goto("/partners/terms");
+    await expect(page.getByRole("heading", { name: "Clear expectations for Odysseus partners." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Disclosure" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Commission eligibility" })).toBeVisible();
   });
 });
