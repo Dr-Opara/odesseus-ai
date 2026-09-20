@@ -100,7 +100,7 @@ async function normalizeListing(
   if (!listing.title || !listing.externalPath) return null;
 
   const detailResponse = await fetch(
-    `${config.origin}/wday/cxs/${encodeURIComponent(config.tenant)}/${encodeURIComponent(config.site)}/job${listing.externalPath}`,
+    `${config.origin}/wday/cxs/${encodeURIComponent(config.tenant)}/${encodeURIComponent(config.site)}${listing.externalPath}`,
     {
       headers: {
         accept: "application/json",
