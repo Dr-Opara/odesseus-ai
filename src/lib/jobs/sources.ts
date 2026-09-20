@@ -2,10 +2,11 @@ import { z } from "zod";
 import type { JobSourceConfig } from "./types";
 
 const sourceSchema = z.object({
-  provider: z.enum(["greenhouse", "lever", "ashby", "workable"]),
+  provider: z.enum(["greenhouse", "lever", "ashby", "workable", "smartrecruiters", "recruitee"]),
   companyName: z.string().trim().min(1).max(160),
   slug: z.string().trim().min(1).max(200),
   region: z.enum(["global", "eu"]).optional(),
+  tokenEnv: z.string().trim().regex(/^[A-Z][A-Z0-9_]{2,100}$/).optional(),
 });
 
 const sourceListSchema = z.array(sourceSchema).max(500);

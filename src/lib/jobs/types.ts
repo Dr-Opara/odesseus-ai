@@ -1,10 +1,11 @@
-export type JobProvider = "greenhouse" | "lever" | "ashby" | "workable";
+export type JobProvider = "greenhouse" | "lever" | "ashby" | "workable" | "smartrecruiters" | "recruitee";
 
 export type JobSourceConfig = {
   provider: JobProvider;
   companyName: string;
   slug: string;
   region?: "global" | "eu";
+  tokenEnv?: string;
 };
 
 export type NormalizedJobPosting = {
