@@ -16,6 +16,7 @@ const publicExactPaths = [
   "/partners",
   "/partners/apply",
   "/partners/terms",
+  "/preview/job-showcase",
 ];
 const publicPrefixPaths = ["/auth", "/api/partners", "/api/referrals"];
 
