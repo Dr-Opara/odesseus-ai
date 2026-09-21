@@ -2,7 +2,7 @@
 
 Odesseus is a calm AI career product. The user journey is:
 
-Find -> Match -> Tailor -> Approve -> Apply -> Track -> Interview -> Follow up
+Upload Resume -> Paste JD -> Match & Qualify -> Improve Existing Resume -> Review & Approve -> Apply -> Return When Interviewed -> Prepare -> Odesseus Live
 
 ## Product rules
 
@@ -40,7 +40,7 @@ Find -> Match -> Tailor -> Approve -> Apply -> Track -> Interview -> Follow up
 
 - Resume/profile data is the candidate source of truth.
 - Match scores are evidence assessments, not probabilities.
-- Resume tailoring may rewrite, reorder, clarify, emphasize, or remove irrelevant material.
+- Odesseus does not create resumes from scratch. It edits the user's existing uploaded resume for a specific job.\n- Resume tailoring may rewrite, reorder, clarify, emphasize, or remove irrelevant material.
 - Resume tailoring must not add unsupported facts.
 - Each material resume change should be auditable against verified evidence.
 - Do not silently submit a tailored resume without user approval.
@@ -50,8 +50,8 @@ Find -> Match -> Tailor -> Approve -> Apply -> Track -> Interview -> Follow up
 - No subscription. Pay when Odesseus works for you.
 - Application pricing direction: $0.99 per successfully submitted application, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee.
 - Failed/unsupported/paused/cancelled application attempts, closed jobs, incomplete CAPTCHA/MFA/verification, and unconfirmed submissions should not consume an application credit.
-- Interview workspace creation is free.
-- Live Interview Assistant pricing direction: $24.99 per interview.
+- Interview preparation is free.\n- Odesseus does not require email inbox access to detect interviews; users return when they receive an interview invitation.
+- Odesseus Live pricing: $24.99 per interview.
 - Interview pass should be consumed only when the live session actually starts.
 
 ## Git workflow
