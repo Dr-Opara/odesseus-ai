@@ -7,7 +7,9 @@ import { test, expect } from "@playwright/test";
 // claims). Requires no auth/backend credentials — these are all public pages.
 
 const pages = [
-  { path: "/", title: /Odesseus/, heading: "Go into your interview with your entire application behind you." },
+  // The homepage hero is a visual job-search dashboard showcase with no
+  // visible headline; the H1 is screen-reader-only for accessibility/SEO.
+  { path: "/", title: /Odesseus/, heading: "Odesseus finds, scores, and applies to jobs for you.", visible: false },
   { path: "/how-it-works", title: /How Odesseus Works/, heading: "The complete Odesseus lifecycle." },
   { path: "/apply", title: /Apply with Odesseus/, heading: "Apply anywhere your next opportunity lives." },
   { path: "/live", title: /Odesseus Live/, heading: "Go into your interview with your entire application behind you." },
@@ -16,11 +18,16 @@ const pages = [
 ];
 
 test.describe("marketing page titles and headings", () => {
-  for (const { path, title, heading } of pages) {
+  for (const { path, title, heading, visible = true } of pages) {
     test(`${path} has the expected title and heading`, async ({ page }) => {
       await page.goto(path);
       await expect(page).toHaveTitle(title);
-      await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible();
+      const headingLocator = page.getByRole("heading", { name: heading, level: 1 });
+      if (visible) {
+        await expect(headingLocator).toBeVisible();
+      } else {
+        await expect(headingLocator).toBeAttached();
+      }
     });
   }
 });

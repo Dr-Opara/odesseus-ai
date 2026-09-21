@@ -1,5 +1,5 @@
 import Link from "next/link";
-import LiveInterviewPreview from "@/components/live-interview-preview";
+import JobDiscoveryShowcase from "@/components/job-discovery-showcase";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 
@@ -57,7 +57,8 @@ export default function Home() {
       </div>
 
       <section className="shell home-live-hero">
-        <LiveInterviewPreview />
+        <h1 className="sr-only">Odesseus finds, scores, and applies to jobs for you.</h1>
+        <JobDiscoveryShowcase />
 
         <div className="live-preview-trust">
           <div className="live-preview-trust-eyebrow">Trusted by candidates everywhere</div>

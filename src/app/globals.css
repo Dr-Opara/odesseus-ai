@@ -38,6 +38,18 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 :focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 2px; }
 
 .link { color: var(--brand-blue); font-weight: 700; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .link:hover { color: var(--brand-blue-hover); }
 
 .shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }

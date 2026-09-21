@@ -13,9 +13,13 @@ test.describe("landing page", () => {
 
   test("loads and shows the primary calls to action", async ({ page }) => {
     await page.goto("/");
+    // The H1 is intentionally screen-reader-only (the hero is a visual
+    // job-search dashboard showcase with no visible headline) — check it's
+    // present for accessibility/SEO rather than visible.
     await expect(
-      page.getByRole("heading", { name: "Go into your interview with your entire application behind you.", level: 1 })
-    ).toBeVisible();
+      page.getByRole("heading", { name: "Odesseus finds, scores, and applies to jobs for you.", level: 1 })
+    ).toBeAttached();
+    await expect(page.getByText("Job Match Score")).toBeVisible();
     await expect(page.locator("header").getByRole("link", { name: "Sign In" })).toBeVisible();
     await expect(page.locator("header").getByRole("link", { name: "Get Started" })).toBeVisible();
   });
