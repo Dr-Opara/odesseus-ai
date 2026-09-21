@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { runAutomaticJobDiscovery } from "@/lib/jobs/discovery";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { integrationNotConfigured, missingEnv } from "@/lib/config/readiness";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -20,6 +21,15 @@ export async function POST() {
     return NextResponse.json(
       { error: "You've refreshed matches recently. Please wait a bit and try again." },
       { status: 429 }
+    );
+  }
+
+  const missing = missingEnv(["SUPABASE_SERVICE_ROLE_KEY", "OPENAI_API_KEY"] as const);
+  if (missing.length) {
+    console.error("[ODESSEUS_JOB_DISCOVERY] missing configuration", missing);
+    return NextResponse.json(
+      integrationNotConfigured("Job discovery", missing),
+      { status: 503 }
     );
   }
 
