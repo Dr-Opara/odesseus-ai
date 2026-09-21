@@ -10,9 +10,8 @@ export const metadata: Metadata = {
 
 const applyFeatures = [
   "Job Match & Hard-Requirement Check",
-  "Job-Specific Resume Tailoring",
-  "Cover Letter When Needed",
-  "Applications Across Supported Job Boards & Employer Sites",
+  "Edits Your Existing Resume for the Job",
+    "Applications Across Supported Job Boards & Employer Sites",
   "AI Form Completion + Saved Answers",
   "Resume & Document Upload",
   "Human Takeover for CAPTCHA/MFA/Verification",
@@ -42,12 +41,12 @@ const interviewPassFeatures = [
   "Full Interview Transcript",
   "Post-Interview Analysis",
   "Next-Round Memory & Preparation",
-  "Contextual Follow-Up Email",
+  "Interview Context & Prior-Round Notes",
 ];
 
 const freeFeatures = [
   "Candidate Profile",
-  "Job Discovery & Match Scoring",
+  "Job Match & Qualification",
   "Application Dashboard",
   "Interview Workspace",
   "Interview Preparation",
@@ -97,8 +96,8 @@ export default function PricingPage() {
                 </div>
               ))}
             </div>
-            <Link className="btn btn-primary" href="/live" style={{ marginTop: 24 }}>
-              Learn more about Live →
+            <Link className="btn btn-primary" href="/agents#interview-agent" style={{ marginTop: 24 }}>
+              Learn more about Interview Agent →
             </Link>
           </div>
         </div>

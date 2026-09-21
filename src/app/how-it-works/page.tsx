@@ -4,51 +4,45 @@ import MarketingFooter from "@/components/marketing-footer";
 
 export const metadata: Metadata = {
   title: "How Odesseus Works — Odesseus",
-  description: "The complete Odesseus lifecycle: build your profile, find strong matches, apply, track responses, prepare, go live, and follow up.",
+  description: "Upload your existing resume, paste a job description, qualify and improve it, approve the application, then return to Odesseus when you receive an interview.",
 };
 
 const stages = [
   {
     n: "01",
-    title: "Build Your Profile",
-    body: "Upload your resume once. Odesseus learns your verified experience, skills, education, certifications, and preferences.",
-    pills: [],
+    title: "Upload Your Existing Resume",
+    body: "Start with the resume you already use. Odesseus does not create a resume from scratch — your uploaded resume and verified profile remain the source of truth.",
+    pills: ["Your Resume Is the Source of Truth", "No Fabricated Qualifications"],
   },
   {
     n: "02",
-    title: "Find Strong Matches",
-    body: "Odesseus finds relevant opportunities and explains why they fit — a match score, hard-requirement checks, and skills/experience alignment.",
-    pills: ["85%+ Match", "Hard Requirements Checked", "No Fabricated Qualifications"],
+    title: "Paste the Job Description",
+    body: "The Job Match & Qualification Agent compares the role against your resume, checks hard requirements, and shows where your experience already aligns and where it does not.",
+    pills: ["Match Score", "Hard Requirements", "Skills & Experience Alignment"],
   },
   {
     n: "03",
-    title: "Review & Apply",
-    body: "Odesseus tailors your resume, prepares a cover letter when needed, and waits for your approval before completing the application on the employer's site.",
-    pills: ["ATS-Ready Resume", "Cross-Platform Applications", "$0.99 Only After Successful Submission"],
+    title: "Improve & Review",
+    body: "Odesseus edits your existing resume for that specific role using only supported facts. It improves wording, emphasis, ordering, and relevant keywords, then shows you the revised version and what changed.",
+    pills: ["85%+ Target When Supported", "Before & After Review", "You Approve Every Version"],
   },
   {
     n: "04",
-    title: "Track Responses",
-    body: "Every submitted application becomes a tracked record — status, timeline, the frozen resume and job description you applied with, and employer responses as they arrive.",
-    pills: ["Application Timeline", "Frozen Resume & Job Context"],
+    title: "Approve & Apply",
+    body: "After you approve the resume, the Application Agent uses that exact version to complete the supported application. A verified successful submission is recorded in your dashboard and costs $0.99.",
+    pills: ["Approval Required", "$0.99 Successful Submission", "Failed Submission = $0"],
   },
   {
     n: "05",
-    title: "Prepare",
-    body: "When an interview is detected, the Interview Workspace opens at no cost — a readiness brief, verified experience examples, questions to ask, and memory from any prior rounds.",
-    pills: ["Free Interview Preparation", "Multi-Round Memory"],
+    title: "Come Back When You Get an Interview",
+    body: "No inbox access is required. When an employer contacts you, return to Odesseus, select the application or paste the job description, and start free interview preparation.",
+    pills: ["No Email Access Required", "Free Interview Preparation", "Resume + JD Context"],
   },
   {
     n: "06",
-    title: "Odesseus Live",
-    body: "During the interview, Odesseus transcribes in real time and offers private, grounded guidance. You remain the speaker throughout.",
-    pills: ["Realtime Guidance", "STAR / Shorter / Technical / Follow-Up"],
-  },
-  {
-    n: "07",
-    title: "Follow Up",
-    body: "After the interview, Odesseus produces a factual recap and transcript, enriches your round memory, and drafts a contextual follow-up email for you to edit, approve, and send.",
-    pills: ["Post-Interview Analysis", "Follow-Up Email Draft"],
+    title: "Start Odesseus Live",
+    body: "When the interview begins, Odesseus Live provides private realtime transcription, automatic question detection, and grounded on-screen answer guidance while you remain the speaker.",
+    pills: ["$24.99 per Live Interview", "Realtime Guidance", "STAR / Shorter / Technical / Follow-Up"],
   },
 ];
 
@@ -61,9 +55,9 @@ export default function HowItWorksPage() {
 
       <section className="shell page-hero">
         <div className="badge">How Odesseus Works</div>
-        <h1 className="font-display page-hero-headline">The complete Odesseus lifecycle.</h1>
+        <h1 className="font-display page-hero-headline">One connected path from job description to interview.</h1>
         <p className="muted page-hero-copy">
-          From your first resume upload to your next offer, your context stays connected — nothing gets re-entered at every stage.
+          Odesseus works from the resume you already have, waits for your approval before applying, and does not require access to your email.
         </p>
       </section>
 
@@ -78,24 +72,14 @@ export default function HowItWorksPage() {
               <div className="card lifecycle-card">
                 <h2 style={{ fontSize: 22, margin: "0 0 8px" }}>{stage.title}</h2>
                 <p className="muted" style={{ lineHeight: 1.6, margin: 0 }}>{stage.body}</p>
-                {stage.pills.length ? (
-                  <div className="how-it-works-pills">
-                    {stage.pills.map((pill) => (
-                      <span className="how-it-works-pill" key={pill}>{pill}</span>
-                    ))}
-                  </div>
-                ) : null}
+                <div className="how-it-works-pills">
+                  {stage.pills.map((pill) => (
+                    <span className="how-it-works-pill" key={pill}>{pill}</span>
+                  ))}
+                </div>
               </div>
             </div>
           ))}
-        </div>
-
-        <div className="page-cta-band card">
-          <div>
-            <h2 style={{ fontSize: 24, margin: "0 0 6px" }}>Ready to start?</h2>
-            <p className="muted" style={{ margin: 0 }}>Upload your resume and see your first matches.</p>
-          </div>
-
         </div>
       </section>
 
