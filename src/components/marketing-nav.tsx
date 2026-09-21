@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import OdesseusWordmark from "@/components/odesseus-wordmark";
 import { usePathname } from "next/navigation";
 
 const links = [
@@ -20,9 +20,7 @@ export default function MarketingNav() {
   return (
     <header className="marketing-nav">
       <div className="marketing-nav-inner shell">
-        <Link href="/" className="marketing-wordmark">
-          <Image src="/odesseus-logo.png" alt="Odesseus.ai" width={122} height={20} priority style={{ height: 20, width: "auto" }} />
-        </Link>
+        <OdesseusWordmark href="/" size="sm" className="marketing-wordmark" />
 
         <nav className="marketing-nav-links">
           {links.map((link) => (
@@ -38,7 +36,7 @@ export default function MarketingNav() {
 
         <div className="marketing-nav-actions">
           <Link className="btn btn-secondary" href="/login">Sign In</Link>
-          <Link className="btn btn-primary" href="/signup">Get Started →</Link>
+          {pathname === "/" ? <Link className="btn btn-primary" href="/signup">Get Started →</Link> : null}
         </div>
 
         <button
@@ -63,9 +61,11 @@ export default function MarketingNav() {
             <Link className="btn btn-secondary" href="/login" onClick={() => setOpen(false)}>
               Sign In
             </Link>
-            <Link className="btn btn-primary" href="/signup" onClick={() => setOpen(false)}>
-              Get Started →
-            </Link>
+            {pathname === "/" ? (
+              <Link className="btn btn-primary" href="/signup" onClick={() => setOpen(false)}>
+                Get Started →
+              </Link>
+            ) : null}
           </div>
         </div>
       ) : null}

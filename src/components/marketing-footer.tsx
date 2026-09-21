@@ -1,14 +1,12 @@
-import Image from "next/image";
 import Link from "next/link";
+import OdesseusWordmark from "@/components/odesseus-wordmark";
 
 export default function MarketingFooter() {
   return (
     <footer className="shell marketing-footer">
       <div className="marketing-footer-top">
         <div className="marketing-footer-brand">
-          <div className="marketing-wordmark">
-            <Image src="/odesseus-logo.png" alt="Odesseus.ai" width={134} height={22} style={{ height: 22, width: "auto" }} />
-          </div>
+          <OdesseusWordmark size="sm" className="marketing-wordmark" />
           <p className="muted" style={{ fontSize: 13, margin: "10px 0 0", maxWidth: 260 }}>
             Your next move, handled.
           </p>
@@ -31,7 +29,6 @@ export default function MarketingFooter() {
         <div className="marketing-footer-col">
           <div className="marketing-footer-heading">Account</div>
           <Link href="/login">Sign In</Link>
-          <Link href="/signup">Get Started</Link>
         </div>
       </div>
 
