@@ -2768,3 +2768,122 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   .jds-stat-grid { grid-template-columns: 1fr; }
   .jds-match-row { grid-template-columns: 1fr; justify-items: start; gap: 4px; }
 }
+
+
+/* Three-agent product model */
+.marketing-agents-menu { position: relative; }
+.marketing-agents-menu summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: color .15s ease;
+}
+.marketing-agents-menu summary::-webkit-details-marker { display: none; }
+.marketing-agents-menu summary:hover,
+.marketing-agents-menu summary.is-active { color: var(--text); }
+.marketing-agents-dropdown {
+  position: absolute;
+  top: calc(100% + 18px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 360px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 18px 54px rgba(20,20,30,.13);
+  display: grid;
+  gap: 4px;
+  z-index: 60;
+}
+.marketing-agents-dropdown a {
+  padding: 13px 14px;
+  border-radius: 12px;
+  display: grid;
+  gap: 4px;
+}
+.marketing-agents-dropdown a:hover { background: var(--brand-blue-soft); }
+.marketing-agents-dropdown strong { color: var(--text); font-size: 13px; }
+.marketing-agents-dropdown span { color: var(--muted); font-size: 12px; line-height: 1.4; font-weight: 500; }
+.marketing-nav-mobile-group { display: grid; gap: 10px; }
+.marketing-nav-mobile-agent { padding-left: 16px; color: var(--muted); font-size: 14px; }
+
+.agents-hero { max-width: 900px; }
+.agents-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 30px;
+  font-size: 13px;
+  font-weight: 750;
+}
+.agents-flow span {
+  padding: 9px 13px;
+  border: 1px solid var(--brand-blue-border);
+  background: var(--brand-blue-soft);
+  border-radius: 999px;
+}
+.agents-flow b { color: var(--brand-blue); }
+.agents-list { display: grid; gap: 24px; padding: 8px 0 100px; }
+.agent-detail-card {
+  scroll-margin-top: 120px;
+  padding: 36px;
+  display: grid;
+  grid-template-columns: 54px minmax(0,1fr);
+  gap: 24px;
+}
+.agent-detail-number {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: var(--brand-blue-soft);
+  color: var(--brand-blue);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 13px;
+}
+.agent-detail-card h2 { font-size: clamp(28px,3vw,38px); letter-spacing: -.035em; margin: 18px 0 10px; }
+.agent-detail-lead { max-width: 800px; font-size: 16px; line-height: 1.65; }
+.agent-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 12px;
+  margin: 24px 0;
+}
+.agent-detail-grid > div {
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 18px;
+  background: var(--surface);
+}
+.agent-detail-grid strong { font-size: 13px; }
+.agent-detail-grid p { color: var(--muted); line-height: 1.55; font-size: 14px; margin: 7px 0 0; }
+.agent-live-price { display: flex; align-items: baseline; gap: 10px; margin: 28px 0 20px; }
+.agent-live-price strong { font-size: 36px; letter-spacing: -.04em; }
+.agent-live-price span { color: var(--muted); }
+.agent-live-preview { margin: 20px 0 32px; }
+.agent-subheading { font-size: 21px; margin: 32px 0 12px; }
+.agents-platform-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-top: 16px; }
+.agents-platform {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 14px;
+  font-weight: 700;
+  font-size: 13px;
+}
+.agents-platform small { display: block; color: var(--muted); font-weight: 500; margin-top: 5px; }
+.agent-compat-note { max-width: 760px; font-size: 12px; line-height: 1.55; margin-top: 14px; }
+
+@media (max-width: 900px) {
+  .agents-platform-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 680px) {
+  .agent-detail-card { grid-template-columns: 1fr; padding: 24px 20px; }
+  .agent-detail-grid { grid-template-columns: 1fr; }
+  .agents-platform-grid { grid-template-columns: 1fr 1fr; }
+  .agents-flow b { display: none; }
+}
