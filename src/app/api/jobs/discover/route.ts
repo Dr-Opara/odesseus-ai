@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { runAutomaticJobDiscovery } from "@/lib/jobs/discovery";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { integrationNotConfigured, missingEnv } from "@/lib/config/readiness";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -23,13 +24,22 @@ export async function POST() {
     );
   }
 
+  const missing = missingEnv(["SUPABASE_SERVICE_ROLE_KEY", "OPENAI_API_KEY"] as const);
+  if (missing.length) {
+    console.error("[ODESSEUS_JOB_DISCOVERY] missing configuration", missing);
+    return NextResponse.json(
+      integrationNotConfigured("Job discovery", missing),
+      { status: 503 }
+    );
+  }
+
   try {
     const result = await runAutomaticJobDiscovery({ userIds: [userId] });
     return NextResponse.json(result);
   } catch (error) {
-    console.error("[ODYSSEUS_JOB_DISCOVERY] manual discovery failed", error);
+    console.error("[ODESSEUS_JOB_DISCOVERY] manual discovery failed", error);
     return NextResponse.json(
-      { error: "Odysseus could not refresh job matches." },
+      { error: "Odesseus could not refresh job matches." },
       { status: 500 }
     );
   }

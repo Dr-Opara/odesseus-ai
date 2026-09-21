@@ -57,7 +57,7 @@ export async function GET() {
     status: 200,
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="odysseus-data-export-${userId}.json"`,
+      "Content-Disposition": `attachment; filename="odesseus-data-export-${userId}.json"`,
     },
   });
 }

@@ -18,13 +18,13 @@ function escapeHtml(value: string) {
 
 export async function sendPartnerEmail(input: PartnerEmailInput) {
   const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.ODYSSEUS_PARTNER_FROM_EMAIL?.trim();
+  const from = process.env.ODESSEUS_PARTNER_FROM_EMAIL?.trim();
 
   if (!apiKey || !from) {
     return { sent: false as const, reason: "not_configured" as const };
   }
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://odysseus.ai").replace(/\/$/, "");
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://odesseus.ai").replace(/\/$/, "");
   const ctaHref = input.ctaHref
     ? input.ctaHref.startsWith("http")
       ? input.ctaHref
@@ -33,7 +33,7 @@ export async function sendPartnerEmail(input: PartnerEmailInput) {
 
   const html = `
     <div style="font-family:Inter,Arial,sans-serif;max-width:620px;margin:0 auto;padding:28px;color:#0f172a">
-      <div style="font-weight:800;letter-spacing:.08em;font-size:13px;margin-bottom:32px">ODYSSEUS</div>
+      <div style="font-weight:800;letter-spacing:.08em;font-size:13px;margin-bottom:32px">ODESSEUS</div>
       <h1 style="font-size:30px;line-height:1.15;margin:0 0 16px">${escapeHtml(input.heading)}</h1>
       <p style="font-size:16px;line-height:1.65;color:#475569;white-space:pre-line">${escapeHtml(input.body)}</p>
       ${ctaHref && input.ctaLabel ? `
@@ -43,7 +43,7 @@ export async function sendPartnerEmail(input: PartnerEmailInput) {
           </a>
         </p>
       ` : ""}
-      <p style="margin-top:36px;color:#94a3b8;font-size:12px">Odysseus · Your next move, handled.</p>
+      <p style="margin-top:36px;color:#94a3b8;font-size:12px">Odesseus · Your next move, handled.</p>
     </div>
   `;
 
@@ -64,13 +64,13 @@ export async function sendPartnerEmail(input: PartnerEmailInput) {
     });
 
     if (!response.ok) {
-      console.error("[ODYSSEUS_PARTNERS] email provider returned", response.status);
+      console.error("[ODESSEUS_PARTNERS] email provider returned", response.status);
       return { sent: false as const, reason: "provider_error" as const };
     }
 
     return { sent: true as const };
   } catch (error) {
-    console.error("[ODYSSEUS_PARTNERS] email delivery failed", error);
+    console.error("[ODESSEUS_PARTNERS] email delivery failed", error);
     return { sent: false as const, reason: "network_error" as const };
   }
 }

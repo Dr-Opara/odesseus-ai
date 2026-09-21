@@ -33,7 +33,7 @@ export async function createCheckoutSession(sku: BillingSku) {
     success_url: `${siteUrl}/billing?status=success`,
     cancel_url: `${siteUrl}/billing?status=cancelled`,
     metadata: {
-      odysseus_user_id: userId,
+      odesseus_user_id: userId,
       sku,
       credit_type: item.creditType,
       credit_delta: String(item.creditDelta),

@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const provider = url.searchParams.get("provider");
 
-  if (provider !== "google" && provider !== "microsoft") {
+  if (provider !== "google") {
     return NextResponse.redirect(
       new URL("/integrations?error=Invalid%20send%20provider", request.url)
     );
@@ -20,18 +20,13 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  const connector =
-    provider === "google"
-      ? process.env.ODYSSEUS_CONNECT_GOOGLE_SEND_CONNECTOR
-      : process.env.ODYSSEUS_CONNECT_MICROSOFT_SEND_CONNECTOR;
+  const connector = process.env.ODESSEUS_CONNECT_GOOGLE_SEND_CONNECTOR;
 
   if (!connector) {
     return NextResponse.redirect(
       new URL(
         `/integrations?error=${encodeURIComponent(
-          provider === "google"
-            ? "Google follow-up sending is not configured."
-            : "Microsoft follow-up sending is not configured."
+          "Google follow-up sending is not configured."
         )}`,
         request.url
       )

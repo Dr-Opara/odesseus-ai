@@ -1,6 +1,6 @@
-# Odysseus Engineering Guide
+# Odesseus Engineering Guide
 
-Odysseus is a calm AI career product. The user journey is:
+Odesseus is a calm AI career product. The user journey is:
 
 Find -> Match -> Tailor -> Approve -> Apply -> Track -> Interview -> Follow up
 
@@ -47,7 +47,7 @@ Find -> Match -> Tailor -> Approve -> Apply -> Track -> Interview -> Follow up
 
 ## Billing rules
 
-- No subscription. Pay when Odysseus works for you.
+- No subscription. Pay when Odesseus works for you.
 - Application pricing direction: $0.99 per successfully submitted application, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee.
 - Failed/unsupported/paused/cancelled application attempts, closed jobs, incomplete CAPTCHA/MFA/verification, and unconfirmed submissions should not consume an application credit.
 - Interview workspace creation is free.
@@ -84,11 +84,11 @@ Avoid robotic language:
 ## Current milestones
 
 v0.1: foundation, auth, onboarding, dashboard
-v0.2: Odysseus Match
-v0.3: resume tailoring, diff review, explicit approval\nv0.4: credits + Stripe billing\nv0.5: Odysseus Apply assisted browser workflow\nv0.6: Odysseus Track application lifecycle
+v0.2: Odesseus Match
+v0.3: resume tailoring, diff review, explicit approval\nv0.4: credits + Stripe billing\nv0.5: Odesseus Apply assisted browser workflow\nv0.6: Odesseus Track application lifecycle
 v0.7: provider-neutral Email + Calendar detection\nv0.8: Interview Workspace / Readiness
 v0.9: Multi-Round Interview Memory
-v0.10: Odysseus Live realtime interview assistant
+v0.10: Odesseus Live realtime interview assistant
 v0.11: Post-Interview Analysis + Follow-Up
 
 Next expected milestone:

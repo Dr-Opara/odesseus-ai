@@ -109,7 +109,7 @@ async function createCaptureStream(mode: CaptureMode) {
   return mixed;
 }
 
-export default function OdysseusLiveClient({
+export default function OdesseusLiveClient({
   interviewId,
   interviewPasses,
 }: {
@@ -182,7 +182,7 @@ export default function OdysseusLiveClient({
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Odysseus could not process the transcript.");
+        throw new Error(data.error || "Odesseus could not process the transcript.");
       }
 
       const item: TranscriptItem = {
@@ -260,7 +260,7 @@ export default function OdysseusLiveClient({
           setError(
             err instanceof Error
               ? err.message
-              : "Odysseus could not process a transcript segment."
+              : "Odesseus could not process a transcript segment."
           );
         }
         return;
@@ -314,7 +314,7 @@ export default function OdysseusLiveClient({
       const prepareData = await prepareResponse.json();
       if (!prepareResponse.ok) {
         throw new Error(
-          prepareData.error || "Odysseus could not prepare the Live session."
+          prepareData.error || "Odesseus could not prepare the Live session."
         );
       }
 
@@ -396,7 +396,7 @@ export default function OdysseusLiveClient({
       const connected = await waitForPeerConnected(peer);
       if (!connected) {
         throw new Error(
-          "Odysseus could not establish a stable realtime connection. Please try again."
+          "Odesseus could not establish a stable realtime connection. Please try again."
         );
       }
 
@@ -415,12 +415,12 @@ export default function OdysseusLiveClient({
       const activateData = await activateResponse.json();
       if (!activateResponse.ok) {
         throw new Error(
-          activateData.error || "Odysseus could not activate the Live session."
+          activateData.error || "Odesseus could not activate the Live session."
         );
       }
 
       setState("live");
-      setStatusText("Odysseus Live is listening for interview questions.");
+      setStatusText("Odesseus Live is listening for interview questions.");
       router.refresh();
     } catch (err) {
       stream?.getTracks().forEach((track) => track.stop());
@@ -432,7 +432,7 @@ export default function OdysseusLiveClient({
       setState("error");
       setStatusText("Live did not start.");
       setError(
-        err instanceof Error ? err.message : "Odysseus Live could not start."
+        err instanceof Error ? err.message : "Odesseus Live could not start."
       );
     }
   }
@@ -457,7 +457,7 @@ export default function OdysseusLiveClient({
       if (data?.guidance) setGuidance(data.guidance);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Odysseus could not refresh guidance."
+        err instanceof Error ? err.message : "Odesseus could not refresh guidance."
       );
     } finally {
       setBusyMode(null);
@@ -494,7 +494,7 @@ export default function OdysseusLiveClient({
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Odysseus could not end Live cleanly.");
+        throw new Error(data.error || "Odesseus could not end Live cleanly.");
       }
 
       setState("ended");
@@ -503,7 +503,7 @@ export default function OdysseusLiveClient({
     } catch (err) {
       setState("error");
       setError(
-        err instanceof Error ? err.message : "Odysseus could not close the session."
+        err instanceof Error ? err.message : "Odesseus could not close the session."
       );
     }
   }
@@ -516,7 +516,7 @@ export default function OdysseusLiveClient({
             Audio source
           </div>
           <h2 style={{ fontSize: 24, margin: "7px 0 6px" }}>
-            What should Odysseus listen to?
+            What should Odesseus listen to?
           </h2>
           <p className="muted" style={{ margin: 0, lineHeight: 1.55 }}>
             {modeCopy}
@@ -574,7 +574,7 @@ export default function OdysseusLiveClient({
               onClick={startLive}
               disabled={!consent || interviewPasses < 1}
             >
-              {state === "error" ? "Try again" : "Start Odysseus Live"}
+              {state === "error" ? "Try again" : "Start Odesseus Live"}
             </button>
           ) : null}
 
@@ -657,7 +657,7 @@ export default function OdysseusLiveClient({
         ) : (
           <div className="live-waiting">
             <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
-              Odysseus only surfaces guidance when it identifies a question or clear request for you to respond.
+              Odesseus only surfaces guidance when it identifies a question or clear request for you to respond.
             </p>
           </div>
         )}

@@ -62,7 +62,7 @@ export default async function JobsPage() {
               Roles worth looking at.
             </h1>
             <p className="muted" style={{ fontSize: 17, lineHeight: 1.6, maxWidth: 680 }}>
-              Odysseus checks configured employer job feeds against your verified profile and keeps roles that clear your {threshold}% match target.
+              Odesseus checks configured employer job feeds against your verified profile and keeps roles that clear your {threshold}% match target.
             </p>
           </div>
           <div className="jobs-heading-actions">
@@ -122,7 +122,7 @@ export default async function JobsPage() {
           <div className="card jobs-empty">
             <h2 style={{ fontSize: 27, margin: "0 0 8px" }}>No strong matches yet.</h2>
             <p className="muted" style={{ lineHeight: 1.6, margin: "0 0 20px" }}>
-              Run a refresh to check configured job sources, or paste a role manually while Odysseus keeps looking in the background.
+              Run a refresh to check configured job sources, or paste a role manually while Odesseus keeps looking in the background.
             </p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <JobDiscoveryButton />

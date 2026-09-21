@@ -309,7 +309,7 @@ export default async function InterviewWorkspacePage({
                 Build your interview brief.
               </h2>
               <p className="muted" style={{ lineHeight: 1.6, margin: 0 }}>
-                Odysseus will use only the exact job, submitted resume, and application history for this interview.
+                Odesseus will use only the exact job, submitted resume, and application history for this interview.
               </p>
             </div>
           )}
@@ -432,7 +432,7 @@ export default async function InterviewWorkspacePage({
 
           <div className="card interview-live-card">
             <div className="muted" style={{ fontSize: 13 }}>
-              {liveSession?.status === "ended" ? "After interview" : "Odysseus Live"}
+              {liveSession?.status === "ended" ? "After interview" : "Odesseus Live"}
             </div>
             <h3 style={{ fontSize: 22, margin: "7px 0 7px" }}>
               {liveSession?.status === "ended"
@@ -455,7 +455,7 @@ export default async function InterviewWorkspacePage({
               </Link>
             ) : (
               <Link className="btn btn-primary" href={`/interviews/${interview.id}/live`}>
-                Start Odysseus Live
+                Start Odesseus Live
               </Link>
             )}
           </div>

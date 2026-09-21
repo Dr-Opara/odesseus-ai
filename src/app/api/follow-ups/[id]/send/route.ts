@@ -56,16 +56,9 @@ export async function POST(
   const providers = (accounts || []).map((item) => item.provider);
   const canGoogle =
     providers.includes("google") &&
-    Boolean(process.env.ODYSSEUS_CONNECT_GOOGLE_SEND_CONNECTOR);
-  const canMicrosoft =
-    providers.includes("microsoft") &&
-    Boolean(process.env.ODYSSEUS_CONNECT_MICROSOFT_SEND_CONNECTOR);
+    Boolean(process.env.ODESSEUS_CONNECT_GOOGLE_SEND_CONNECTOR);
 
-  const provider = canGoogle
-    ? "google"
-    : canMicrosoft
-      ? "microsoft"
-      : null;
+  const provider = canGoogle ? "google" : null;
 
   if (!provider) {
     return NextResponse.json({
@@ -103,8 +96,8 @@ export async function POST(
 
     return NextResponse.json({ ok: true, sent: true, provider });
   } catch (error) {
-    console.error("Odysseus follow-up send failed:", error);
-    const message = "Odysseus could not send this follow-up.";
+    console.error("Odesseus follow-up send failed:", error);
+    const message = "Odesseus could not send this follow-up.";
 
     await service
       .from("follow_up_drafts")

@@ -13,9 +13,11 @@ test.describe("landing page", () => {
 
   test("loads and shows the primary calls to action", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Your next move, handled." })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Go into your interview with your entire application behind you.", level: 1 })
+    ).toBeVisible();
     await expect(page.locator("header").getByRole("link", { name: "Sign In" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Get Started Free" })).toBeVisible();
+    await expect(page.locator("header").getByRole("link", { name: "Get Started" })).toBeVisible();
   });
 });
 
@@ -30,7 +32,7 @@ test.describe("login and signup pages", () => {
 
   test("signup page renders the account-creation form", async ({ page }) => {
     await page.goto("/signup");
-    await expect(page.getByRole("heading", { name: "Meet Odysseus." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Meet Odesseus." })).toBeVisible();
     await expect(page.getByLabel("Name")).toBeVisible();
     await expect(page.getByLabel("Email")).toBeVisible();
     await expect(page.getByLabel("Password")).toBeVisible();

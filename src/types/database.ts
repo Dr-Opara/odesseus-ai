@@ -7,7 +7,12 @@ export type Json =
   | Json[]
 
 export type Database = {
-  odysseus_private: {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  odesseus_private: {
     Tables: {
       billing_customers: {
         Row: {
@@ -1452,7 +1457,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      odysseus_activate_live_session: {
+      odesseus_activate_live_session: {
         Args: {
           p_openai_session_id: string
           p_session_id: string
@@ -1484,7 +1489,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      odysseus_end_live_session: {
+      odesseus_end_live_session: {
         Args: { p_session_id: string; p_user_id: string }
         Returns: {
           activated_at: string | null
@@ -1512,7 +1517,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      odysseus_finalize_successful_application: {
+      odesseus_finalize_successful_application: {
         Args: {
           p_confirmation_text: string
           p_page_url?: string
@@ -1525,11 +1530,11 @@ export type Database = {
           run_id: string
         }[]
       }
-      odysseus_get_integration_secret: {
+      odesseus_get_integration_secret: {
         Args: { p_secret_id: string }
         Returns: string
       }
-      odysseus_store_integration_secret: {
+      odesseus_store_integration_secret: {
         Args: { p_name: string; p_secret: string; p_user_id: string }
         Returns: string
       }
@@ -1661,11 +1666,10 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  odysseus_private: {
+  odesseus_private: {
     Enums: {},
   },
   public: {
     Enums: {},
   },
 } as const
-

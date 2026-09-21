@@ -186,8 +186,8 @@ export async function upsertInterview(input: {
       to_status: "interview",
       title: "Interview workspace created",
       detail: input.scheduledAt
-        ? "Odysseus connected the scheduled interview to this application."
-        : "Odysseus created an interview workspace from the employer invitation.",
+        ? "Odesseus connected the scheduled interview to this application."
+        : "Odesseus created an interview workspace from the employer invitation.",
       source: input.source,
       metadata: { interview_id: interview.id, signal_id: input.signalId },
     });
@@ -487,7 +487,7 @@ export async function syncGoogleForUser(userId: string) {
       user_id: userId,
       provider: "google",
       status: "connected",
-      connector_id: process.env.ODYSSEUS_CONNECT_GOOGLE_CONNECTOR || null,
+      connector_id: process.env.ODESSEUS_CONNECT_GOOGLE_CONNECTOR || null,
       last_sync_at: new Date().toISOString(),
       last_error: null,
       connected_at: new Date().toISOString(),
@@ -503,7 +503,7 @@ export async function syncGoogleForUser(userId: string) {
       user_id: userId,
       provider: "google",
       status: "error",
-      connector_id: process.env.ODYSSEUS_CONNECT_GOOGLE_CONNECTOR || null,
+      connector_id: process.env.ODESSEUS_CONNECT_GOOGLE_CONNECTOR || null,
       last_error: message,
       updated_at: new Date().toISOString(),
     });

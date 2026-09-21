@@ -40,7 +40,7 @@ export async function POST(
 
   if (!run.resume_token) {
     return NextResponse.json(
-      { error: "Odysseus is still working. Try again when the run is waiting for you." },
+      { error: "Odesseus is still working. Try again when the run is waiting for you." },
       { status: 409 }
     );
   }

@@ -4,8 +4,8 @@ import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 
 export const metadata: Metadata = {
-  title: "Apply with Odysseus — $0.99 per successful application",
-  description: "Odysseus matches the role, tailors your resume, completes the application, and tracks it — $0.99 only after a successful submission.",
+  title: "Apply with Odesseus — $0.99 per successful application",
+  description: "Odesseus matches the role, tailors your resume, completes the application, and tracks it — $0.99 only after a successful submission.",
 };
 
 const platforms = [
@@ -24,7 +24,7 @@ const platforms = [
 const stages = [
   {
     label: "Match",
-    title: "Odysseus checks fit before anything else.",
+    title: "Odesseus checks fit before anything else.",
     items: ["Match score", "Hard requirements", "Skills/experience alignment"],
   },
   {
@@ -39,7 +39,7 @@ const stages = [
   },
   {
     label: "Apply",
-    title: "Odysseus completes the application itself.",
+    title: "Odesseus completes the application itself.",
     items: ["Forms", "Work history", "Education", "Certifications", "Saved answers", "Authorization", "Sponsorship", "Salary", "Availability", "Document upload"],
   },
   {
@@ -71,10 +71,10 @@ export default function ApplyPage() {
       </div>
 
       <section className="shell page-hero">
-        <div className="badge">$0.99 · Apply with Odysseus</div>
+        <div className="badge">$0.99 · Apply with Odesseus</div>
         <h1 className="font-display page-hero-headline">Apply anywhere your next opportunity lives.</h1>
         <p className="muted page-hero-copy">
-          Odysseus matches the role, tailors your resume, completes the application, and tracks it—all for $0.99 after a successful submission.
+          Odesseus matches the role, tailors your resume, completes the application, and tracks it—all for $0.99 after a successful submission.
         </p>
         <div className="hero-ctas" style={{ marginTop: 26 }}>
           <Link className="btn btn-primary" href="/signup">Get Started Free →</Link>
@@ -88,7 +88,7 @@ export default function ApplyPage() {
         <div className="card" style={{ padding: 30 }}>
           <h2 style={{ fontSize: 24, margin: "0 0 8px" }}>Cross-platform coverage</h2>
           <p className="muted" style={{ margin: "0 0 4px", maxWidth: 620 }}>
-            Odysseus applies across supported job boards and employer career sites — at the same $0.99 price, regardless of platform.
+            Odesseus applies across supported job boards and employer career sites — at the same $0.99 price, regardless of platform.
           </p>
           <div className="platform-coverage-grid">
             {platforms.map((platform) => (
@@ -116,7 +116,7 @@ export default function ApplyPage() {
         <div className="card" style={{ padding: 30 }}>
           <h2 style={{ fontSize: 24, margin: "0 0 4px" }}>Billing rule</h2>
           <p className="muted" style={{ margin: "0 0 4px" }}>
-            You are only charged when Odysseus successfully completes the work.
+            You are only charged when Odesseus successfully completes the work.
           </p>
           <div className="billing-rule-grid">
             {billingRules.map((rule) => (

@@ -69,7 +69,7 @@ export default async function ResumeTailoringPage({
         </div>
 
         <div className="review-note">
-          Odysseus can improve wording and relevance, but it cannot add experience or qualifications that are not already verified in your profile.
+          Odesseus can improve wording and relevance, but it cannot add experience or qualifications that are not already verified in your profile.
         </div>
 
         <div className="resume-preview card">
@@ -154,7 +154,7 @@ export default async function ResumeTailoringPage({
                 </div>
 
                 <div className="diff-reason">
-                  <strong>Why Odysseus changed it</strong>
+                  <strong>Why Odesseus changed it</strong>
                   <p className="muted">{change.reason}</p>
                   <div className="evidence-box">
                     <div className="muted" style={{ fontSize: 12, marginBottom: 7 }}>Verified evidence</div>
@@ -174,11 +174,11 @@ export default async function ResumeTailoringPage({
               <div className="muted" style={{ fontSize: 13 }}>Next step</div>
               <h2 style={{ fontSize: 24, margin: "7px 0 5px" }}>Ready to apply.</h2>
               <p className="muted" style={{ margin: 0 }}>
-                Odysseus will use this exact approved PDF and pause whenever your input is required.
+                Odesseus will use this exact approved PDF and pause whenever your input is required.
               </p>
             </div>
             <Link className="btn btn-primary" href={`/apply/start?job=${tailoring.job_id}`}>
-              Apply with Odysseus
+              Apply with Odesseus
             </Link>
           </div>
         ) : null}
@@ -191,7 +191,7 @@ export default async function ResumeTailoringPage({
             </h2>
             <p className="muted" style={{ margin: 0 }}>
               {tailoring.status === "approved"
-                ? "Odysseus has frozen this version for the application workflow."
+                ? "Odesseus has frozen this version for the application workflow."
                 : "Approve this version or regenerate another one."}
             </p>
           </div>

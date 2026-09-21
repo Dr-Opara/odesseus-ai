@@ -1,5 +1,5 @@
+import Image from "next/image";
 import Link from "next/link";
-import BrandLogo from "@/components/brand-logo";
 import { login } from "./actions";
 
 export default async function LoginPage({
@@ -12,7 +12,9 @@ export default async function LoginPage({
   return (
     <main className="shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "50px 0" }}>
       <div style={{ width: "min(430px,100%)" }}>
-        <BrandLogo width={190} priority />
+        <Link href="/" style={{ display: "inline-flex" }}>
+          <Image src="/odesseus-logo.png" alt="Odesseus.ai" width={172} height={28} priority style={{ height: 28, width: "auto" }} />
+        </Link>
         <div style={{ marginTop: 60 }}>
           <h1 style={{ fontSize: 42, letterSpacing: "-0.045em", marginBottom: 10 }}>Welcome back.</h1>
           <p className="muted" style={{ marginBottom: 30 }}>Pick up where you left off.</p>
@@ -40,7 +42,7 @@ export default async function LoginPage({
           </form>
 
           <p className="muted" style={{ textAlign: "center", fontSize: 14, marginTop: 18 }}>
-            New to Odysseus? <Link href="/signup" style={{ color: "var(--text)", fontWeight: 700 }}>Create an account</Link>
+            New to Odesseus? <Link href="/signup" className="link">Create an account</Link>
           </p>
         </div>
       </div>

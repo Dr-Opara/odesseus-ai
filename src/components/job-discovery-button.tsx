@@ -17,7 +17,7 @@ export default function JobDiscoveryButton() {
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error || "Odysseus could not refresh jobs.");
+        setMessage(data.error || "Odesseus could not refresh jobs.");
         return;
       }
 
@@ -33,7 +33,7 @@ export default function JobDiscoveryButton() {
 
       router.refresh();
     } catch {
-      setMessage("Odysseus could not refresh jobs.");
+      setMessage("Odesseus could not refresh jobs.");
     } finally {
       setBusy(false);
     }

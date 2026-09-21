@@ -4,8 +4,8 @@ import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 
 export const metadata: Metadata = {
-  title: "About — Odysseus",
-  description: "Odysseus gives every job seeker an agent for the work around getting hired.",
+  title: "About — Odesseus",
+  description: "Odesseus gives every job seeker an agent for the work around getting hired.",
 };
 
 const fragments = [
@@ -32,7 +32,7 @@ const beliefs = [
   {
     n: "03",
     title: "You shouldn't pay just to have access.",
-    body: "Pay when Odysseus completes meaningful work.",
+    body: "Pay when Odesseus completes meaningful work.",
   },
   {
     n: "04",
@@ -51,13 +51,13 @@ export default function AboutPage() {
       <section className="shell page-hero">
         <h1 className="font-display page-hero-headline">The job search shouldn&apos;t be a second full-time job.</h1>
         <p className="muted page-hero-copy">
-          Odysseus was built around a simple idea: people should spend more time choosing the right opportunities and preparing to succeed—and less time repeating the same information across applications, resumes, portals, and interview rounds.
+          Odesseus was built around a simple idea: people should spend more time choosing the right opportunities and preparing to succeed—and less time repeating the same information across applications, resumes, portals, and interview rounds.
         </p>
       </section>
 
       <section className="shell" style={{ padding: "10px 0 50px" }}>
         <div className="card" style={{ padding: 34 }}>
-          <h2 style={{ fontSize: 26, margin: "0 0 10px" }}>Why Odysseus exists</h2>
+          <h2 style={{ fontSize: 26, margin: "0 0 10px" }}>Why Odesseus exists</h2>
           <p className="muted" style={{ margin: 0, maxWidth: 640, lineHeight: 1.6 }}>
             Job search today is fragmented across disconnected steps:
           </p>
@@ -67,7 +67,7 @@ export default function AboutPage() {
             ))}
           </div>
           <p className="muted" style={{ margin: "8px 0 0", maxWidth: 640, lineHeight: 1.6 }}>
-            Odysseus unifies them into one connected lifecycle:
+            Odesseus unifies them into one connected lifecycle:
           </p>
           <p className="flow-chain-large">
             Discover → Match → Tailor → Apply → Track → Interview → Follow Up
@@ -84,7 +84,7 @@ export default function AboutPage() {
             Give every job seeker an agent for the work around getting hired.
           </h2>
           <p className="muted" style={{ maxWidth: 620, margin: "0 auto" }}>
-            Odysseus does not replace the candidate. It handles the repetitive career-search work, while the person stays in control of decisions, applications, and interviews.
+            Odesseus does not replace the candidate. It handles the repetitive career-search work, while the person stays in control of decisions, applications, and interviews.
           </p>
         </div>
       </section>
@@ -113,7 +113,7 @@ export default function AboutPage() {
 
       <section className="shell" style={{ padding: "0 0 30px" }}>
         <p className="muted" style={{ fontSize: 14, margin: 0 }}>
-          Odysseus is developed by ProcessPilot Technologies LLC.
+          Odesseus is developed by ProcessPilot Technologies LLC.
         </p>
       </section>
 

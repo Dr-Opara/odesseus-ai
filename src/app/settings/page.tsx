@@ -42,7 +42,7 @@ export default async function SettingsPage({
             Account &amp; preferences.
           </h1>
           <p className="muted" style={{ fontSize: 18, lineHeight: 1.6, marginBottom: 30 }}>
-            Manage your account, security, and how Odysseus searches on your behalf.
+            Manage your account, security, and how Odesseus searches on your behalf.
           </p>
 
           {error ? (
@@ -77,7 +77,7 @@ export default async function SettingsPage({
             <div className="muted" style={{ fontSize: 13 }}>Data &amp; privacy</div>
             <h2 style={{ fontSize: 22, margin: "7px 0 16px" }}>Your data</h2>
             <p className="muted" style={{ margin: "0 0 16px", lineHeight: 1.55 }}>
-              Download a copy of everything Odysseus has on file for you, including your
+              Download a copy of everything Odesseus has on file for you, including your
               profile, applications, interviews, and job matches.
             </p>
             <a className="btn btn-secondary" href="/api/account/export" download>

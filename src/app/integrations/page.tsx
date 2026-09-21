@@ -166,7 +166,7 @@ export default async function IntegrationsPage({
               Recruiter and employer messages
             </h2>
             <p className="muted" style={{ margin: 0 }}>
-              Odysseus reads only enough context to match updates to your tracked applications.
+              Odesseus reads only enough context to match updates to your tracked applications.
             </p>
           </div>
 
@@ -209,17 +209,6 @@ export default async function IntegrationsPage({
             </div>
 
             <div className="card integration-provider-card">
-              <strong>Microsoft</strong>
-              <span className="muted">Outlook / Hotmail / Microsoft 365</span>
-              <a
-                className="btn btn-secondary"
-                href="/api/integrations/oauth/connect?provider=microsoft&service=email"
-              >
-                Connect
-              </a>
-            </div>
-
-            <div className="card integration-provider-card">
               <strong>Yahoo</strong>
               <span className="muted">OAuth + Yahoo Mail</span>
               <form method="get" action="/api/integrations/oauth/connect" className="integration-mini-form">
@@ -250,10 +239,10 @@ export default async function IntegrationsPage({
           <div>
             <div className="muted" style={{ fontSize: 13 }}>Optional follow-up sending</div>
             <h2 style={{ fontSize: 28, margin: "7px 0 6px" }}>
-              Send approved follow-ups from Odysseus
+              Send approved follow-ups from Odesseus
             </h2>
             <p className="muted" style={{ margin: 0 }}>
-              This permission is separate from read-only detection. Skip it if you prefer Odysseus to open approved drafts in your normal email app.
+              This permission is separate from read-only detection. Skip it if you prefer Odesseus to open approved drafts in your normal email app.
             </p>
           </div>
 
@@ -264,17 +253,6 @@ export default async function IntegrationsPage({
               <a
                 className="btn btn-secondary"
                 href="/api/integrations/outbound/connect?provider=google"
-              >
-                Enable sending
-              </a>
-            </div>
-
-            <div className="card integration-provider-card">
-              <strong>Microsoft send</strong>
-              <span className="muted">Optional Outlook / Microsoft 365 send permission for approved follow-ups only.</span>
-              <a
-                className="btn btn-secondary"
-                href="/api/integrations/outbound/connect?provider=microsoft"
               >
                 Enable sending
               </a>
@@ -326,17 +304,6 @@ export default async function IntegrationsPage({
               <a
                 className="btn btn-secondary"
                 href="/api/integrations/oauth/connect?provider=google&service=calendar"
-              >
-                Connect
-              </a>
-            </div>
-
-            <div className="card integration-provider-card">
-              <strong>Microsoft Calendar</strong>
-              <span className="muted">Outlook / Microsoft 365</span>
-              <a
-                className="btn btn-secondary"
-                href="/api/integrations/oauth/connect?provider=microsoft&service=calendar"
               >
                 Connect
               </a>

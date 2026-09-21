@@ -2,14 +2,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { sendPartnerEmail } from "@/lib/partners/email";
 
 const originalKey = process.env.RESEND_API_KEY;
-const originalFrom = process.env.ODYSSEUS_PARTNER_FROM_EMAIL;
+const originalFrom = process.env.ODESSEUS_PARTNER_FROM_EMAIL;
 
 afterEach(() => {
   if (originalKey === undefined) delete process.env.RESEND_API_KEY;
   else process.env.RESEND_API_KEY = originalKey;
 
-  if (originalFrom === undefined) delete process.env.ODYSSEUS_PARTNER_FROM_EMAIL;
-  else process.env.ODYSSEUS_PARTNER_FROM_EMAIL = originalFrom;
+  if (originalFrom === undefined) delete process.env.ODESSEUS_PARTNER_FROM_EMAIL;
+  else process.env.ODESSEUS_PARTNER_FROM_EMAIL = originalFrom;
 
   vi.unstubAllGlobals();
 });
@@ -17,7 +17,7 @@ afterEach(() => {
 describe("Partner Program email delivery", () => {
   it("degrades gracefully when email delivery is not configured", async () => {
     delete process.env.RESEND_API_KEY;
-    delete process.env.ODYSSEUS_PARTNER_FROM_EMAIL;
+    delete process.env.ODESSEUS_PARTNER_FROM_EMAIL;
 
     const result = await sendPartnerEmail({
       to: "creator@example.com",
@@ -31,7 +31,7 @@ describe("Partner Program email delivery", () => {
 
   it("sends through Resend when configured", async () => {
     process.env.RESEND_API_KEY = "re_test_key";
-    process.env.ODYSSEUS_PARTNER_FROM_EMAIL = "Odysseus Partners <partners@example.com>";
+    process.env.ODESSEUS_PARTNER_FROM_EMAIL = "Odesseus Partners <partners@example.com>";
 
     const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);

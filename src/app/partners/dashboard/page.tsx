@@ -42,7 +42,7 @@ export default async function PartnerDashboardPage() {
     .filter((earning: any) => earning.status === "paid")
     .reduce((sum: number, earning: any) => sum + earning.amount_cents, 0);
   const campaigns = (members || []).map((member: any) => member.partner_campaigns).filter(Boolean);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://odysseus.ai";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://odesseus.ai";
   const referralUrl = siteUrl + "/?ref=" + partner.referral_code;
 
   return (
@@ -51,7 +51,7 @@ export default async function PartnerDashboardPage() {
         <div>
           <div className="badge">Approved Partner</div>
           <h1>Welcome, {partner.full_name.split(" ")[0]}.</h1>
-          <p className="muted">Share Odysseus, participate in campaigns, and track what your referrals generate.</p>
+          <p className="muted">Share Odesseus, participate in campaigns, and track what your referrals generate.</p>
         </div>
         <div className="card partner-referral-card">
           <span className="muted">Your referral code</span>

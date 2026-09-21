@@ -5,7 +5,7 @@ import MarketingFooter from "@/components/marketing-footer";
 import LiveInterviewPreview from "@/components/live-interview-preview";
 
 export const metadata: Metadata = {
-  title: "Odysseus Live — $24.99 per interview",
+  title: "Odesseus Live — $24.99 per interview",
   description: "Go into your interview with your entire application behind you. One interview. One pass. Everything included.",
 };
 
@@ -28,10 +28,10 @@ export default function LivePage() {
       </div>
 
       <section className="shell page-hero">
-        <div className="badge">$24.99 · Odysseus Live</div>
+        <div className="badge">$24.99 · Odesseus Live</div>
         <h1 className="font-display page-hero-headline">Go into your interview with your entire application behind you.</h1>
         <p className="muted page-hero-copy">
-          The resume you submitted, the job you applied to, and everything Odysseus prepared — all in one place when it matters.
+          The resume you submitted, the job you applied to, and everything Odesseus prepared — all in one place when it matters.
         </p>
       </section>
 
@@ -61,7 +61,7 @@ export default function LivePage() {
         </div>
 
         <div className="card stage-band">
-          <span className="stage-band-label">During — Odysseus Live</span>
+          <span className="stage-band-label">During — Odesseus Live</span>
           <h2 style={{ fontSize: 22, margin: "16px 0 4px" }}>Private, real-time support while you speak.</h2>
           <div className="stage-band-list">
             {[
@@ -79,7 +79,7 @@ export default function LivePage() {
             ))}
           </div>
           <div className="marketing-callout">
-            The candidate remains the speaker. Odysseus provides private on-screen support for recall, structure, and context.
+            The candidate remains the speaker. Odesseus provides private on-screen support for recall, structure, and context.
           </div>
         </div>
       </section>
@@ -88,7 +88,7 @@ export default function LivePage() {
         <div className="card" style={{ padding: 34 }}>
           <h2 style={{ fontSize: 24, margin: "0 0 8px" }}>Works with the tools your interviews already use</h2>
           <p className="muted" style={{ margin: "0 0 4px", maxWidth: 620 }}>
-            Odysseus Live is designed to work alongside supported video interview, technical interview, and assessment platforms.
+            Odesseus Live is designed to work alongside supported video interview, technical interview, and assessment platforms.
           </p>
 
           <div className="platform-compat-scroll">
@@ -105,7 +105,7 @@ export default function LivePage() {
             One Live experience across your interview tools.
           </p>
           <p className="muted" style={{ margin: "0 0 16px", maxWidth: 620, lineHeight: 1.6 }}>
-            Odysseus can use shared interview audio or your microphone to provide realtime transcription, question detection, and contextual guidance—without joining the meeting as another participant.
+            Odesseus can use shared interview audio or your microphone to provide realtime transcription, question detection, and contextual guidance—without joining the meeting as another participant.
           </p>
           <p className="muted" style={{ fontSize: 13, margin: 0, maxWidth: 620 }}>
             Platform compatibility may vary by browser, operating system, and the interview platform&apos;s audio-sharing permissions.

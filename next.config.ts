@@ -21,13 +21,12 @@ if (process.env.VERCEL && process.env.VERCEL_ENV !== "production") {
     "STRIPE_WEBHOOK_SECRET",
     "BROWSERBASE_API_KEY",
     "BROWSERBASE_PROJECT_ID",
-    "ODYSSEUS_CONNECT_GOOGLE_CONNECTOR",
-    "ODYSSEUS_CONNECT_MICROSOFT_CONNECTOR",
-    "ODYSSEUS_CONNECT_YAHOO_CONNECTOR",
+    "ODESSEUS_CONNECT_GOOGLE_CONNECTOR",
+    "ODESSEUS_CONNECT_YAHOO_CONNECTOR",
     "CRON_SECRET",
   ];
   const missing = required.filter((key) => !process.env[key]);
-  console.log("[ODYSSEUS_CONFIG_AUDIT]", JSON.stringify({
+  console.log("[ODESSEUS_CONFIG_AUDIT]", JSON.stringify({
     environment: process.env.VERCEL_ENV ?? "unknown",
     missing,
   }));

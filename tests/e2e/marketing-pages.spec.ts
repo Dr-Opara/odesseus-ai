@@ -7,11 +7,11 @@ import { test, expect } from "@playwright/test";
 // claims). Requires no auth/backend credentials — these are all public pages.
 
 const pages = [
-  { path: "/", title: /Odysseus/, heading: "Your next move, handled." },
-  { path: "/how-it-works", title: /How Odysseus Works/, heading: "The complete Odysseus lifecycle." },
-  { path: "/apply", title: /Apply with Odysseus/, heading: "Apply anywhere your next opportunity lives." },
-  { path: "/live", title: /Odysseus Live/, heading: "Go into your interview with your entire application behind you." },
-  { path: "/pricing", title: /Pricing/, heading: "No subscription. Pay when Odysseus works for you." },
+  { path: "/", title: /Odesseus/, heading: "Go into your interview with your entire application behind you." },
+  { path: "/how-it-works", title: /How Odesseus Works/, heading: "The complete Odesseus lifecycle." },
+  { path: "/apply", title: /Apply with Odesseus/, heading: "Apply anywhere your next opportunity lives." },
+  { path: "/live", title: /Odesseus Live/, heading: "Go into your interview with your entire application behind you." },
+  { path: "/pricing", title: /Pricing/, heading: "No subscription. Pay when Odesseus works for you." },
   { path: "/about", title: /About/, heading: "The job search shouldn't be a second full-time job." },
 ];
 
@@ -20,7 +20,7 @@ test.describe("marketing page titles and headings", () => {
     test(`${path} has the expected title and heading`, async ({ page }) => {
       await page.goto(path);
       await expect(page).toHaveTitle(title);
-      await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+      await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible();
     });
   }
 });
@@ -55,7 +55,7 @@ test.describe("shared marketing navigation", () => {
     await page.goto("/");
     await page.locator(".marketing-nav-links").getByRole("link", { name: "Pricing" }).click();
     await expect(page).toHaveURL(/\/pricing$/);
-    await expect(page.getByRole("heading", { name: "No subscription. Pay when Odysseus works for you." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "No subscription. Pay when Odesseus works for you." })).toBeVisible();
   });
 });
 
@@ -120,7 +120,7 @@ test.describe("pricing figures", () => {
     await page.goto("/pricing");
     await expect(page.getByText("$0.99").first()).toBeVisible();
     await expect(page.getByText("$24.99").first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Free with Odysseus" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Free with Odesseus" })).toBeVisible();
   });
 });
 
@@ -139,7 +139,7 @@ test.describe("pricing bundles", () => {
     await expect(page.getByRole("heading", { name: "Interview Passes" })).toBeVisible();
     await expect(page.getByText("$59.99")).toBeVisible();
     await expect(page.getByText("$499")).toBeVisible();
-    await expect(page.getByText("Odysseus Live Annual").first()).toBeVisible();
+    await expect(page.getByText("Odesseus Live Annual").first()).toBeVisible();
     await expect(page.getByText(/subject to fair use/i).first()).toBeVisible();
   });
 
@@ -152,7 +152,7 @@ test.describe("pricing bundles", () => {
     const payIdx = joined.indexOf("pay as you go");
     const creditsIdx = joined.indexOf("save with application credits");
     const passesIdx = joined.indexOf("interview passes");
-    const freeIdx = joined.indexOf("free with odysseus");
+    const freeIdx = joined.indexOf("free with odesseus");
     expect(payIdx).toBeGreaterThanOrEqual(0);
     expect(creditsIdx).toBeGreaterThan(payIdx);
     expect(passesIdx).toBeGreaterThan(creditsIdx);
@@ -175,7 +175,7 @@ test.describe("Live platform compatibility section", () => {
   test("/live shows the platform-compatibility section between During and After", async ({ page }) => {
     await page.goto("/live");
     await expect(page.getByRole("heading", { name: "Works with the tools your interviews already use" })).toBeVisible();
-    await expect(page.getByText("Odysseus Live is designed to work alongside supported video interview, technical interview, and assessment platforms.")).toBeVisible();
+    await expect(page.getByText("Odesseus Live is designed to work alongside supported video interview, technical interview, and assessment platforms.")).toBeVisible();
 
     for (const platform of compatiblePlatforms) {
       await expect(page.getByText(platform, { exact: true })).toBeVisible();
@@ -229,7 +229,7 @@ test.describe("Partner Program public experience", () => {
   test("/partners explains the creator program without fixed commission claims", async ({ page }) => {
     await page.goto("/partners");
     await expect(page).toHaveTitle(/Partner Program/);
-    await expect(page.getByRole("heading", { name: "Partner with Odysseus." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Partner with Odesseus." })).toBeVisible();
     await expect(page.getByText("Instagram", { exact: true })).toBeVisible();
     await expect(page.getByText("Facebook", { exact: true })).toBeVisible();
     await expect(page.getByText("TikTok", { exact: true })).toBeVisible();
@@ -249,7 +249,7 @@ test.describe("Partner Program public experience", () => {
 
   test("/partners/terms renders disclosure and commission eligibility rules", async ({ page }) => {
     await page.goto("/partners/terms");
-    await expect(page.getByRole("heading", { name: "Clear expectations for Odysseus partners." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Clear expectations for Odesseus partners." })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Disclosure" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Commission eligibility" })).toBeVisible();
   });

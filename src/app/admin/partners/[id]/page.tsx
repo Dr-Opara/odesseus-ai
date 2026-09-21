@@ -59,7 +59,7 @@ export default async function AdminPartnerDetailPage({
           <h2>Application</h2>
           <p><strong>Niche:</strong> {application.primary_niche.replace("_", " ")}</p>
           <p><strong>Audience:</strong> {application.audience_description}</p>
-          <p><strong>Why Odysseus:</strong> {application.motivation}</p>
+          <p><strong>Why Odesseus:</strong> {application.motivation}</p>
           <p><strong>Preferred:</strong> {(application.preferred_partnerships || []).join(", ")}</p>
           <p><strong>Expected rate:</strong> {application.expected_rate || "Not provided"}</p>
           <div className="partner-social-admin-list">

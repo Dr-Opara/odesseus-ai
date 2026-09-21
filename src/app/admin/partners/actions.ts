@@ -89,18 +89,18 @@ export async function reviewPartnerApplication(formData: FormData) {
   if (status === "approved") {
     await sendPartnerEmail({
       to: application.email,
-      subject: "Welcome to the Odysseus Partner Program",
+      subject: "Welcome to the Odesseus Partner Program",
       heading: "You’re approved.",
       body: approvedPartner
-        ? "Your Odysseus Partner application has been approved. Your referral code is " + approvedPartner.referral_code + ". Sign in with this email to access your Partner Dashboard."
-        : "Your Odysseus Partner application has been approved. Sign in with this email to access your Partner Dashboard.",
+        ? "Your Odesseus Partner application has been approved. Your referral code is " + approvedPartner.referral_code + ". Sign in with this email to access your Partner Dashboard."
+        : "Your Odesseus Partner application has been approved. Sign in with this email to access your Partner Dashboard.",
       ctaLabel: "Open Partner Dashboard",
       ctaHref: "/partners/dashboard",
     });
   } else if (status === "waitlisted") {
     await sendPartnerEmail({
       to: application.email,
-      subject: "Odysseus Partner Program update",
+      subject: "Odesseus Partner Program update",
       heading: "You’re on our partner waitlist.",
       body: "Thanks for applying. We’d like to keep your profile on our waitlist while we plan upcoming creator campaigns.",
       ctaLabel: "View the Partner Program",
@@ -109,10 +109,10 @@ export async function reviewPartnerApplication(formData: FormData) {
   } else if (status === "rejected") {
     await sendPartnerEmail({
       to: application.email,
-      subject: "Odysseus Partner Program update",
+      subject: "Odesseus Partner Program update",
       heading: "Thank you for applying.",
-      body: "We’ve completed our review and won’t be moving forward with this Partner Program application at this time. We appreciate your interest in Odysseus.",
-      ctaLabel: "Visit Odysseus",
+      body: "We’ve completed our review and won’t be moving forward with this Partner Program application at this time. We appreciate your interest in Odesseus.",
+      ctaLabel: "Visit Odesseus",
       ctaHref: "/",
     });
   }
@@ -141,7 +141,7 @@ export async function assignPartnerCampaign(formData: FormData) {
   if (partner?.email && campaign?.title) {
     await sendPartnerEmail({
       to: partner.email,
-      subject: "New Odysseus partner campaign",
+      subject: "New Odesseus partner campaign",
       heading: "You have a new campaign.",
       body: "You’ve been assigned to “" + campaign.title + "”. Open your Partner Dashboard to review the brief and requirements.",
       ctaLabel: "View campaign",
@@ -193,7 +193,7 @@ export async function recordPartnerPayout(formData: FormData) {
   if (payoutPartner?.email) {
     await sendPartnerEmail({
       to: payoutPartner.email,
-      subject: "Odysseus partner payout recorded",
+      subject: "Odesseus partner payout recorded",
       heading: "Your payout was recorded.",
       body: "A partner payout of $" + (amount / 100).toFixed(2) + " has been recorded. You can review your payout history in your Partner Dashboard.",
       ctaLabel: "View payout history",
@@ -258,17 +258,17 @@ export async function reviewPartnerContent(formData: FormData) {
     await sendPartnerEmail({
       to: contentPartner.email,
       subject: approved
-        ? "Your Odysseus partner content was approved"
+        ? "Your Odesseus partner content was approved"
         : changes
-          ? "Changes requested on your Odysseus partner content"
-          : "Odysseus partner content review update",
+          ? "Changes requested on your Odesseus partner content"
+          : "Odesseus partner content review update",
       heading: approved
         ? "Content approved."
         : changes
           ? "We need a few changes."
           : "Content review complete.",
       body: approved
-        ? "Your " + contentItem.platform + " content has been approved. Thanks for helping introduce Odysseus to your audience."
+        ? "Your " + contentItem.platform + " content has been approved. Thanks for helping introduce Odesseus to your audience."
         : changes
           ? "Our team reviewed your " + contentItem.platform + " content and requested changes. Open your Partner Dashboard for the latest status."
           : "Our team reviewed your submitted content and won’t be using it for this campaign.",

@@ -5,6 +5,7 @@ import { parseResume } from "@/lib/ai/resume";
 import { resumeProfileSchema } from "@/lib/ai/schemas";
 import { assessJobMatch } from "@/lib/ai/match";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { integrationNotConfigured, missingEnv } from "@/lib/config/readiness";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,15 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "You've checked a lot of matches recently. Please wait a bit and try again." },
       { status: 429 }
+    );
+  }
+
+  const missing = missingEnv(["OPENAI_API_KEY"] as const);
+  if (missing.length) {
+    console.error("[ODESSEUS_MATCH] missing configuration", missing);
+    return NextResponse.json(
+      integrationNotConfigured("Match", missing),
+      { status: 503 }
     );
   }
 
@@ -58,7 +68,7 @@ export async function POST(request: Request) {
   ]);
 
   if (profileError || !profile?.onboarding_completed) {
-    return NextResponse.json({ error: "Complete your Odysseus profile first." }, { status: 400 });
+    return NextResponse.json({ error: "Complete your Odesseus profile first." }, { status: 400 });
   }
 
   if (resumeError || !resume?.storage_path) {
@@ -74,7 +84,7 @@ export async function POST(request: Request) {
         .download(resume.storage_path);
 
       if (downloadError || !file) {
-        throw new Error("Odysseus could not read your resume.");
+        throw new Error("Odesseus could not read your resume.");
       }
 
       const parsed = await parseResume({
@@ -111,7 +121,7 @@ export async function POST(request: Request) {
       ]);
 
       if (resumeUpdate.error || profileUpdate.error) {
-        throw new Error("Odysseus parsed your resume but could not save the verified profile.");
+        throw new Error("Odesseus parsed your resume but could not save the verified profile.");
       }
     }
 
@@ -152,12 +162,12 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError || !job) {
-      throw new Error("Odysseus could not save this match.");
+      throw new Error("Odesseus could not save this match.");
     }
 
     return NextResponse.json({ id: job.id, score: job.match_score });
   } catch (error) {
-    console.error("Odysseus Match failed:", error);
-    return NextResponse.json({ error: "Odysseus could not analyze this role." }, { status: 500 });
+    console.error("Odesseus Match failed:", error);
+    return NextResponse.json({ error: "Odesseus could not analyze this role." }, { status: 500 });
   }
 }

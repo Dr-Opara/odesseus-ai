@@ -33,7 +33,7 @@ export async function POST(
     .eq("user_id", userId);
 
   if (error) {
-    return NextResponse.json({ error: "Odysseus could not update this job." }, { status: 500 });
+    return NextResponse.json({ error: "Odesseus could not update this job." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

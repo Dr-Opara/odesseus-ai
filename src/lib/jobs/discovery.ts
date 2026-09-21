@@ -33,7 +33,7 @@ export async function runAutomaticJobDiscovery(options?: {
   const sources = configuredJobSources();
   const maxMatchesPerUser =
     options?.maxMatchesPerUser ??
-    Number(process.env.ODYSSEUS_JOB_DISCOVERY_MAX_MATCHES_PER_USER || DEFAULT_MAX_MATCHES_PER_USER);
+    Number(process.env.ODESSEUS_JOB_DISCOVERY_MAX_MATCHES_PER_USER || DEFAULT_MAX_MATCHES_PER_USER);
 
   const summary: DiscoverySummary = {
     sourcesConfigured: sources.length,

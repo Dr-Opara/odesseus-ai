@@ -1,12 +1,14 @@
+import Image from "next/image";
 import Link from "next/link";
-import BrandLogo from "@/components/brand-logo";
 
 export default function MarketingFooter() {
   return (
     <footer className="shell marketing-footer">
       <div className="marketing-footer-top">
         <div className="marketing-footer-brand">
-          <BrandLogo width={86} />
+          <div className="marketing-wordmark">
+            <Image src="/odesseus-logo.png" alt="Odesseus.ai" width={134} height={22} style={{ height: 22, width: "auto" }} />
+          </div>
           <p className="muted" style={{ fontSize: 13, margin: "10px 0 0", maxWidth: 260 }}>
             Your next move, handled.
           </p>
@@ -35,7 +37,7 @@ export default function MarketingFooter() {
 
       <div className="marketing-footer-bottom">
         <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-          Odysseus is developed by ProcessPilot Technologies LLC.
+          Odesseus is developed by ProcessPilot Technologies LLC.
         </p>
       </div>
     </footer>
