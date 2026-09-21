@@ -6,6 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { applicationWorkflow } from "@/workflows/application";
 import { isSafeExternalUrl } from "@/lib/security/url-safety";
 import { isTrustedOrigin } from "@/lib/security/origin-check";
+import { integrationNotConfigured, missingEnv } from "@/lib/config/readiness";
 
 const schema = z.object({
   jobId: z.string().uuid(),
@@ -15,6 +16,19 @@ const schema = z.object({
 export async function POST(request: Request) {
   if (!isTrustedOrigin(request)) {
     return NextResponse.json({ error: "Request origin could not be verified." }, { status: 403 });
+  }
+
+  const missing = missingEnv([
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "BROWSERBASE_API_KEY",
+    "BROWSERBASE_PROJECT_ID",
+  ] as const);
+  if (missing.length) {
+    console.error("[ODESSEUS_APPLY] missing configuration", missing);
+    return NextResponse.json(
+      integrationNotConfigured("Apply", missing),
+      { status: 503 }
+    );
   }
 
   const supabase = await createClient();
