@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import OdesseusWordmark from "@/components/odesseus-wordmark";
 import { logout } from "@/app/login/actions";
 
 function firstName(name?: string | null) {
@@ -31,9 +31,7 @@ export default function AppShell({
     <main className="app-surface">
       <header className="app-header">
         <div className="shell app-header-inner">
-          <Link href="/dashboard" className="wordmark">
-            <Image src="/odesseus-logo.png" alt="Odesseus.ai" width={172} height={28} priority style={{ height: 28, width: "auto" }} />
-          </Link>
+          <OdesseusWordmark href="/dashboard" size="md" className="wordmark" />
 
           <nav className="app-nav" aria-label="App navigation">
             {nav.map(([key, href, label]) => (

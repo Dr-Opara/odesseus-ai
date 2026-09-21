@@ -64,6 +64,34 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 
 .wordmark { display: inline-flex; align-items: center; }
 
+.odesseus-wordmark-link {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.odesseus-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.odesseus-wordmark-name { color: var(--brand-black); font-weight: 400; }
+.odesseus-wordmark-ai { color: var(--brand-blue); font-weight: 400; }
+.odesseus-wordmark-sm { font-size: 20px; }
+.odesseus-wordmark-md { font-size: 24px; }
+.odesseus-wordmark-lg { font-size: 30px; }
+.odesseus-wordmark-xl { font-size: 36px; }
+
+.signup-hero-title .odesseus-wordmark {
+  font-size: inherit;
+  font-weight: 400;
+  letter-spacing: inherit;
+}
+
+
 .signup-hero-title {
   display: flex;
   flex-wrap: wrap;
@@ -1496,7 +1524,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   font-size: 13px;
   font-weight: 600;
 }
-.live-quick-prompt span { color: var(--text); font-weight: 500; }
+.live-quick-prompt span { color: var(--text); font-weight: 400; }
 
 .live-assistant-input {
   display: flex;

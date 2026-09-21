@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import OdesseusWordmark from "@/components/odesseus-wordmark";
 import { usePathname } from "next/navigation";
 
 const links = [
@@ -20,9 +20,7 @@ export default function MarketingNav() {
   return (
     <header className="marketing-nav">
       <div className="marketing-nav-inner shell">
-        <Link href="/" className="marketing-wordmark">
-          <Image src="/odesseus-logo.png" alt="Odesseus.ai" width={122} height={20} priority style={{ height: 20, width: "auto" }} />
-        </Link>
+        <OdesseusWordmark href="/" size="sm" className="marketing-wordmark" />
 
         <nav className="marketing-nav-links">
           {links.map((link) => (
