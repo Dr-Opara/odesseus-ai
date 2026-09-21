@@ -5,6 +5,7 @@ import { parseResume } from "@/lib/ai/resume";
 import { resumeProfileSchema } from "@/lib/ai/schemas";
 import { assessJobMatch } from "@/lib/ai/match";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { integrationNotConfigured, missingEnv } from "@/lib/config/readiness";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,15 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "You've checked a lot of matches recently. Please wait a bit and try again." },
       { status: 429 }
+    );
+  }
+
+  const missing = missingEnv(["OPENAI_API_KEY"] as const);
+  if (missing.length) {
+    console.error("[ODESSEUS_MATCH] missing configuration", missing);
+    return NextResponse.json(
+      integrationNotConfigured("Match", missing),
+      { status: 503 }
     );
   }
 
