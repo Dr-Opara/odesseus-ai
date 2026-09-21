@@ -13,6 +13,25 @@ const icons = {
   send: "M22 2 11 13 M22 2l-7 20-4-9-9-4 20-7z",
 };
 
+function PersonSilhouette({ className, id }: { className?: string; id: string }) {
+  return (
+    <svg viewBox="0 0 200 240" className={className} preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+      <defs>
+        <linearGradient id={`${id}-body`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3f4a63" />
+          <stop offset="100%" stopColor="#1a1f2b" />
+        </linearGradient>
+        <linearGradient id={`${id}-head`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#66718a" />
+          <stop offset="100%" stopColor="#394154" />
+        </linearGradient>
+      </defs>
+      <path d="M6 240c0-62 41-99 94-99s94 37 94 99" fill={`url(#${id}-body)`} />
+      <circle cx="100" cy="88" r="58" fill={`url(#${id}-head)`} />
+    </svg>
+  );
+}
+
 function Icon({ name, size = 18 }: { name: keyof typeof icons; size?: number }) {
   return (
     <svg
@@ -77,6 +96,7 @@ export default function LiveInterviewPreview() {
 
       <div className="live-preview-panel">
         <div className="live-video-card">
+          <PersonSilhouette id="live-preview-self" className="live-video-self-avatar" />
           <div className="live-video-badge">
             <span className="live-video-live-dot" />
             Live Preview
@@ -84,7 +104,9 @@ export default function LiveInterviewPreview() {
           </div>
 
           <div className="live-video-interviewer">
-            <div className="live-video-interviewer-photo" aria-hidden="true" />
+            <div className="live-video-interviewer-photo">
+              <PersonSilhouette id="live-preview-interviewer" className="live-video-avatar" />
+            </div>
             <span className="live-video-interviewer-tag">
               <Icon name="pin" size={11} /> Interviewer
             </span>
