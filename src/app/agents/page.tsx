@@ -16,11 +16,29 @@ export default function AgentsPage() {
       <div className="shell" style={{ paddingTop: 16 }}><MarketingNav /></div>
 
       <section className="shell page-hero agents-hero">
-        <div className="badge">Odesseus Agents</div>
-        <h1 className="font-display page-hero-headline">Three agents. One job-to-interview workflow.</h1>
+        <h1 className="font-display page-hero-headline">Odesseus Agents</h1>
         <p className="muted page-hero-copy">
-          Odesseus works from your existing resume, keeps you in control before an application is submitted, and does not require access to your email.
+          Three specialized agents support the workflow from job qualification through application and interview.
         </p>
+
+        <details className="agents-page-dropdown">
+          <summary>Choose an Agent <span aria-hidden="true">⌄</span></summary>
+          <div className="agents-page-dropdown-menu">
+            <a href="#match-agent">
+              <strong>Job Match & Qualification Agent</strong>
+              <span>Analyze the JD, qualify the role, and improve your existing resume.</span>
+            </a>
+            <a href="#application-agent">
+              <strong>Application Agent</strong>
+              <span>Apply only after you approve the updated resume.</span>
+            </a>
+            <a href="#interview-agent">
+              <strong>Interview Agent</strong>
+              <span>Prepare for the interview, then start Odesseus Live.</span>
+            </a>
+          </div>
+        </details>
+
         <div className="agents-flow" aria-label="Odesseus agent workflow">
           <span>Match & Qualify</span><b>→</b><span>Improve & Approve</span><b>→</b><span>Apply</span><b>→</b><span>Prepare</span><b>→</b><span>Interview</span>
         </div>
