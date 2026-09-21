@@ -27,13 +27,6 @@ export default function LivePage() {
         <MarketingNav />
       </div>
 
-      <section className="shell page-hero">
-        <div className="badge">$24.99 · Odesseus Live</div>
-        <h1 className="font-display page-hero-headline">Go into your interview with your entire application behind you.</h1>
-        <p className="muted page-hero-copy">
-          The resume you submitted, the job you applied to, and everything Odesseus prepared — all in one place when it matters.
-        </p>
-      </section>
 
       <section className="shell" style={{ padding: "0 0 34px" }}>
         <LiveInterviewPreview />
