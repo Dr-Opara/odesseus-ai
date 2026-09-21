@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 
@@ -77,7 +76,6 @@ export default function ApplyPage() {
           Odesseus matches the role, tailors your resume, completes the application, and tracks it—all for $0.99 after a successful submission.
         </p>
         <div className="hero-ctas" style={{ marginTop: 26 }}>
-          <Link className="btn btn-primary" href="/signup">Get Started Free →</Link>
           <span className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
             $0.99 only after successful submission
           </span>
@@ -133,7 +131,6 @@ export default function ApplyPage() {
             <h2 style={{ fontSize: 24, margin: "0 0 6px" }}>Ready to apply?</h2>
             <p className="muted" style={{ margin: 0 }}>Upload your resume and see your first matches.</p>
           </div>
-          <Link className="btn btn-primary" href="/signup">Get Started Free →</Link>
         </div>
       </section>
 
