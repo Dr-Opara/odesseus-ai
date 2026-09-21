@@ -16,7 +16,7 @@ export default function MarketingFooter() {
           <div className="marketing-footer-heading">Product</div>
           <Link href="/how-it-works">How It Works</Link>
           <Link href="/apply">Apply</Link>
-          <Link href="/live">Live</Link>
+          <Link href="/agents">Agents</Link>
           <Link href="/pricing">Pricing</Link>
         </div>
 
