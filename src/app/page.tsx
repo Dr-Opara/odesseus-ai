@@ -58,6 +58,24 @@ export default function Home() {
 
       <section className="shell home-live-hero">
         <LiveInterviewPreview />
+
+        <div className="live-preview-trust">
+          <div className="live-preview-trust-eyebrow">Trusted by candidates everywhere</div>
+          <div className="live-preview-trust-grid">
+            <div className="live-preview-trust-stat">
+              <strong>3x</strong>
+              <span>Higher interview conversion</span>
+            </div>
+            <div className="live-preview-trust-stat">
+              <strong>60%</strong>
+              <span>Less time preparing</span>
+            </div>
+            <div className="live-preview-trust-stat">
+              <strong>More Confidence</strong>
+              <span>Go in informed and prepared</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="shell platform-strip-section">
