@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import OdesseusWordmark from "@/components/odesseus-wordmark";
 import { signup } from "@/app/login/actions";
 
 export default async function SignupPage({
@@ -12,20 +12,11 @@ export default async function SignupPage({
   return (
     <main className="shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "50px 0" }}>
       <div style={{ width: "min(430px,100%)" }}>
-        <Link href="/" style={{ display: "inline-flex" }}>
-          <Image src="/odesseus-logo.png" alt="Odesseus.ai" width={172} height={28} priority style={{ height: 28, width: "auto" }} />
-        </Link>
-        <div style={{ marginTop: 50 }}>
+        <div style={{ marginTop: 0 }}>
           <div className="badge">Start free</div>
           <h1 className="signup-hero-title">
             <span>Meet</span>
-            <Image
-              src="/odesseus-logo.png"
-              alt="Odesseus.ai"
-              width={197}
-              height={32}
-              className="signup-hero-logo"
-            />
+            <OdesseusWordmark size="xl" className="signup-hero-logo" />
             <span className="signup-hero-agent-text">Agent</span>
           </h1>
           <p className="muted" style={{ marginBottom: 30 }}>Create your account. Your career profile comes next.</p>
