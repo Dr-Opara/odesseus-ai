@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 import LiveInterviewPreview from "@/components/live-interview-preview";
@@ -134,7 +133,6 @@ export default function LivePage() {
           <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-0.05em" }}>$24.99</div>
           <p className="muted" style={{ margin: "6px 0 18px" }}>per live interview</p>
           <h2 style={{ fontSize: 24, margin: "0 0 20px" }}>One interview. One pass. Everything included.</h2>
-          <Link className="btn btn-primary" href="/signup">Get Started Free →</Link>
         </div>
       </section>
 
