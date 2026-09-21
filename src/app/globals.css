@@ -64,6 +64,19 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 
 .wordmark { display: inline-flex; align-items: center; }
 
+.signup-hero-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 36px;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin: 16px 0 10px;
+}
+.signup-hero-logo { width: auto; height: 30px; }
+.signup-hero-agent-text { font: inherit; color: inherit; }
+
 .app-header {
   height: 74px;
   border-bottom: 1px solid var(--line);
@@ -1424,6 +1437,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 
 .live-video-card {
   position: relative;
+  aspect-ratio: 531 / 534;
   min-height: 380px;
   border-radius: 22px;
   overflow: hidden;
@@ -1432,111 +1446,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
     linear-gradient(155deg, #1a1a1a, #050505 70%);
   box-shadow: 0 30px 80px rgba(20, 20, 30, .16);
 }
-.live-video-avatar {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+.live-video-image {
+  object-fit: cover;
+  object-position: center top;
 }
-.live-video-self-avatar {
-  position: absolute;
-  bottom: -6%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(86%, 360px);
-  height: auto;
-}
-.live-video-badge {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, .55);
-  backdrop-filter: blur(6px);
-  color: #fff;
-  font-size: 12.5px;
-  font-weight: 700;
-}
-.live-video-live-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #2fd15c;
-}
-.live-video-timer { color: rgba(255,255,255,.7); font-weight: 600; margin-left: 2px; }
-
-.live-video-interviewer {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  display: grid;
-  justify-items: end;
-  gap: 6px;
-}
-.live-video-interviewer-photo {
-  position: relative;
-  width: 64px;
-  height: 64px;
-  border-radius: 14px;
-  overflow: hidden;
-  background: linear-gradient(155deg, #3a3f4b, #14161b);
-  border: 2px solid rgba(255,255,255,.18);
-}
-.live-video-interviewer-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 9px;
-  border-radius: 999px;
-  background: rgba(0,0,0,.55);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.live-video-self-tag {
-  position: absolute;
-  bottom: 74px;
-  left: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(0,0,0,.55);
-  color: #fff;
-  font-size: 12.5px;
-  font-weight: 700;
-}
-
-.live-video-controls {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  border-radius: 999px;
-  background: rgba(0,0,0,.55);
-  backdrop-filter: blur(6px);
-}
-.live-video-control-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  background: rgba(255,255,255,.12);
-}
-.live-video-control-end { background: #e0392c; }
 
 .live-assistant-panel {
   border: 1px solid var(--line);
@@ -1619,9 +1532,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 @media (max-width: 560px) {
   .live-preview-feature { grid-template-columns: 34px 1fr; }
   .live-video-card { min-height: 280px; }
-  .live-video-interviewer-photo { width: 48px; height: 48px; }
-  .live-video-controls { gap: 7px; padding: 8px; }
-  .live-video-control-btn { width: 32px; height: 32px; }
 }
 
 

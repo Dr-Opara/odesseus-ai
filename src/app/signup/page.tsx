@@ -17,7 +17,17 @@ export default async function SignupPage({
         </Link>
         <div style={{ marginTop: 50 }}>
           <div className="badge">Start free</div>
-          <h1 style={{ fontSize: 42, letterSpacing: "-0.045em", margin: "16px 0 10px" }}>Meet Odesseus.</h1>
+          <h1 className="signup-hero-title">
+            <span>Meet</span>
+            <Image
+              src="/odesseus-logo.png"
+              alt="Odesseus.ai"
+              width={197}
+              height={32}
+              className="signup-hero-logo"
+            />
+            <span className="signup-hero-agent-text">Agent</span>
+          </h1>
           <p className="muted" style={{ marginBottom: 30 }}>Create your account. Your career profile comes next.</p>
 
           <form className="card" style={{ padding: 24 }} action={signup}>
