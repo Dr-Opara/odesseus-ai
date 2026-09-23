@@ -2,8 +2,17 @@
 --
 -- This migration is additive and safe for existing users:
 --   1. Creates the canonical `countries` reference table (ISO 3166-1 alpha-2)
---      and seeds a global dataset (250 territories, 246 active).
+--      and seeds a global dataset (250 territories, 241 active).
 --   2. Adds six nullable localization columns to `profiles`.
+--
+-- The country seed block below is GENERATED from
+-- scripts/countries/data.ts (npm run countries:generate). Do not hand-edit it;
+-- the regression suite byte-compares it against generator output.
+--
+-- Launch-market policy (see docs/development/global-identity.md):
+--   * AX, BL, CW, RE, ST stay in the canonical dataset (valid ISO records)
+--     but ship with active = false for V1.
+--   * TR (Türkiye) is active from day one.
 --
 -- Deliberate non-changes:
 --   * No existing column is renamed, dropped, retyped, or made NOT NULL.
@@ -79,7 +88,7 @@ VALUES
   ('AT', 'Austria', 'EUR', 'de-AT', '+43', true),
   ('AU', 'Australia', 'AUD', 'en-AU', '+61', true),
   ('AW', 'Aruba', 'AWG', 'nl-AW', '+297', true),
-  ('AX', 'Ã…land Islands', 'EUR', 'sv-AX', '+358', true),
+  ('AX', 'Åland Islands', 'EUR', 'sv-AX', '+358', false),
   ('AZ', 'Azerbaijan', 'AZN', 'az-AZ', '+994', true),
   ('BA', 'Bosnia and Herzegovina', 'BAM', 'bs-BA', '+387', true),
   ('BB', 'Barbados', 'BBD', 'en-BB', '+1246', true),
@@ -93,7 +102,7 @@ VALUES
   ('BH', 'Bahrain', 'BHD', 'ar-BH', '+973', true),
   ('BI', 'Burundi', 'BIF', 'fr-BI', '+257', true),
   ('BJ', 'Benin', 'XOF', 'fr-BJ', '+229', true),
-  ('BL', 'Saint BarthÃ©lemy', 'EUR', 'fr-BL', '+590', true),
+  ('BL', 'Saint Barthélemy', 'EUR', 'fr-BL', '+590', false),
   ('BM', 'Bermuda', 'BMD', 'en-BM', '+1441', true),
   ('BN', 'Brunei', 'BND', 'ms-BN', '+673', true),
   ('BO', 'Bolivia', 'BOB', 'es-BO', '+591', true),
@@ -129,7 +138,7 @@ INSERT INTO public.countries (code, name, default_currency, default_locale, call
 VALUES
   ('CU', 'Cuba', 'CUP', 'es-CU', '+53', true),
   ('CV', 'Cape Verde', 'CVE', 'pt-CV', '+238', true),
-  ('CW', 'CuraÃ§ao', 'ANG', 'en-CW', '+599', true),
+  ('CW', 'Curaçao', 'ANG', 'en-CW', '+599', false),
   ('CX', 'Christmas Island', 'AUD', 'en-CX', '+61', true),
   ('CY', 'Cyprus', 'EUR', 'el-CY', '+357', true),
   ('CZ', 'Czechia', 'CZK', 'cs-CZ', '+420', true),
@@ -303,7 +312,7 @@ VALUES
   ('PW', 'Palau', 'USD', 'en-PW', '+680', true),
   ('PY', 'Paraguay', 'PYG', 'es-PY', '+595', true),
   ('QA', 'Qatar', 'QAR', 'ar-QA', '+974', true),
-  ('RE', 'RÃ©union', 'EUR', 'fr-RE', '+262', true),
+  ('RE', 'Réunion', 'EUR', 'fr-RE', '+262', false),
   ('RO', 'Romania', 'RON', 'ro-RO', '+40', true),
   ('RS', 'Serbia', 'RSD', 'sr-RS', '+381', true)
 ON CONFLICT (code) DO NOTHING;
@@ -330,7 +339,7 @@ VALUES
   ('SO', 'Somalia', 'SOS', 'ar-SO', '+252', true),
   ('SR', 'Suriname', 'SRD', 'nl-SR', '+597', true),
   ('SS', 'South Sudan', 'SSP', 'en-SS', '+211', true),
-  ('ST', 'SÃ£o TomÃ© and PrÃ­ncipe', 'STN', 'pt-ST', '+239', true),
+  ('ST', 'São Tomé and Príncipe', 'STN', 'pt-ST', '+239', false),
   ('SV', 'El Salvador', 'USD', 'es-SV', '+503', true)
 ON CONFLICT (code) DO NOTHING;
 INSERT INTO public.countries (code, name, default_currency, default_locale, calling_code, active)
@@ -352,7 +361,7 @@ VALUES
   ('TM', 'Turkmenistan', 'TMT', 'tk-TM', '+993', true),
   ('TN', 'Tunisia', 'TND', 'ar-TN', '+216', true),
   ('TO', 'Tonga', 'TOP', 'en-TO', '+676', true),
-  ('TR', 'TÃ¼rkiye', 'TRY', 'tr-TR', '+90', true),
+  ('TR', 'Türkiye', 'TRY', 'tr-TR', '+90', true),
   ('TT', 'Trinidad and Tobago', 'TTD', 'en-TT', '+1868', true),
   ('TV', 'Tuvalu', 'AUD', 'en-TV', '+688', true),
   ('TW', 'Taiwan', 'TWD', 'zh-TW', '+886', true),

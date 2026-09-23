@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "countries:check": "node scripts/generate-country-seed.ts --check",
+    "countries:generate": "node scripts/generate-country-seed.ts --write"
   },
   "overrides": {
     "nanoid": "5.1.16"

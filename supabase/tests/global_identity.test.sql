@@ -8,7 +8,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(35);
+SELECT plan(45);
 
 -- ---------------------------------------------------------------------------
 -- Schema shape
@@ -94,8 +94,42 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 SELECT ok((SELECT count(*) FROM public.countries) >= 240,
   'global dataset is seeded');
-SELECT is((SELECT count(*)::int FROM public.countries WHERE active), 246,
-  'exactly 246 active territories');
+SELECT is((SELECT count(*)::int FROM public.countries WHERE active), 241,
+  'exactly 241 active territories');
+SELECT is((SELECT bool_and(active) FROM public.countries
+  WHERE code IN ('US', 'GB', 'CA')), true,
+  'US, GB, and CA are active');
+
+-- Mojibake regression: the six previously-corrupted canonical names must be
+-- stored byte-exact in the database.
+SELECT is((SELECT name FROM public.countries WHERE code = 'AX'), 'Åland Islands',
+  'AX name is Åland Islands');
+SELECT is((SELECT name FROM public.countries WHERE code = 'BL'), 'Saint Barthélemy',
+  'BL name is Saint Barthélemy');
+SELECT is((SELECT name FROM public.countries WHERE code = 'CW'), 'Curaçao',
+  'CW name is Curaçao');
+SELECT is((SELECT name FROM public.countries WHERE code = 'RE'), 'Réunion',
+  'RE name is Réunion');
+SELECT is((SELECT name FROM public.countries WHERE code = 'ST'), 'São Tomé and Príncipe',
+  'ST name is São Tomé and Príncipe');
+SELECT is((SELECT name FROM public.countries WHERE code = 'TR'), 'Türkiye',
+  'TR name is Türkiye');
+
+-- Class-level guard: no mojibake marker may appear in ANY country name
+-- (chr(195)=Ã, chr(194)=Â, chr(65533)=U+FFFD), not just in the six known rows.
+SELECT is((SELECT count(*)::int FROM public.countries
+  WHERE STRPOS(name, chr(195)) > 0
+     OR STRPOS(name, chr(194)) > 0
+     OR STRPOS(name, chr(65533)) > 0), 0,
+  'no mojibake markers in any country name');
+
+-- Launch-market policy: TR stays active; AX, BL, CW, RE, and ST remain valid
+-- canonical records but ship inactive for V1.
+SELECT ok((SELECT active FROM public.countries WHERE code = 'TR'),
+  'TR (Türkiye) is active for V1');
+SELECT is((SELECT count(*)::int FROM public.countries
+  WHERE code IN ('AX', 'BL', 'CW', 'RE', 'ST') AND active), 0,
+  'AX, BL, CW, RE, ST are withheld (active = false) for V1');
 SELECT is((SELECT count(*)::int FROM public.countries
   WHERE code IN ('US', 'GB', 'CA')), 3,
   'US, GB, and CA exist as ordinary rows');
