@@ -3,6 +3,7 @@ import { Fraunces } from "next/font/google";
 import "./globals.css";
 import ReferralCapture from "@/components/referral-capture";
 import PwaRegistration from "@/components/pwa-registration";
+import MobileRouteExperience from "@/components/mobile-route-experience";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -29,5 +30,5 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" className={fraunces.variable}><body><ReferralCapture /><PwaRegistration />{children}</body></html>;
+  return <html lang="en" className={fraunces.variable}><body><ReferralCapture /><PwaRegistration /><MobileRouteExperience>{children}</MobileRouteExperience></body></html>;
 }
