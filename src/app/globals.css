@@ -2887,3 +2887,95 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   .agents-platform-grid { grid-template-columns: 1fr 1fr; }
   .agents-flow b { display: none; }
 }
+
+
+/* Desktop frontend final QC — resilient text/layout rules */
+.marketing,
+.marketing * {
+  min-width: 0;
+}
+.marketing h1,
+.marketing h2,
+.marketing h3,
+.marketing p,
+.marketing a,
+.marketing button,
+.marketing span {
+  overflow-wrap: break-word;
+}
+.marketing-nav-inner {
+  gap: 20px;
+}
+.marketing-nav-links {
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.marketing-nav-actions {
+  flex: 0 0 auto;
+}
+.btn {
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+}
+.page-hero-headline,
+.mission-statement,
+.pricing-section-title {
+  text-wrap: balance;
+}
+.pricing-full-card,
+.bundle-option,
+.belief-card,
+.lifecycle-card,
+.how-it-works-card {
+  min-width: 0;
+  overflow: hidden;
+}
+.pricing-feature-item,
+.bundle-fine-print,
+.page-hero-copy,
+.lifecycle-card p {
+  overflow-wrap: anywhere;
+}
+.odesseus-wordmark {
+  flex: 0 0 auto;
+}
+.signup-hero-title {
+  row-gap: 12px;
+}
+.input {
+  min-width: 0;
+}
+@media (max-width: 980px) {
+  .marketing-nav-links {
+    gap: 14px;
+    font-size: 13px;
+  }
+  .marketing-nav-actions .btn {
+    padding-inline: 14px;
+  }
+}
+@media (max-width: 760px) {
+  .marketing-nav-links,
+  .marketing-nav-actions {
+    display: none;
+  }
+  .marketing-nav-toggle {
+    display: inline-flex;
+  }
+  .marketing-nav-mobile-panel .btn {
+    width: 100%;
+  }
+  .pricing-full-grid,
+  .bundle-row,
+  .belief-grid {
+    grid-template-columns: 1fr;
+  }
+  .page-cta-band {
+    align-items: stretch;
+  }
+  .page-cta-band .btn {
+    width: 100%;
+  }
+}
