@@ -42,7 +42,7 @@ export async function login(formData: FormData) {
 }
 
 export async function signup(formData: FormData) {
-  const fullName = clean(formData.get("full_name"));
+  const firstName = clean(formData.get("first_name"));\n  const lastName = clean(formData.get("last_name"));\n  const fullName = clean(formData.get("full_name")) || `${firstName} ${lastName}`.trim();
   const email = clean(formData.get("email"));
   const password = clean(formData.get("password"));
 
