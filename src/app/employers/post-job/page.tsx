@@ -1,6 +1,21 @@
+import { redirect } from "next/navigation";
 import EmployerNav from "@/components/employer-nav";
+import { createClient } from "@/lib/supabase/server";
 
-export default function EmployerPostJobPage() {
+export default async function EmployerPostJobPage() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  const user = data.user;
+
+  if (!user) {
+    redirect("/employers/signup?next=/employers/post-job");
+  }
+
+  if (user.user_metadata?.account_type !== "employer") {
+    await supabase.auth.signOut();
+    redirect("/employers/signup?error=Create%20an%20employer%20account%20with%20your%20company%20email%20to%20post%20a%20job.");
+  }
+
   return (
     <main className="figma-site figma-soft-page">
       <div className="figma-page-wrap">
