@@ -10,7 +10,7 @@ export default async function EmployerLoginPage({ searchParams }: { searchParams
         <EmployerNav inverse />
         <section style={{ width: "min(520px,100%)", margin: "90px auto 130px" }}>
           <div className="figma-info-card white" style={{ padding: 34 }}>
-            <span className="figma-eyebrow">EMPLOYER SIGN IN</span>
+            <span className="figma-eyebrow">EMPLOYER SIGN IN ONLY</span>
             <h1 style={{ marginTop: 12 }}>Welcome back.</h1>
             <p>Sign in with the company account you use for Odesseus.</p>
             {error ? <div style={{ margin: "18px 0", padding: 12, borderRadius: 12, background: "#fff1ef", color: "#8d1d12" }}>{error}</div> : null}
@@ -25,7 +25,8 @@ export default async function EmployerLoginPage({ searchParams }: { searchParams
               </label>
               <button className="figma-btn figma-btn-orange" type="submit" style={{ width: "100%", marginTop: 24 }}>Sign In</button>
             </form>
-            <p style={{ marginTop: 18 }}>New to Odesseus for Employers? <Link href="/employers/signup" className="link">Create an account</Link></p>
+            <p style={{ marginTop: 18 }}>New to Odesseus for Employers? <Link href="/employers/signup" className="link">Create an employer account</Link></p>
+            <p className="muted" style={{ marginTop: 10, fontSize: 13 }}>Looking for jobs? <Link href="/login" className="link">Candidate Sign In</Link></p>
           </div>
         </section>
       </div>
