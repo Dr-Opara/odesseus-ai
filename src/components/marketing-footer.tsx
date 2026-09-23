@@ -3,39 +3,19 @@ import OdesseusWordmark from "@/components/odesseus-wordmark";
 
 export default function MarketingFooter() {
   return (
-    <footer className="shell marketing-footer">
-      <div className="marketing-footer-top">
-        <div className="marketing-footer-brand">
-          <OdesseusWordmark size="sm" className="marketing-wordmark" />
-          <p className="muted" style={{ fontSize: 13, margin: "10px 0 0", maxWidth: 260 }}>
-            Your next move, handled.
-          </p>
+    <footer className="figma-footer">
+      <div className="figma-footer-grid">
+        <div>
+          <OdesseusWordmark size="md" inverse />
+          <p>AI-powered career support from discovery to interview.</p>
         </div>
-
-        <div className="marketing-footer-col">
-          <div className="marketing-footer-heading">Product</div>
-          <Link href="/how-it-works">How It Works</Link>
-          <Link href="/apply">Apply</Link>
-          <Link href="/agents">Agents</Link>
-          <Link href="/pricing">Pricing</Link>
-        </div>
-
-        <div className="marketing-footer-col">
-          <div className="marketing-footer-heading">Company</div>
-          <Link href="/about">About</Link>
-          <Link href="/partners">Partner Program</Link>
-        </div>
-
-        <div className="marketing-footer-col">
-          <div className="marketing-footer-heading">Account</div>
-          <Link href="/login">Sign In</Link>
-        </div>
+        <div><strong>Job Seekers</strong><Link href="/how-it-works">How it works</Link><Link href="/pricing">Pricing</Link><Link href="/agents">Agents</Link></div>
+        <div><strong>Employers</strong><Link href="/employers">For Employers</Link><Link href="/employers#pricing">Employer Pricing</Link></div>
+        <div><strong>Company</strong><Link href="/about">About</Link><Link href="/partners">Partner Program</Link><Link href="/about#faq">FAQ</Link></div>
       </div>
-
-      <div className="marketing-footer-bottom">
-        <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-          Odesseus is developed by ProcessPilot Technologies LLC.
-        </p>
+      <div className="figma-footer-bottom">
+        <span>Developed by ProcessPilot Technologies LLC</span>
+        <span>© 2026 Odesseus.ai</span>
       </div>
     </footer>
   );
