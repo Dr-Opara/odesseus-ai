@@ -36,7 +36,7 @@ export default async function EmployerSignupPage({ searchParams }: { searchParam
               </label>
               <button className="figma-btn figma-btn-orange" type="submit" style={{ width: "100%", marginTop: 24 }}>Create Account</button>
             </form>
-            <p className="muted" style={{ marginTop: 18, fontSize: 13 }}>By creating an account, you agree to our Terms of Service and Privacy Policy.</p>
+            <p className="muted" style={{ marginTop: 18, fontSize: 13 }}>By creating an account, you agree to our <Link href="/terms" className="link">Terms of Service</Link> and <Link href="/privacy" className="link">Privacy Policy</Link>.</p>
             <p style={{ marginTop: 18 }}>Already have an account? <Link href="/employers/login" className="link">Sign in</Link></p>
           </div>
         </section>
