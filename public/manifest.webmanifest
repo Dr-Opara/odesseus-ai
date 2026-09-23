@@ -1,0 +1,9 @@
+{
+  "name": "Odesseus.ai",
+  "short_name": "Odesseus",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbfcff",
+  "theme_color": "#0e0e1f",
+  "description": "AI career and application platform"
+}
