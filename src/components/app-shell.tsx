@@ -21,9 +21,9 @@ export default function AppShell({
 }) {
   const nav = [
     ["home", "/dashboard", "Home"],
-    ["jobs", "/jobs", "Jobs"],
-    ["applications", "/applications", "Applications"],
-    ["interviews", "/interviews", "Interviews"],
+    ["jobs", "/jobs", "Match"],
+    ["applications", "/applications", "Apps"],
+    ["interviews", "/interviews", "Prep"],
     ["profile", "/profile", "Profile"],
   ] as const;
 
@@ -69,6 +69,14 @@ export default function AppShell({
         </div>
       </header>
       {children}
+      <nav className="mobile-app-bottom-nav" aria-label="Mobile app navigation">
+        {nav.map(([key, href, label]) => (
+          <Link key={key} href={href} aria-current={active === key ? "page" : undefined} className={active === key ? "is-active" : undefined}>
+            <span className="mobile-nav-icon" aria-hidden="true">{key === "home" ? "⌂" : key === "jobs" ? "◎" : key === "applications" ? "▤" : key === "interviews" ? "✦" : "○"}</span>
+            <span>{label}</span>
+          </Link>
+        ))}
+      </nav>
     </main>
   );
 }
