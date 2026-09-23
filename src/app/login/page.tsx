@@ -14,8 +14,9 @@ export default async function LoginPage({
       <div style={{ width: "min(430px,100%)" }}>
         <OdesseusWordmark href="/" size="lg" />
         <div style={{ marginTop: 60 }}>
-          <h1 style={{ fontSize: 42, letterSpacing: "-0.045em", marginBottom: 10 }}>Welcome back.</h1>
-          <p className="muted" style={{ marginBottom: 30 }}>Pick up where you left off.</p>
+          <div className="badge">CANDIDATE SIGN IN ONLY</div>
+          <h1 style={{ fontSize: 42, letterSpacing: "-0.045em", marginBottom: 10, marginTop: 18 }}>Welcome back.</h1>
+          <p className="muted" style={{ marginBottom: 30 }}>Sign in to your candidate account and pick up where you left off.</p>
 
           <form className="card" style={{ padding: 24 }} action={login}>
             {error ? (
@@ -40,7 +41,10 @@ export default async function LoginPage({
           </form>
 
           <p className="muted" style={{ textAlign: "center", fontSize: 14, marginTop: 18 }}>
-            New to Odesseus? <Link href="/signup" className="link">Create an account</Link>
+            New to Odesseus? <Link href="/signup" className="link">Create a candidate account</Link>
+          </p>
+          <p className="muted" style={{ textAlign: "center", fontSize: 13, marginTop: 10 }}>
+            Hiring for a company? <Link href="/employers/login" className="link">Employer Sign In</Link>
           </p>
         </div>
       </div>
