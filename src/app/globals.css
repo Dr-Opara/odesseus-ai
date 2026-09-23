@@ -3031,3 +3031,62 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .legal-page-card h2{font-size:20px;margin:0 0 8px}
 .legal-page-card section p{color:#53627b;line-height:1.7;margin:0}
 @media(max-width:620px){.candidate-signup-card{padding:22px}.candidate-name-grid{grid-template-columns:1fr}.candidate-signup-header h1{font-size:30px}.legal-page-card{padding:26px}.legal-page-card h1{font-size:32px}}
+
+/* Mobile / installable web-app experience */
+.odesseus-mobile-only,.mobile-app-bottom-nav{display:none}
+@media (max-width: 767px){
+  html,body{max-width:100%;overflow-x:hidden}
+  .odesseus-desktop-only{display:none!important}
+  .odesseus-mobile-only{display:block}
+  .mobile-landing{min-height:100vh;background:#f2efff;padding:12px;color:#fff}
+  .mobile-splash{position:relative;min-height:820px;background:#101020;border-radius:34px;overflow:hidden;padding:28px 22px 26px}
+  .mobile-splash-orb{position:absolute;border-radius:999px;filter:none}
+  .mobile-splash-orb-one{width:145px;height:145px;background:#7847e9;right:-64px;top:74px}
+  .mobile-splash-orb-two{width:92px;height:92px;background:#ff5a1f;left:-48px;top:232px}
+  .mobile-job-stack{position:relative;height:338px;margin-top:14px}
+  .mobile-job-card{position:absolute;left:50%;transform:translateX(-50%);width:82%;border-radius:23px;padding:17px 18px;color:#101020;box-shadow:0 12px 28px rgba(0,0,0,.12)}
+  .mobile-job-back{height:112px;font-size:12px;font-weight:800}
+  .mobile-job-back.lime{background:#c7ef45;top:0;transform:translateX(-50%) rotate(-5deg)}
+  .mobile-job-back.pink{background:#ff73aa;top:35px;transform:translateX(-50%) rotate(4deg)}
+  .mobile-job-back.cyan{background:#31bee0;top:70px;transform:translateX(-50%) rotate(-2deg)}
+  .mobile-job-main{top:106px;background:#ff5b22;color:#fff;height:218px;width:86%;padding:22px}
+  .mobile-job-company{display:flex;align-items:center;gap:8px;font-size:13px}
+  .mobile-heart{margin-left:auto;font-size:23px}
+  .mobile-ms-mark{font-size:19px}
+  .mobile-job-main h2{font-size:28px;line-height:1.03;letter-spacing:-1px;margin:24px 0 10px}
+  .mobile-job-main p{font-size:13px;margin:0}
+  .mobile-job-actions{display:flex;justify-content:space-between;align-items:center;margin-top:23px;font-size:12px;font-weight:700}
+  .mobile-job-actions a{background:#fff;color:#101020;border-radius:999px;padding:10px 14px}
+  .mobile-splash-copy{margin-top:4px}
+  .mobile-splash-copy h1{font-family:Arial,Helvetica,sans-serif;font-size:42px;line-height:.98;letter-spacing:-2px;margin:0}
+  .mobile-splash-copy h1 span{color:#ff5b22}
+  .mobile-splash-copy p{color:#d8d7e4;line-height:1.5;font-size:15px;margin:20px 0 24px}
+  .mobile-primary-cta{height:58px;background:#ff5b22;border-radius:999px;padding:0 9px 0 22px;display:flex;align-items:center;justify-content:space-between;font-weight:800}
+  .mobile-primary-cta b{display:grid;place-items:center;width:42px;height:42px;background:#fff;color:#101020;border-radius:50%;font-size:20px}
+  .mobile-splash-pager{display:flex;gap:6px;justify-content:center;margin-top:20px}
+  .mobile-splash-pager span{width:6px;height:6px;background:#686779;border-radius:999px}.mobile-splash-pager .active{width:24px;background:#fff}
+  .mobile-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+  .mobile-metrics article{background:#fff;color:#101020;border-radius:22px;padding:21px;display:grid;gap:5px;min-height:112px}
+  .mobile-metrics strong{font-size:30px}.mobile-metrics span{font-size:13px;color:#626171}
+  .orange-text{color:#ff5b22}.purple-text{color:#7d4cec}.cyan-text{color:#1fb8db}.lime-text{color:#80b81d}
+  .mobile-marketing-section{background:#fff;color:#101020;border-radius:28px;padding:27px 21px;margin:12px 0}
+  .mobile-kicker{font-size:11px;font-weight:900;letter-spacing:.12em;color:#ff5b22;margin:0 0 9px}
+  .mobile-marketing-section h2{font-size:30px;line-height:1.03;letter-spacing:-1px;margin:0 0 19px}
+  .mobile-agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .mobile-agent-card{min-height:145px;border-radius:20px;padding:17px;display:flex;flex-direction:column;justify-content:flex-end;gap:7px}
+  .mobile-agent-card strong{font-size:20px}.mobile-agent-card span{font-size:12px;line-height:1.4}
+  .lavender{background:#c8b7ff}.peach{background:#ffb08e}.cyan-card{background:#78d9ee}.green-card{background:#c8ec82}
+  .mobile-employer-card{background:#101020;color:#fff}.mobile-employer-card>p:not(.mobile-kicker){color:#d7d6e0;line-height:1.5}.mobile-employer-card>a{color:#ff6a31;font-weight:800}
+  .mobile-price-strip{display:grid;grid-template-columns:1fr;gap:8px;margin:12px 0}.mobile-price-strip>div{background:#fff;color:#101020;border-radius:20px;padding:17px 20px;display:grid;grid-template-columns:1fr auto;align-items:center}.mobile-price-strip small{font-weight:800}.mobile-price-strip strong{font-size:22px;color:#ff5b22}.mobile-price-strip span{grid-column:1/-1;color:#747382;font-size:12px;margin-top:3px}
+  .mobile-login-row{display:flex;justify-content:center;gap:24px;padding:20px 10px 28px;color:#101020;font-size:13px;font-weight:700}
+  .app-header{display:none!important}
+  .app-surface{padding-bottom:82px}
+  .mobile-app-bottom-nav{position:fixed;z-index:100;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:66px;background:#101020;border-radius:22px;display:grid;grid-template-columns:repeat(5,1fr);box-shadow:0 12px 35px rgba(0,0,0,.25);padding:7px}
+  .mobile-app-bottom-nav a{color:#9e9dac;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:700;border-radius:15px}
+  .mobile-app-bottom-nav a.is-active{background:#ff5b22;color:#fff}
+  .mobile-nav-icon{font-size:20px;line-height:1}
+  .dashboard-v2{padding:22px 16px 30px!important}.dashboard-heading{align-items:flex-start!important}.dashboard-heading>.btn{display:none}
+  .dashboard-title{font-size:32px!important}.dashboard-stat-grid{grid-template-columns:1fr 1fr!important}.dashboard-command-grid{grid-template-columns:1fr!important}
+}
+@media (min-width:768px){.odesseus-desktop-only{display:block}.odesseus-mobile-only{display:none!important}}
+@media (display-mode: standalone) and (max-width:767px){body{padding-top:env(safe-area-inset-top)}.mobile-landing{padding-top:0}}
