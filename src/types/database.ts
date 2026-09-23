@@ -462,6 +462,39 @@ export type Database = {
         }
         Relationships: []
       }
+      countries: {
+        Row: {
+          active: boolean
+          calling_code: string | null
+          code: string
+          created_at: string
+          default_currency: string
+          default_locale: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          calling_code?: string | null
+          code: string
+          created_at?: string
+          default_currency: string
+          default_locale: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          calling_code?: string | null
+          code?: string
+          created_at?: string
+          default_currency?: string
+          default_locale?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       credit_balances: {
         Row: {
           application_credits: number
@@ -1291,54 +1324,80 @@ export type Database = {
       }
       profiles: {
         Row: {
+          application_contact_email: string | null
           candidate_facts: Json
           certifications: string[]
+          country_code: string | null
           created_at: string
           full_name: string | null
           github_url: string | null
           headline: string | null
           id: string
           linkedin_url: string | null
+          locale: string | null
           location: string | null
           onboarding_completed: boolean
           portfolio_url: string | null
+          preferred_currency: string | null
+          preferred_language: string | null
           skills: string[]
+          timezone: string | null
           updated_at: string
           work_preference: string | null
         }
         Insert: {
+          application_contact_email?: string | null
           candidate_facts?: Json
           certifications?: string[]
+          country_code?: string | null
           created_at?: string
           full_name?: string | null
           github_url?: string | null
           headline?: string | null
           id: string
           linkedin_url?: string | null
+          locale?: string | null
           location?: string | null
           onboarding_completed?: boolean
           portfolio_url?: string | null
+          preferred_currency?: string | null
+          preferred_language?: string | null
           skills?: string[]
+          timezone?: string | null
           updated_at?: string
           work_preference?: string | null
         }
         Update: {
+          application_contact_email?: string | null
           candidate_facts?: Json
           certifications?: string[]
+          country_code?: string | null
           created_at?: string
           full_name?: string | null
           github_url?: string | null
           headline?: string | null
           id?: string
           linkedin_url?: string | null
+          locale?: string | null
           location?: string | null
           onboarding_completed?: boolean
           portfolio_url?: string | null
+          preferred_currency?: string | null
+          preferred_language?: string | null
           skills?: string[]
+          timezone?: string | null
           updated_at?: string
           work_preference?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       resume_tailorings: {
         Row: {
