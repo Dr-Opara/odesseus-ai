@@ -1,205 +1,80 @@
 import Link from "next/link";
-import JobDiscoveryShowcase from "@/components/job-discovery-showcase";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 
-const platforms = [
-  "Workday",
-  "Indeed",
-  "Greenhouse",
-  "Lever",
-  "Ashby",
-  "iCIMS",
-  "UN Careers",
-  "Direct Company Career Sites",
+const steps = [
+  ["01","Find","AI-powered job matching"],
+  ["02","Tailor","Resume optimization"],
+  ["03","Apply","Application Agent"],
+  ["04","Prepare","Free Prep Agent"],
+  ["05","Interview","Odesseus Live"],
 ];
 
-const activityMoments = [
-  "Found 6 strong matches",
-  "Resume tailored",
-  "Waiting for your approval",
-  "Application submitted ✓",
-  "Interview detected",
-];
-
-const howItWorks = [
-  {
-    n: "01",
-    title: "Build Your Profile",
-    body: "Upload your resume once. Odesseus learns your verified experience, skills, education, certifications, and preferences.",
-    pills: [],
-  },
-  {
-    n: "02",
-    title: "Find Your Matches",
-    body: "Odesseus finds relevant opportunities and explains why they fit.",
-    pills: ["85%+ Match", "Hard Requirements Checked", "No Fabricated Qualifications"],
-  },
-  {
-    n: "03",
-    title: "Review & Apply",
-    body: "Odesseus tailors the resume and prepares the application for approval.",
-    pills: ["ATS-Ready Resume", "Cover Letter When Needed", "Cross-Platform Applications", "$0.99 Only After Successful Submission"],
-  },
-  {
-    n: "04",
-    title: "Interview",
-    body: "Employer responses flow into the Interview Workspace.",
-    pills: ["Free Interview Preparation", "Odesseus Live", "Multi-Round Memory", "Post-Interview Follow-Up"],
-  },
+const products = [
+  ["Match Agent","Understand fit before you apply.","lavender"],
+  ["Resume Agent","Tailor without changing your master resume.","green"],
+  ["Application Agent","Submit approved applications with AI.","orange"],
+  ["Prep Agent","Practice for the exact role — free.","cyan"],
 ];
 
 export default function Home() {
   return (
-    <main className="marketing">
-      <div className="shell" style={{ paddingTop: 16 }}>
-        <MarketingNav />
-      </div>
-
-      <section className="shell home-live-hero">
-        <h1 className="sr-only">Odesseus finds, scores, and applies to jobs for you.</h1>
-        <JobDiscoveryShowcase />
-
-        <div className="live-preview-trust">
-          <div className="live-preview-trust-eyebrow">Trusted by candidates everywhere</div>
-          <div className="live-preview-trust-grid">
-            <div className="live-preview-trust-stat">
-              <strong>3x</strong>
-              <span>Higher interview conversion</span>
+    <main className="figma-site">
+      <section className="figma-home-shell">
+        <div className="figma-home-hero">
+          <MarketingNav inverse />
+          <div className="figma-hero-grid">
+            <div className="figma-hero-copy">
+              <span className="figma-eyebrow">YOUR AI CAREER AGENT</span>
+              <h1>Discover Your Dream Job with Odesseus.ai</h1>
+              <p>Find better-fit roles, tailor your resume, apply with approval, and prepare for interviews — all in one place.</p>
+              <div className="figma-actions"><Link className="figma-btn figma-btn-orange" href="/signup">Start Finding Jobs</Link><Link className="figma-link-light" href="/employers">For Employers →</Link></div>
             </div>
-            <div className="live-preview-trust-stat">
-              <strong>60%</strong>
-              <span>Less time preparing</span>
-            </div>
-            <div className="live-preview-trust-stat">
-              <strong>More Confidence</strong>
-              <span>Go in informed and prepared</span>
+            <div className="figma-job-stack" aria-label="Live job match examples">
+              <article className="figma-job-card card-orange"><small>Microsoft</small><h3>GenAI Security Engineer</h3><strong>$247K</strong><span>Full time • Remote</span></article>
+              <article className="figma-job-card card-purple"><small>OpenAI</small><h3>AI Security Engineer</h3><strong>$220K+</strong><span>Full time • Hybrid</span></article>
+              <article className="figma-job-card card-cyan"><small>Stripe</small><h3>Senior AI Engineer</h3><strong>$190K+</strong><span>Full time • Remote</span></article>
+              <div className="figma-live-label">LIVE JOB MATCHES • PERSONALIZED FOR YOU</div>
             </div>
           </div>
         </div>
+
+        <div className="figma-metrics">
+          <div><strong className="orange">500K+</strong><span>Applicants</span></div>
+          <div><strong className="purple">100K+</strong><span>Hires</span></div>
+          <div><strong className="cyan">20+</strong><span>Countries</span></div>
+          <div><strong className="lime">95%</strong><span>Satisfaction</span></div>
+        </div>
+
+        <section className="figma-section figma-workflow">
+          <span className="figma-eyebrow purple">ONE CAREER WORKFLOW</span>
+          <h2>From job discovery to interview day.</h2>
+          <div className="figma-step-grid">{steps.map(([n,title,copy])=><article key={n}><span>{n}</span><h3>{title}</h3><p>{copy}</p></article>)}</div>
+        </section>
+
+        <section className="figma-section figma-product-section">
+          <span className="figma-eyebrow">BUILT AROUND YOUR ENTIRE SEARCH</span>
+          <h2>One AI career platform. Five powerful agents.</h2>
+          <div className="figma-product-grid">{products.map(([title,copy,tone])=><article className={`figma-product-card ${tone}`} key={title}><h3>{title}</h3><p>{copy}</p></article>)}</div>
+          <article className="figma-live-feature"><h3>Odesseus Live</h3><p>Real-time interview support on desktop.</p><Link href="/live">Explore Live →</Link></article>
+        </section>
+
+        <section className="figma-section figma-global">
+          <div><span className="figma-eyebrow cyan">GLOBAL BY DESIGN</span><h2>Your career search doesn&apos;t stop at borders.</h2><p>Choose where you want to work, plus your language, currency and time zone. Odesseus supports a global job search.</p></div>
+          <div className="figma-location-grid">{["Lagos, Nigeria","London, UK","Toronto, Canada","Austin, USA","Dubai, UAE","Istanbul, Türkiye"].map(x=><span key={x}>{x}</span>)}</div>
+        </section>
+
+        <section className="figma-section figma-employer-band">
+          <div><span className="figma-eyebrow">FOR EMPLOYERS</span><h2>Find stronger candidates with less busywork.</h2><p>Post roles, review applicants, manage your pipeline and use AI-assisted matching with company verification.</p><Link href="/employers">Explore Odesseus for Employers →</Link></div>
+          <div className="figma-hiring-preview"><h3>Hiring overview</h3><div><strong>12</strong><span>New applicants</span></div><div><strong>8</strong><span>Strong matches</span></div><div><strong>3</strong><span>Interviews</span></div></div>
+        </section>
+
+        <section className="figma-section figma-price-preview">
+          <span className="figma-eyebrow">PAY FOR WHAT YOU USE</span><h2>Simple candidate pricing.</h2>
+          <div className="figma-price-grid"><article><span>Applications</span><strong>$0.99</strong><p>per successful application</p></article><article><span>Prep Agent</span><strong>FREE</strong><p>role-specific preparation</p></article><article><span>Odesseus Live</span><strong>$24.99</strong><p>per live interview</p></article></div>
+          <Link className="figma-text-cta" href="/pricing">See full pricing →</Link>
+        </section>
       </section>
-
-      <section className="shell platform-strip-section">
-        <div style={{ textAlign: "center", marginBottom: 30 }}>
-          <h2 className="font-display" style={{ fontSize: 34, letterSpacing: "-0.02em", margin: 0 }}>
-            Apply wherever the opportunity lives
-          </h2>
-          <p className="muted" style={{ marginTop: 10 }}>
-            One Odesseus. Across supported job boards and employer career sites.
-          </p>
-        </div>
-        <div className="platform-strip-track-wrap">
-          <div className="platform-strip-track">
-            {[...platforms, ...platforms].map((platform, index) => (
-              <span className="platform-strip-item" key={`${platform}-${index}`}>{platform}</span>
-            ))}
-          </div>
-        </div>
-        <div style={{ textAlign: "center", marginTop: 26 }}>
-          <Link className="btn btn-secondary" href="/apply">See supported platforms →</Link>
-        </div>
-      </section>
-
-      <section className="shell" style={{ padding: "10px 0 30px" }}>
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <p className="muted" style={{ fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em" }}>
-            How Odesseus Works
-          </p>
-          <h2 className="font-display" style={{ fontSize: 40, letterSpacing: "-0.02em", margin: "10px 0" }}>
-            One connected flow, start to offer.
-          </h2>
-        </div>
-
-        <div className="how-it-works-grid">
-          {howItWorks.map((step) => (
-            <div className="card how-it-works-card" key={step.n}>
-              <div className="how-it-works-number">{step.n}</div>
-              <h3 style={{ fontSize: 21, margin: "16px 0 8px" }}>{step.title}</h3>
-              <p className="muted" style={{ lineHeight: 1.55, margin: 0 }}>{step.body}</p>
-              {step.pills.length ? (
-                <div className="how-it-works-pills">
-                  {step.pills.map((pill) => (
-                    <span className="how-it-works-pill" key={pill}>{pill}</span>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          ))}
-        </div>
-
-        <div style={{ textAlign: "center", marginTop: 30 }}>
-          <Link className="btn btn-secondary" href="/how-it-works">See the full lifecycle →</Link>
-        </div>
-      </section>
-
-      <section className="shell activity-strip-section">
-        <div className="activity-strip">
-          {activityMoments.map((moment) => (
-            <span className="activity-chip" key={moment}>{moment}</span>
-          ))}
-        </div>
-      </section>
-
-      <section className="shell" style={{ padding: "10px 0 20px" }}>
-        <div className="page-cta-band card">
-          <div>
-            <div className="badge">$0.99 · Apply with Odesseus</div>
-            <h2 style={{ fontSize: 26, margin: "14px 0 8px" }}>Apply anywhere your next opportunity lives.</h2>
-            <p className="muted" style={{ margin: 0, maxWidth: 520 }}>
-              Odesseus matches the role, tailors your resume, completes the application, and tracks it — charged only after a successful submission.
-            </p>
-          </div>
-          <Link className="btn btn-primary" href="/apply">Explore Apply →</Link>
-        </div>
-      </section>
-
-      <section className="shell" style={{ padding: "0 0 20px" }}>
-        <div className="page-cta-band card">
-          <div>
-            <div className="badge">$24.99 · Odesseus Live</div>
-            <h2 style={{ fontSize: 26, margin: "14px 0 8px" }}>Go into your interview with your entire application behind you.</h2>
-            <p className="muted" style={{ margin: 0, maxWidth: 520 }}>
-              Free preparation, private real-time guidance, and a complete post-interview recap — one pass, everything included.
-            </p>
-          </div>
-          <Link className="btn btn-primary" href="/live">Explore Live →</Link>
-        </div>
-      </section>
-
-      <section className="shell" style={{ padding: "10px 0 110px" }}>
-        <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <p className="muted" style={{ fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em" }}>
-            Pricing
-          </p>
-          <h2 className="font-display" style={{ fontSize: 40, letterSpacing: "-0.02em", margin: "10px 0" }}>
-            No subscription. Pay when Odesseus works for you.
-          </h2>
-        </div>
-
-        <div className="pricing-preview-grid">
-          <div className="card" style={{ padding: 28 }}>
-            <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-0.05em" }}>$0.99</div>
-            <h3 style={{ fontSize: 22, margin: "10px 0 4px" }}>Apply with Odesseus</h3>
-            <p className="pricing-flow-chain">Match → Tailor → Apply → Track</p>
-            <p className="muted" style={{ lineHeight: 1.6, margin: 0 }}>
-              Charged only after successful submission.
-            </p>
-          </div>
-          <div className="card" style={{ padding: 28 }}>
-            <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-0.05em" }}>$24.99</div>
-            <h3 style={{ fontSize: 22, margin: "10px 0 4px" }}>Odesseus Live</h3>
-            <p className="pricing-flow-chain">Prepare → Live Guidance → Transcript → Analysis → Follow-Up</p>
-            <p className="muted" style={{ lineHeight: 1.6, margin: 0 }}>
-              One interview. One pass. Everything included.
-            </p>
-          </div>
-        </div>
-
-        <div style={{ textAlign: "center", marginTop: 30 }}>
-          <Link className="btn btn-secondary" href="/pricing">See full pricing →</Link>
-        </div>
-      </section>
-
       <MarketingFooter />
     </main>
   );
