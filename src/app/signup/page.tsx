@@ -1,6 +1,6 @@
 import Link from "next/link";
-import OdesseusWordmark from "@/components/odesseus-wordmark";
 import { signup } from "@/app/login/actions";
+import GoogleSignupButton from "@/components/google-signup-button";
 
 export default async function SignupPage({
   searchParams,
@@ -10,49 +10,61 @@ export default async function SignupPage({
   const { error } = await searchParams;
 
   return (
-    <main className="shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "50px 0" }}>
-      <div style={{ width: "min(430px,100%)" }}>
-        <div style={{ marginTop: 0 }}>
-          <div className="badge">Start free</div>
-          <h1 className="signup-hero-title">
-            <span>Meet</span>
-            <OdesseusWordmark size="xl" className="signup-hero-logo" />
-            <span className="signup-hero-agent-text">Agent</span>
-          </h1>
-          <p className="muted" style={{ marginBottom: 30 }}>Create your account. Your career profile comes next.</p>
+    <main className="candidate-signup-shell">
+      <section className="candidate-signup-wrap">
+        <header className="candidate-signup-header">
+          <h1>Create Account</h1>
+          <p>Start your accelerated job search today.</p>
+        </header>
 
-          <form className="card" style={{ padding: 24 }} action={signup}>
-            {error ? (
-              <div style={{ marginBottom: 18, padding: 12, borderRadius: 12, background: "#fff1ef", fontSize: 14 }}>
-                {error}
-              </div>
-            ) : null}
+        <Link href="/" className="candidate-signup-back">← Back</Link>
 
-            <label style={{ display: "grid", gap: 8, fontSize: 14, fontWeight: 650 }}>
-              Name
-              <input className="input" name="full_name" autoComplete="name" required placeholder="Your name" />
-            </label>
+        <div className="candidate-signup-card">
+          {error ? <div className="candidate-signup-error">{error}</div> : null}
 
-            <label style={{ display: "grid", gap: 8, fontSize: 14, fontWeight: 650, marginTop: 18 }}>
-              Email
+          <GoogleSignupButton />
+
+          <div className="candidate-signup-divider">
+            <span />
+            <b>OR</b>
+            <span />
+          </div>
+
+          <form action={signup}>
+            <div className="candidate-name-grid">
+              <label>
+                First Name
+                <input className="input" name="first_name" autoComplete="given-name" required placeholder="John" />
+              </label>
+              <label>
+                Last Name
+                <input className="input" name="last_name" autoComplete="family-name" required placeholder="Doe" />
+              </label>
+            </div>
+
+            <label className="candidate-field">
+              Email Address
               <input className="input" name="email" type="email" autoComplete="email" required placeholder="you@example.com" />
             </label>
 
-            <label style={{ display: "grid", gap: 8, fontSize: 14, fontWeight: 650, marginTop: 18 }}>
+            <label className="candidate-field">
               Password
-              <input className="input" name="password" type="password" autoComplete="new-password" minLength={8} required placeholder="At least 8 characters" />
+              <input className="input" name="password" type="password" autoComplete="new-password" minLength={8} required placeholder="••••••••" />
+              <small>Must be at least 8 characters long</small>
             </label>
 
-            <button className="btn btn-primary" type="submit" style={{ width: "100%", marginTop: 22 }}>
-              Create account
-            </button>
+            <button className="candidate-continue-button" type="submit">Continue</button>
           </form>
 
-          <p className="muted" style={{ textAlign: "center", fontSize: 14, marginTop: 18 }}>
-            Already have an account? <Link href="/login" className="link">Sign in</Link>
+          <p className="candidate-legal-copy">
+            By continuing, you agree to our <Link href="/terms">Terms of Service</Link> and <Link href="/privacy">Privacy Policy</Link>.
           </p>
         </div>
-      </div>
+
+        <p className="candidate-signin-copy">
+          Already have an account? <Link href="/login">Sign In</Link>
+        </p>
+      </section>
     </main>
   );
 }
