@@ -32,17 +32,24 @@ export async function login(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (data.user?.user_metadata?.account_type === "employer") {
+    await supabase.auth.signOut();
+    redirect("/login?error=This%20is%20an%20employer%20account.%20Please%20use%20Employer%20Sign%20In.");
   }
 
   redirect("/dashboard");
 }
 
 export async function signup(formData: FormData) {
-  const firstName = clean(formData.get("first_name"));\n  const lastName = clean(formData.get("last_name"));\n  const fullName = clean(formData.get("full_name")) || `${firstName} ${lastName}`.trim();
+  const firstName = clean(formData.get("first_name"));
+  const lastName = clean(formData.get("last_name"));
+  const fullName = clean(formData.get("full_name")) || `${firstName} ${lastName}`.trim();
   const email = clean(formData.get("email"));
   const password = clean(formData.get("password"));
 
@@ -61,7 +68,12 @@ export async function signup(formData: FormData) {
     email,
     password,
     options: {
-      data: { full_name: fullName },
+      data: {
+        full_name: fullName,
+        first_name: firstName,
+        last_name: lastName,
+        account_type: "candidate",
+      },
     },
   });
 
