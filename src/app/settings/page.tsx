@@ -4,7 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
 import PasswordChangeForm from "@/components/password-change-form";
 import JobPreferencesForm from "@/components/job-preferences-form";
+import LocalizationForm from "@/components/localization-form";
 import DeleteAccountForm from "@/components/delete-account-form";
+import { listCountries, type Country } from "@/lib/countries/service";
 
 export default async function SettingsPage({
   searchParams,
@@ -19,14 +21,26 @@ export default async function SettingsPage({
 
   if (!userId) redirect("/login");
 
-  const [{ data: profile }, { data: credits }, { data: jobPreferences }] = await Promise.all([
-    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+  const [
+    { data: profile },
+    { data: credits },
+    { data: jobPreferences },
+    countries,
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(
+        "full_name,country_code,locale,preferred_currency,timezone,preferred_language,application_contact_email"
+      )
+      .eq("id", userId)
+      .maybeSingle(),
     supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
     supabase
       .from("job_preferences")
       .select("min_match_score,target_titles,target_locations,remote_only")
       .eq("user_id", userId)
       .maybeSingle(),
+    listCountries(supabase).catch(() => [] as Country[]),
   ]);
 
   return (
@@ -71,6 +85,26 @@ export default async function SettingsPage({
 
           <div style={{ marginBottom: 18 }}>
             <JobPreferencesForm userId={userId} initial={jobPreferences} />
+          </div>
+
+          <div style={{ marginBottom: 18 }}>
+            <LocalizationForm
+              countries={countries}
+              email={email}
+              initial={
+                profile
+                  ? {
+                      country_code: profile.country_code,
+                      locale: profile.locale,
+                      preferred_currency: profile.preferred_currency,
+                      timezone: profile.timezone,
+                      preferred_language: profile.preferred_language,
+                      application_contact_email:
+                        profile.application_contact_email,
+                    }
+                  : null
+              }
+            />
           </div>
 
           <div className="card" style={{ padding: 26, marginBottom: 18 }}>

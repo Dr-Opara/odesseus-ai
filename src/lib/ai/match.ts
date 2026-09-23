@@ -5,6 +5,21 @@ import { calculateMatchScore } from "./scoring";
 
 const MODEL = process.env.ODESSEUS_MATCH_MODEL || "gpt-5.6-luna";
 
+/**
+ * Profile fields that must never leave the app for scoring. The application
+ * contact address exists only for filling job applications, so it is stripped
+ * from every account-profile payload before it reaches a model provider.
+ */
+const PRIVATE_PROFILE_FIELDS = new Set(["application_contact_email"]);
+
+export function publicAccountProfile(
+  profile: Record<string, unknown>
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(profile).filter(([key]) => !PRIVATE_PROFILE_FIELDS.has(key))
+  );
+}
+
 type Preferences = {
   min_match_score: number;
   target_titles: string[];
@@ -52,7 +67,7 @@ CANDIDATE RESUME PROFILE:
 ${JSON.stringify(input.resume)}
 
 CANDIDATE ACCOUNT PROFILE:
-${JSON.stringify(input.profile)}
+${JSON.stringify(publicAccountProfile(input.profile))}
 
 CANDIDATE JOB PREFERENCES:
 ${JSON.stringify(input.preferences)}
