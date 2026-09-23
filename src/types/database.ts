@@ -1399,6 +1399,174 @@ export type Database = {
           },
         ]
       }
+      pricing_country_markets: {
+        Row: {
+          country_code: string
+          created_at: string
+          market_key: string
+          updated_at: string
+        }
+        Insert: {
+          country_code: string
+          created_at?: string
+          market_key: string
+          updated_at?: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          market_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_country_markets_country_fkey"
+            columns: ["country_code"]
+            isOneToOne: true
+            referencedRelation: "countries"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "pricing_country_markets_market_fkey"
+            columns: ["market_key"]
+            isOneToOne: false
+            referencedRelation: "pricing_markets"
+            referencedColumns: ["market_key"]
+          },
+        ]
+      }
+      pricing_markets: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          locale: string
+          market_key: string
+          name: string
+          region: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency: string
+          locale: string
+          market_key: string
+          name: string
+          region?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          locale?: string
+          market_key?: string
+          name?: string
+          region?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pricing_prices: {
+        Row: {
+          active: boolean
+          amount_minor: number
+          created_at: string
+          currency: string
+          effective_from: string | null
+          effective_until: string | null
+          id: string
+          market_key: string
+          metadata: Json
+          product_key: string
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount_minor: number
+          created_at?: string
+          currency: string
+          effective_from?: string | null
+          effective_until?: string | null
+          id?: string
+          market_key: string
+          metadata?: Json
+          product_key: string
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount_minor?: number
+          created_at?: string
+          currency?: string
+          effective_from?: string | null
+          effective_until?: string | null
+          id?: string
+          market_key?: string
+          metadata?: Json
+          product_key?: string
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_prices_currency_market_fkey"
+            columns: ["market_key", "currency"]
+            isOneToOne: false
+            referencedRelation: "pricing_markets"
+            referencedColumns: ["market_key", "currency"]
+          },
+          {
+            foreignKeyName: "pricing_prices_product_fkey"
+            columns: ["product_key"]
+            isOneToOne: false
+            referencedRelation: "pricing_products"
+            referencedColumns: ["product_key"]
+          },
+        ]
+      }
+      pricing_products: {
+        Row: {
+          active: boolean
+          billing_period_days: number | null
+          billing_type: string
+          created_at: string
+          display_name: string
+          family: string
+          metadata: Json
+          product_key: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          billing_period_days?: number | null
+          billing_type: string
+          created_at?: string
+          display_name: string
+          family: string
+          metadata?: Json
+          product_key: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          billing_period_days?: number | null
+          billing_type?: string
+          created_at?: string
+          display_name?: string
+          family?: string
+          metadata?: Json
+          product_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       resume_tailorings: {
         Row: {
           approved_at: string | null
