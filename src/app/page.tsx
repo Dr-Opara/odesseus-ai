@@ -1,6 +1,7 @@
 import Link from "next/link";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
+import MobileLanding from "@/components/mobile-landing";
 
 const steps = [
   ["01","Find","AI-powered job matching"],
@@ -20,7 +21,8 @@ const products = [
 export default function Home() {
   return (
     <main className="figma-site">
-      <section className="figma-home-shell">
+      <MobileLanding />
+      <section className="figma-home-shell odesseus-desktop-only">
         <div className="figma-home-hero">
           <MarketingNav inverse />
           <div className="figma-hero-grid">
@@ -75,7 +77,7 @@ export default function Home() {
           <Link className="figma-text-cta" href="/pricing">See full pricing →</Link>
         </section>
       </section>
-      <MarketingFooter />
+      <div className="odesseus-desktop-only"><MarketingFooter /></div>
     </main>
   );
 }
