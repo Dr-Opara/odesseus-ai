@@ -31,10 +31,10 @@ export default function Home() {
               <div className="figma-actions"><Link className="figma-btn figma-btn-orange" href="/signup">Start Finding Jobs</Link><Link className="figma-link-light" href="/employers">For Employers →</Link></div>
             </div>
             <div className="figma-job-stack" aria-label="Live job match examples">
-              <article className="figma-job-card card-orange"><small>Microsoft</small><h3>GenAI Security Engineer</h3><strong>$247K</strong><span>Full time • Remote</span></article>
-              <article className="figma-job-card card-purple"><small>OpenAI</small><h3>AI Security Engineer</h3><strong>$220K+</strong><span>Full time • Hybrid</span></article>
-              <article className="figma-job-card card-cyan"><small>Stripe</small><h3>Senior AI Engineer</h3><strong>$190K+</strong><span>Full time • Remote</span></article>
-              <div className="figma-live-label">LIVE JOB MATCHES • PERSONALIZED FOR YOU</div>
+              <article className="figma-job-card card-orange"><small>Your match target</small><h3>Roles that clear the bar</h3><strong>85%+</strong><span>Scored from your resume</span></article>
+              <article className="figma-job-card card-purple"><small>Resume Agent</small><h3>Tailored from your master</h3><strong>Verified</strong><span>Your facts only</span></article>
+              <article className="figma-job-card card-cyan"><small>Application Agent</small><h3>Submitted with your approval</h3><strong>$0.99</strong><span>After verified submission</span></article>
+              <div className="figma-live-label">YOUR SEARCH • SCORED AND UPDATED FOR YOU</div>
             </div>
           </div>
         </div>

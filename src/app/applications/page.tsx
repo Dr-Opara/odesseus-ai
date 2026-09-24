@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { statusLabel } from "@/lib/applications/status";
 import AppShell from "@/components/app-shell";
+import MobileApplications from "@/components/mobile/mobile-applications";
 
 const filterStatuses = [
   ["all", "All"],
@@ -51,7 +52,7 @@ export default async function ApplicationsPage({
       interviewPasses={credits?.interview_passes ?? 0}
       active="applications"
     >
-      <section className="shell" style={{ padding: "54px 0 90px" }}>
+      <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 90px" }}>
       <div className="page-heading" style={{ marginTop: 20 }}>
         <div>
           <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: 0 }}>Applications</h1>
@@ -123,6 +124,8 @@ export default async function ApplicationsPage({
         )}
       </div>
       </section>
+
+      <MobileApplications applications={applications ?? []} status={status} />
     </AppShell>
   );
 }

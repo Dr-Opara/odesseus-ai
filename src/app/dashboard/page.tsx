@@ -2,6 +2,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
+import MobileHome from "@/components/mobile/mobile-home";
+import {
+  getApplications,
+  getCandidateProfile,
+  getCandidateUserId,
+  getCreditBalance,
+  getJobPreferences,
+  getRecommendedJobs,
+  getRecentActivity,
+  getUpcomingInterviews,
+} from "@/lib/candidate/service";
 
 function firstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "there";
@@ -23,76 +34,45 @@ function formatWhen(value: string | null) {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getClaims();
-  const userId = auth?.claims?.sub;
+  const userId = await getCandidateUserId(supabase);
 
   if (!userId) redirect("/login");
 
-  const [
-    { data: profile },
-    { data: credits },
-    { data: jobPreferences },
-    { data: jobs },
-    { data: applications },
-    { data: interviews },
-    { data: applicationEvents },
-    { data: externalSignals },
-  ] = await Promise.all([
-    supabase.from("profiles").select("full_name,headline,onboarding_completed").eq("id", userId).maybeSingle(),
-    supabase.from("credit_balances").select("application_credits,interview_passes,live_unlimited_until").eq("user_id", userId).maybeSingle(),
-    supabase.from("job_preferences").select("min_match_score").eq("user_id", userId).maybeSingle(),
-    supabase.from("job_opportunities").select("id,company_name,role_title,location,match_score,status").eq("user_id", userId).order("match_score", { ascending: false }).limit(5),
-    supabase.from("applications").select("id,company_name,role_title,status,last_event_at,submitted_at").eq("user_id", userId).order("last_event_at", { ascending: false }).limit(20),
-    supabase.from("interviews").select("id,stage,scheduled_at,status,meeting_provider,readiness_generated_at,applications(company_name,role_title)").eq("user_id", userId).in("status", ["invited","scheduled","ready","live"]).order("scheduled_at", { ascending: true }).limit(3),
-    supabase.from("application_status_events").select("id,title,detail,occurred_at").eq("user_id", userId).order("occurred_at", { ascending: false }).limit(6),
-    supabase.from("external_signals").select("id,title,signal_type,occurred_at,created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(4),
-  ]);
+  const [profile, credits, jobPreferences, jobs, recentApplications, interviews, activity] =
+    await Promise.all([
+      getCandidateProfile(supabase, userId),
+      getCreditBalance(supabase, userId),
+      getJobPreferences(supabase, userId),
+      getRecommendedJobs(supabase, userId, { limit: 5 }),
+      getApplications(supabase, userId, { limit: 20 }),
+      getUpcomingInterviews(supabase, userId, { limit: 3 }),
+      getRecentActivity(supabase, userId, 6),
+    ]);
 
   if (!profile?.onboarding_completed) redirect("/onboarding");
 
-  const appCredits = credits?.application_credits ?? 0;
-  const interviewPasses = credits?.interview_passes ?? 0;
-  const liveAnnualActive = Boolean(
-    credits?.live_unlimited_until && new Date(credits.live_unlimited_until) > new Date()
-  );
+  const appCredits = credits.application_credits;
+  const interviewPasses = credits.interview_passes;
   const matchThreshold = jobPreferences?.min_match_score ?? 85;
-  const recentApplications = applications || [];
-  const strongMatches = (jobs || []).filter((job) => (job.match_score ?? 0) >= matchThreshold);
-  const bestJob = strongMatches[0] || jobs?.[0] || null;
-  const nextInterview = interviews?.[0] || null;
+  const strongMatches = jobs.filter((job) => (job.match_score ?? 0) >= matchThreshold);
+  const bestJob = strongMatches[0] || jobs[0] || null;
+  const nextInterview = interviews[0] || null;
 
   const pipeline = {
     active: recentApplications.filter((item) =>
-      ["applied","employer_response","assessment","interview"].includes(item.status)
+      ["applied", "employer_response", "assessment", "interview"].includes(item.status)
     ).length,
     responses: recentApplications.filter((item) =>
-      ["employer_response","assessment","interview","offer","accepted"].includes(item.status)
+      ["employer_response", "assessment", "interview", "offer", "accepted"].includes(item.status)
     ).length,
     interviews: recentApplications.filter((item) => item.status === "interview").length,
-    offers: recentApplications.filter((item) => ["offer","accepted"].includes(item.status)).length,
+    offers: recentApplications.filter((item) => ["offer", "accepted"].includes(item.status)).length,
   };
-
-  const activity = [
-    ...(applicationEvents || []).map((event) => ({
-      key: `event-${event.id}`,
-      title: event.title,
-      detail: event.detail,
-      at: event.occurred_at,
-    })),
-    ...(externalSignals || []).map((signal) => ({
-      key: `signal-${signal.id}`,
-      title: signal.title || labelStatus(signal.signal_type),
-      detail: labelStatus(signal.signal_type),
-      at: signal.occurred_at || signal.created_at,
-    })),
-  ]
-    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
-    .slice(0, 6);
 
   const nextAction = nextInterview
     ? {
         eyebrow: "Next up",
-        title: `${nextInterview.applications?.role_title || "Interview"} at ${nextInterview.applications?.company_name || "your next company"}`,
+        title: `${nextInterview.role_title || "Interview"} at ${nextInterview.company_name || "your next company"}`,
         detail: `${nextInterview.stage || "Interview"} · ${formatWhen(nextInterview.scheduled_at)} · ${nextInterview.meeting_provider || "Platform pending"}`,
         href: `/interviews/${nextInterview.id}`,
         cta: nextInterview.readiness_generated_at ? "Open interview" : "Prepare interview",
@@ -120,7 +100,7 @@ export default async function DashboardPage() {
       interviewPasses={interviewPasses}
       active="home"
     >
-      <section className="shell dashboard-v2">
+      <section className="shell dashboard-v2 odesseus-desktop-only">
         <div className="dashboard-heading">
           <div>
             <div className="muted dashboard-eyebrow">Your workspace</div>
@@ -187,13 +167,13 @@ export default async function DashboardPage() {
                 </div>
                 <Link href="/interviews" className="muted">View all</Link>
               </div>
-              {interviews?.length ? (
+              {interviews.length ? (
                 <div className="dashboard-list">
                   {interviews.map((interview) => (
                     <Link href={`/interviews/${interview.id}`} className="dashboard-list-row compact" key={interview.id}>
                       <div>
-                        <strong>{interview.applications?.role_title || interview.stage || "Interview"}</strong>
-                        <span className="muted">{interview.applications?.company_name || interview.meeting_provider || "Details pending"}</span>
+                        <strong>{interview.role_title || interview.stage || "Interview"}</strong>
+                        <span className="muted">{interview.company_name || interview.meeting_provider || "Details pending"}</span>
                       </div>
                       <small className="muted">{formatWhen(interview.scheduled_at)}</small>
                     </Link>
@@ -216,9 +196,11 @@ export default async function DashboardPage() {
                 <div><strong>{appCredits}</strong><span className="muted">Application credits</span></div>
                 <div><strong>{interviewPasses}</strong><span className="muted">Interview passes</span></div>
               </div>
-              {liveAnnualActive ? (
+              {credits.live_unlimited_until &&
+              new Date(credits.live_unlimited_until) > new Date() ? (
                 <div className="badge" style={{ marginTop: 14 }}>
-                  Odesseus Live Annual active through {new Date(credits!.live_unlimited_until!).toLocaleDateString()}
+                  Odesseus Live Annual active through{" "}
+                  {new Date(credits.live_unlimited_until).toLocaleDateString()}
                 </div>
               ) : null}
             </section>
@@ -250,6 +232,14 @@ export default async function DashboardPage() {
           )}
         </section>
       </section>
+
+      <MobileHome
+        fullName={profile.full_name}
+        credits={credits}
+        strongMatches={strongMatches}
+        recentApplications={recentApplications}
+        activity={activity}
+      />
     </AppShell>
   );
 }

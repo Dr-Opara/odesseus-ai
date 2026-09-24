@@ -3,6 +3,11 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import {
+  saveProfileAndPreferences,
+  uploadMasterResume,
+  validateResumeFile,
+} from "@/lib/onboarding/submit";
 
 export default function OnboardingForm({ fullName }: { fullName?: string | null }) {
   const router = useRouter();
@@ -19,18 +24,9 @@ export default function OnboardingForm({ fullName }: { fullName?: string | null 
     event.preventDefault();
     setError("");
 
-    if (!file) {
-      setError("Choose your resume to continue.");
-      return;
-    }
-
-    if (!["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(file.type)) {
-      setError("Use a PDF or DOCX resume.");
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      setError("Your resume must be 10 MB or smaller.");
+    const validationError = validateResumeFile(file);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -45,55 +41,23 @@ export default function OnboardingForm({ fullName }: { fullName?: string | null 
       return;
     }
 
-    const extension = file.name.split(".").pop()?.toLowerCase() || "pdf";
-    const path = `${user.id}/master-${Date.now()}.${extension}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("resumes")
-      .upload(path, file, { upsert: false });
-
-    if (uploadError) {
-      setError(uploadError.message);
+    const uploadResult = await uploadMasterResume(supabase, user.id, file!);
+    if (uploadResult.error) {
+      setError(uploadResult.error);
       setBusy(false);
       return;
     }
 
-    const { error: resumeError } = await supabase.from("resumes").insert({
-      user_id: user.id,
-      file_name: file.name,
-      storage_path: path,
-      mime_type: file.type,
-      size_bytes: file.size,
-      is_master: true,
-      is_approved: true,
+    const saveResult = await saveProfileAndPreferences(supabase, user.id, {
+      fullName: fullName || user.user_metadata?.full_name || null,
+      targetRole,
+      location,
+      workPreference,
+      minimumSalary,
     });
 
-    if (resumeError) {
-      await supabase.storage.from("resumes").remove([path]);
-      setError(resumeError.message);
-      setBusy(false);
-      return;
-    }
-
-    const profileResult = await supabase.from("profiles").upsert({
-      id: user.id,
-      full_name: fullName || user.user_metadata?.full_name || null,
-      location: location || null,
-      work_preference: workPreference,
-      onboarding_completed: true,
-    });
-
-    const preferenceResult = await supabase.from("job_preferences").upsert({
-      user_id: user.id,
-      target_titles: targetRole ? [targetRole] : [],
-      target_locations: location ? [location] : [],
-      remote_only: workPreference === "remote",
-      minimum_salary: minimumSalary ? Number(minimumSalary) : null,
-      min_match_score: 85,
-    });
-
-    if (profileResult.error || preferenceResult.error) {
-      setError(profileResult.error?.message || preferenceResult.error?.message || "Could not save your profile.");
+    if (saveResult.error) {
+      setError(saveResult.error);
       setBusy(false);
       return;
     }

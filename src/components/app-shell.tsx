@@ -24,12 +24,12 @@ export default function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  // MobileRouteExperience already renders a dedicated Figma mobile screen (with
-  // its own bottom nav) for any route resolveMobileScreen() covers. Rendering
-  // this nav unconditionally on those routes would double-mount a second bottom
-  // nav alongside it. Only fall back to this nav on routes Figma Mobile v1
-  // doesn't have a screen for yet (e.g. /billing, /interviews/[id]/live).
-  const hasDedicatedMobileScreen = resolveMobileScreen(pathname) !== null;
+  const screen = resolveMobileScreen(pathname);
+  // A "wired" screen renders its own real mobile presentation (Phase 5), so
+  // the AppShell chrome stays desktop-only. Mapped screens that are not wired
+  // yet fall back to the desktop layout plus a mobile bottom nav so navigation
+  // still works while later batches land.
+  const hasWiredMobileScreen = screen !== null && screen.wired;
 
   const nav = [
     ["home", "/dashboard", "Home"],
@@ -40,7 +40,7 @@ export default function AppShell({
   ] as const;
 
   return (
-    <main className="app-surface">
+    <main className={`app-surface${hasWiredMobileScreen ? " mobile-dedicated" : ""}`}>
       <header className="app-header">
         <div className="shell app-header-inner">
           <OdesseusWordmark href="/dashboard" size="md" className="wordmark" />
@@ -81,7 +81,7 @@ export default function AppShell({
         </div>
       </header>
       {children}
-      {hasDedicatedMobileScreen ? null : (
+      {hasWiredMobileScreen ? null : (
         <nav className="mobile-app-bottom-nav" aria-label="Mobile app navigation">
           {nav.map(([key, href, label]) => (
             <Link key={key} href={href} aria-current={active === key ? "page" : undefined} className={active === key ? "is-active" : undefined}>

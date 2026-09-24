@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signup } from "@/app/login/actions";
 import GoogleSignupButton from "@/components/google-signup-button";
+import MobileSignupWizard from "@/components/mobile/mobile-signup-wizard";
 
 export default async function SignupPage({
   searchParams,
@@ -10,7 +11,8 @@ export default async function SignupPage({
   const { error } = await searchParams;
 
   return (
-    <main className="candidate-signup-shell">
+    <>
+    <main className="candidate-signup-shell odesseus-desktop-only">
       <section className="candidate-signup-wrap">
         <header className="candidate-signup-header">
           <h1>Create Account</h1>
@@ -66,5 +68,7 @@ export default async function SignupPage({
         </p>
       </section>
     </main>
+    <MobileSignupWizard error={error} />
+    </>
   );
 }

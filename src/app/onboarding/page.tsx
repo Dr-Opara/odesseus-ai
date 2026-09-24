@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import OdesseusWordmark from "@/components/odesseus-wordmark";
 import OnboardingForm from "@/components/onboarding-form";
+import MobileOnboardingWizard from "@/components/mobile/mobile-onboarding-wizard";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function OnboardingPage() {
@@ -16,7 +17,8 @@ export default async function OnboardingPage() {
     .maybeSingle();
 
   return (
-    <main className="shell" style={{ minHeight: "100vh", padding: "54px 0 80px" }}>
+    <>
+    <main className="shell odesseus-desktop-only" style={{ minHeight: "100vh", padding: "54px 0 80px" }}>
       <OdesseusWordmark href="/" size="lg" />
       <div style={{ width: "min(720px,100%)", margin: "80px auto 0" }}>
         <div className="muted" style={{ fontSize: 14 }}>Set up your profile</div>
@@ -27,5 +29,7 @@ export default async function OnboardingPage() {
         <OnboardingForm fullName={profile?.full_name ?? null} />
       </div>
     </main>
+    <MobileOnboardingWizard fullName={profile?.full_name ?? null} />
+    </>
   );
 }
