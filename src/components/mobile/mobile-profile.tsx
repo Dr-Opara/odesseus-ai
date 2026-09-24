@@ -1,5 +1,6 @@
 import Link from "next/link";
 import MobileScreen from "@/components/mobile/mobile-screen";
+import MobileIconRow, { type IconColor } from "@/components/mobile/mobile-icon-row";
 
 function initials(name?: string | null) {
   const parts = (name || "").trim().split(/\s+/).filter(Boolean);
@@ -8,15 +9,15 @@ function initials(name?: string | null) {
 }
 
 const MENU = [
-  ["🎯", "Job Preferences", "/settings/job-preferences"],
-  ["📄", "Documents", "/settings/documents"],
-  ["$", "Pricing", "/pricing"],
-  ["⚙", "Account Settings", "/settings"],
-  ["🔔", "Notifications", "/settings/notifications"],
-  ["🎁", "Refer a Friend", "/settings/referrals"],
-  ["⚖", "Legal", "/legal"],
-  ["❓", "Help & Support", "/support"],
-] as const;
+  ["🎯", "green", "Job Preferences", "/settings/job-preferences"],
+  ["📄", "olive", "Documents", "/settings/documents"],
+  ["$", "purple", "Pricing", "/pricing"],
+  ["⚙", "navy", "Account Settings", "/settings"],
+  ["🔔", "orange", "Notifications", "/settings/notifications"],
+  ["🎁", "teal", "Refer a Friend", "/settings/referrals"],
+  ["⚖", "cyan", "Legal", "/legal"],
+  ["❓", "red", "Help & Support", "/support"],
+] as const satisfies readonly (readonly [string, IconColor, string, string])[];
 
 /**
  * Mobile Profile screen (screen 12) — the candidate's own verified name,
@@ -71,14 +72,8 @@ export default function MobileProfile({
       </div>
 
       <div className="m-list">
-        {MENU.map(([icon, title, href]) => (
-          <Link className="m-card" href={href} key={title}>
-            <span className="m-icon">{icon}</span>
-            <span className="m-copy">
-              <strong>{title}</strong>
-            </span>
-            <b className="m-chevron">›</b>
-          </Link>
+        {MENU.map(([icon, color, title, href]) => (
+          <MobileIconRow key={href} icon={icon} color={color} title={title} href={href} />
         ))}
       </div>
     </MobileScreen>

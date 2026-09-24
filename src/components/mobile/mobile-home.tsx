@@ -1,5 +1,6 @@
 import Link from "next/link";
 import MobileScreen from "@/components/mobile/mobile-screen";
+import { companyMarkColor, companyMarkInitial } from "@/lib/mobile/company-mark";
 import type {
   CandidateActivity,
   CandidateApplication,
@@ -9,6 +10,21 @@ import type {
 
 function firstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "there";
+}
+
+function initials(name?: string | null) {
+  const parts = (name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
+/** Both activity sources are real records — the prefix on `key` (set in
+ * getRecentActivity) tells us which, so the icon reflects the actual record
+ * type rather than a single generic glyph for everything. */
+function activityIcon(key: string): { icon: string; color: "purple" | "green" } {
+  return key.startsWith("signal-")
+    ? { icon: "🔍", color: "purple" }
+    : { icon: "📄", color: "green" };
 }
 
 function when(value: string | null) {
@@ -54,9 +70,16 @@ export default function MobileHome({
       eyebrow="Hello 👋"
       title={firstName(fullName)}
       minHeight={990}
+      showBack={false}
+      right={
+        <Link href="/profile" className="m-avatar-link" aria-label="Your profile">
+          <span className="m-avatar-sm">{initials(fullName)}</span>
+        </Link>
+      }
       nav
     >
       <section className="m-ai-hero">
+        <span className="m-ai-hero-accent" aria-hidden="true">↗</span>
         <h2>
           Find better jobs
           <br />
@@ -85,24 +108,26 @@ export default function MobileHome({
 
       <section className="m-section">
         <div className="m-section-heading">
-          <h2>Strong matches</h2>
-          <Link href="/jobs">View all</Link>
+          <h2>Top Matches for You</h2>
+          <Link href="/jobs">See All</Link>
         </div>
 
         {matches.length ? (
           <div className="m-list">
             {matches.map((job) => (
-              <Link className="m-card m-job-card" href={`/match/${job.id}`} key={job.id}>
-                <span className="m-icon">◎</span>
-                <span className="m-copy">
-                  <strong>{job.role_title}</strong>
-                  <small>
-                    {job.company_name}
-                    {job.location ? ` · ${job.location}` : ""}
-                    {job.salary_text ? ` · ${job.salary_text}` : ""}
-                  </small>
+              <Link className="m-match-card" href={`/match/${job.id}`} key={job.id}>
+                <span className={`m-icon m-icon-sm m-icon-${companyMarkColor(job.company_name)}`} aria-hidden="true">
+                  {companyMarkInitial(job.company_name)}
                 </span>
-                <b className="m-tag">{job.match_score ?? "—"}%</b>
+                <span className="m-match-copy">
+                  <span className="m-match-company">{job.company_name}</span>
+                  <strong>{job.role_title}</strong>
+                  <small>{job.salary_text || "Salary not listed"}</small>
+                </span>
+                <span className="m-match-badge">
+                  <strong>{job.match_score ?? "—"}%</strong>
+                  <small>Match</small>
+                </span>
               </Link>
             ))}
           </div>
@@ -146,21 +171,24 @@ export default function MobileHome({
 
       <section className="m-section">
         <div className="m-section-heading">
-          <h2>Odesseus activity</h2>
+          <h2>Agent Activity</h2>
         </div>
 
         {feed.length ? (
           <div className="m-list">
-            {feed.map((item) => (
-              <div className="m-card" key={item.key}>
-                <span className="m-icon">✦</span>
-                <span className="m-copy">
-                  <strong>{item.title}</strong>
-                  {item.detail ? <small>{item.detail}</small> : null}
-                </span>
-                <small className="m-when">{when(item.at)}</small>
-              </div>
-            ))}
+            {feed.map((item) => {
+              const { icon, color } = activityIcon(item.key);
+              return (
+                <div className="m-card" key={item.key}>
+                  <span className={`m-icon m-icon-${color}`} aria-hidden="true">{icon}</span>
+                  <span className="m-copy">
+                    <strong>{item.title}</strong>
+                    <small>{when(item.at)}</small>
+                  </span>
+                  <b className="m-chevron">›</b>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="m-empty">

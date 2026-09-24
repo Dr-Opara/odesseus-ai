@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import MobileScreen from "@/components/mobile/mobile-screen";
 import MobileSaveJob from "@/components/mobile/mobile-save-job";
+import { companyMarkColor, companyMarkInitial } from "@/lib/mobile/company-mark";
 import type { CandidateJob } from "@/lib/candidate/types";
 
 function sourceLabel(source: string | null) {
@@ -72,16 +73,21 @@ export default function MobileJobs({
           {visible.map((job) => (
             <article className="m-job-card" key={job.id}>
               <Link className="m-job-card-main" href={`/match/${job.id}`}>
-                <span className="m-icon">◎</span>
-                <span className="m-copy">
-                  <strong>{job.role_title}</strong>
-                  <small>
+                <span className={`m-icon m-icon-sm m-icon-${companyMarkColor(job.company_name)}`} aria-hidden="true">
+                  {companyMarkInitial(job.company_name)}
+                </span>
+                <span className="m-match-copy">
+                  <span className="m-match-company">
                     {job.company_name}
                     {job.location ? ` · ${job.location}` : ""}
-                    {job.salary_text ? ` · ${job.salary_text}` : ""}
-                  </small>
+                  </span>
+                  <strong>{job.role_title}</strong>
+                  <small>{job.salary_text || "Salary not listed"}</small>
                 </span>
-                <b className="m-tag">{job.match_score ?? "—"}%</b>
+                <span className="m-match-badge">
+                  <strong>{job.match_score ?? "—"}%</strong>
+                  <small>Match</small>
+                </span>
               </Link>
               <div className="m-job-card-footer">
                 <span className="m-job-meta">

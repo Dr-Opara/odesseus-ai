@@ -1,39 +1,24 @@
-import Link from "next/link";
 import MobileScreen from "@/components/mobile/mobile-screen";
+import MobileIconRow, { type IconColor } from "@/components/mobile/mobile-icon-row";
 
 const ACCOUNT_ROWS = [
-  ["👤", "Personal Information", "Name and email", "/profile"],
-  ["🔒", "Password & Security", "Password and sign-in security", "/settings/security"],
+  ["👤", "cyan", "Personal Information", "Name and email", "/profile"],
+  ["🔒", "purple", "Password & Security", "Password and sign-in security", "/settings/security"],
 ] as const;
 
 const PREFERENCE_ROWS = [
-  ["🔔", "Notifications", "Applications, interviews, documents", "/settings/notifications"],
-  ["🎯", "Job Preferences", "Roles, salary, location, work type", "/settings/job-preferences"],
-  ["📄", "Documents", "Resume and career documents", "/settings/documents"],
-  ["🌐", "Language & Region", "Language, country and timezone", "/settings/language-region"],
-  ["🌓", "Appearance", "Light, dark or system", "/settings/appearance"],
-  ["🎁", "Refer a Friend", "Invite friends, earn rewards", "/settings/referrals"],
-] as const;
-
-function Row({ icon, title, sub, href }: { icon: string; title: string; sub: string; href: string }) {
-  return (
-    <Link className="m-card" href={href}>
-      <span className="m-icon">{icon}</span>
-      <span className="m-copy">
-        <strong>{title}</strong>
-        <small>{sub}</small>
-      </span>
-      <b className="m-chevron">›</b>
-    </Link>
-  );
-}
+  ["🔔", "orange", "Notifications", "Applications, interviews, documents", "/settings/notifications"],
+  ["🎯", "green", "Job Preferences", "Roles, salary, location, work type", "/settings/job-preferences"],
+  ["📄", "olive", "Documents", "Resume and career documents", "/settings/documents"],
+  ["🌐", "pink", "Language & Region", "Language, country and timezone", "/settings/language-region"],
+  ["🌓", "navy", "Appearance", "Light, dark or system", "/settings/appearance"],
+  ["🎁", "teal", "Refer a Friend", "Invite friends, earn rewards", "/settings/referrals"],
+] as const satisfies readonly (readonly [string, IconColor, string, string, string])[];
 
 /**
  * Mobile Account Settings (screen 14) — grouped settings menu. Rows link to
- * the real settings sub-pages; screens without a dedicated route yet
- * (Password & Security, Notifications, Appearance, Refer a Friend) still
- * link somewhere real once those routes land, and are excluded from
- * `wired` screens in the meantime rather than faked here.
+ * the real settings sub-pages, sharing the same circular icon-row pattern
+ * (MobileIconRow) used across screens 15/16/17/19/20/21/33.
  */
 export default function MobileSettings() {
   return (
@@ -43,7 +28,7 @@ export default function MobileSettings() {
       </p>
       <div className="m-list" style={{ marginBottom: 18 }}>
         {ACCOUNT_ROWS.map((row) => (
-          <Row key={row[3]} icon={row[0]} title={row[1]} sub={row[2]} href={row[3]} />
+          <MobileIconRow key={row[4]} icon={row[0]} color={row[1]} title={row[2]} sub={row[3]} href={row[4]} />
         ))}
       </div>
 
@@ -52,7 +37,7 @@ export default function MobileSettings() {
       </p>
       <div className="m-list">
         {PREFERENCE_ROWS.map((row) => (
-          <Row key={row[3]} icon={row[0]} title={row[1]} sub={row[2]} href={row[3]} />
+          <MobileIconRow key={row[4]} icon={row[0]} color={row[1]} title={row[2]} sub={row[3]} href={row[4]} />
         ))}
       </div>
     </MobileScreen>
