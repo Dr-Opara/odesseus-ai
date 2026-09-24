@@ -38,7 +38,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   ].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
-    <AppShell fullName={profile?.full_name} applicationCredits={credits?.application_credits ?? 0} interviewPasses={credits?.interview_passes ?? 0}>
+    <AppShell fullName={profile?.full_name} applicationCredits={credits?.application_credits ?? 0} interviewPasses={credits?.interview_passes ?? 0} walletBalanceCents={wallet?.balance_cents ?? 0}>
       <section className="shell" style={{ padding: "54px 0 100px" }}><div style={{ width: "min(980px,100%)", margin: "20px auto 0" }}>
         <div><div className="badge">Billing</div><h1 style={{ fontSize: 48, letterSpacing: "-0.05em", margin: "16px 0 8px" }}>Pay for progress, not access.</h1><p className="muted" style={{ fontSize: 18 }}>Fund your wallet once. Odesseus deducts only after a successful application.</p></div>
         {status === "success" ? <div className="billing-success">Payment received. Your balance will update as soon as Stripe confirms the purchase.</div> : null}
