@@ -28,7 +28,7 @@ const definitions = [
   ["ODESSEUS_CONNECT_MICROSOFT_SEND_CONNECTOR", "Microsoft send connector", "Integrations"],
   ["ODESSEUS_ADMIN_EMAILS", "Admin email allowlist", "Operations"],
   ["RESEND_API_KEY", "Resend API key", "Operations"],
-  ["ODESSEUS_PARTNER_FROM_EMAIL", "Partner sender address", "Operations"],
+  ["ODESSEUS_PARTNER_FROM_EMAIL", "Partner sender address", "Operations"],\n  ["ODESSEUS_CAREERS_FROM_EMAIL", "Careers sender address", "Operations"],\n  ["ODESSEUS_CAREERS_INBOX", "Careers notification inbox", "Operations"],
 ] as const;
 
 export default async function AdminSystemPage() {
@@ -59,7 +59,7 @@ export default async function AdminSystemPage() {
           </p>
         </div>
         <div className="admin-system-links">
-          <Link className="btn btn-secondary" href="/admin/partners">Partner Admin</Link>
+          <Link className="btn btn-secondary" href="/admin/partners">Partner Admin</Link>\n          <Link className="btn btn-secondary" href="/admin/careers">Careers Admin</Link>
           <Link className="btn btn-secondary" href="/dashboard">Back to Odesseus</Link>
         </div>
       </div>

@@ -324,7 +324,7 @@ export async function finalizeConfirmedExistingSubmission(input: {
   await logEvent(input.run.id, input.run.user_id, "submitted", "Application submission confirmed.", {
     url: input.pageUrl,
   });
-  await logEvent(input.run.id, input.run.user_id, "credit_consumed", "One application credit consumed.");
+  await logEvent(input.run.id, input.run.user_id, "wallet_charged", input.run.application_mode === "smart_apply" ? "$1.99 Smart Apply charge recorded." : "$0.49 Apply charge recorded.");
   await releaseApplicationBrowserSession(input.browserSessionId).catch(() => undefined);
 
   return { terminal: true, status: "submitted" as const };
@@ -691,7 +691,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
     await logEvent(runId, run.user_id, "submitted", "Application submission confirmed.", {
       url: afterUrl,
     });
-    await logEvent(runId, run.user_id, "credit_consumed", "One application credit consumed.");
+    await logEvent(runId, run.user_id, "wallet_charged", input.run.application_mode === "smart_apply" ? "$1.99 Smart Apply charge recorded." : "$0.49 Apply charge recorded.");
 
     await releaseApplicationBrowserSession(browserSession.id).catch(() => undefined);
 

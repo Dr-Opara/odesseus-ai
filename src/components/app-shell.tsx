@@ -60,8 +60,8 @@ export default function AppShell({
 
           <div className="app-account">
             <Link href="/billing" className="app-balance-link">
-              <span>{applicationCredits} app credits</span>
-              <span>{interviewPasses} live passes</span>
+              <span>{walletBalanceCents !== undefined ? `Wallet ${(walletBalanceCents / 100).toFixed(2)}` : applicationCredits > 0 ? `${applicationCredits} legacy app credit${applicationCredits === 1 ? "" : "s"}` : "Wallet"}</span>
+              <span>{interviewPasses} live pass{interviewPasses === 1 ? "" : "es"}</span>
             </Link>
             <details className="account-menu">
               <summary className="avatar" title={fullName || undefined}>

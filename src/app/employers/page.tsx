@@ -30,8 +30,17 @@ export default function EmployersPage() {
           </div>
         </section>
         <section id="pricing" className="figma-pricing-section">
-          <div className="figma-section-heading"><span className="figma-eyebrow">AI STARTER BUNDLE</span><h2>$100 every 30 days</h2><p>5 job-post credits included.</p></div>
-          <Link className="figma-btn figma-btn-orange" href="/employers/pricing">See Employer Pricing</Link>
+          <div className="figma-section-heading">
+            <span className="figma-eyebrow">EMPLOYER PLANS</span>
+            <h2>Start at $79/month.</h2>
+            <p>3 active jobs on Starter, 10 on Growth, or 25 on Business — then add featured reach only when you need it.</p>
+          </div>
+          <div className="figma-three-grid">
+            <article className="figma-info-card white"><span className="figma-eyebrow">STARTER</span><h2>$79 / month</h2><p><strong>3 active jobs</strong></p></article>
+            <article className="figma-info-card lavender"><span className="figma-eyebrow">GROWTH</span><h2>$149 / month</h2><p><strong>10 active jobs</strong> + basic analytics</p></article>
+            <article className="figma-info-card cyan"><span className="figma-eyebrow">BUSINESS</span><h2>$299 / month</h2><p><strong>25 active jobs</strong> + AI matching + multiple recruiter seats</p></article>
+          </div>
+          <Link className="figma-btn figma-btn-orange" href="/employers/pricing">See plans & featured add-ons</Link>
         </section>
       </div>
       <MarketingFooter />
