@@ -2,6 +2,34 @@ import Link from "next/link";
 import EmployerNav from "@/components/employer-nav";
 import MarketingFooter from "@/components/marketing-footer";
 
+const plans = [
+  {
+    name: "Starter",
+    price: "$79",
+    jobs: "3 active job posts",
+    features: ["Applicant pipeline", "Employer dashboard", "Global job posting capability"],
+  },
+  {
+    name: "Growth",
+    price: "$149",
+    jobs: "10 active job posts",
+    features: ["Basic analytics", "Applicant pipeline", "Employer dashboard"],
+  },
+  {
+    name: "Business",
+    price: "$299",
+    jobs: "25 active job posts",
+    features: ["AI candidate matching", "Multiple recruiter seats", "Employer analytics"],
+  },
+];
+
+const addOns = [
+  ["Featured Job — 7 days", "$29"],
+  ["Featured Job — 14 days", "$49"],
+  ["AI Featured Job — 30 days", "$129"],
+  ["Additional recruiter seat", "$20/month"],
+];
+
 export default function EmployerPricingPage() {
   return (
     <main className="figma-site figma-dark-page">
@@ -9,28 +37,34 @@ export default function EmployerPricingPage() {
         <EmployerNav inverse />
         <section className="figma-page-hero inverse" style={{ minHeight: 0 }}>
           <span className="figma-eyebrow">EMPLOYER PRICING</span>
-          <h1>One plan. Predictable pricing. No surprises.</h1>
-          <p>Pricing shown in your local currency, determined by your company’s billing country.</p>
+          <h1>Start small. Add reach when you need it.</h1>
+          <p>Choose the hiring capacity you need, then feature the roles that need more visibility.</p>
         </section>
 
-        <section className="figma-two-grid employer-prices" style={{ paddingBottom: 40 }}>
-          <article className="figma-info-card lavender">
-            <span className="figma-eyebrow">AI STARTER BUNDLE</span>
-            <h2>$100 <small>/ 30 days</small></h2>
-            <p>✓ 5 job-post credits</p>
-            <p>✓ AI candidate matching</p>
-            <p>✓ Applicant pipeline</p>
-            <p>✓ Employer dashboard</p>
-            <p>✓ Global job posting capability</p>
-            <p>✓ Verified employer experience</p>
-            <Link className="figma-btn figma-btn-orange" href="/employers/signup">Start Hiring</Link>
-          </article>
-          <article className="figma-info-card white">
-            <h2>How credits work</h2>
-            <p><strong>Base Credits</strong><br />5 per 30-day billing cycle. Unused base credits expire at the end of the cycle.</p>
-            <p><strong>Additional Posts</strong><br />$10 each for active subscribers. Each add-on credit has its own 30-day expiration.</p>
-            <p><strong>Published jobs stay live for 30 days</strong><br />Publishing a job starts its own 30-day live-listing clock.</p>
-          </article>
+        <section className="figma-three-grid" style={{ paddingBottom: 32 }}>
+          {plans.map((plan) => (
+            <article className="figma-info-card white" key={plan.name}>
+              <span className="figma-eyebrow">{plan.name.toUpperCase()}</span>
+              <h2>{plan.price} <small>/ month</small></h2>
+              <p><strong>{plan.jobs}</strong></p>
+              {plan.features.map((feature) => <p key={feature}>✓ {feature}</p>)}
+              <Link className="figma-btn figma-btn-orange" href="/employers/signup">Start Hiring</Link>
+            </article>
+          ))}
+        </section>
+
+        <section style={{ paddingBottom: 40 }}>
+          <span className="figma-eyebrow">FEATURED ADD-ONS</span>
+          <h2>Give priority roles more reach.</h2>
+          <div className="figma-two-grid employer-prices">
+            {addOns.map(([name, price]) => (
+              <article className="figma-info-card lavender" key={name}>
+                <h3>{name}</h3>
+                <h2>{price}</h2>
+              </article>
+            ))}
+          </div>
+          <p>AI Featured adds targeted exposure to high-match candidates, AI candidate matching, recommended-job placement, candidate alerts, and performance analytics.</p>
         </section>
       </div>
       <MarketingFooter />
