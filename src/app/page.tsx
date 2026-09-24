@@ -7,7 +7,7 @@ const steps = [
   ["02","Tailor","Resume optimization"],
   ["03","Apply","Application Agent"],
   ["04","Prepare","Free Prep Agent"],
-  ["05","Interview","Odesseus Live"],
+  ["05","Interview","Walk in fully prepared"],
 ];
 
 const products = [
@@ -56,7 +56,6 @@ export default function Home() {
           <span className="figma-eyebrow">BUILT AROUND YOUR ENTIRE SEARCH</span>
           <h2>One AI career platform. Five powerful agents.</h2>
           <div className="figma-product-grid">{products.map(([title,copy,tone])=><article className={`figma-product-card ${tone}`} key={title}><h3>{title}</h3><p>{copy}</p></article>)}</div>
-          <article className="figma-live-feature"><h3>Odesseus Live</h3><p>Real-time interview support on desktop.</p><Link href="/live">Explore Live →</Link></article>
         </section>
 
         <section className="figma-section figma-global">
@@ -71,7 +70,7 @@ export default function Home() {
 
         <section className="figma-section figma-price-preview">
           <span className="figma-eyebrow">PAY FOR WHAT YOU USE</span><h2>Simple candidate pricing.</h2>
-          <div className="figma-price-grid"><article><span>Applications</span><strong>$0.99</strong><p>per successful application</p></article><article><span>Prep Agent</span><strong>FREE</strong><p>role-specific preparation</p></article><article><span>Odesseus Live</span><strong>$24.99</strong><p>per live interview</p></article></div>
+          <div className="figma-price-grid"><article><span>Applications</span><strong>$0.99</strong><p>per successful application</p></article><article><span>Prep Agent</span><strong>FREE</strong><p>role-specific preparation</p></article></div>
           <Link className="figma-text-cta" href="/pricing">See full pricing →</Link>
         </section>
       </section>
