@@ -7,10 +7,12 @@ import { applicationWorkflow } from "@/workflows/application";
 import { isSafeExternalUrl } from "@/lib/security/url-safety";
 import { isTrustedOrigin } from "@/lib/security/origin-check";
 import { integrationNotConfigured, missingEnv } from "@/lib/config/readiness";
+import { APPLY_TIERS, type ApplyTier } from "@/lib/pricing/candidate-pricing";
 
 const schema = z.object({
   jobId: z.string().uuid(),
   targetUrl: z.string().url(),
+  applyTier: z.enum(["standard", "smart"]).optional(),
 });
 
 export async function POST(request: Request) {
@@ -51,7 +53,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Odesseus only opens secure, public application pages." }, { status: 400 });
   }
 
-  const [{ data: job }, { data: credits }, { data: tailoring }, { data: activeRun }] = await Promise.all([
+  const [{ data: job }, { data: balance }, { data: tailoring }, { data: activeRun }] = await Promise.all([
     supabase
       .from("job_opportunities")
       .select("id,company_name,role_title,status")
@@ -60,7 +62,7 @@ export async function POST(request: Request) {
       .maybeSingle(),
     supabase
       .from("credit_balances")
-      .select("application_credits")
+      .select("wallet_balance_cents")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -88,8 +90,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Approve a tailored resume before starting Apply." }, { status: 400 });
   }
 
-  if ((credits?.application_credits ?? 0) < 1) {
-    return NextResponse.json({ error: "You need at least one application credit." }, { status: 402 });
+  // Wallet eligibility gate — the tier price is the requirement (Standard
+  // Apply ≥ 49¢, Smart Apply ≥ 199¢). The legacy application-credit balance
+  // never decides whether an application can start; it is preserved only as
+  // historical data.
+  const tier: ApplyTier = input.applyTier ?? "standard";
+  const tierInfo = APPLY_TIERS[tier];
+  const walletBalanceCents = balance?.wallet_balance_cents ?? 0;
+
+  if (walletBalanceCents < tierInfo.priceCents) {
+    return NextResponse.json(
+      {
+        error: `Your wallet needs at least ${tierInfo.priceLabel} to start ${tierInfo.label}.`,
+      },
+      { status: 402 }
+    );
   }
 
   if (activeRun) {
@@ -107,7 +122,7 @@ export async function POST(request: Request) {
       job_id: job.id,
       approved_resume_id: tailoring.approved_resume_id,
       target_url: input.targetUrl,
-      execution_mode: "assisted",
+      execution_mode: tier,
       status: "queued",
     })
     .select("id")

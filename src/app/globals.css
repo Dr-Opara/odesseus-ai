@@ -530,6 +530,15 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
 }
+.apply-tier-option.is-locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.apply-tier-lock-message {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground, #6b7280);
+}
 .apply-tier-option-top {
   display: flex;
   justify-content: space-between;

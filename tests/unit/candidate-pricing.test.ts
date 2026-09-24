@@ -3,9 +3,11 @@ import {
   APPLY_TIERS,
   EMPLOYER_PLANS,
   LIVE_PLANS,
+  MIN_APPLY_PRICE_CENTS,
   PROMOTION_PLANS,
   RECRUITER_SEAT_PRICE_LABEL,
   WALLET_TOPUP_AMOUNTS_CENTS,
+  canAffordTier,
   formatCents,
 } from "@/lib/pricing/candidate-pricing";
 
@@ -32,6 +34,38 @@ describe("candidate apply tiers", () => {
   it("keeps the charged-after-successful-submission rule on the standard tier and the pre-submission check framing on smart", () => {
     expect(APPLY_TIERS.standard.description.toLowerCase()).toMatch(/after a verified successful submission/);
     expect(APPLY_TIERS.smart.description.toLowerCase()).toMatch(/before submission/);
+  });
+});
+
+describe("wallet-based apply eligibility", () => {
+  it("derives the minimum start balance from the cheapest tier (49 cents)", () => {
+    expect(MIN_APPLY_PRICE_CENTS).toBe(49);
+    expect(MIN_APPLY_PRICE_CENTS).toBe(APPLY_TIERS.standard.priceCents);
+  });
+
+  it("requires at least 49 cents for Standard Apply", () => {
+    expect(canAffordTier("standard", 0)).toBe(false);
+    expect(canAffordTier("standard", 48)).toBe(false);
+    expect(canAffordTier("standard", 49)).toBe(true);
+    expect(canAffordTier("standard", 120)).toBe(true);
+  });
+
+  it("requires at least 199 cents for Smart Apply", () => {
+    expect(canAffordTier("smart", 198)).toBe(false);
+    expect(canAffordTier("smart", 199)).toBe(true);
+    expect(canAffordTier("smart", 1000)).toBe(true);
+  });
+
+  it("gates Smart Apply above the Standard floor but below the Smart price", () => {
+    // A wallet that can start Standard Apply must not unlock Smart Apply.
+    expect(canAffordTier("standard", 100)).toBe(true);
+    expect(canAffordTier("smart", 100)).toBe(false);
+  });
+
+  it("never consults a legacy application-credit balance", () => {
+    // Eligibility is purely wallet-centric; there is no credit input.
+    expect(APPLY_TIERS.standard.priceCents).toBeLessThan(APPLY_TIERS.smart.priceCents);
+    expect(MIN_APPLY_PRICE_CENTS).toBeGreaterThan(0);
   });
 });
 

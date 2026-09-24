@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MIN_APPLY_PRICE_CENTS } from "@/lib/pricing/candidate-pricing";
 import ApplyTierAndStart from "@/components/apply/apply-tier-and-start";
 
 type Job = {
@@ -13,19 +14,19 @@ type Job = {
 /**
  * Mobile Approval screen (screen 09) — reuses the exact same preflight data
  * and apply tier + start flow (POST /api/apply/start) the desktop approval
- * page uses. No separate approval logic; the same legacy credit/tailoring
- * gate applies until the wallet per-tier charge is available.
+ * page uses. No separate approval logic; eligibility is the wallet-based
+ * per-tier check (Standard 49¢ / Smart 199¢), matching the desktop gate.
  */
 export default function MobileApplyStart({
   job,
   matchScore,
   approvedVersion,
-  applicationCredits,
+  walletBalanceCents,
 }: {
   job: Job;
   matchScore: number | null;
   approvedVersion: number | null;
-  applicationCredits: number;
+  walletBalanceCents: number;
 }) {
   return (
     <main className="odesseus-mobile-only m-screen m-screen-09">
@@ -69,7 +70,7 @@ export default function MobileApplyStart({
         <div className="m-warning" style={{ marginTop: 14 }}>
           <strong>Approve a tailored resume before starting the application.</strong>
         </div>
-      ) : applicationCredits < 1 ? (
+      ) : walletBalanceCents < MIN_APPLY_PRICE_CENTS ? (
         <div className="m-warning" style={{ marginTop: 14 }}>
           <strong>
             You need wallet balance to apply. <Link href="/billing">Go to Wallet</Link>
@@ -77,7 +78,7 @@ export default function MobileApplyStart({
         </div>
       ) : (
         <div style={{ margin: "14px 4px 0" }}>
-          <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} />
+          <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} walletBalanceCents={walletBalanceCents} />
         </div>
       )}
     </main>

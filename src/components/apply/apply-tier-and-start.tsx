@@ -8,15 +8,17 @@ import { APPLY_TIERS, type ApplyTier } from "@/lib/pricing/candidate-pricing";
 export default function ApplyTierAndStart({
   jobId,
   defaultUrl,
+  walletBalanceCents,
 }: {
   jobId: string;
   defaultUrl?: string | null;
+  walletBalanceCents: number;
 }) {
   const [tier, setTier] = useState<ApplyTier>("standard");
 
   return (
     <div className="apply-tier-and-start">
-      <ApplyTierSelect selected={tier} onChange={setTier} />
+      <ApplyTierSelect selected={tier} onChange={setTier} walletBalanceCents={walletBalanceCents} />
       <ApplyStartForm jobId={jobId} defaultUrl={defaultUrl} applyTier={tier} />
       <p className="muted apply-tier-charge-note">
         Charged only after a successful submission — {APPLY_TIERS[tier].priceLabel} for{" "}

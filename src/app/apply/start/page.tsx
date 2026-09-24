@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { formatCents, MIN_APPLY_PRICE_CENTS } from "@/lib/pricing/candidate-pricing";
 import ApplyTierAndStart from "@/components/apply/apply-tier-and-start";
 import MobileApplyStart from "@/components/mobile/mobile-apply-start";
 
@@ -18,7 +19,7 @@ export default async function ApplyStartPage({
 
   if (!userId) redirect("/login");
 
-  const [{ data: job }, { data: credits }, { data: tailoring }] = await Promise.all([
+  const [{ data: job }, { data: balance }, { data: tailoring }] = await Promise.all([
     supabase
       .from("job_opportunities")
       .select("id,company_name,role_title,location,match_score,source_url,status")
@@ -27,7 +28,7 @@ export default async function ApplyStartPage({
       .maybeSingle(),
     supabase
       .from("credit_balances")
-      .select("application_credits")
+      .select("wallet_balance_cents")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -42,6 +43,12 @@ export default async function ApplyStartPage({
   ]);
 
   if (!job) redirect("/dashboard");
+
+  // Wallet eligibility gate: Standard Apply needs at least 49 cents and Smart
+  // Apply needs at least 199 cents (candidate-pricing). The wallet balance is
+  // read-only for clients; mutations stay server-side. Legacy application
+  // credits no longer decide whether an application can start.
+  const walletBalanceCents = balance?.wallet_balance_cents ?? 0;
 
   return (
     <>
@@ -74,8 +81,8 @@ export default async function ApplyStartPage({
             <strong>{tailoring ? `Approved v${tailoring.version_number}` : "Not approved"}</strong>
           </div>
           <div className="card apply-preflight-item">
-            <span className="muted">Legacy credits</span>
-            <strong>{credits?.application_credits ?? 0}</strong>
+            <span className="muted">Wallet</span>
+            <strong>{formatCents(walletBalanceCents)}</strong>
           </div>
         </div>
 
@@ -83,12 +90,12 @@ export default async function ApplyStartPage({
           <div className="review-note">
             Approve a tailored resume before starting the application.
           </div>
-        ) : (credits?.application_credits ?? 0) < 1 ? (
+        ) : walletBalanceCents < MIN_APPLY_PRICE_CENTS ? (
           <div className="review-note">
             You need wallet balance to apply. <Link href="/billing" style={{ fontWeight: 700 }}>Go to Wallet</Link>
           </div>
         ) : (
-          <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} />
+          <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} walletBalanceCents={walletBalanceCents} />
         )}
       </div>
     </main>
@@ -97,7 +104,7 @@ export default async function ApplyStartPage({
       job={job}
       matchScore={job.match_score}
       approvedVersion={tailoring?.approved_resume_id ? tailoring.version_number : null}
-      applicationCredits={credits?.application_credits ?? 0}
+      walletBalanceCents={walletBalanceCents}
     />
     </>
   );
