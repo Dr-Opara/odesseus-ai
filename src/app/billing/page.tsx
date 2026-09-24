@@ -98,7 +98,7 @@ export default async function BillingPage({
           <div className="card billing-balance-card">
             <div className="muted" style={{ fontSize: 13 }}>Application credits</div>
             <strong>{credits?.application_credits ?? 0}</strong>
-            <span className="muted">$0.99 is consumed only after a successful submission.</span>
+            <span className="muted">Apply is $0.49 per successful submission. Smart Apply is $1.99.</span>
           </div>
 
           <div className="card billing-balance-card">
