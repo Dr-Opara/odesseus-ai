@@ -4,6 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { resumeProfileSchema, tailoredResumeSchema } from "@/lib/ai/schemas";
 import TailoringActions from "@/components/tailoring-actions";
 import AppShell from "@/components/app-shell";
+import MobileResumeReview from "@/components/mobile/mobile-resume-review";
+import {
+  getCandidateProfile,
+  getCandidateUserId,
+  getCreditBalance,
+  getResumeTailoring,
+} from "@/lib/candidate/service";
 
 export default async function ResumeTailoringPage({
   params,
@@ -12,58 +19,51 @@ export default async function ResumeTailoringPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getClaims();
-  const userId = auth?.claims?.sub;
-
+  const userId = await getCandidateUserId(supabase);
   if (!userId) redirect("/login");
 
-  const [{ data: tailoring }, { data: profile }, { data: credits }] = await Promise.all([
-    supabase
-      .from("resume_tailorings")
-      .select("*,job_opportunities(company_name,role_title,match_score),resumes!resume_tailorings_source_resume_id_fkey(parsed_data)")
-      .eq("id", id)
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
-    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
+  const [profile, credits, tailoring] = await Promise.all([
+    getCandidateProfile(supabase, userId),
+    getCreditBalance(supabase, userId),
+    getResumeTailoring(supabase, userId, id),
   ]);
 
   if (!tailoring) notFound();
 
-  const tailored = tailoredResumeSchema.safeParse(tailoring.tailored_resume);
-  const original = resumeProfileSchema.safeParse(tailoring.resumes?.parsed_data);
+  const tailored = tailoredResumeSchema.safeParse(tailoring.tailored);
+  const original = resumeProfileSchema.safeParse(tailoring.sourceParsed);
 
   if (!tailored.success || !original.success) notFound();
 
-  const changes = Array.isArray(tailoring.changes) ? tailoring.changes : [];
-  const job = tailoring.job_opportunities;
+  const changes = tailoring.changes;
+  const job = tailoring.job;
 
   return (
     <AppShell
       fullName={profile?.full_name}
-      applicationCredits={credits?.application_credits ?? 0}
-      interviewPasses={credits?.interview_passes ?? 0}
+      applicationCredits={credits.application_credits}
+      interviewPasses={credits.interview_passes}
     >
-      <section className="shell" style={{ padding: "54px 0 100px" }}>
+      <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 100px" }}>
       <div style={{ width: "min(1040px,100%)", margin: "20px auto 0" }}>
-        <Link href={`/match/${tailoring.job_id}`} className="muted" style={{ fontSize: 14 }}>
+        <Link href={`/match/${tailoring.jobId}`} className="muted" style={{ fontSize: 14 }}>
           ← Back to match
         </Link>
 
         <div className="resume-review-heading">
           <div>
-            <div className="badge">Resume review · v{tailoring.version_number}</div>
+            <div className="badge">Resume review · v{tailoring.versionNumber}</div>
             <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: "16px 0 8px" }}>
               {job?.role_title || "Tailored resume"}
             </h1>
             <p className="muted" style={{ fontSize: 18, margin: 0 }}>
-              {job?.company_name || "Company"} · {tailoring.improvement_count} changes proposed
+              {job?.company_name || "Company"} · {tailoring.improvementCount} changes proposed
             </p>
           </div>
 
           <TailoringActions
             tailoringId={tailoring.id}
-            jobId={tailoring.job_id}
+            jobId={tailoring.jobId}
             approved={tailoring.status === "approved"}
           />
         </div>
@@ -177,7 +177,7 @@ export default async function ResumeTailoringPage({
                 Odesseus will use this exact approved PDF and pause whenever your input is required.
               </p>
             </div>
-            <Link className="btn btn-primary" href={`/apply/start?job=${tailoring.job_id}`}>
+            <Link className="btn btn-primary" href={`/apply/start?job=${tailoring.jobId}`}>
               Apply with Odesseus
             </Link>
           </div>
@@ -197,12 +197,14 @@ export default async function ResumeTailoringPage({
           </div>
           <TailoringActions
             tailoringId={tailoring.id}
-            jobId={tailoring.job_id}
+            jobId={tailoring.jobId}
             approved={tailoring.status === "approved"}
           />
         </div>
       </div>
       </section>
+
+      <MobileResumeReview tailoring={tailoring} tailored={tailored.data} />
     </AppShell>
   );
 }

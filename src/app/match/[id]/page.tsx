@@ -4,6 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { matchAssessmentSchema } from "@/lib/ai/schemas";
 import TailorButton from "@/components/tailor-button";
 import AppShell from "@/components/app-shell";
+import MobileJobDetail from "@/components/mobile/mobile-job-detail";
+import {
+  getCandidateProfile,
+  getCandidateUserId,
+  getCreditBalance,
+  getJobMatchWithBreakdown,
+} from "@/lib/candidate/service";
 
 const dimensionLabels: Record<string, string> = {
   requiredQualifications: "Required qualifications",
@@ -29,25 +36,20 @@ export default async function MatchResultPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getClaims();
-  const userId = auth?.claims?.sub;
+  const userId = await getCandidateUserId(supabase);
 
   if (!userId) redirect("/login");
 
-  const [{ data: job }, { data: profile }, { data: credits }] = await Promise.all([
-    supabase
-      .from("job_opportunities")
-      .select("id,company_name,role_title,location,match_score,match_breakdown,status")
-      .eq("id", id)
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
-    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
+  const [match, profile, credits] = await Promise.all([
+    getJobMatchWithBreakdown(supabase, userId, id),
+    getCandidateProfile(supabase, userId),
+    getCreditBalance(supabase, userId),
   ]);
 
-  if (!job) notFound();
+  if (!match) notFound();
 
-  const parsed = matchAssessmentSchema.safeParse(job.match_breakdown);
+  const { job } = match;
+  const parsed = matchAssessmentSchema.safeParse(match.match_breakdown);
   if (!parsed.success) notFound();
 
   const assessment = parsed.data;
@@ -59,10 +61,10 @@ export default async function MatchResultPage({
   return (
     <AppShell
       fullName={profile?.full_name}
-      applicationCredits={credits?.application_credits ?? 0}
-      interviewPasses={credits?.interview_passes ?? 0}
+      applicationCredits={credits.application_credits}
+      interviewPasses={credits.interview_passes}
     >
-      <section className="shell" style={{ padding: "54px 0 90px" }}>
+      <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 90px" }}>
       <div style={{ width: "min(900px,100%)", margin: "20px auto 0" }}>
         <Link href="/match" className="muted" style={{ fontSize: 14 }}>← Check another role</Link>
 
@@ -181,6 +183,12 @@ export default async function MatchResultPage({
         </div>
       </div>
       </section>
+
+      <MobileJobDetail
+        job={job}
+        assessment={assessment}
+        saved={job.status === "saved"}
+      />
     </AppShell>
   );
 }

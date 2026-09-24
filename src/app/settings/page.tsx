@@ -6,6 +6,7 @@ import PasswordChangeForm from "@/components/password-change-form";
 import JobPreferencesForm from "@/components/job-preferences-form";
 import LocalizationForm from "@/components/localization-form";
 import DeleteAccountForm from "@/components/delete-account-form";
+import MobileSettings from "@/components/mobile/mobile-settings";
 import { listCountries, type Country } from "@/lib/countries/service";
 
 export default async function SettingsPage({
@@ -49,7 +50,7 @@ export default async function SettingsPage({
       applicationCredits={credits?.application_credits ?? 0}
       interviewPasses={credits?.interview_passes ?? 0}
     >
-      <section className="shell" style={{ padding: "54px 0 100px" }}>
+      <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 100px" }}>
         <div style={{ width: "min(760px,100%)", margin: "20px auto 0" }}>
           <div className="muted" style={{ fontSize: 14 }}>Settings</div>
           <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: "10px 0 6px" }}>
@@ -126,6 +127,8 @@ export default async function SettingsPage({
           </div>
         </div>
       </section>
+
+      <MobileSettings />
     </AppShell>
   );
 }

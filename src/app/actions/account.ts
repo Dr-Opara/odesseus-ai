@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { uploadMasterResume, validateResumeFile } from "@/lib/onboarding/submit";
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -15,7 +16,9 @@ async function requireUserId() {
 
 export async function deleteResume(formData: FormData) {
   const resumeId = String(formData.get("resumeId") || "");
-  if (!resumeId) redirect("/profile?error=Missing%20resume");
+  // Where the caller lives: profile by default, settings/documents otherwise.
+  const next = String(formData.get("next") || "/profile");
+  if (!resumeId) redirect(`${next}?error=Missing%20resume`);
 
   const { supabase, userId } = await requireUserId();
 
@@ -26,7 +29,7 @@ export async function deleteResume(formData: FormData) {
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (!resume) redirect("/profile?error=Resume%20not%20found");
+  if (!resume) redirect(`${next}?error=Resume%20not%20found`);
 
   const { error } = await supabase
     .from("resumes")
@@ -38,7 +41,7 @@ export async function deleteResume(formData: FormData) {
     const message = error.code === "23503"
       ? "This resume is attached to a submitted application and can't be deleted."
       : "Odesseus could not delete this resume.";
-    redirect(`/profile?error=${encodeURIComponent(message)}`);
+    redirect(`${next}?error=${encodeURIComponent(message)}`);
   }
 
   if (resume.storage_path) {
@@ -46,7 +49,28 @@ export async function deleteResume(formData: FormData) {
   }
 
   revalidatePath("/profile");
-  redirect("/profile?status=resume_deleted");
+  revalidatePath("/settings/documents");
+  redirect(`${next}?status=resume_deleted`);
+}
+
+/** Uploads a resume from outside onboarding (Documents screen). The new file
+ * becomes the candidate's current master resume; previous masters demote to
+ * regular documents. */
+export async function uploadResume(formData: FormData) {
+  const file = formData.get("file") as File | null;
+  const error = validateResumeFile(file);
+  if (error) redirect(`/settings/documents?error=${encodeURIComponent(error)}`);
+
+  const { supabase, userId } = await requireUserId();
+
+  const result = await uploadMasterResume(supabase, userId, file!);
+  if (result.error) {
+    redirect(`/settings/documents?error=${encodeURIComponent(result.error)}`);
+  }
+
+  revalidatePath("/settings/documents");
+  revalidatePath("/profile");
+  redirect("/settings/documents?status=resume_uploaded");
 }
 
 export async function disconnectIntegration(formData: FormData) {

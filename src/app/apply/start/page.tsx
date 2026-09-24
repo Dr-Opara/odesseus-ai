@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ApplyStartForm from "@/components/apply-start-form";
+import MobileApplyStart from "@/components/mobile/mobile-apply-start";
 
 export default async function ApplyStartPage({
   searchParams,
@@ -43,7 +44,8 @@ export default async function ApplyStartPage({
   if (!job) redirect("/dashboard");
 
   return (
-    <main className="shell" style={{ padding: "54px 0 100px" }}>
+    <>
+    <main className="shell odesseus-desktop-only" style={{ padding: "54px 0 100px" }}>
       <Link href="/dashboard" className="wordmark">Odesseus</Link>
 
       <div style={{ width: "min(760px,100%)", margin: "64px auto 0" }}>
@@ -95,5 +97,13 @@ export default async function ApplyStartPage({
         </div>
       </div>
     </main>
+
+    <MobileApplyStart
+      job={job}
+      matchScore={job.match_score}
+      approvedVersion={tailoring?.approved_resume_id ? tailoring.version_number : null}
+      applicationCredits={credits?.application_credits ?? 0}
+    />
+    </>
   );
 }

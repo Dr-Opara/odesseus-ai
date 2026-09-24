@@ -3,6 +3,7 @@ import Link from "next/link";
 import ProfileForm from "@/components/profile-form";
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
+import MobileProfile from "@/components/mobile/mobile-profile";
 import { deleteResume } from "@/app/actions/account";
 
 export default async function ProfilePage({
@@ -14,9 +15,17 @@ export default async function ProfilePage({
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims?.sub;
+  const email = typeof auth?.claims?.email === "string" ? auth.claims.email : null;
   if (!userId) redirect("/login");
 
-  const [{ data: profile }, { data: credits }, { data: resumes }] = await Promise.all([
+  const [
+    { data: profile },
+    { data: credits },
+    { data: resumes },
+    { count: applicationCount },
+    { count: interviewCount },
+    { count: savedJobCount },
+  ] = await Promise.all([
     supabase
       .from("profiles")
       .select("full_name,headline,location,work_preference")
@@ -28,6 +37,9 @@ export default async function ProfilePage({
       .select("id,file_name,is_master,is_approved,created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false }),
+    supabase.from("applications").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("interviews").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("job_opportunities").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "saved"),
   ]);
 
   return (
@@ -37,7 +49,7 @@ export default async function ProfilePage({
       interviewPasses={credits?.interview_passes ?? 0}
       active="profile"
     >
-      <section className="shell" style={{ padding: "54px 0 90px" }}>
+      <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 90px" }}>
       <div style={{ width: "min(760px,100%)", margin: "20px auto 0" }}>
         <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", marginBottom: 10 }}>Profile</h1>
         <p className="muted">The verified information Odesseus uses on your behalf.</p>
@@ -97,6 +109,14 @@ export default async function ProfilePage({
         </div>
       </div>
       </section>
+
+      <MobileProfile
+        fullName={profile?.full_name ?? null}
+        email={email}
+        applicationCount={applicationCount ?? 0}
+        interviewCount={interviewCount ?? 0}
+        savedJobCount={savedJobCount ?? 0}
+      />
     </AppShell>
   );
 }
