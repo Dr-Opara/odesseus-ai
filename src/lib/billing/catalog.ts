@@ -1,5 +1,5 @@
 export const billingCatalog = {
-  app_1: { label: "1 application credit", description: "One successful AI-submitted application across supported job boards and employer career sites", amountCents: 99, creditType: "application" as const, creditDelta: 1 },
+  app_1: { label: "Legacy application credit", description: "Legacy application checkout retained only for existing server compatibility; new Apply billing uses the wallet flow.", amountCents: 49, creditType: "application" as const, creditDelta: 1 },
   app_25: { label: "25 application credits", description: "25 successful AI-submitted applications", amountCents: 2000, creditType: "application" as const, creditDelta: 25 },
   app_50: { label: "50 application credits", description: "50 successful AI-submitted applications", amountCents: 3500, creditType: "application" as const, creditDelta: 50 },
   app_100: { label: "100 application credits", description: "100 successful AI-submitted applications", amountCents: 5900, creditType: "application" as const, creditDelta: 100 },
