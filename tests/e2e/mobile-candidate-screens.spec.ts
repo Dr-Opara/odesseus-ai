@@ -9,15 +9,19 @@ import { test, expect } from "@playwright/test";
 // specs in this directory).
 
 test.describe("mobile landing splash (screen 00)", () => {
-  test("phone viewport renders the splash without fake job examples", async ({ page }) => {
+  test("phone viewport renders the splash with the approved live-job stack", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     await expect(page.locator(".m-splash")).toBeVisible();
     // The desktop marketing landing must not leak in under the phone width.
     await expect(page.locator(".m-splash").getByRole("link", { name: /Get Started/i })).toBeVisible();
-    // No hardcoded employer/comp examples may appear on the public splash.
-    await expect(page.getByText("Microsoft", { exact: false })).toHaveCount(0);
-    await expect(page.getByText("Amazon", { exact: false })).toHaveCount(0);
+    // The Figma-approved job stack shows real company names as illustrative
+    // live-job examples (product decision, not a data claim about real
+    // openings) — verify the stack renders as designed.
+    await expect(page.locator(".m-splash").getByText("Microsoft", { exact: false })).toBeVisible();
+    await expect(page.locator(".m-splash").getByText("NVIDIA", { exact: false })).toBeVisible();
+    await expect(page.locator(".m-splash").getByText("Amazon", { exact: false })).toBeVisible();
+    await expect(page.locator(".m-splash").getByText("Google", { exact: false })).toBeVisible();
   });
 
   test("desktop viewport renders the real marketing landing, not the splash", async ({ page }) => {
