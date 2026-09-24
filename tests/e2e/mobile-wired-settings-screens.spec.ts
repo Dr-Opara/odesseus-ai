@@ -2,7 +2,9 @@ import { test, expect } from "@playwright/test";
 import { execSync } from "node:child_process";
 
 // Phase 5 Batch C — the remaining wired screens (15, 16, 20, 21, 33) render
-// real mobile presentations at phone width for a signed-in candidate.
+// real mobile presentations at phone width for a signed-in candidate,
+// alongside the fixed 17/19 (Job Preferences, Language & Region) mobile
+// presentations.
 // Requires a running local Supabase stack (same as logout.spec.ts).
 //
 // The screens need a session but not a completed resume, so the test marks
@@ -41,7 +43,7 @@ test.describe("wired Phase 5 settings screens render for a signed-in user", () =
 
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test("screens 15/16/20/21/33 render their real mobile presentation", async ({
+  test("wired settings screens render their real mobile presentation", async ({
     page,
   }) => {
     const container = containerForStack();
@@ -71,6 +73,8 @@ test.describe("wired Phase 5 settings screens render for a signed-in user", () =
     const cases = [
       { route: "/settings/security", index: "15", title: "Password & Security" },
       { route: "/settings/notifications", index: "16", title: "Notifications" },
+      { route: "/settings/job-preferences", index: "17", title: "Job Preferences" },
+      { route: "/settings/language-region", index: "19", title: "Language & Region" },
       { route: "/settings/appearance", index: "20", title: "Appearance" },
       { route: "/settings/referrals", index: "21", title: "Refer a Friend" },
       { route: "/report-job", index: "33", title: "Report Job" },
