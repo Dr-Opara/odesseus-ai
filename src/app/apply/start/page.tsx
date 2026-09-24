@@ -17,7 +17,7 @@ export default async function ApplyStartPage({
 
   if (!userId) redirect("/login");
 
-  const [{ data: job }, { data: credits }, { data: tailoring }] = await Promise.all([
+  const [{ data: job }, { data: wallet }, { data: credits }, { data: tailoring }, { data: masterResume }] = await Promise.all([
     supabase
       .from("job_opportunities")
       .select("id,company_name,role_title,location,match_score,source_url,status")
@@ -63,35 +63,36 @@ export default async function ApplyStartPage({
         </div>
 
         <div className="apply-preflight-grid">
-          <div className="card apply-preflight-item">
-            <span className="muted">Match</span>
-            <strong>{job.match_score ?? "—"}%</strong>
-          </div>
-          <div className="card apply-preflight-item">
-            <span className="muted">Resume</span>
-            <strong>{tailoring ? `Approved v${tailoring.version_number}` : "Not approved"}</strong>
-          </div>
-          <div className="card apply-preflight-item">
-            <span className="muted">Credits</span>
-            <strong>{credits?.application_credits ?? 0}</strong>
-          </div>
+          <div className="card apply-preflight-item"><span className="muted">Match</span><strong>{job.match_score ?? "—"}%</strong></div>
+          <div className="card apply-preflight-item"><span className="muted">Smart resume</span><strong>{tailoring ? `Approved v${tailoring.version_number}` : "Not approved"}</strong></div>
+          <div className="card apply-preflight-item"><span className="muted">Wallet</span><strong>${((wallet?.balance_cents ?? 0) / 100).toFixed(2)}</strong></div>
         </div>
 
-        {!tailoring?.approved_resume_id ? (
-          <div className="review-note">
-            Approve a tailored resume before starting the application.
-          </div>
-        ) : (credits?.application_credits ?? 0) < 1 ? (
-          <div className="review-note">
-            You need one application credit. <Link href="/billing" style={{ fontWeight: 700 }}>Buy credits</Link>
-          </div>
-        ) : (
-          <ApplyStartForm jobId={job.id} defaultUrl={job.source_url} />
-        )}
+        <div className="figma-two-grid" style={{ marginTop: 24 }}>
+          <section className="card" style={{ padding: 24 }}>
+            <div className="badge">Apply · $0.49</div>
+            <h2>Use your approved master resume</h2>
+            <p className="muted">Odesseus completes the repetitive application flow using your verified profile and existing resume. No resume rewrite.</p>
+            {!masterResume?.id ? <div className="review-note">Approve a master resume to use Apply.</div> :
+              (wallet?.balance_cents ?? 0) < 49 && (credits?.application_credits ?? 0) < 1 ?
+              <div className="review-note">Add funds to your <Link href="/billing" style={{fontWeight:700}}>Odesseus wallet</Link>.</div> :
+              <ApplyStartForm jobId={job.id} defaultUrl={job.source_url} mode="apply" />}
+          </section>
+
+          <section className="card" style={{ padding: 24 }}>
+            <div className="badge">Smart Apply · $1.99</div>
+            <h2>Tailor before Odesseus submits</h2>
+            <p className="muted">Uses your approved tailored resume, job-specific context, application answers, and automated submission.</p>
+            {!tailoring?.approved_resume_id ? <div className="review-note">Approve a tailored resume to use Smart Apply.</div> :
+              (wallet?.balance_cents ?? 0) < 199 && (credits?.application_credits ?? 0) < 1 ?
+              <div className="review-note">Add funds to your <Link href="/billing" style={{fontWeight:700}}>Odesseus wallet</Link>.</div> :
+              <ApplyStartForm jobId={job.id} defaultUrl={job.source_url} mode="smart_apply" />}
+          </section>
+        </div>
 
         <div className="apply-charge-note">
-          <strong>No credit is used when this starts.</strong>
-          <span>One application credit is consumed only after Odesseus verifies a successful submission.</span>
+          <strong>Nothing is deducted when the secure browser starts.</strong>
+          <span>Odesseus deducts $0.49 for Apply or $1.99 for Smart Apply only after it verifies a successful submission. Existing legacy application credits remain usable during migration.</span>
         </div>
       </div>
     </main>
