@@ -211,6 +211,9 @@ export type Database = {
       application_runs: {
         Row: {
           approved_resume_id: string
+          application_mode: string
+          price_cents: number
+          payment_source: string
           browser_provider: string | null
           browser_session_id: string | null
           created_at: string
@@ -234,6 +237,9 @@ export type Database = {
         }
         Insert: {
           approved_resume_id: string
+          application_mode?: string
+          price_cents?: number
+          payment_source?: string
           browser_provider?: string | null
           browser_session_id?: string | null
           created_at?: string
@@ -257,6 +263,9 @@ export type Database = {
         }
         Update: {
           approved_resume_id?: string
+          application_mode?: string
+          price_cents?: number
+          payment_source?: string
           browser_provider?: string | null
           browser_session_id?: string | null
           created_at?: string
