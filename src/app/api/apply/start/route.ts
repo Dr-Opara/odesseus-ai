@@ -10,7 +10,7 @@ import { integrationNotConfigured, missingEnv } from "@/lib/config/readiness";
 
 const schema = z.object({
   jobId: z.string().uuid(),
-  targetUrl: z.string().url(),
+  targetUrl: z.string().url(),\n  mode: z.enum(["apply", "smart_apply"]),
 });
 
 export async function POST(request: Request) {
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Odesseus only opens secure, public application pages." }, { status: 400 });
   }
 
-  const [{ data: job }, { data: credits }, { data: tailoring }, { data: activeRun }] = await Promise.all([
+  const [{ data: job }, { data: wallet }, { data: credits }, { data: tailoring }, { data: masterResume }, { data: activeRun }] = await Promise.all([
     supabase
       .from("job_opportunities")
       .select("id,company_name,role_title,status")
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     .insert({
       user_id: userId,
       job_id: job.id,
-      approved_resume_id: tailoring.approved_resume_id,
+      approved_resume_id: resumeId,\n      application_mode: input.mode,\n      price_cents: priceCents,\n      payment_source: paymentSource,
       target_url: input.targetUrl,
       execution_mode: "assisted",
       status: "queued",
