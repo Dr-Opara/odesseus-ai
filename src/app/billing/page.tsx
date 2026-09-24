@@ -15,7 +15,7 @@ export default async function BillingPage({
 
   if (!userId) redirect("/login");
 
-  const [{ data: credits }, { data: transactions }, { data: annualPurchases }, { data: profile }] = await Promise.all([
+  const [{ data: credits }, { data: wallet }, { data: walletTransactions }, { data: transactions }, { data: annualPurchases }, { data: profile }] = await Promise.all([
     supabase
       .from("credit_balances")
       .select("application_credits,interview_passes,live_unlimited_until")
@@ -41,7 +41,7 @@ export default async function BillingPage({
     supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
   ]);
 
-  const activity = [
+  const activity = [\n    ...(walletTransactions ?? []).map((t) => ({\n      id: `wallet:${t.id}`,\n      createdAt: t.created_at,\n      label: t.transaction_type === "top_up" ? "Added funds to Odesseus wallet" : t.transaction_type === "smart_apply" ? "Smart Apply submitted" : t.transaction_type === "apply" ? "Apply submitted" : "Wallet adjustment",\n      amountText: null,\n      deltaText: `${t.amount_cents > 0 ? "+" : "-"}${(Math.abs(t.amount_cents) / 100).toFixed(2)}`,\n    })),
     ...(transactions ?? []).map((t) => ({
       id: `credit:${t.id}`,
       createdAt: t.created_at,
@@ -197,7 +197,7 @@ export default async function BillingPage({
 
         <section style={{ marginTop: 34 }}>
           <div className="muted" style={{ fontSize: 13 }}>Recent activity</div>
-          <h2 style={{ fontSize: 24, margin: "7px 0 12px" }}>Credits</h2>
+          <h2 style={{ fontSize: 24, margin: "7px 0 12px" }}>Wallet & passes</h2>
 
           <div className="card">
             {activity.length ? activity.slice(0, 8).map((item, index) => (
