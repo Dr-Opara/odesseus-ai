@@ -6,6 +6,7 @@ import {
 } from "@/lib/apply/browserbase";
 import { createServiceClient } from "@/lib/supabase/service";
 import { decideField, type ApplyContext } from "@/lib/apply/field-rules";
+import { applyRates, type ApplyMode } from "@/lib/billing/catalog";
 import type { Json } from "@/types/database";
 
 type ApplyCommand = "continue" | "submit" | "cancel";
@@ -310,21 +311,56 @@ export async function finalizeConfirmedExistingSubmission(input: {
 }) {
   const supabase = createServiceClient();
 
-  const { error } = await supabase.rpc("odesseus_finalize_successful_application", {
+  // The database CHECK on application_runs.execution_mode guarantees the
+  // value is standard|smart; anything else falls through to the default rate.
+  const mode: ApplyMode = input.run.execution_mode === "smart" ? "smart" : "standard";
+  const rate = applyRates[mode];
+
+  const { error } = await supabase.rpc("odesseus_finalize_application", {
     p_run_id: input.run.id,
     p_user_id: input.run.user_id,
+    p_mode: mode,
     p_confirmation_text: input.confirmation,
     p_page_url: input.pageUrl,
   });
 
   if (error) {
+    if (/insufficient wallet balance/i.test(error.message)) {
+      const reason = `Your wallet needs $${(rate.amountCents / 100).toFixed(2)} to finish a ${rate.label}. Top up your wallet, then continue.`;
+
+      await supabase
+        .from("application_runs")
+        .update({
+          status: "needs_user",
+          stop_reason: reason,
+          current_url: input.pageUrl,
+          submission_evidence: {
+            after_url: input.pageUrl,
+            confirmation_detected: true,
+            execution_mode: mode,
+            finalize_error: "insufficient wallet balance",
+          },
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", input.run.id);
+
+      await logEvent(input.run.id, input.run.user_id, "paused", reason);
+
+      return { terminal: false, status: "needs_user" as const, reason };
+    }
+
     throw new Error("Application confirmed, but Odesseus could not finalize it: " + error.message);
   }
 
   await logEvent(input.run.id, input.run.user_id, "submitted", "Application submission confirmed.", {
     url: input.pageUrl,
   });
-  await logEvent(input.run.id, input.run.user_id, "credit_consumed", "One application credit consumed.");
+  await logEvent(
+    input.run.id,
+    input.run.user_id,
+    "credit_consumed",
+    `${rate.label} — $${(rate.amountCents / 100).toFixed(2)} charged from your wallet.`
+  );
   await releaseApplicationBrowserSession(input.browserSessionId).catch(() => undefined);
 
   return { terminal: true, status: "submitted" as const };
@@ -672,30 +708,12 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
       return { terminal: false, status: "needs_user" as const, reason };
     }
 
-    const { error: finalizeError } = await supabase.rpc(
-      "odesseus_finalize_successful_application",
-      {
-        p_run_id: runId,
-        p_user_id: run.user_id,
-        p_confirmation_text: confirmationMatch[0],
-        p_page_url: afterUrl,
-      }
-    );
-
-    if (finalizeError) {
-      throw new Error(
-        "Application submitted, but Odesseus could not finalize it: " + finalizeError.message
-      );
-    }
-
-    await logEvent(runId, run.user_id, "submitted", "Application submission confirmed.", {
-      url: afterUrl,
+    return finalizeConfirmedExistingSubmission({
+      run,
+      confirmation: confirmationMatch[0],
+      pageUrl: afterUrl,
+      browserSessionId: browserSession.id,
     });
-    await logEvent(runId, run.user_id, "credit_consumed", "One application credit consumed.");
-
-    await releaseApplicationBrowserSession(browserSession.id).catch(() => undefined);
-
-    return { terminal: true, status: "submitted" as const };
   } finally {
     await browser.close().catch(() => undefined);
   }

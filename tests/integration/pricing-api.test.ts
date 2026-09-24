@@ -9,9 +9,18 @@ vi.mock("@/lib/supabase/server", () => ({
 
 const PRODUCTS: PricedRow[] = [
   {
-    product_key: "candidate_application_single",
+    product_key: "candidate_standard_apply",
     family: "candidate",
-    display_name: "Single application credit",
+    display_name: "Standard Apply",
+    billing_type: "one_time",
+    billing_period_days: null,
+    active: true,
+    metadata: {},
+  },
+  {
+    product_key: "candidate_smart_apply",
+    family: "candidate",
+    display_name: "Smart Apply",
     billing_type: "one_time",
     billing_period_days: null,
     active: true,
@@ -30,16 +39,27 @@ const PRODUCTS: PricedRow[] = [
 
 const PRICES: PricedRow[] = [
   {
-    product_key: "candidate_application_single",
+    product_key: "candidate_standard_apply",
     market_key: "USD_US",
     currency: "USD",
-    amount_minor: 99,
+    amount_minor: 49,
     active: true,
     effective_from: null,
     effective_until: null,
     // Stripe identifiers must never appear in API responses.
     stripe_price_id: "price_secret_x",
     stripe_product_id: "prod_secret_x",
+  },
+  {
+    product_key: "candidate_smart_apply",
+    market_key: "USD_US",
+    currency: "USD",
+    amount_minor: 199,
+    active: true,
+    effective_from: null,
+    effective_until: null,
+    stripe_price_id: "price_secret_y",
+    stripe_product_id: "prod_secret_y",
   },
   {
     product_key: "candidate_live_single",
@@ -49,8 +69,8 @@ const PRICES: PricedRow[] = [
     active: true,
     effective_from: null,
     effective_until: null,
-    stripe_price_id: "price_secret_y",
-    stripe_product_id: "prod_secret_y",
+    stripe_price_id: "price_secret_z",
+    stripe_product_id: "prod_secret_z",
   },
 ];
 
@@ -107,7 +127,7 @@ describe("GET /api/pricing", () => {
 
     expect(body.market_reason).toBe("unauthenticated");
     expect(body.market.market_key).toBe("USD_US");
-    expect(body.prices).toHaveLength(2);
+    expect(body.prices).toHaveLength(3);
     expect(body.prices.every((p: { available: boolean }) => p.available)).toBe(true);
     // The USD_US market has its own configured prices, so even though the
     // visitor was resolved to it as a fallback market, the prices themselves
@@ -139,9 +159,10 @@ describe("GET /api/pricing", () => {
     const body = await response.json();
 
     expect(body.market.market_key).toBe("USD_US");
-    expect(body.prices.map((p: { amount_minor: number }) => p.amount_minor)).toEqual([99, 2499]);
+    expect(body.prices.map((p: { amount_minor: number }) => p.amount_minor)).toEqual([49, 199, 2499]);
     expect(body.prices.map((p: { formatted_price: string }) => p.formatted_price)).toEqual([
-      "$0.99",
+      "$0.49",
+      "$1.99",
       "$24.99",
     ]);
   });
@@ -199,8 +220,8 @@ describe("GET /api/pricing/[productKey]", () => {
     createClientMock.mockResolvedValue(clientFor({ userId: null }));
 
     const { GET } = await import("@/app/api/pricing/[productKey]/route");
-    const response = await GET(new Request("http://localhost/api/pricing/candidate_application_single"), {
-      params: Promise.resolve({ productKey: "candidate_application_single" }),
+    const response = await GET(new Request("http://localhost/api/pricing/candidate_standard_apply"), {
+      params: Promise.resolve({ productKey: "candidate_standard_apply" }),
     });
 
     expect(response.status).toBe(200);

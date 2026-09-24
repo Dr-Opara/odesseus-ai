@@ -99,6 +99,7 @@ describe("candidate service layer (Phase 5 shared reads)", () => {
       application_credits: 0,
       interview_passes: 0,
       live_unlimited_until: null,
+      wallet_balance_cents: 0,
     });
   });
 

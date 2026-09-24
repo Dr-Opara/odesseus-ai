@@ -27,6 +27,8 @@ export type CreditBalance = {
   interview_passes: number;
   /** Set only when an Odesseus Live annual entitlement is active (candidate-owned, server-driven). */
   live_unlimited_until: string | null;
+  /** Prepaid wallet in minor units (USD cents); server-controlled, debited only on verified success. */
+  wallet_balance_cents: number;
 };
 
 export type CandidateJob = {

@@ -7,10 +7,12 @@ import { applicationWorkflow } from "@/workflows/application";
 import { isSafeExternalUrl } from "@/lib/security/url-safety";
 import { isTrustedOrigin } from "@/lib/security/origin-check";
 import { integrationNotConfigured, missingEnv } from "@/lib/config/readiness";
+import { applyRates } from "@/lib/billing/catalog";
 
 const schema = z.object({
   jobId: z.string().uuid(),
   targetUrl: z.string().url(),
+  mode: z.enum(["standard", "smart"]).default("standard"),
 });
 
 export async function POST(request: Request) {
@@ -60,7 +62,7 @@ export async function POST(request: Request) {
       .maybeSingle(),
     supabase
       .from("credit_balances")
-      .select("application_credits")
+      .select("wallet_balance_cents")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -88,8 +90,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Approve a tailored resume before starting Apply." }, { status: 400 });
   }
 
-  if ((credits?.application_credits ?? 0) < 1) {
-    return NextResponse.json({ error: "You need at least one application credit." }, { status: 402 });
+  const applyRate = applyRates[input.mode];
+  if ((credits?.wallet_balance_cents ?? 0) < applyRate.amountCents) {
+    const needed = (applyRate.amountCents / 100).toFixed(2);
+    return NextResponse.json(
+      { error: `Your wallet needs $${needed} to start a ${applyRate.label}. Top up in Billing.` },
+      { status: 402 }
+    );
   }
 
   if (activeRun) {
@@ -107,7 +114,7 @@ export async function POST(request: Request) {
       job_id: job.id,
       approved_resume_id: tailoring.approved_resume_id,
       target_url: input.targetUrl,
-      execution_mode: "assisted",
+      execution_mode: input.mode,
       status: "queued",
     })
     .select("id")

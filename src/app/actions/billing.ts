@@ -5,8 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import { billingCatalog, type BillingSku } from "@/lib/billing/catalog";
 
-export async function createCheckoutSession(sku: BillingSku) {
-  const item = billingCatalog[sku];
+// Accepts a plain string on purpose: pre-migration UI may still submit legacy
+// application-credit SKUs ("app_*"). Any SKU absent from the sellable catalog
+// fails closed with an "Invalid product" redirect — nothing can be charged for
+// a product that no longer exists.
+export async function createCheckoutSession(sku: string) {
+  const item = billingCatalog[sku as BillingSku];
   if (!item) redirect("/billing?error=Invalid%20product");
 
   const supabase = await createClient();

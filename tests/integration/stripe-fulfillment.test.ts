@@ -29,7 +29,7 @@ function checkoutCompletedEvent(overrides: {
   amountTotal?: number | null;
 }) {
   const {
-    sku = "app_1",
+    sku = "wallet_10",
     userId = "user-1",
     paymentStatus = "paid",
     eventId = "evt_test_1",

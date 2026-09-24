@@ -12,6 +12,7 @@ export function fakeQueryResult<T = unknown>(data: T, error: unknown = null) {
     "select",
     "eq",
     "neq",
+    "in",
     "order",
     "limit",
     "or",
