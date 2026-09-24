@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import type { z } from "zod";
 import MobileScreen from "@/components/mobile/mobile-screen";
 import MobileSaveJob from "@/components/mobile/mobile-save-job";
@@ -44,27 +45,56 @@ export default function MobileJobDetail({
   const criticalMissing = assessment.hardRequirements.filter(
     (item) => item.isCritical && item.status === "missing"
   );
+  const evaluatedPoints = assessment.strongestMatches.length + assessment.biggestGaps.length;
 
   return (
     <MobileScreen
       index="07"
+      eyebrow={job.company_name}
       title={job.role_title}
-      lead={`${job.company_name}${job.location ? ` · ${job.location}` : ""}`}
+      lead={job.salary_text || "Salary not listed"}
       minHeight={844}
     >
-      <div className="m-score-row">
-        <div className="m-score-orb">
-          <strong>{score}%</strong>
-          <span>match</span>
+      <div className="m-chip-strip">
+        {job.work_arrangement ? <span className="m-chip-pill">{job.work_arrangement}</span> : null}
+        {job.employment_type ? <span className="m-chip-pill">{job.employment_type}</span> : null}
+      </div>
+
+      <div className="m-detail-tabs">
+        <span className="m-detail-tab is-active">Match Score</span>
+        <a className="m-detail-tab" href="#skill-gaps">Skill Gaps</a>
+        <a className="m-detail-tab" href="#resume-edits">Resume Edits</a>
+      </div>
+
+      <div className="m-score-ring-wrap">
+        <div className="m-score-ring" style={{ "--pct": score } as CSSProperties}>
+          <div className="m-score-ring-inner">
+            <strong>{score}%</strong>
+          </div>
         </div>
-        <div className="m-score-copy">
-          <span className="m-badge">{scoreLabel(score)}</span>
-          <p>
-            {job.work_arrangement ? `${job.work_arrangement} · ` : ""}
-            {job.employment_type ? `${job.employment_type} · ` : ""}
-            {job.salary_text || "Salary not listed"}
-          </p>
+        <span className="m-score-ring-label">{scoreLabel(score)}</span>
+      </div>
+
+      <div className="m-summary-rows">
+        <div className="m-summary-row">
+          <span className="m-icon m-icon-green" aria-hidden="true">✓</span>
+          <span className="m-summary-row-copy">Core skills match</span>
+          <span className="m-summary-row-value" style={{ color: "var(--m-green)" }}>
+            {evaluatedPoints ? `${assessment.strongestMatches.length}/${evaluatedPoints}` : "—"}
+          </span>
         </div>
+        <a className="m-summary-row" href="#skill-gaps">
+          <span className="m-icon m-icon-orange" aria-hidden="true">↗</span>
+          <span className="m-summary-row-copy">Skill gaps</span>
+          <span className="m-summary-row-value" style={{ color: "var(--m-orange)" }}>
+            {assessment.biggestGaps.length}
+          </span>
+        </a>
+        <a className="m-summary-row" href="#resume-edits">
+          <span className="m-icon m-icon-purple" aria-hidden="true">✦</span>
+          <span className="m-summary-row-copy">Resume improvements</span>
+          <span className="m-summary-row-value" style={{ color: "var(--m-purple)" }}>AI Suggested</span>
+        </a>
       </div>
 
       <section className="m-card m-note-card">
@@ -104,7 +134,7 @@ export default function MobileJobDetail({
         </div>
       </section>
 
-      <section className="m-section">
+      <section className="m-section" id="skill-gaps">
         <div className="m-section-heading">
           <h2>Gaps to know about</h2>
         </div>
@@ -169,7 +199,7 @@ export default function MobileJobDetail({
         )}
       </section>
 
-      <section className="m-next">
+      <section className="m-next" id="resume-edits">
         <div>
           <strong>
             {score >= 85

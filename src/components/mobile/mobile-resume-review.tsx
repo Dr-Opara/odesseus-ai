@@ -44,6 +44,10 @@ export default function MobileResumeReview({
         ) : null}
       </div>
 
+      <p className="m-highlight-legend">
+        🟢 Green highlights = AI-suggested improvements for this role
+      </p>
+
       <section className="m-card m-note-card">
         <strong>Review every change before approval.</strong>
         <p className="muted">

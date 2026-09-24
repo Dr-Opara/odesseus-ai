@@ -35,17 +35,18 @@ export default function MobileDocuments({
     >
       {notice ? <div className="m-notice">{notice}</div> : null}
 
-      <form action={uploadResume} className="m-upload-area">
-        <span className="m-upload-icon" aria-hidden="true">+</span>
-        <strong>Upload a resume</strong>
-        <span className="m-upload-hint">PDF or DOCX · up to 10 MB · private to your account</span>
-        <input
-          type="file"
-          name="file"
-          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          required
-        />
-        <button type="submit" className="m-btn-primary m-btn-full">
+      <form action={uploadResume}>
+        <label className="m-upload-area">
+          <strong>＋ Upload document</strong>
+          <span className="m-upload-hint">PDF or DOCX · up to 10 MB</span>
+          <input
+            type="file"
+            name="file"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            required
+          />
+        </label>
+        <button type="submit" className="m-btn-primary m-btn-full" style={{ marginBottom: 16 }}>
           Upload resume
         </button>
       </form>
@@ -59,7 +60,12 @@ export default function MobileDocuments({
           <div style={{ display: "grid", gap: 8 }}>
             {documents.map((document) => (
               <div className="m-card" key={document.id}>
-                <span className="m-icon" aria-hidden="true">▤</span>
+                <span
+                  className={`m-icon m-icon-circle ${document.is_master ? "m-icon-orange" : "m-icon-purple"}`}
+                  aria-hidden="true"
+                >
+                  📄
+                </span>
                 <span className="m-copy">
                   <strong>{document.file_name}</strong>
                   <small>{fileDate(document.created_at)}</small>
@@ -67,13 +73,18 @@ export default function MobileDocuments({
                 <div className="m-doc-tags">
                   {document.is_master ? <b className="m-tag m-status-met">Master</b> : null}
                   {document.is_approved ? <b className="m-tag">Approved</b> : null}
-                  <form action={deleteResume}>
-                    <input type="hidden" name="resumeId" value={document.id} />
-                    <input type="hidden" name="next" value="/settings/documents" />
-                    <button type="submit" className="m-delete" aria-label={`Delete ${document.file_name}`}>
-                      ✕
-                    </button>
-                  </form>
+                  <details className="m-doc-menu">
+                    <summary aria-label={`More actions for ${document.file_name}`}>•••</summary>
+                    <div className="m-doc-menu-panel">
+                      <form action={deleteResume}>
+                        <input type="hidden" name="resumeId" value={document.id} />
+                        <input type="hidden" name="next" value="/settings/documents" />
+                        <button type="submit" className="m-doc-menu-delete">
+                          Delete
+                        </button>
+                      </form>
+                    </div>
+                  </details>
                 </div>
               </div>
             ))}
