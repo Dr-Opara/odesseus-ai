@@ -83,3 +83,90 @@ export function resolveMobileScreen(pathname: string): MobileScreenSpec | null {
   if (pathname === "/report-job") return byIndex.get("33") ?? null;
   return null;
 }
+
+/**
+ * Fixed real-app path for a screen, for screens reachable without a record ID
+ * (kept in sync with the path checks in resolveMobileScreen above). Screens
+ * "07" (Match Results) and "08" (Resume Review) require a specific match/
+ * resume ID and have no context-free path, so they are intentionally absent —
+ * callers should fall back to the dedicated `/mobile/{index}` preview route.
+ *
+ * Used only by the /qa/mobile development preview to link back to the real
+ * desktop route; production rendering never reads this table.
+ */
+export const SCREEN_REAL_PATHS: Partial<Record<string, string>> = {
+  "00": "/",
+  "01": "/signup",
+  "02": "/onboarding",
+  "03": "/onboarding",
+  "04": "/onboarding",
+  "05": "/dashboard",
+  "06": "/jobs",
+  "09": "/apply/start",
+  "10": "/applications",
+  "11": "/interviews",
+  "12": "/profile",
+  "14": "/settings",
+  "15": "/settings/security",
+  "16": "/settings/notifications",
+  "17": "/settings/job-preferences",
+  "18": "/settings/documents",
+  "19": "/settings/language-region",
+  "20": "/settings/appearance",
+  "21": "/settings/referrals",
+  "22": "/legal",
+  "23": "/terms",
+  "24": "/privacy",
+  "25": "/accessibility",
+  "26": "/licenses",
+  "27": "/faq",
+  "28": "/support",
+  "29": "/about",
+  "30": "/pricing",
+  "31": "/settings/countries",
+  "32": "/settings/work-authorization",
+  "33": "/report-job",
+};
+
+/**
+ * Named shortcuts for the /qa/mobile development preview
+ * (e.g. /qa/mobile/dashboard instead of /qa/mobile/05).
+ */
+export const QA_MOBILE_ALIASES: Record<string, string> = {
+  dashboard: "05",
+  applications: "10",
+  interviews: "11",
+  profile: "12",
+  settings: "14",
+  pricing: "30",
+};
+
+export type QaMobileResolution = {
+  screen: MobileScreenSpec;
+  /** The real app path this QA preview mirrors, or null for screens (07, 08)
+   * that require a specific record ID and have no context-free path. */
+  realPath: string | null;
+};
+
+/**
+ * Resolves a /qa/mobile/* pathname to the screen it previews and the real
+ * app path it mirrors. Shared by the QA page (to pick what to render) and
+ * the auth proxy (to require the same session as the real route), so the
+ * two can never drift apart.
+ */
+export function resolveQaMobilePath(pathname: string): QaMobileResolution | null {
+  const match = pathname.match(/^\/qa\/mobile(?:\/([^/]+))?\/?$/);
+  if (!match) return null;
+
+  const raw = match[1];
+  if (!raw) {
+    const screen = byIndex.get("00");
+    return screen ? { screen, realPath: SCREEN_REAL_PATHS["00"] ?? null } : null;
+  }
+
+  const index = /^\d{2}$/.test(raw) ? raw : QA_MOBILE_ALIASES[raw];
+  if (!index) return null;
+
+  const screen = byIndex.get(index);
+  return screen ? { screen, realPath: SCREEN_REAL_PATHS[index] ?? null } : null;
+}
