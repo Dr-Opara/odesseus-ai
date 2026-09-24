@@ -5,7 +5,7 @@ import MarketingFooter from "@/components/marketing-footer";
 const steps = [
   ["01","Find","AI-powered job matching"],
   ["02","Tailor","Resume optimization"],
-  ["03","Apply","Application Agent"],
+  ["03","Apply","Choose Apply or Smart Apply"],
   ["04","Prepare","Free Prep Agent"],
   ["05","Interview","Walk in fully prepared"],
 ];
@@ -13,7 +13,7 @@ const steps = [
 const products = [
   ["Match Agent","Understand fit before you apply.","lavender"],
   ["Resume Agent","Tailor without changing your master resume.","green"],
-  ["Application Agent","Submit approved applications with AI.","orange"],
+  ["Application Agent","Apply for $0.49 or choose Smart Apply for job-specific optimization.","orange"],
   ["Prep Agent","Practice for the exact role — free.","cyan"],
 ];
 
@@ -70,7 +70,12 @@ export default function Home() {
 
         <section className="figma-section figma-price-preview">
           <span className="figma-eyebrow">PAY FOR WHAT YOU USE</span><h2>Simple candidate pricing.</h2>
-          <div className="figma-price-grid"><article><span>Applications</span><strong>$0.99</strong><p>per successful application</p></article><article><span>Prep Agent</span><strong>FREE</strong><p>role-specific preparation</p></article></div>
+          <div className="figma-price-grid">
+            <article><span>Apply</span><strong>$0.49</strong><p>Use your existing approved resume. Charged only after a successful submission.</p></article>
+            <article><span>Smart Apply</span><strong>$1.99</strong><p>JD analysis, best-resume selection, tailoring, answers, and submission.</p></article>
+            <article><span>Odesseus Live</span><strong>$24.99</strong><p>Real-time conversational interview guidance. No coding assistance.</p></article>
+          </div>
+          <p className="figma-price-note" style={{ marginLeft: 0 }}>Applications are paid from a prepaid Odesseus Wallet, so you do not get a separate card charge for every submission.</p>
           <Link className="figma-text-cta" href="/pricing">See full pricing →</Link>
         </section>
       </section>
