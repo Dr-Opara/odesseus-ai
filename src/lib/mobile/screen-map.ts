@@ -52,6 +52,7 @@ export function resolveMobileScreen(pathname: string): MobileScreenSpec | null {
   const explicit = pathname.match(/^\/mobile\/(\d{2})\/?$/);
   if (explicit) return byIndex.get(explicit[1]) ?? null;
 
+  if (pathname === "/") return byIndex.get("00") ?? null;
   if (pathname === "/dashboard") return byIndex.get("05") ?? null;
   if (pathname === "/jobs") return byIndex.get("06") ?? null;
   if (/^\/match\//.test(pathname)) return byIndex.get("07") ?? null;
