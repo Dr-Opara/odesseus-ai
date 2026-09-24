@@ -32,7 +32,7 @@ Upload Resume -> Paste JD -> Match & Qualify -> Improve Existing Resume -> Revie
 - Scope user rows with auth.uid() ownership checks.
 - Never put Supabase service-role/secret keys in NEXT_PUBLIC variables.
 - Never put OPENAI_API_KEY in browser code.
-- Credit balances are server-controlled; browser users must not be able to grant themselves credits.
+- Wallet balances and credits are server-controlled; browser users must not be able to grant themselves funds.
 - Resume files are private user data.
 - Model calls handling resumes should use server-side routes and disable provider storage when supported.
 
@@ -47,12 +47,17 @@ Upload Resume -> Paste JD -> Match & Qualify -> Improve Existing Resume -> Revie
 
 ## Billing rules
 
-- No subscription. Pay when Odesseus works for you.
-- Application pricing direction: $0.99 per successfully submitted application, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee.
-- Failed/unsupported/paused/cancelled application attempts, closed jobs, incomplete CAPTCHA/MFA/verification, and unconfirmed submissions should not consume an application credit.
+- Candidate core usage is pay-per-use from a prepaid wallet. No subscription for candidate core usage; employer plans and recruiter seats may be recurring subscriptions.
+- Standard Apply charges $0.49 per verified successful submission, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee.
+- Smart Apply charges $1.99 per verified successful submission. Smart Apply may add deeper automation (account creation, multi-page ATS navigation, question completion from known candidate data, resume tailoring, document attachment, retry/recovery, application package preparation) but must preserve user approval before final submission, no silent submission, stop/escalate on uncertain answers, and charging only after a verified successful submission.
+- Wallet top-ups: $10, $20, $50.
+- Failed/unsupported/paused/cancelled application attempts, closed jobs, incomplete CAPTCHA/MFA/verification, and unconfirmed submissions must not deduct wallet funds.
 - Interview preparation is free.\n- Odesseus does not require email inbox access to detect interviews; users return when they receive an interview invitation.
 - Odesseus Live pricing: $24.99 per interview.
 - Interview pass should be consumed only when the live session actually starts.
+- Employer plans: Starter $79 / 3 jobs, Growth $149 / 10 jobs, Business $299 / 25 jobs (recurring).
+- Featured listings: $29 / 7 days, $49 / 14 days, AI Featured $129 / 30 days.
+- Recruiter seat: $20/month per additional employer-team seat.
 
 ## Git workflow
 

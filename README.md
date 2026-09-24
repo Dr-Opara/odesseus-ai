@@ -70,16 +70,20 @@ Do not add Supabase secret/service-role keys to browser environment variables.
 2. Show what needs attention, not everything Odesseus knows.
 3. Keep AI behavior understandable and reviewable.
 4. Never fabricate candidate qualifications.
-5. Charge application credits only after confirmed successful submission.
+5. Deduct wallet funds (Standard Apply $0.49 / Smart Apply $1.99) only after a confirmed successful submission.
 6. Keep interview workspace free; consume an interview pass only when Odesseus Live starts.
 
 ## Pricing direction
 
-No subscription. Pay when Odesseus works for you.
+Candidate core usage is pay-per-use from a prepaid wallet. No subscription for candidate core usage; employer plans and recruiter seats may be recurring subscriptions.
 
-- $0.99 per successfully submitted application, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
-- $24.99 per successfully activated Odesseus Live interview session
-- No required subscription
+- Standard Apply — $0.49 per verified successful submission, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
+- Smart Apply — $1.99 per verified successful submission; deeper automation, with user approval still required before final submission
+- Wallet top-ups — $10 / $20 / $50
+- $24.99 per successfully activated Odesseus Live interview session (3 passes $59.99, annual $499)
+- Employer plans — Starter $79 / 3 jobs, Growth $149 / 10 jobs, Business $299 / 25 jobs (recurring)
+- Featured listings — $29 / 7 days, $49 / 14 days, AI Featured $129 / 30 days
+- Recruiter seat — $20/month per additional employer-team seat
 
 ## Next milestone
 
@@ -150,26 +154,35 @@ See `docs/development/codex.md` for the recommended VS Code + Codex workflow.
 
 ## Odesseus Billing v0.4
 
-Billing adds prepaid application credits and interview passes without a subscription.
+Billing adds a prepaid candidate wallet, Standard/Smart Apply charges, and interview passes.
 
-### Application credit
+### Candidate wallet
 
-- 1 application credit — $0.99
-- Covers a successful submission across any supported job board or employer career site (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
+- Top-ups: $10 / $20 / $50, added to a server-controlled wallet balance (minor units)
+- Standard Apply — $0.49 per verified successful submission, across any supported job board or employer career site (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
+- Smart Apply — $1.99 per verified successful submission; deeper automation (multi-page ATS navigation, question completion from known candidate data, document attachment, retry/recovery) with user approval still required before final submission
 
-Application credits are not consumed at purchase time. The Apply workflow consumes one credit only after a successful application submission.
+Wallet funds are not spent at top-up time. The Apply workflow draws the Standard or Smart rate only after a successful application submission is verified. Failed, unsupported, paused, cancelled, or unconfirmed submissions never deduct wallet funds.
+
+Legacy note: the pre-wallet model charged one "$0.99 application credit" per submission. Existing credit balances are preserved until the legacy-credit reconciliation and conversion (see `docs/development/pricing-migration-plan.md`).
 
 ### Interview pass
 
-- 1 Odesseus Live interview pass — $24.99
+- 1 Odesseus Live interview pass — $24.99 (3 passes $59.99, annual $499)
 - Workspace setup remains free
 - The pass will be consumed only when the live interview assistant starts
 
 ### Fulfillment
 
-Stripe Checkout creates one-time payment sessions. A signed Stripe webhook records an idempotent billing event, which atomically creates a credit transaction and updates the user's balance.
+Stripe Checkout creates one-time payment sessions. A signed Stripe webhook records an idempotent billing event, which atomically updates the user's wallet or pass balance.
 
-The browser can read its own balances/history but cannot create or modify credits.
+The browser can read its own balances/history but cannot create or modify funds.
+
+### Employer and promotion pricing
+
+- Employer plans (recurring): Starter $79 / 3 jobs, Growth $149 / 10 jobs, Business $299 / 25 jobs
+- Featured listings: $29 / 7 days, $49 / 14 days, AI Featured $129 / 30 days
+- Recruiter seat: $20/month per additional employer-team seat
 
 
 ## Odesseus Apply v0.5
@@ -197,7 +210,7 @@ Odesseus Apply is an assisted, human-in-the-loop application browser.
 
 ### Coverage
 
-Odesseus applies across supported job boards and direct employer career sites, including Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites — at the same $0.99 price regardless of which platform the job is on. This is not a claim of universal technical compatibility with every site; coverage is scoped to supported job boards and employer career sites.
+Odesseus applies across supported job boards and direct employer career sites, including Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites — at the same $0.49 Standard Apply price ($1.99 for Smart Apply) regardless of which platform the job is on. This is not a claim of universal technical compatibility with every site; coverage is scoped to supported job boards and employer career sites.
 
 ### Browser runtime
 
