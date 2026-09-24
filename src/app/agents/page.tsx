@@ -56,10 +56,11 @@ export default function AgentsPage() {
               <div><strong>You provide</strong><p>Your approved resume and saved candidate information.</p></div>
               <div><strong>Odesseus does</strong><p>Completes supported fields, uploads the approved resume, pauses for new input when needed, and verifies submission.</p></div>
               <div><strong>You approve</strong><p>The resume before application automation begins. New questions can return to you when a decision is required.</p></div>
-              <div><strong>Output</strong><p>A dashboard record for every attempt and a $0.99 charge only after a verified successful submission.</p></div>
+              <div><strong>Output</strong><p>A dashboard record for every attempt and a charge — $0.49 Standard or $1.99 Smart Apply — only after a verified successful submission.</p></div>
             </div>
             <div className="billing-rule-grid">
-              <div className="billing-rule-item is-charge"><span>Successful submission</span><span className="billing-rule-amount">$0.99</span></div>
+              <div className="billing-rule-item is-charge"><span>Standard Apply — successful submission</span><span className="billing-rule-amount">$0.49</span></div>
+              <div className="billing-rule-item is-charge"><span>Smart Apply — successful submission</span><span className="billing-rule-amount">$1.99</span></div>
               <div className="billing-rule-item"><span>Failed submission</span><span className="billing-rule-amount">$0</span></div>
               <div className="billing-rule-item"><span>Needs your input</span><span className="billing-rule-amount">$0</span></div>
             </div>

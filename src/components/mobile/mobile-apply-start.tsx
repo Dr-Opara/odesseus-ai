@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ApplyStartForm from "@/components/apply-start-form";
+import ApplyTierAndStart from "@/components/apply/apply-tier-and-start";
 
 type Job = {
   id: string;
@@ -12,8 +12,9 @@ type Job = {
 
 /**
  * Mobile Approval screen (screen 09) — reuses the exact same preflight data
- * and `ApplyStartForm` (POST /api/apply/start) the desktop approval page
- * uses. No separate approval logic; the same credit/tailoring gate applies.
+ * and apply tier + start flow (POST /api/apply/start) the desktop approval
+ * page uses. No separate approval logic; the same legacy credit/tailoring
+ * gate applies until the wallet per-tier charge is available.
  */
 export default function MobileApplyStart({
   job,
@@ -26,8 +27,6 @@ export default function MobileApplyStart({
   approvedVersion: number | null;
   applicationCredits: number;
 }) {
-  const canApply = approvedVersion !== null && applicationCredits >= 1;
-
   return (
     <main className="odesseus-mobile-only m-screen m-screen-09">
       <header className="m-screen-header">
@@ -73,18 +72,14 @@ export default function MobileApplyStart({
       ) : applicationCredits < 1 ? (
         <div className="m-warning" style={{ marginTop: 14 }}>
           <strong>
-            You need one application credit. <Link href="/billing">Buy credits</Link>
+            You need wallet balance to apply. <Link href="/billing">Go to Wallet</Link>
           </strong>
         </div>
       ) : (
         <div style={{ margin: "14px 4px 0" }}>
-          <ApplyStartForm jobId={job.id} defaultUrl={job.source_url} />
+          <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} />
         </div>
       )}
-
-      <div className="m-note" style={{ opacity: canApply ? 1 : 0.7 }}>
-        Charged only after a successful submission — $0.99.
-      </div>
     </main>
   );
 }

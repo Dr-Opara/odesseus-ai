@@ -94,7 +94,7 @@ export default function MobileSignupWizard({ error }: { error?: string }) {
       <div className="m-trust-row">
         <span>10K+ resumes optimized</span>
         <span>3.4× more interviews</span>
-        <span>$0.99 per application</span>
+        <span>From $0.49 per application</span>
       </div>
 
       <div className="m-match-preview-card">

@@ -12,6 +12,7 @@ const publicExactPaths = [
   "/how-it-works",
   "/apply",
   "/live",
+  "/agents",
   "/pricing",
   "/about",
   "/terms",

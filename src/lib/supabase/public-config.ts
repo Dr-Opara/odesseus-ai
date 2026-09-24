@@ -12,11 +12,21 @@ const productionPublishableKey =
 
 const isLocalDevelopment = process.env.NODE_ENV === "development";
 
+// These are read with static property access (never `process.env[name]` with a
+// variable key): bundlers only statically inline `process.env.NEXT_PUBLIC_*`
+// literal accesses into browser bundles. Dynamic indexing survives to the
+// client as an empty `process.env`, which previously crashed hydration of any
+// page importing `@/lib/supabase/client` (module-scope throw) the moment the
+// dev client actually hydrated.
+const candidateSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const candidatePublishableKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
 function resolvePublicConfig(
+  value: string | undefined,
   envName: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   productionFallback: string
 ): string {
-  const value = process.env[envName];
   if (value) return value;
 
   if (isLocalDevelopment) {
@@ -32,11 +42,13 @@ function resolvePublicConfig(
 }
 
 export const publicSupabaseUrl = resolvePublicConfig(
+  candidateSupabaseUrl,
   "NEXT_PUBLIC_SUPABASE_URL",
   productionSupabaseUrl
 );
 
 export const publicSupabasePublishableKey = resolvePublicConfig(
+  candidatePublishableKey,
   "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   productionPublishableKey
 );

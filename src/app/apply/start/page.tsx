@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import ApplyStartForm from "@/components/apply-start-form";
+import ApplyTierAndStart from "@/components/apply/apply-tier-and-start";
 import MobileApplyStart from "@/components/mobile/mobile-apply-start";
 
 export default async function ApplyStartPage({
@@ -74,7 +74,7 @@ export default async function ApplyStartPage({
             <strong>{tailoring ? `Approved v${tailoring.version_number}` : "Not approved"}</strong>
           </div>
           <div className="card apply-preflight-item">
-            <span className="muted">Credits</span>
+            <span className="muted">Legacy credits</span>
             <strong>{credits?.application_credits ?? 0}</strong>
           </div>
         </div>
@@ -85,16 +85,11 @@ export default async function ApplyStartPage({
           </div>
         ) : (credits?.application_credits ?? 0) < 1 ? (
           <div className="review-note">
-            You need one application credit. <Link href="/billing" style={{ fontWeight: 700 }}>Buy credits</Link>
+            You need wallet balance to apply. <Link href="/billing" style={{ fontWeight: 700 }}>Go to Wallet</Link>
           </div>
         ) : (
-          <ApplyStartForm jobId={job.id} defaultUrl={job.source_url} />
+          <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} />
         )}
-
-        <div className="apply-charge-note">
-          <strong>No credit is used when this starts.</strong>
-          <span>One application credit is consumed only after Odesseus verifies a successful submission.</span>
-        </div>
       </div>
     </main>
 

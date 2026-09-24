@@ -2,13 +2,23 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { ApplyTier } from "@/lib/pricing/candidate-pricing";
 
 export default function ApplyStartForm({
   jobId,
   defaultUrl,
+  applyTier,
 }: {
   jobId: string;
   defaultUrl?: string | null;
+  /**
+   * INTEGRATION POINT: /api/apply/start (backend/pricing-wallet) does not
+   * read this field yet — it still charges from the legacy application
+   * credit balance regardless of tier. Sent additively so the backend can
+   * start reading it once the wallet per-tier charge lands, without another
+   * frontend change.
+   */
+  applyTier?: ApplyTier;
 }) {
   const router = useRouter();
   const [url, setUrl] = useState(defaultUrl || "");
@@ -23,7 +33,7 @@ export default function ApplyStartForm({
     const response = await fetch("/api/apply/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId, targetUrl: url }),
+      body: JSON.stringify({ jobId, targetUrl: url, applyTier }),
     });
 
     const data = await response.json();
