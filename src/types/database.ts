@@ -295,6 +295,18 @@ export type Database = {
           },
         ]
       }
+      wallet_balances: {
+        Row: { balance_cents: number; updated_at: string; user_id: string }
+        Insert: { balance_cents?: number; updated_at?: string; user_id: string }
+        Update: { balance_cents?: number; updated_at?: string; user_id?: string }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: { id: string; user_id: string; amount_cents: number; transaction_type: string; external_reference: string | null; metadata: Json; created_at: string }
+        Insert: { id?: string; user_id: string; amount_cents: number; transaction_type: string; external_reference?: string | null; metadata?: Json; created_at?: string }
+        Update: { id?: string; user_id?: string; amount_cents?: number; transaction_type?: string; external_reference?: string | null; metadata?: Json; created_at?: string }
+        Relationships: []
+      }
       application_status_events: {
         Row: {
           application_id: string
