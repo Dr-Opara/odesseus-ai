@@ -129,23 +129,58 @@ All of this is a database/config change; no application code changes.
 
 ## Provisional pricing
 
-- The nine `USD_US` price rows are the **approved reference prices**
-  (`metadata -> 'kind' = 'reference'`).
+- The active `USD_US` price rows are the **approved reference prices**
+  (`metadata -> 'kind' = 'reference'`). After the current-contract migration
+  (`20260924000000_current_pricing_contract.sql`) there are **15 active reference
+  prices**: the three Live products (2499 / 5999 / 49900, unchanged byte-for-byte)
+  plus the twelve new contract rows (49 / 199 / 1000 / 2000 / 5000 / 7900 / 14900 /
+  29900 / 2900 / 4900 / 12900 / 2000 minor units).
+- The six legacy `candidate_application_*` / `employer_starter_bundle` /
+  `employer_addon_post` price rows are **deactivated** (`active = false`), not
+  deleted; they keep their original amounts for historical display only.
 - Every other launch market exists but carries **no price rows yet**. Their
   prices resolve through `USD_US` until real commercial prices are approved.
   Non-USD markets showing USD reference prices is the documented interim
   behavior, not approved localized pricing.
 
+## Product matrix (current contract)
+
+Active products (15):
+
+| product_key | family | billing | USD_US amount | rule |
+| --- | --- | --- | --- | --- |
+| `candidate_standard_apply` | candidate | one_time rate | 49¢ | wallet debit on verified success |
+| `candidate_smart_apply` | candidate | one_time rate | 199¢ | wallet debit on verified success |
+| `wallet_topup_10` / `_20` / `_50` | candidate | one_time | 1000 / 2000 / 5000¢ | credits `wallet_balance_cents` |
+| `candidate_live_single` | candidate | one_time | 2499¢ | pass never expires (unchanged) |
+| `candidate_live_pack_3` | candidate | one_time | 5999¢ | 3 passes, never expire (unchanged) |
+| `candidate_live_annual` | candidate | one_time | 49900¢ | 12 calendar months (unchanged) |
+| `employer_starter` | employer | recurring 30d | 7900¢ | 3 job posts, no rollover |
+| `employer_growth` | employer | recurring 30d | 14900¢ | 10 job posts, no rollover |
+| `employer_business` | employer | recurring 30d | 29900¢ | 25 job posts, no rollover |
+| `featured_7d` / `featured_14d` / `featured_30d_ai` | employer | one_time | 2900 / 4900 / 12900¢ | 7 / 14 / 30 days (AI flag on 30d) |
+| `recruiter_seat_month` | employer | recurring 30d | 2000¢ | per additional team seat |
+
+Deactivated in place (6, never deleted): `candidate_application_single`,
+`candidate_application_pack_25/50/100`, `employer_starter_bundle`,
+`employer_addon_post`.
+
 ## Product rule metadata
 
 `pricing_products.metadata` (informational only; enforcement is a later phase):
 
-- Application singles/packs: `credits_expire = false` (no expiry).
+- Apply rates: `charge_type = "apply_rate"`, `mode = "standard" | "smart"`,
+  `credits_expire = false`.
+- Wallet top-ups: `charge_type = "wallet_topup"`, `legacy_sku = "wallet_10|20|50"`.
+- Employer plans: `charge_type = "employer_plan"`, `jobs = 3|10|25`,
+  `rollover = false`, `billing_period_days = 30`.
+- Featured listings: `charge_type = "featured"`, `featured_days = 7|14|30`,
+  `ai = true` for `featured_30d_ai`.
+- Recruiter seat: `charge_type = "recruiter_seat"`, `billing_period_days = 30`.
 - Live single / pack of 3: passes never expire.
 - Live annual: 12 calendar months from purchase.
-- Employer starter: recurring every 30 days, 5 base job-post credits expiring
-  at cycle end, no rollover.
-- Employer add-on: one job-post credit, expires 30 days after purchase.
+- Legacy (deactivated, retained for history): application singles/packs
+  `credits_expire = false`; old starter bundle / add-on.
 
 ## Why frontend FX conversion is prohibited
 
@@ -160,5 +195,8 @@ called anywhere; changing a price is a database update.
 - `tests/unit/pricing-format.test.ts` — Intl formatting incl. JPY zero-decimal.
 - `tests/unit/pricing-service.test.ts` — resolution order, fallbacks, no floats.
 - `tests/integration/pricing-api.test.ts` — API behavior, no Stripe leakage.
-- `tests/integration/migration-pricing.test.ts` — additive/RLS/reference-price review.
-- `supabase/tests/pricing.test.sql` — pgTAP schema/RLS/seed invariants (65 assertions).
+- `tests/integration/migration-pricing.test.ts` — legacy migration review.
+- `tests/integration/migration-pricing-contract.test.ts` — current-contract
+  migration review (additive, wallet, employer RLS, service-only RPCs).
+- `supabase/tests/pricing.test.sql` — pgTAP schema/RLS/seed/wallet/trigger
+  invariants (132 assertions, current contract).
