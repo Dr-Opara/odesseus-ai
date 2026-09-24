@@ -135,7 +135,7 @@ const content: Record<string, Content> = {
     { title: "Package name", sub: "License type" }, { title: "Package name", sub: "License type" }, { title: "Package name", sub: "License type" }
   ], note: "Populate this list from the production dependency inventory before release." },
   "27": { lead: "Quick answers about Odesseus.ai.", rows: [
-    "How does job matching work?","Does Odesseus apply without my approval?","How does resume optimization work?","What does an application cost?","Where is Odesseus Live available?","How do I manage my documents?"
+    "How does job matching work?","Does Odesseus apply without my approval?","How does resume optimization work?","What does an application cost?","Is interview preparation free?","How do I manage my documents?"
   ].map((title) => ({ title, tag: "＋" })) },
   "28": { lead: "Get help with your account or Odesseus services.", rows: [
     { icon: "💬", title: "Contact Support", sub: "Send a message to the Odesseus team" }, { icon: "⚠", title: "Report a Problem", sub: "Tell us when something isn’t working" },
@@ -144,7 +144,7 @@ const content: Record<string, Content> = {
   ] },
   "29": { lead: "Your AI career and application platform.", rows: [
     { title: "What Odesseus does", sub: "Discover opportunities, qualify job fit, strengthen your resume, submit approved applications, track progress and prepare for interviews." },
-    { title: "Odesseus Live", sub: "Live interview assistance is designed for desktop while mobile provides preparation and history." },
+    { title: "How it works", sub: "Approve every material change before it happens — resume edits, applications, and everything in between." },
     { title: "Who we help", sub: "Job seekers at every career stage, including international, remote and relocation candidates." },
     { title: "Built for careers everywhere", sub: "Careers don’t stop at borders. Neither should your career tools." }
   ], note: "Version 1.0 · Career agents built around your approval." },
@@ -152,9 +152,7 @@ const content: Record<string, Content> = {
     { title: "APPLICATION AGENT · $0.99", sub: "per verified successful submission" },
     { title: "Application credit packs", sub: "25 credits · $20 · 50 credits · $35 · 100 credits · $59" },
     { title: "Interview preparation · FREE", sub: "Role-based questions, STAR stories and technical prep" },
-    { title: "ODESSEUS LIVE · WEB · $24.99", sub: "per live interview" },
-    { title: "3 Live passes · $59.99", sub: "No expiration" }, { title: "Annual Live · $499/year", sub: "12 months of Live access" }
-  ], note: "Odesseus Live is desktop/web only. Prep Agent and your career workspace remain available on mobile." },
+  ], note: "Prep Agent and your career workspace are available on mobile." },
   "31": { lead: "Where do you want to work?", rows: [
     ["🇺🇸","United States","✓"],["🇬🇧","United Kingdom",""],["🇨🇦","Canada",""],["🇦🇺","Australia",""],["🇧🇷","Brazil",""],["🇫🇷","France",""],["🇩🇪","Germany",""],["🇬🇭","Ghana",""],["🇮🇳","India",""],["🇰🇪","Kenya",""],["🇳🇬","Nigeria",""],["🇵🇭","Philippines",""],["🇿🇦","South Africa",""]
   ].map(([icon,title,tag]) => ({ icon, title, tag })), action: "Apply (1 selected)" },

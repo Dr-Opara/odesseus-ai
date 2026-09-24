@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import OdesseusWordmark from "@/components/odesseus-wordmark";
 import { logout } from "@/app/login/actions";
+import { resolveMobileScreen } from "@/lib/mobile/screen-map";
 
 function firstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "there";
@@ -19,6 +23,14 @@ export default function AppShell({
   active?: "home" | "jobs" | "applications" | "interviews" | "profile";
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  // MobileRouteExperience already renders a dedicated Figma mobile screen (with
+  // its own bottom nav) for any route resolveMobileScreen() covers. Rendering
+  // this nav unconditionally on those routes would double-mount a second bottom
+  // nav alongside it. Only fall back to this nav on routes Figma Mobile v1
+  // doesn't have a screen for yet (e.g. /billing, /interviews/[id]/live).
+  const hasDedicatedMobileScreen = resolveMobileScreen(pathname) !== null;
+
   const nav = [
     ["home", "/dashboard", "Home"],
     ["jobs", "/jobs", "Match"],
@@ -69,14 +81,16 @@ export default function AppShell({
         </div>
       </header>
       {children}
-      <nav className="mobile-app-bottom-nav" aria-label="Mobile app navigation">
-        {nav.map(([key, href, label]) => (
-          <Link key={key} href={href} aria-current={active === key ? "page" : undefined} className={active === key ? "is-active" : undefined}>
-            <span className="mobile-nav-icon" aria-hidden="true">{key === "home" ? "⌂" : key === "jobs" ? "◎" : key === "applications" ? "▤" : key === "interviews" ? "✦" : "○"}</span>
-            <span>{label}</span>
-          </Link>
-        ))}
-      </nav>
+      {hasDedicatedMobileScreen ? null : (
+        <nav className="mobile-app-bottom-nav" aria-label="Mobile app navigation">
+          {nav.map(([key, href, label]) => (
+            <Link key={key} href={href} aria-current={active === key ? "page" : undefined} className={active === key ? "is-active" : undefined}>
+              <span className="mobile-nav-icon" aria-hidden="true">{key === "home" ? "⌂" : key === "jobs" ? "◎" : key === "applications" ? "▤" : key === "interviews" ? "✦" : "○"}</span>
+              <span>{label}</span>
+            </Link>
+          ))}
+        </nav>
+      )}
     </main>
   );
 }

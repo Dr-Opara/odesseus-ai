@@ -2995,7 +2995,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .figma-employer-band{background:var(--od-navy);color:#fff;display:grid;grid-template-columns:1.1fr .9fr;gap:70px}.figma-hiring-preview{background:var(--od-soft);color:var(--od-ink);border-radius:28px;padding:30px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.figma-hiring-preview h3{grid-column:1/-1}.figma-hiring-preview div{display:grid}.figma-hiring-preview strong{font-size:30px;color:var(--od-purple)}.figma-hiring-preview span{font-size:12px}
 .figma-price-preview{background:var(--od-peach)}.figma-price-grid,.figma-three-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}.figma-price-grid article,.figma-price-card{background:#fff;border-radius:26px;padding:28px;min-height:220px}.figma-price-grid span{font-weight:800;color:var(--od-muted)}.figma-price-grid strong,.figma-price-card>strong{display:block;font-size:36px;margin:28px 0 12px;color:var(--od-orange)}.figma-text-cta{display:inline-block;margin-top:30px}
 .figma-footer{background:#08080d;color:#fff;padding:60px max(40px,calc((100vw - 1200px)/2)) 28px}.figma-footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:50px}.figma-footer-grid>div{display:grid;align-content:start;gap:12px}.figma-footer p,.figma-footer a{color:#aaaabd;font-size:13px}.figma-footer strong{margin-bottom:6px}.figma-footer-bottom{border-top:1px solid #292932;margin-top:44px;padding-top:24px;display:flex;justify-content:space-between;color:#777786;font-size:12px}
-.figma-page-wrap{padding:28px 0 100px}.figma-page-hero{padding:70px 20px 60px;max-width:1000px}.figma-page-hero p{font-size:19px;color:var(--od-muted);line-height:1.6;max-width:800px}.figma-page-hero.inverse p{color:#c5c6d6}.figma-two-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin:20px 20px}.figma-three-grid{margin:20px}.figma-info-card{border-radius:28px;padding:30px;min-height:240px}.figma-info-card h2{font-size:24px;margin:0 0 20px}.figma-info-card p{line-height:1.6;color:var(--od-muted)}.figma-info-card.navy{background:var(--od-navy);color:#fff}.figma-info-card.navy p,.figma-dark-page .figma-info-card p{color:#5b5d6d}.figma-info-card.white{background:#fff;color:var(--od-ink)}.figma-info-card>strong{font-size:26px}.employer-prices{margin-top:50px}.figma-three-grid.compact .figma-price-card{min-height:180px}.figma-price-note{margin:40px 20px;color:var(--od-muted)}.figma-faq{padding:70px 20px}.figma-faq>h2{font-size:48px}.figma-faq article{background:#fff;border-radius:24px;padding:28px}.figma-faq article h3{margin-top:0}.figma-faq article p{color:var(--od-muted);line-height:1.55}
+.figma-page-wrap{padding:28px 0 100px}.figma-page-hero{padding:70px 20px 60px;max-width:1000px}.figma-page-hero p{font-size:19px;color:var(--od-muted);line-height:1.6;max-width:800px}.figma-page-hero.inverse p{color:#c5c6d6}.figma-two-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin:20px 20px}.figma-three-grid{margin:20px}.figma-info-card{border-radius:28px;padding:30px;min-height:240px}.figma-info-card h2{font-size:24px;margin:0 0 20px}.figma-info-card p{line-height:1.6;color:var(--od-muted)}.figma-info-card.navy{background:var(--od-navy);color:#fff}.figma-info-card.navy p,.figma-dark-page .figma-info-card p{color:#5b5d6d}.figma-info-card.white{background:#fff;color:var(--od-ink)}.figma-info-card>strong{font-size:26px}.employer-prices{margin-top:50px}.employer-prices .figma-info-card.lavender h2,.employer-prices .figma-info-card.lavender h2 small{color:#000!important}.figma-three-grid.compact .figma-price-card{min-height:180px}.figma-price-note{margin:40px 20px;color:var(--od-muted)}.figma-faq{padding:70px 20px}.figma-faq>h2{font-size:48px}.figma-faq article{background:#fff;border-radius:24px;padding:28px}.figma-faq article h3{margin-top:0}.figma-faq article p{color:var(--od-muted);line-height:1.55}
 @media(max-width:900px){.figma-nav-links,.figma-nav-actions{display:none}.figma-nav-toggle{display:block;margin-left:auto}.figma-nav-mobile{display:grid;gap:16px;padding:20px;background:#fff;border-radius:18px;box-shadow:0 15px 40px #0002}.figma-nav-mobile.is-inverse{background:#19192d}.figma-hero-grid,.figma-global,.figma-employer-band{grid-template-columns:1fr}.figma-job-stack{height:480px}.figma-step-grid{grid-template-columns:repeat(2,1fr)}.figma-product-grid{grid-template-columns:1fr 1fr}.figma-three-grid,.figma-price-grid{grid-template-columns:1fr}.figma-footer-grid{grid-template-columns:1fr 1fr}.figma-metrics{grid-template-columns:1fr 1fr;gap:30px}.figma-two-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.figma-home-shell,.figma-page-wrap{width:min(100% - 24px,1320px)}.figma-home-hero{padding:20px 18px 40px;border-radius:26px}.figma-hero-grid{padding:50px 0 0}.figma-hero-copy h1{font-size:46px}.figma-actions{align-items:stretch;flex-direction:column}.figma-job-card{width:94%;left:3%!important}.figma-job-card span{float:none;display:block;margin-top:8px}.figma-metrics{padding:28px}.figma-section{padding:38px 24px}.figma-step-grid,.figma-product-grid,.figma-location-grid{grid-template-columns:1fr}.figma-footer-grid{grid-template-columns:1fr}.figma-footer-bottom{flex-direction:column;gap:10px}}
 
@@ -3032,53 +3032,16 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .legal-page-card section p{color:#53627b;line-height:1.7;margin:0}
 @media(max-width:620px){.candidate-signup-card{padding:22px}.candidate-name-grid{grid-template-columns:1fr}.candidate-signup-header h1{font-size:30px}.legal-page-card{padding:26px}.legal-page-card h1{font-size:32px}}
 
-/* Mobile / installable web-app experience */
-.odesseus-mobile-only,.mobile-app-bottom-nav{display:none}
+/* Mobile / installable web-app shell fallback.
+ * Only `.odesseus-mobile-only` / `.odesseus-desktop-only` are the authoritative
+ * viewport-visibility toggle, and they are defined exactly once, in the
+ * "Figma Mobile v1" block below. Everything here is AppShell's own fallback
+ * chrome for routes Figma Mobile v1 doesn't have a dedicated screen for yet
+ * (see AppShell's `hasDedicatedMobileScreen` check) plus the employer
+ * partners dashboard, which Figma Mobile v1 does not cover. */
+.mobile-app-bottom-nav{display:none}
 @media (max-width: 767px){
   html,body{max-width:100%;overflow-x:hidden}
-  .odesseus-desktop-only{display:none!important}
-  .odesseus-mobile-only{display:block}
-  .mobile-landing{min-height:100vh;background:#f2efff;padding:12px;color:#fff}
-  .mobile-splash{position:relative;min-height:820px;background:#101020;border-radius:34px;overflow:hidden;padding:28px 22px 26px}
-  .mobile-splash-orb{position:absolute;border-radius:999px;filter:none}
-  .mobile-splash-orb-one{width:145px;height:145px;background:#7847e9;right:-64px;top:74px}
-  .mobile-splash-orb-two{width:92px;height:92px;background:#ff5a1f;left:-48px;top:232px}
-  .mobile-job-stack{position:relative;height:338px;margin-top:14px}
-  .mobile-job-card{position:absolute;left:50%;transform:translateX(-50%);width:82%;border-radius:23px;padding:17px 18px;color:#101020;box-shadow:0 12px 28px rgba(0,0,0,.12)}
-  .mobile-job-back{height:112px;font-size:12px;font-weight:800}
-  .mobile-job-back.lime{background:#c7ef45;top:0;transform:translateX(-50%) rotate(-5deg)}
-  .mobile-job-back.pink{background:#ff73aa;top:35px;transform:translateX(-50%) rotate(4deg)}
-  .mobile-job-back.cyan{background:#31bee0;top:70px;transform:translateX(-50%) rotate(-2deg)}
-  .mobile-job-main{top:106px;background:#ff5b22;color:#fff;height:218px;width:86%;padding:22px}
-  .mobile-job-company{display:flex;align-items:center;gap:8px;font-size:13px}
-  .mobile-heart{margin-left:auto;font-size:23px}
-  .mobile-ms-mark{font-size:19px}
-  .mobile-job-main h2{font-size:28px;line-height:1.03;letter-spacing:-1px;margin:24px 0 10px}
-  .mobile-job-main p{font-size:13px;margin:0}
-  .mobile-job-actions{display:flex;justify-content:space-between;align-items:center;margin-top:23px;font-size:12px;font-weight:700}
-  .mobile-job-actions a{background:#fff;color:#101020;border-radius:999px;padding:10px 14px}
-  .mobile-splash-copy{margin-top:4px}
-  .mobile-splash-copy h1{font-family:Arial,Helvetica,sans-serif;font-size:42px;line-height:.98;letter-spacing:-2px;margin:0}
-  .mobile-splash-copy h1 span{color:#ff5b22}
-  .mobile-splash-copy p{color:#d8d7e4;line-height:1.5;font-size:15px;margin:20px 0 24px}
-  .mobile-primary-cta{height:58px;background:#ff5b22;border-radius:999px;padding:0 9px 0 22px;display:flex;align-items:center;justify-content:space-between;font-weight:800}
-  .mobile-primary-cta b{display:grid;place-items:center;width:42px;height:42px;background:#fff;color:#101020;border-radius:50%;font-size:20px}
-  .mobile-splash-pager{display:flex;gap:6px;justify-content:center;margin-top:20px}
-  .mobile-splash-pager span{width:6px;height:6px;background:#686779;border-radius:999px}.mobile-splash-pager .active{width:24px;background:#fff}
-  .mobile-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
-  .mobile-metrics article{background:#fff;color:#101020;border-radius:22px;padding:21px;display:grid;gap:5px;min-height:112px}
-  .mobile-metrics strong{font-size:30px}.mobile-metrics span{font-size:13px;color:#626171}
-  .orange-text{color:#ff5b22}.purple-text{color:#7d4cec}.cyan-text{color:#1fb8db}.lime-text{color:#80b81d}
-  .mobile-marketing-section{background:#fff;color:#101020;border-radius:28px;padding:27px 21px;margin:12px 0}
-  .mobile-kicker{font-size:11px;font-weight:900;letter-spacing:.12em;color:#ff5b22;margin:0 0 9px}
-  .mobile-marketing-section h2{font-size:30px;line-height:1.03;letter-spacing:-1px;margin:0 0 19px}
-  .mobile-agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-  .mobile-agent-card{min-height:145px;border-radius:20px;padding:17px;display:flex;flex-direction:column;justify-content:flex-end;gap:7px}
-  .mobile-agent-card strong{font-size:20px}.mobile-agent-card span{font-size:12px;line-height:1.4}
-  .lavender{background:#c8b7ff}.peach{background:#ffb08e}.cyan-card{background:#78d9ee}.green-card{background:#c8ec82}
-  .mobile-employer-card{background:#101020;color:#fff}.mobile-employer-card>p:not(.mobile-kicker){color:#d7d6e0;line-height:1.5}.mobile-employer-card>a{color:#ff6a31;font-weight:800}
-  .mobile-price-strip{display:grid;grid-template-columns:1fr;gap:8px;margin:12px 0}.mobile-price-strip>div{background:#fff;color:#101020;border-radius:20px;padding:17px 20px;display:grid;grid-template-columns:1fr auto;align-items:center}.mobile-price-strip small{font-weight:800}.mobile-price-strip strong{font-size:22px;color:#ff5b22}.mobile-price-strip span{grid-column:1/-1;color:#747382;font-size:12px;margin-top:3px}
-  .mobile-login-row{display:flex;justify-content:center;gap:24px;padding:20px 10px 28px;color:#101020;font-size:13px;font-weight:700}
   .app-header{display:none!important}
   .app-surface{padding-bottom:82px}
   .mobile-app-bottom-nav{position:fixed;z-index:100;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:66px;background:#101020;border-radius:22px;display:grid;grid-template-columns:repeat(5,1fr);box-shadow:0 12px 35px rgba(0,0,0,.25);padding:7px}
@@ -3088,11 +3051,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   .dashboard-v2{padding:22px 16px 30px!important}.dashboard-heading{align-items:flex-start!important}.dashboard-heading>.btn{display:none}
   .dashboard-title{font-size:32px!important}.dashboard-stat-grid{grid-template-columns:1fr 1fr!important}.dashboard-command-grid{grid-template-columns:1fr!important}
 }
-@media (min-width:768px){.odesseus-desktop-only{display:block}.odesseus-mobile-only{display:none!important}}
-@media (display-mode: standalone) and (max-width:767px){body{padding-top:env(safe-area-inset-top)}.mobile-landing{padding-top:0}}
+@media (display-mode: standalone) and (max-width:767px){body{padding-top:env(safe-area-inset-top)}}
 
 
-/* Figma Mobile v1 — 33-screen implementation */
+/* Figma Mobile v1 — 33-screen implementation.
+ * `.odesseus-mobile-only` / `.odesseus-desktop-only` are the single
+ * authoritative responsive-visibility toggle for the whole app. Defined here
+ * once, mobile-first: hidden by default, shown under the mobile breakpoint. */
 .odesseus-mobile-only{display:none}
 @media (max-width:767px){
   :root{
@@ -3148,3 +3113,18 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   .m-screen-31 .m-card{min-height:56px}.m-screen-33 .m-card{min-height:48px}.m-screen-23 .m-card,.m-screen-24 .m-card,.m-screen-29 .m-card{align-items:start}
 }
 @media(min-width:768px){.odesseus-mobile-only{display:none!important}.odesseus-desktop-only{display:block}}
+
+/* QA mobile preview (under /qa/mobile) — permanent dev tooling for comparing
+ * the Figma Mobile v1 UI against desktop side by side on one machine.
+ * Isolated from the production visibility-toggle and screen CSS: it never
+ * touches those classes and nothing here is read by any production route.
+ * The frame wraps an iframe pointed at the real route; an iframe has its own
+ * independent viewport for media-query purposes, so Figma Mobile v1's
+ * existing mobile-breakpoint rules apply inside it exactly as on a real
+ * phone, with no separate mobile implementation and no forced CSS overrides. */
+.qa-mobile-page{min-height:100vh;background:#e7e7ef;display:flex;flex-direction:column;align-items:center;padding:20px 16px 48px;font-family:Inter,Arial,Helvetica,sans-serif}
+.qa-mobile-bar{width:100%;max-width:430px;display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px;font-size:12px;font-weight:700;color:#44445c}
+.qa-mobile-bar-label{overflow-wrap:anywhere}
+.qa-mobile-bar-link{color:#7847e9;text-decoration:underline;white-space:nowrap}
+.qa-mobile-frame{width:100%;max-width:390px;height:844px;background:#0e0e1f;border-radius:44px;padding:10px;box-shadow:0 24px 60px rgba(20,20,40,.28)}
+.qa-mobile-frame-iframe{width:100%;height:100%;border:0;border-radius:34px;background:#fff;display:block}

@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
-import LiveInterviewPreview from "@/components/live-interview-preview";
 
 export const metadata: Metadata = {
   title: "Odesseus Agents — Match, Apply & Interview",
   description: "Meet the three Odesseus agents that qualify a job, improve your existing resume, apply after approval, and prepare you for interviews.",
 };
-
-const platforms = ["Zoom", "Microsoft Teams", "Google Meet", "Webex", "Lark", "Amazon Chime", "CoderPad", "HackerRank"];
 
 export default function AgentsPage() {
   return (
@@ -73,39 +70,21 @@ export default function AgentsPage() {
           <div className="agent-detail-number">03</div>
           <div>
             <span className="stage-band-label">Interview Agent</span>
-            <h2>Prepare before it. Get support during it.</h2>
+            <h2>Prepare for every interview.</h2>
             <p className="muted agent-detail-lead">
-              When you receive an interview invitation, come back to Odesseus. Select a tracked application or paste the JD and choose the resume you used. Preparation is free; Odesseus Live is $24.99 per interview.
+              When you receive an interview invitation, come back to Odesseus. Select a tracked application or paste the JD and choose the resume you used. Interview preparation is free.
             </p>
 
             <div className="agent-detail-grid">
               <div><strong>You provide</strong><p>JD, resume used, interview stage, and any context you want Odesseus to know.</p></div>
               <div><strong>Odesseus prepares</strong><p>Likely questions, grounded STAR examples, talking points, technical topics, and questions to ask.</p></div>
-              <div><strong>You configure</strong><p>OpenAI model, answer length, response style, guidance priority, and your editable interview prompt.</p></div>
-              <div><strong>Live output</strong><p>Realtime transcription, question detection, and fast grounded on-screen answer guidance.</p></div>
+              <div><strong>You configure</strong><p>OpenAI model, answer length, response style, and your editable interview prompt.</p></div>
+              <div><strong>Output</strong><p>Role-specific questions, STAR-ready talking points, and technical topics grounded in your resume and the job description.</p></div>
             </div>
 
-            <div className="agent-live-price"><strong>$24.99</strong><span>per Odesseus Live interview</span></div>
-
-            <div className="agent-live-preview"><LiveInterviewPreview /></div>
-
-            <h3 className="agent-subheading">During — Odesseus Live</h3>
-            <div className="stage-band-list">
-              {["Realtime transcription","Automatic question detection","End-of-question detection","Grounded answer guidance","STAR","Shorter","More Technical","Leadership","Follow-Up","Recent transcript","Current/prior-round context"].map((item) => (
-                <div className="stage-band-list-item" key={item}>{item}</div>
-              ))}
-            </div>
             <div className="marketing-callout">
-              The candidate remains the speaker. Odesseus provides private on-screen support for recall, structure, and context.
+              Preparation stays grounded in the resume you approved and the job you applied to — no invented experience.
             </div>
-
-            <h3 className="agent-subheading">Works with the tools your interviews already use</h3>
-            <div className="agents-platform-grid">
-              {platforms.map((platform) => <div className="agents-platform" key={platform}>{platform}<small>Supported platform</small></div>)}
-            </div>
-            <p className="muted agent-compat-note">
-              Odesseus can use supported shared/system audio or microphone input without joining the meeting as another participant. Compatibility varies by browser, operating system, and platform audio-sharing permissions.
-            </p>
           </div>
         </article>
       </section>
