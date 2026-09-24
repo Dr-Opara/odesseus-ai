@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { createCheckoutSession } from "@/app/actions/billing";
 import AppShell from "@/components/app-shell";
+import WalletPanel from "@/components/wallet/wallet-panel";
 
 export default async function BillingPage({
   searchParams,
@@ -96,13 +97,13 @@ export default async function BillingPage({
 
         <div className="billing-balance-grid">
           <div className="card billing-balance-card">
-            <div className="muted" style={{ fontSize: 13 }}>Application credits</div>
+            <div className="muted" style={{ fontSize: 13 }}>Application credits (legacy)</div>
             <strong>{credits?.application_credits ?? 0}</strong>
-            <span className="muted">$0.99 is consumed only after a successful submission.</span>
+            <span className="muted">Consumed only after a successful submission.</span>
           </div>
 
           <div className="card billing-balance-card">
-            <div className="muted" style={{ fontSize: 13 }}>Interview passes</div>
+            <div className="muted" style={{ fontSize: 13 }}>Interview passes (legacy)</div>
             <strong>{credits?.interview_passes ?? 0}</strong>
             <span className="muted">One pass is used when Odesseus Live starts.</span>
           </div>
@@ -115,89 +116,19 @@ export default async function BillingPage({
         ) : null}
 
         <section style={{ marginTop: 34 }}>
-          <div className="billing-pack-grid">
-            <form className="card billing-pack" action={createCheckoutSession.bind(null, "app_1")}>
-              <div>
-                <div className="muted" style={{ fontSize: 13 }}>Apply with Odesseus</div>
-                <div className="billing-pack-number">$0.99</div>
-                <p className="muted" style={{ lineHeight: 1.55 }}>
-                  Odesseus matches the role, tailors your resume, completes the application, submits it, and tracks it.
-                </p>
-                <p className="muted" style={{ lineHeight: 1.55 }}>
-                  $0.99 only after successful submission.
-                </p>
-                <p className="muted" style={{ fontSize: 13, lineHeight: 1.55 }}>
-                  Apply across supported job boards and direct employer career sites — no platform-specific fee. Includes Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards and employer application sites.
-                </p>
-              </div>
-              <button className="btn btn-primary" type="submit">Buy an application credit</button>
-            </form>
-
-            <form className="card billing-pack" action={createCheckoutSession.bind(null, "interview_1")}>
-              <div>
-                <div className="muted" style={{ fontSize: 13 }}>Odesseus Live</div>
-                <div className="billing-pack-number">$24.99</div>
-                <p className="muted" style={{ lineHeight: 1.55 }}>
-                  Your AI interview companion—from preparation through follow-up.
-                </p>
-                <p className="muted" style={{ lineHeight: 1.55 }}>
-                  One interview. One pass. Everything included.
-                </p>
-              </div>
-              <button className="btn btn-primary" type="submit">Buy an interview pass</button>
-            </form>
-          </div>
-        </section>
-
-        <section style={{ marginTop: 34 }}>
-          <div className="muted" style={{ fontSize: 13 }}>Save with bundles</div>
-          <h2 style={{ fontSize: 24, margin: "7px 0 18px" }}>Application credits</h2>
-          <div className="card bundle-band">
-            <p className="muted" style={{ margin: "0 0 4px" }}>1 application credit = 1 successfully submitted application.</p>
-            <div className="bundle-row">
-              <form className="bundle-option" action={createCheckoutSession.bind(null, "app_25")}>
-                <div className="bundle-option-quantity">25 credits</div>
-                <div className="bundle-option-price">$20</div>
-                <button className="btn btn-secondary" type="submit">Buy</button>
-              </form>
-              <form className="bundle-option is-featured" action={createCheckoutSession.bind(null, "app_50")}>
-                <div className="bundle-option-quantity">50 credits</div>
-                <div className="bundle-option-price">$35</div>
-                <button className="btn btn-primary" type="submit">Buy</button>
-              </form>
-              <form className="bundle-option" action={createCheckoutSession.bind(null, "app_100")}>
-                <div className="bundle-option-quantity">100 credits</div>
-                <div className="bundle-option-price">$59</div>
-                <button className="btn btn-secondary" type="submit">Buy</button>
-              </form>
-            </div>
-          </div>
-        </section>
-
-        <section style={{ marginTop: 34 }}>
-          <h2 style={{ fontSize: 24, margin: "0 0 18px" }}>Interview passes</h2>
-          <div className="card bundle-band">
-            <p className="muted" style={{ margin: "0 0 4px" }}>1 interview pass = 1 successfully activated Odesseus Live interview round.</p>
-            <div className="bundle-row bundle-row-2">
-              <form className="bundle-option" action={createCheckoutSession.bind(null, "interview_3")}>
-                <div className="bundle-option-quantity">3 passes</div>
-                <div className="bundle-option-price">$59.99</div>
-                <button className="btn btn-secondary" type="submit">Buy</button>
-              </form>
-              <form className="bundle-option is-featured" action={createCheckoutSession.bind(null, "interview_annual")}>
-                <div className="bundle-option-quantity">Odesseus Live Annual</div>
-                <div className="bundle-option-price">$499</div>
-                <div className="bundle-option-unit">per year</div>
-                <button className="btn btn-primary" type="submit">Buy</button>
-              </form>
-            </div>
-            <p className="bundle-fine-print">Odesseus Live Annual is subject to fair use.</p>
-          </div>
+          <div className="muted" style={{ fontSize: 13 }}>Pay as you go</div>
+          <h2 style={{ fontSize: 24, margin: "7px 0 8px" }}>Wallet</h2>
+          <p className="muted" style={{ margin: "0 0 18px", maxWidth: 620 }}>
+            Standard Apply and Smart Apply are charged from your wallet after a verified successful
+            submission — no more pre-buying credit packs.{" "}
+            <Link href="/pricing" style={{ fontWeight: 700 }}>See full pricing →</Link>
+          </p>
+          <WalletPanel />
         </section>
 
         <section style={{ marginTop: 34 }}>
           <div className="muted" style={{ fontSize: 13 }}>Recent activity</div>
-          <h2 style={{ fontSize: 24, margin: "7px 0 12px" }}>Credits</h2>
+          <h2 style={{ fontSize: 24, margin: "7px 0 12px" }}>Legacy credit purchases</h2>
 
           <div className="card">
             {activity.length ? activity.slice(0, 8).map((item, index) => (

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
+import { APPLY_TIERS } from "@/lib/pricing/candidate-pricing";
 
 const steps = [
   ["01","Find","AI-powered job matching"],
@@ -33,7 +34,7 @@ export default function Home() {
             <div className="figma-job-stack" aria-label="Live job match examples">
               <article className="figma-job-card card-orange"><small>Your match target</small><h3>Roles that clear the bar</h3><strong>85%+</strong><span>Scored from your resume</span></article>
               <article className="figma-job-card card-purple"><small>Resume Agent</small><h3>Tailored from your master</h3><strong>Verified</strong><span>Your facts only</span></article>
-              <article className="figma-job-card card-cyan"><small>Application Agent</small><h3>Submitted with your approval</h3><strong>$0.99</strong><span>After verified submission</span></article>
+              <article className="figma-job-card card-cyan"><small>Application Agent</small><h3>Submitted with your approval</h3><strong>{APPLY_TIERS.standard.priceLabel}+</strong><span>After verified submission</span></article>
               <div className="figma-live-label">YOUR SEARCH • SCORED AND UPDATED FOR YOU</div>
             </div>
           </div>
@@ -70,7 +71,7 @@ export default function Home() {
 
         <section className="figma-section figma-price-preview">
           <span className="figma-eyebrow">PAY FOR WHAT YOU USE</span><h2>Simple candidate pricing.</h2>
-          <div className="figma-price-grid"><article><span>Applications</span><strong>$0.99</strong><p>per successful application</p></article><article><span>Prep Agent</span><strong>FREE</strong><p>role-specific preparation</p></article></div>
+          <div className="figma-price-grid"><article><span>Standard Apply</span><strong>{APPLY_TIERS.standard.priceLabel}</strong><p>per successful application</p></article><article><span>Smart Apply</span><strong>{APPLY_TIERS.smart.priceLabel}</strong><p>per successful application</p></article><article><span>Prep Agent</span><strong>FREE</strong><p>role-specific preparation</p></article></div>
           <Link className="figma-text-cta" href="/pricing">See full pricing →</Link>
         </section>
       </section>

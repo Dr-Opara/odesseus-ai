@@ -3,9 +3,9 @@ import MarketingFooter from "@/components/marketing-footer";
 import MobileScreen from "@/components/mobile/mobile-screen";
 
 const faqs=[
- ["Does Odesseus require a subscription?","No. Candidate application credits are purchased as you use them."],
+ ["Does Odesseus require a subscription?","No. Standard Apply ($0.49) and Smart Apply ($1.99) are charged from your wallet only after a successful application submission."],
  ["Does Odesseus read my email?","No. Candidate inbox access is not required."],
- ["Do application credits expire?","No. Candidate application credits remain available until used."],
+ ["How does the wallet work?","Add $10, $20, or $50 to your wallet. Money stays there until Odesseus successfully submits an application — no fixed credit packs."],
  ["Is Prep Agent free?","Yes. Role-specific interview preparation is free."],
  ["Can I target jobs in other countries?","Yes. Odesseus is being designed for multi-country job preferences."],
 ];
