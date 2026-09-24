@@ -52,6 +52,16 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
+### Local development must use the local Supabase stack
+
+`npm run dev` refuses to start when the Supabase variables are missing — it
+will **not** silently fall back to the production project. Local development
+targets the local Docker stack started with `supabase start` (kong on
+`http://127.0.0.1:54321`); use the values printed by `supabase status` for
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and
+`SUPABASE_SERVICE_ROLE_KEY` in `.env.local`. Real deployed credentials are
+configured per environment in the Vercel dashboard.
+
 Do not add Supabase secret/service-role keys to browser environment variables.
 
 ## Product principles

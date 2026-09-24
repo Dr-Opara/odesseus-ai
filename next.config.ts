@@ -1,5 +1,22 @@
 import { withWorkflow } from "workflow/next";
 
+// Local development must not silently fall back to the production Supabase
+// project — see public-config.ts for the same rule and .env.example for the
+// local stack values. `next dev` runs with NODE_ENV=development, so this
+// guard fails fast with instructions instead of inlining production
+// credentials for a developer's laptop.
+if (process.env.NODE_ENV === "development") {
+  const missing = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"]
+    .filter((name) => !process.env[name]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Local development requires ${missing.join(" and ")} in .env.local ` +
+        `(target the local Supabase stack; see .env.example). Refusing to ` +
+        `silently fall back to the production Supabase project.`
+    );
+  }
+}
+
 // `||` (not `??`) is deliberate: an env var configured as an empty string
 // must fall back the same as an unset one, or a blank NEXT_PUBLIC_SUPABASE_URL
 // silently produces an empty Supabase client URL app-wide (see the incident
