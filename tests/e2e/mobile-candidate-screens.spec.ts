@@ -46,6 +46,8 @@ test.describe("mobile auth boundary at phone width", () => {
     // report-job route re-check the session server-side before rendering.
     "/settings/security",
     "/settings/notifications",
+    "/settings/job-preferences",
+    "/settings/language-region",
     "/settings/appearance",
     "/settings/referrals",
     "/report-job",

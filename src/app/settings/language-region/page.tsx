@@ -2,12 +2,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { listCountries } from "@/lib/countries/service";
 import LocalizationForm from "@/components/localization-form";
+import MobileLanguageRegion from "@/components/mobile/mobile-language-region";
 
 /**
- * Language & Region (screen 19). Reuses the exact same LocalizationForm and
- * profile localization fields (Phase 1 global-identity) the desktop Settings
- * page uses. A dedicated Figma-styled mobile layout (this currently renders
- * the same form markup as desktop) is follow-up work.
+ * Language & Region (screen 19). Candidate-only settings sub-page. Reads the
+ * profile localization fields and the real country catalog once server-side,
+ * then renders the shared desktop form on wide viewports and the phone-width
+ * mobile presentation on small screens — both save through the existing
+ * `PATCH /api/profile/localization` endpoint.
  */
 export default async function LanguageRegionSettingsPage() {
   const supabase = await createClient();
@@ -26,8 +28,18 @@ export default async function LanguageRegionSettingsPage() {
   ]);
 
   return (
-    <main style={{ minHeight: "100vh", padding: "24px 16px 80px" }}>
-      <LocalizationForm countries={countries} email={email} initial={profile ?? null} />
-    </main>
+    <>
+      <main
+        className="odesseus-desktop-only"
+        style={{ minHeight: "100vh", padding: "24px 16px 80px" }}
+      >
+        <LocalizationForm countries={countries} email={email} initial={profile ?? null} />
+      </main>
+      <MobileLanguageRegion
+        countries={countries}
+        email={email}
+        initial={profile ?? null}
+      />
+    </>
   );
 }
