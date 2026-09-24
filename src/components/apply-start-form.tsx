@@ -23,7 +23,7 @@ export default function ApplyStartForm({
     const response = await fetch("/api/apply/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId, targetUrl: url }),
+      body: JSON.stringify({ jobId, targetUrl: url, mode }),
     });
 
     const data = await response.json();
@@ -63,7 +63,7 @@ export default function ApplyStartForm({
       {error ? <div className="apply-error">{error}</div> : null}
 
       <button className="btn btn-primary" type="submit" disabled={busy}>
-        {busy ? "Starting secure browser…" : "Start application"}
+        {busy ? "Starting secure browser…" : mode === "smart_apply" ? "Start Smart Apply · $1.99" : "Start Apply · $0.49"}
       </button>
     </form>
   );
