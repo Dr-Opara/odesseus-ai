@@ -502,6 +502,7 @@ export type Database = {
           live_unlimited_until: string | null
           updated_at: string
           user_id: string
+          wallet_balance_cents: number
         }
         Insert: {
           application_credits?: number
@@ -509,6 +510,7 @@ export type Database = {
           live_unlimited_until?: string | null
           updated_at?: string
           user_id: string
+          wallet_balance_cents?: number
         }
         Update: {
           application_credits?: number
@@ -516,12 +518,14 @@ export type Database = {
           live_unlimited_until?: string | null
           updated_at?: string
           user_id?: string
+          wallet_balance_cents?: number
         }
         Relationships: []
       }
       credit_transactions: {
         Row: {
           amount_cents: number | null
+          balance_cents_after: number | null
           created_at: string
           credit_type: string
           delta: number
@@ -533,6 +537,7 @@ export type Database = {
         }
         Insert: {
           amount_cents?: number | null
+          balance_cents_after?: number | null
           created_at?: string
           credit_type: string
           delta: number
@@ -544,6 +549,7 @@ export type Database = {
         }
         Update: {
           amount_cents?: number | null
+          balance_cents_after?: number | null
           created_at?: string
           credit_type?: string
           delta?: number
@@ -1743,6 +1749,21 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      odesseus_finalize_application: {
+        Args: {
+          p_confirmation_text: string
+          p_mode: string
+          p_page_url?: string
+          p_run_id: string
+          p_user_id: string
+        }
+        Returns: {
+          already_finalized: boolean
+          amount_debited_cents: number
+          application_id: string
+          run_id: string
+        }[]
       }
       odesseus_finalize_successful_application: {
         Args: {

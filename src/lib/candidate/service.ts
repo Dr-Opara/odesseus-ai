@@ -71,7 +71,9 @@ export async function getCreditBalance(
 ): Promise<CreditBalance> {
   const { data, error } = await client
     .from("credit_balances")
-    .select("application_credits,interview_passes,live_unlimited_until")
+    .select(
+      "application_credits,interview_passes,live_unlimited_until,wallet_balance_cents"
+    )
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -80,12 +82,13 @@ export async function getCreditBalance(
   }
   const row = data as Pick<
     CreditBalance,
-    "application_credits" | "interview_passes" | "live_unlimited_until"
+    "application_credits" | "interview_passes" | "live_unlimited_until" | "wallet_balance_cents"
   > | null;
   return {
     application_credits: row?.application_credits ?? 0,
     interview_passes: row?.interview_passes ?? 0,
     live_unlimited_until: row?.live_unlimited_until ?? null,
+    wallet_balance_cents: row?.wallet_balance_cents ?? 0,
   };
 }
 

@@ -18,9 +18,9 @@ import type { PricingProduct } from "@/lib/pricing/types";
 
 const PRODUCTS: PricedRow[] = [
   {
-    product_key: "candidate_application_single",
+    product_key: "candidate_standard_apply",
     family: "candidate",
-    display_name: "Single application credit",
+    display_name: "Standard Apply",
     billing_type: "one_time",
     billing_period_days: null,
     active: true,
@@ -36,9 +36,9 @@ const PRODUCTS: PricedRow[] = [
     metadata: {},
   },
   {
-    product_key: "employer_starter_bundle",
+    product_key: "employer_starter",
     family: "employer",
-    display_name: "Employer starter bundle",
+    display_name: "Employer starter plan",
     billing_type: "recurring",
     billing_period_days: 30,
     active: true,
@@ -47,9 +47,9 @@ const PRODUCTS: PricedRow[] = [
 ];
 
 const USD_PRICES: PricedRow[] = [
-  { product_key: "candidate_application_single", market_key: "USD_US", currency: "USD", amount_minor: 99, active: true, effective_from: null, effective_until: null },
+  { product_key: "candidate_standard_apply", market_key: "USD_US", currency: "USD", amount_minor: 49, active: true, effective_from: null, effective_until: null },
   { product_key: "candidate_live_single", market_key: "USD_US", currency: "USD", amount_minor: 2499, active: true, effective_from: null, effective_until: null },
-  { product_key: "employer_starter_bundle", market_key: "USD_US", currency: "USD", amount_minor: 10000, active: true, effective_from: null, effective_until: null },
+  { product_key: "employer_starter", market_key: "USD_US", currency: "USD", amount_minor: 7900, active: true, effective_from: null, effective_until: null },
 ];
 
 const MARKETS: PricedRow[] = [
@@ -193,10 +193,10 @@ describe("buildLocalizedPrice (pure)", () => {
     const entry = buildLocalizedPrice(product, price, "USD_US", false, "en-US");
 
     expect(entry.available).toBe(true);
-    expect(entry.amount_minor).toBe(99);
+    expect(entry.amount_minor).toBe(49);
     expect(Number.isInteger(entry.amount_minor)).toBe(true);
     expect(entry.currency).toBe("USD");
-    expect(entry.formatted_price).toBe("$0.99");
+    expect(entry.formatted_price).toBe("$0.49");
     expect(entry.is_fallback).toBe(false);
   });
 
@@ -239,9 +239,9 @@ describe("getLocalizedPrices", () => {
     expect(prices.every((p) => p.available)).toBe(true);
     expect(prices.every((p) => p.is_fallback)).toBe(false);
     expect(prices.map((p) => [p.product_key, p.amount_minor])).toEqual([
-      ["candidate_application_single", 99],
+      ["candidate_standard_apply", 49],
       ["candidate_live_single", 2499],
-      ["employer_starter_bundle", 10000],
+      ["employer_starter", 7900],
     ]);
   });
 
@@ -259,12 +259,12 @@ describe("getLocalizedPrices", () => {
 
   it("returns no_price when even the fallback market lacks a price for a product", async () => {
     const client = makeClient({
-      prices: USD_PRICES.filter((p) => p.product_key !== "employer_starter_bundle"),
+      prices: USD_PRICES.filter((p) => p.product_key !== "employer_starter"),
     });
     const market = { market_key: "NGN_NG", name: "Nigeria (NGN)", currency: "NGN", locale: "en-NG", region: null, active: true };
     const prices = await getLocalizedPrices(client, market, "en-NG");
 
-    const employer = prices.find((p) => p.product_key === "employer_starter_bundle");
+    const employer = prices.find((p) => p.product_key === "employer_starter");
     expect(employer?.available).toBe(false);
     expect(employer?.reason).toBe(UNAVAILABLE_REASONS.NO_PRICE);
   });
@@ -272,7 +272,7 @@ describe("getLocalizedPrices", () => {
   it("treats a price outside its effective window as unavailable", async () => {
     const client = makeClient({
       prices: USD_PRICES.map((p) =>
-        p.product_key === "employer_starter_bundle"
+        p.product_key === "employer_starter"
           ? { ...p, effective_from: "2999-01-01T00:00:00.000Z" }
           : p
       ),
@@ -280,7 +280,7 @@ describe("getLocalizedPrices", () => {
     const market = { market_key: FALLBACK_MARKET_KEY, name: "US", currency: "USD", locale: "en-US", region: null, active: true };
     const prices = await getLocalizedPrices(client, market, "en-US");
 
-    const employer = prices.find((p) => p.product_key === "employer_starter_bundle");
+    const employer = prices.find((p) => p.product_key === "employer_starter");
     expect(employer?.available).toBe(false);
     expect(employer?.reason).toBe(UNAVAILABLE_REASONS.NO_PRICE);
   });
