@@ -2,6 +2,7 @@ import Link from "next/link";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 import MobileScreen from "@/components/mobile/mobile-screen";
+import MobilePricing from "@/components/mobile/mobile-pricing";
 import {
   APPLY_TIERS,
   EMPLOYER_PLANS,
@@ -104,92 +105,8 @@ export default function PricingPage() {
         <MarketingFooter />
       </main>
 
-      <MobileScreen index="30" title="Pricing" lead="Pay for what you use. Prep is free." minHeight={1840}>
-        <p className="m-eyebrow" style={{ margin: "4px 4px 8px" }}>CANDIDATE</p>
-        <div className="m-list">
-          <div className="m-card">
-            <span className="m-copy">
-              <strong>{APPLY_TIERS.standard.label} · {APPLY_TIERS.standard.priceLabel}</strong>
-              <small>{APPLY_TIERS.standard.description}</small>
-            </span>
-          </div>
-          <div className="m-card">
-            <span className="m-copy">
-              <strong>{APPLY_TIERS.smart.label} · {APPLY_TIERS.smart.priceLabel}</strong>
-              <small>{APPLY_TIERS.smart.description}</small>
-            </span>
-          </div>
-          {WALLET_TOPUP_AMOUNTS_CENTS.map((amountCents) => (
-            <div className="m-card" key={amountCents}>
-              <span className="m-copy">
-                <strong>Wallet top-up · {formatCents(amountCents)}</strong>
-                <small>Spend on Standard or Smart Apply as you go</small>
-              </span>
-            </div>
-          ))}
-          <div className="m-card">
-            <span className="m-copy">
-              <strong>Interview preparation · Free</strong>
-              <small>Role-based questions, STAR stories and technical prep</small>
-            </span>
-          </div>
-        </div>
-
-        <p className="m-eyebrow" style={{ margin: "20px 4px 8px" }}>EMPLOYER</p>
-        <div className="m-list">
-          {EMPLOYER_PLANS.map((plan) => (
-            <div className="m-card" key={plan.name}>
-              <span className="m-copy">
-                <strong>{plan.name} · {plan.priceLabel}{plan.unit}</strong>
-                <small>{plan.jobs}</small>
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <p className="m-eyebrow" style={{ margin: "20px 4px 8px" }}>PROMOTIONS</p>
-        <div className="m-list">
-          {PROMOTION_PLANS.map((plan) => (
-            <div className="m-card" key={`${plan.name}-${plan.unit}`}>
-              <span className="m-copy">
-                <strong>{plan.name} · {plan.priceLabel}</strong>
-                <small>{plan.unit.replace(/^\//, "").trim()}</small>
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <p className="m-eyebrow" style={{ margin: "20px 4px 8px" }}>RECRUITER</p>
-        <div className="m-list">
-          <div className="m-card">
-            <span className="m-copy">
-              <strong>Additional seat · {RECRUITER_SEAT_PRICE_LABEL}/mo</strong>
-              <small>Add teammates as your hiring team grows</small>
-            </span>
-          </div>
-        </div>
-
-        <p className="m-eyebrow" style={{ margin: "20px 4px 8px" }}>ODESSEUS LIVE</p>
-        <div className="m-list">
-          {LIVE_PLANS.map((plan) => (
-            <div className="m-card" key={plan.name}>
-              <span className="m-copy">
-                <strong>{plan.name} · {plan.priceLabel}</strong>
-                <small>{plan.unit.replace(/^\//, "").trim() || "one pass per session"}</small>
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="m-card" style={{ marginTop: 20 }}>
-          <span className="m-copy">
-            <strong>Application tracking · Included</strong>
-            <small>Tracked with every account</small>
-          </span>
-        </div>
-
-        <p className="m-note">Localized market pricing can be shown based on account or billing region.</p>
-        <Link className="m-action" style={{ display: "block", textAlign: "center", textDecoration: "none" }} href="/signup">Get Started →</Link>
+      <MobileScreen index="30" title="Pricing" lead="Pay for what you use. Prep is free." minHeight={1000}>
+        <MobilePricing />
       </MobileScreen>
     </>
   );

@@ -67,9 +67,16 @@ export default function MobileSplash() {
           Find roles that fit your experience, strengthen your resume, apply with your
           approval, and prepare for what comes next.
         </p>
-        <Link href="/signup" className="m-primary">
-          <span>Get Started</span>
-          <b aria-hidden="true">→</b>
+        <div className="m-splash-ctas">
+          <Link href="/signup" className="m-splash-cta is-primary">
+            Get Started <b aria-hidden="true">→</b>
+          </Link>
+          <Link href="/employers/login" className="m-splash-cta is-ghost">
+            Business Login
+          </Link>
+        </div>
+        <Link href="/pricing" className="m-splash-cta-wide">
+          View Pricing <b aria-hidden="true">→</b>
         </Link>
 
         <div className="m-splash-pagination" aria-hidden="true">

@@ -35,6 +35,61 @@ test.describe("mobile landing splash (screen 00)", () => {
   });
 });
 
+test.describe("mobile splash CTA area (screen 00)", () => {
+  const viewports = [
+    { name: "390x844", width: 390, height: 844 },
+    { name: "393x852", width: 393, height: 852 },
+    { name: "430x932", width: 430, height: 932 },
+  ] as const;
+
+  for (const vp of viewports) {
+    test(`${vp.name}: pills sit side-by-side with a full-width View Pricing button below`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await page.goto("/");
+      const splash = page.locator(".m-splash");
+
+      const getStarted = splash.getByRole("link", { name: /Get Started/i });
+      const businessLogin = splash.getByRole("link", { name: "Business Login" });
+      const viewPricing = splash.getByRole("link", { name: /View Pricing/i });
+
+      await expect(getStarted).toBeVisible();
+      await expect(businessLogin).toBeVisible();
+      await expect(viewPricing).toBeVisible();
+      await expect(getStarted).toHaveAttribute("href", "/signup");
+      await expect(businessLogin).toHaveAttribute("href", "/employers/login");
+      await expect(viewPricing).toHaveAttribute("href", "/pricing");
+
+      const a = await splash.locator(".m-splash-cta").nth(0).boundingBox();
+      const b = await splash.locator(".m-splash-cta").nth(1).boundingBox();
+      const w = await splash.locator(".m-splash-cta-wide").boundingBox();
+      expect(a).not.toBeNull();
+      expect(b).not.toBeNull();
+      expect(w).not.toBeNull();
+      // Both pills share one row on the ~390px canvas and stay touch-friendly.
+      expect(Math.abs(a!.y - b!.y)).toBeLessThanOrEqual(2);
+      expect(a!.height).toBeGreaterThanOrEqual(48);
+      // View Pricing sits on its own row below the pills and spans the column.
+      expect(w!.y).toBeGreaterThan(b!.y + b!.height - 1);
+      expect(w!.width).toBeGreaterThan(200);
+    });
+
+    test(`${vp.name}: splash CTAs route to signup, employer login, and pricing`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await page.goto("/");
+      const splash = page.locator(".m-splash");
+
+      await splash.getByRole("link", { name: /Get Started/i }).click();
+      await expect(page).toHaveURL(/\/signup$/);
+      await page.goto("/");
+      await splash.getByRole("link", { name: "Business Login" }).click();
+      await expect(page).toHaveURL(/\/employers\/login$/);
+      await page.goto("/");
+      await splash.getByRole("link", { name: /View Pricing/i }).click();
+      await expect(page).toHaveURL(/\/pricing$/);
+    });
+  }
+});
+
 test.describe("mobile auth boundary at phone width", () => {
   const protectedRoutes = [
     "/dashboard",
@@ -69,4 +124,37 @@ test.describe("mobile auth boundary at phone width", () => {
     await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
     await expect(page.getByLabel("Email")).toBeVisible();
   });
+});
+
+test.describe("public mobile pages at phone width (signed out)", () => {
+  const publicRoutes = [
+    "/pricing",
+    "/about",
+    "/faq",
+    "/support",
+    "/legal",
+    "/terms",
+    "/privacy",
+    "/accessibility",
+    "/licenses",
+    "/employers",
+    "/employers/pricing",
+    "/employers/login",
+    "/signup",
+    "/partners",
+    "/how-it-works",
+  ] as const;
+
+  for (const route of publicRoutes) {
+    test(`${route} stays public and never shows the authenticated bottom nav`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(route);
+      // No redirect to the candidate login: the signed-out visitor lands on
+      // the public route itself.
+      expect(new URL(page.url()).pathname).toBe(route);
+      await expect(page.locator("body")).toBeVisible();
+      await expect(page.locator(".m-bottom-nav")).toHaveCount(0);
+      await expect(page.locator(".mobile-app-bottom-nav")).toHaveCount(0);
+    });
+  }
 });

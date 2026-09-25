@@ -25,7 +25,7 @@ export default async function EmployerLoginPage({ searchParams }: { searchParams
               </label>
               <button className="figma-btn figma-btn-orange" type="submit" style={{ width: "100%", marginTop: 24 }}>Sign In</button>
             </form>
-            <p style={{ marginTop: 18 }}>New to Odesseus for Employers? <Link href="/employers/signup" className="link">Create an employer account</Link></p>
+            <p className="odesseus-desktop-only" style={{ marginTop: 18 }}>New to Odesseus for Employers? <Link href="/employers/signup" className="link">Create an employer account</Link></p>
             <p className="muted" style={{ marginTop: 10, fontSize: 13 }}>Looking for jobs? <Link href="/login" className="link">Candidate Sign In</Link></p>
           </div>
         </section>
