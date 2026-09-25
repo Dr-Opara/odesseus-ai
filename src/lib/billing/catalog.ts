@@ -73,3 +73,12 @@ export const employerPlans = {
 } as const;
 
 export type EmployerPlanSku = keyof typeof employerPlans;
+
+// Recruiter seats are billed per seat per month ($20). Each seat is a line on
+// an employer subscription; a subscription's seat_count x 2000 must match the
+// paid invoice before the webhook syncs recruiter_seats.
+export const employerRecruiterSeat = {
+  label: "Recruiter Seat",
+  description: "Additional employer-team seat, billed monthly per seat",
+  amountCents: 2000,
+} as const;

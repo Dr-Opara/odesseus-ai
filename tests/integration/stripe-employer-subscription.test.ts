@@ -227,3 +227,173 @@ describe("Stripe webhook employer subscription sync", () => {
     expect(rpcMock).not.toHaveBeenCalled();
   });
 });
+
+function recruiterSeatInvoicePaidEvent(overrides: {
+  seatCount?: number;
+  orgId?: string;
+  eventId?: string;
+  amountPaid?: number | null;
+  currency?: string;
+  subscription?: string | null;
+  periodStart?: number;
+  periodEnd?: number;
+}) {
+  const {
+    seatCount = 3,
+    orgId = "org-2",
+    eventId = "evt_seat_inv_1",
+    amountPaid,
+    currency = "usd",
+    subscription = "sub_seats_1",
+    periodStart = 1_730_000_000,
+    periodEnd = 1_732_000_000,
+  } = overrides;
+
+  const charged = amountPaid ?? seatCount * 2000;
+
+  return {
+    id: eventId,
+    type: "invoice.paid",
+    data: {
+      object: {
+        id: "in_seat_1",
+        customer: "cus_2",
+        amount_paid: charged,
+        total: charged,
+        currency,
+        status: "paid",
+        period_start: periodStart,
+        period_end: periodEnd,
+        parent: {
+          type: "subscription_details",
+          subscription_details: {
+            metadata: {
+              odesseus_org_id: orgId,
+              odesseus_recruiter_seats: "true",
+              odesseus_seat_count: String(seatCount),
+            },
+            subscription,
+          },
+        },
+      },
+    },
+  };
+}
+
+function recruiterSeatLifecycleEvent(
+  type: "customer.subscription.updated" | "customer.subscription.deleted",
+  overrides: {
+    seatCount?: number;
+    orgId?: string;
+    status?: string;
+  } = {}
+) {
+  const { seatCount = 3, orgId = "org-2", status = "past_due" } = overrides;
+  return {
+    id: type === "customer.subscription.deleted" ? "evt_seat_sub_del_1" : "evt_seat_sub_upd_1",
+    type,
+    data: {
+      object: {
+        id: "sub_seats_1",
+        customer: "cus_2",
+        status,
+        metadata: {
+          odesseus_org_id: orgId,
+          odesseus_recruiter_seats: "true",
+          odesseus_seat_count: String(seatCount),
+        },
+      },
+    },
+  };
+}
+
+describe("Stripe webhook recruiter seat sync", () => {
+  beforeEach(() => {
+    constructEventMock.mockReset();
+    rpcMock.mockReset();
+    createClientMock.mockClear();
+    rpcMock.mockResolvedValue({ data: null, error: null });
+  });
+
+  it("syncs seats at seatCount x $20 on a paid invoice", async () => {
+    constructEventMock.mockReturnValue(recruiterSeatInvoicePaidEvent({ seatCount: 4 }));
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route");
+    const response = await POST(webhookRequest("{}"));
+
+    expect(response.status).toBe(200);
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    const [fnName, args] = rpcMock.mock.calls[0];
+    expect(fnName).toBe("odesseus_sync_recruiter_seat");
+    expect(args.p_org_id).toBe("org-2");
+    expect(args.p_count).toBe(4);
+    expect(args.p_status).toBe("active");
+    expect(args.p_stripe_subscription_id).toBe("sub_seats_1");
+    expect(args.p_period_start).toBe(new Date(1_730_000_000 * 1000).toISOString());
+    expect(args.p_period_end).toBe(new Date(1_732_000_000 * 1000).toISOString());
+  });
+
+  it("fails closed when the seat amount does not match seatCount x $20", async () => {
+    constructEventMock.mockReturnValue(
+      recruiterSeatInvoicePaidEvent({ seatCount: 4, amountPaid: 7999 })
+    );
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route");
+    const response = await POST(webhookRequest("{}"));
+
+    expect(response.status).toBe(400);
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed on a non-USD seat invoice", async () => {
+    constructEventMock.mockReturnValue(
+      recruiterSeatInvoicePaidEvent({ currency: "gbp" })
+    );
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route");
+    const response = await POST(webhookRequest("{}"));
+
+    expect(response.status).toBe(400);
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it("acknowledges an invoice lacking the recruiter-seat marker without syncing seats", async () => {
+    const event = recruiterSeatInvoicePaidEvent({});
+    (event.data.object as { parent: { subscription_details: { metadata: Record<string, string> } } }).parent.subscription_details.metadata = {
+      odesseus_org_id: "org-2",
+    };
+    constructEventMock.mockReturnValue(event);
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route");
+    const response = await POST(webhookRequest("{}"));
+
+    expect(response.status).toBe(200);
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it("syncs a canceled seat subscription as voided", async () => {
+    constructEventMock.mockReturnValue(
+      recruiterSeatLifecycleEvent("customer.subscription.deleted")
+    );
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route");
+    const response = await POST(webhookRequest("{}"));
+
+    expect(response.status).toBe(200);
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    const [fnName, args] = rpcMock.mock.calls[0];
+    expect(fnName).toBe("odesseus_sync_recruiter_seat");
+    expect(args.p_status).toBe("canceled");
+    expect(args.p_count).toBe(3);
+  });
+
+  it("returns 500 when the seat sync RPC fails", async () => {
+    constructEventMock.mockReturnValue(recruiterSeatInvoicePaidEvent({}));
+    rpcMock.mockResolvedValue({ data: null, error: { message: "boom" } });
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route");
+    const response = await POST(webhookRequest("{}"));
+
+    expect(response.status).toBe(500);
+  });
+});

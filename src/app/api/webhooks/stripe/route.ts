@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
-import { billingCatalog, type BillingSku, employerPlans, type EmployerPlanSku } from "@/lib/billing/catalog";
+import { billingCatalog, type BillingSku, employerPlans, type EmployerPlanSku, employerRecruiterSeat } from "@/lib/billing/catalog";
 import { createClient } from "@supabase/supabase-js";
 import { partnerService } from "@/lib/partners/service";
 
@@ -22,6 +22,11 @@ type EmployerSyncTarget = {
   plan: (typeof employerPlans)[EmployerPlanSku];
 };
 
+type RecruiterSeatSyncTarget = {
+  orgId: string;
+  seatCount: number;
+};
+
 /** Derive an employer-sync target from Stripe metadata. Returns null when the
  * event does not belong to an Odesseus employer subscription. */
 function employerSyncFromMetadata(metadata?: Stripe.Metadata | null): EmployerSyncTarget | null {
@@ -31,6 +36,17 @@ function employerSyncFromMetadata(metadata?: Stripe.Metadata | null): EmployerSy
   const plan = Object.values(employerPlans).find((p) => p.tier === tier);
   if (!plan) return null;
   return { orgId, tier: tier as (typeof EMPLOYER_TIERS)[number], plan };
+}
+
+/** Derive a recruiter-seat sync target from Stripe metadata. Requires the
+ * explicit odesseus_recruiter_seats marker and a positive seat count; sessions
+ * without it are not recruiter-seat subscriptions. */
+function recruiterSeatSyncFromMetadata(metadata?: Stripe.Metadata | null): RecruiterSeatSyncTarget | null {
+  if (metadata?.odesseus_recruiter_seats !== "true") return null;
+  const orgId = metadata?.odesseus_org_id;
+  const seatCount = Number(metadata?.odesseus_seat_count);
+  if (!orgId || !Number.isInteger(seatCount) || seatCount < 1) return null;
+  return { orgId, seatCount };
 }
 
 /** Shared employer subscription sync used by invoice.paid and the
@@ -61,6 +77,33 @@ async function syncEmployerSubscription(
   if (error) throw error;
 }
 
+/** Shared recruiter-seat sync used by invoice.paid and the
+ * customer.subscription.* lifecycle events. The seat count always originates
+ * from the money-verified path; status-only events pass their metadata count
+ * (the RPC voids it for canceled/incomplete rather than adding seats). */
+async function syncRecruiterSeat(
+  supabase: ReturnType<typeof createServiceClient>,
+  target: RecruiterSeatSyncTarget,
+  args: {
+    status: string;
+    stripeSubscriptionId: string | null;
+    stripeCustomerId: string | null;
+    periodStart: Date | null;
+    periodEnd: Date | null;
+  }
+) {
+  const { error } = await supabase.rpc("odesseus_sync_recruiter_seat", {
+    p_org_id: target.orgId,
+    p_count: target.seatCount,
+    p_status: args.status,
+    p_stripe_subscription_id: args.stripeSubscriptionId,
+    p_stripe_customer_id: args.stripeCustomerId,
+    p_period_start: args.periodStart?.toISOString() ?? null,
+    p_period_end: args.periodEnd?.toISOString() ?? null,
+  });
+  if (error) throw error;
+}
+
 // invoice.paid is the money-verified employer event: the charged amount must
 // match the plan's catalog price or the webhook fails closed without granting
 // a cycle's job-post credits. A replayed event is a no-op — the sync RPC keys
@@ -69,7 +112,14 @@ async function syncEmployerSubscription(
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
   // In this Stripe API version the subscription that generated the invoice and
   // its metadata snapshot live under invoice.parent.subscription_details.
-  const sync = employerSyncFromMetadata(invoice.parent?.subscription_details?.metadata);
+  const metadata = invoice.parent?.subscription_details?.metadata;
+
+  // Recruiter seats are their own subscription with a seat-counted price: the
+  // paid amount must equal seatCount x $20, or the webhook fails closed.
+  const seatTarget = recruiterSeatSyncFromMetadata(metadata);
+  if (seatTarget) return handleRecruiterSeatInvoicePaid(invoice, seatTarget);
+
+  const sync = employerSyncFromMetadata(metadata);
   if (!sync) return NextResponse.json({ received: true });
 
   // Fail closed like the checkout path: an invoice charged for an amount or
@@ -106,6 +156,44 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   }
 }
 
+// Recruiter-seat invoices are seat-counted: charged == seatCount x $20. Any
+// mismatch is a 400 and nothing is synced (no silent entitlement).
+async function handleRecruiterSeatInvoicePaid(
+  invoice: Stripe.Invoice,
+  target: RecruiterSeatSyncTarget
+) {
+  const charged = invoice.amount_paid ?? invoice.total;
+  const currency = invoice.currency ?? "usd";
+  const expected = target.seatCount * employerRecruiterSeat.amountCents;
+  if (charged !== expected || currency !== "usd") {
+    return NextResponse.json(
+      { error: "Invoice amount or currency does not match the recruiter seat price." },
+      { status: 400 }
+    );
+  }
+
+  const parentSubscription = invoice.parent?.subscription_details?.subscription;
+  const subscriptionId =
+    typeof parentSubscription === "string" ? parentSubscription : null;
+  const periodStart = invoice.period_start ? new Date(invoice.period_start * 1000) : null;
+  const periodEnd = invoice.period_end ? new Date(invoice.period_end * 1000) : null;
+
+  try {
+    const supabase = createServiceClient();
+    await syncRecruiterSeat(supabase, target, {
+      status: "active",
+      stripeSubscriptionId: subscriptionId,
+      stripeCustomerId: typeof invoice.customer === "string" ? invoice.customer : null,
+      periodStart,
+      periodEnd,
+    });
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error("[ODESSEUS_EMPLOYER] recruiter seat sync failed", error);
+    return NextResponse.json({ error: "Could not sync recruiter seats." }, { status: 500 });
+  }
+}
+
 // Lifecycle events (updated/deleted) sync subscription status only — credits
 // are granted exclusively by the money-verified invoice.paid path. A deleted
 // subscription is recorded as canceled so the org stops accruing quota.
@@ -116,8 +204,9 @@ async function handleSubscriptionLifecycle(
   subscription: Stripe.Subscription,
   eventType: "customer.subscription.updated" | "customer.subscription.deleted"
 ) {
-  const sync = employerSyncFromMetadata(subscription.metadata);
-  if (!sync) return NextResponse.json({ received: true });
+  const seatTarget = recruiterSeatSyncFromMetadata(subscription.metadata);
+  const planTarget = employerSyncFromMetadata(subscription.metadata);
+  if (!seatTarget && !planTarget) return NextResponse.json({ received: true });
 
   const status = eventType === "customer.subscription.deleted" ? "canceled" : subscription.status;
   if (!["active", "past_due", "canceled", "trialing", "incomplete"].includes(status)) {
@@ -126,14 +215,25 @@ async function handleSubscriptionLifecycle(
 
   try {
     const supabase = createServiceClient();
-    await syncEmployerSubscription(supabase, sync, {
-      status,
-      stripeSubscriptionId: subscription.id,
-      stripeCustomerId: typeof subscription.customer === "string" ? subscription.customer : null,
-      periodStart: null,
-      periodEnd: null,
-      grantCredits: false,
-    });
+    const stripeCustomerId = typeof subscription.customer === "string" ? subscription.customer : null;
+    if (seatTarget) {
+      await syncRecruiterSeat(supabase, seatTarget, {
+        status,
+        stripeSubscriptionId: subscription.id,
+        stripeCustomerId,
+        periodStart: null,
+        periodEnd: null,
+      });
+    } else if (planTarget) {
+      await syncEmployerSubscription(supabase, planTarget, {
+        status,
+        stripeSubscriptionId: subscription.id,
+        stripeCustomerId,
+        periodStart: null,
+        periodEnd: null,
+        grantCredits: false,
+      });
+    }
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] subscription lifecycle sync failed", error);
