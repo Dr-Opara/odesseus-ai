@@ -42,3 +42,34 @@ export const billingCatalog = {
   // positive placeholder only to satisfy billing_events_credit_delta_check.
   interview_annual: { label: "Odesseus Live Annual", description: "Odesseus Live access for 12 months, subject to fair use", amountCents: 49900, creditType: "interview" as const, creditDelta: 1 },
 } as const;
+
+// Employer plans are recurring subscriptions: the recurring plan price is the
+// monthly charge, and jobPostsIncluded is the per-cycle job-post credit grant
+// (Starter 3 / Growth 10 / Business 25). These are not one-time checkout SKUs:
+// they are sold through a subscription checkout, and the webhook verifies the
+// paid invoice amount against this catalog before granting a cycle's credits.
+export const employerPlans = {
+  employer_starter: {
+    label: "Employer Starter",
+    description: "3 active job postings per month",
+    amountCents: 7900,
+    tier: "starter" as const,
+    jobPostsIncluded: 3,
+  },
+  employer_growth: {
+    label: "Employer Growth",
+    description: "10 active job postings per month",
+    amountCents: 14900,
+    tier: "growth" as const,
+    jobPostsIncluded: 10,
+  },
+  employer_business: {
+    label: "Employer Business",
+    description: "25 active job postings per month",
+    amountCents: 29900,
+    tier: "business" as const,
+    jobPostsIncluded: 25,
+  },
+} as const;
+
+export type EmployerPlanSku = keyof typeof employerPlans;

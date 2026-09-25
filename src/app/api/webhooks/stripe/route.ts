@@ -1,17 +1,144 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
-import { billingCatalog, type BillingSku } from "@/lib/billing/catalog";
+import { billingCatalog, type BillingSku, employerPlans, type EmployerPlanSku } from "@/lib/billing/catalog";
 import { createClient } from "@supabase/supabase-js";
 import { partnerService } from "@/lib/partners/service";
 
 export const runtime = "nodejs";
+
+const EMPLOYER_TIERS = ["starter", "growth", "business"] as const;
 
 function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) throw new Error("Supabase service credentials are not configured.");
   return createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
+type EmployerSyncTarget = {
+  orgId: string;
+  tier: (typeof EMPLOYER_TIERS)[number];
+  plan: (typeof employerPlans)[EmployerPlanSku];
+};
+
+/** Derive an employer-sync target from Stripe metadata. Returns null when the
+ * event does not belong to an Odesseus employer subscription. */
+function employerSyncFromMetadata(metadata?: Stripe.Metadata | null): EmployerSyncTarget | null {
+  const orgId = metadata?.odesseus_org_id;
+  const tier = metadata?.odesseus_tier;
+  if (!orgId || !tier || !EMPLOYER_TIERS.includes(tier as (typeof EMPLOYER_TIERS)[number])) return null;
+  const plan = Object.values(employerPlans).find((p) => p.tier === tier);
+  if (!plan) return null;
+  return { orgId, tier: tier as (typeof EMPLOYER_TIERS)[number], plan };
+}
+
+/** Shared employer subscription sync used by invoice.paid and the
+ * customer.subscription.* lifecycle events. Money-verified periods pass
+ * grantCredits=true (only these may grant job-post credits). */
+async function syncEmployerSubscription(
+  supabase: ReturnType<typeof createServiceClient>,
+  target: EmployerSyncTarget,
+  args: {
+    status: string;
+    stripeSubscriptionId: string | null;
+    stripeCustomerId: string | null;
+    periodStart: Date | null;
+    periodEnd: Date | null;
+    grantCredits: boolean;
+  }
+) {
+  const { error } = await supabase.rpc("odesseus_sync_employer_subscription", {
+    p_org_id: target.orgId,
+    p_tier: target.tier,
+    p_status: args.status,
+    p_stripe_subscription_id: args.stripeSubscriptionId,
+    p_stripe_customer_id: args.stripeCustomerId,
+    p_period_start: args.periodStart?.toISOString() ?? null,
+    p_period_end: args.periodEnd?.toISOString() ?? null,
+    p_grant_credits: args.grantCredits,
+  });
+  if (error) throw error;
+}
+
+// invoice.paid is the money-verified employer event: the charged amount must
+// match the plan's catalog price or the webhook fails closed without granting
+// a cycle's job-post credits. A replayed event is a no-op — the sync RPC keys
+// its credit grant on the subscription period, so the same period can only
+// grant once (also mirrored in the migration's idempotency tests).
+async function handleInvoicePaid(invoice: Stripe.Invoice) {
+  // In this Stripe API version the subscription that generated the invoice and
+  // its metadata snapshot live under invoice.parent.subscription_details.
+  const sync = employerSyncFromMetadata(invoice.parent?.subscription_details?.metadata);
+  if (!sync) return NextResponse.json({ received: true });
+
+  // Fail closed like the checkout path: an invoice charged for an amount or
+  // currency that does not match the employer plan must not grant credits.
+  const charged = invoice.amount_paid ?? invoice.total;
+  const currency = invoice.currency ?? "usd";
+  if (charged !== sync.plan.amountCents || currency !== "usd") {
+    return NextResponse.json(
+      { error: "Invoice amount or currency does not match the employer plan." },
+      { status: 400 }
+    );
+  }
+
+  const parentSubscription = invoice.parent?.subscription_details?.subscription;
+  const subscriptionId =
+    typeof parentSubscription === "string" ? parentSubscription : null;
+  const periodStart = invoice.period_start ? new Date(invoice.period_start * 1000) : null;
+  const periodEnd = invoice.period_end ? new Date(invoice.period_end * 1000) : null;
+
+  try {
+    const supabase = createServiceClient();
+    await syncEmployerSubscription(supabase, sync, {
+      status: "active",
+      stripeSubscriptionId: subscriptionId,
+      stripeCustomerId: typeof invoice.customer === "string" ? invoice.customer : null,
+      periodStart,
+      periodEnd,
+      grantCredits: true,
+    });
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error("[ODESSEUS_EMPLOYER] subscription sync failed", error);
+    return NextResponse.json({ error: "Could not sync employer subscription." }, { status: 500 });
+  }
+}
+
+// Lifecycle events (updated/deleted) sync subscription status only — credits
+// are granted exclusively by the money-verified invoice.paid path. A deleted
+// subscription is recorded as canceled so the org stops accruing quota.
+// Subscription objects in this API version carry no current_period timestamps,
+// so status-only sync passes null periods; the RPC's upsert coalesces them with
+// the paid period recorded by invoice.paid instead of wiping it.
+async function handleSubscriptionLifecycle(
+  subscription: Stripe.Subscription,
+  eventType: "customer.subscription.updated" | "customer.subscription.deleted"
+) {
+  const sync = employerSyncFromMetadata(subscription.metadata);
+  if (!sync) return NextResponse.json({ received: true });
+
+  const status = eventType === "customer.subscription.deleted" ? "canceled" : subscription.status;
+  if (!["active", "past_due", "canceled", "trialing", "incomplete"].includes(status)) {
+    return NextResponse.json({ received: true });
+  }
+
+  try {
+    const supabase = createServiceClient();
+    await syncEmployerSubscription(supabase, sync, {
+      status,
+      stripeSubscriptionId: subscription.id,
+      stripeCustomerId: typeof subscription.customer === "string" ? subscription.customer : null,
+      periodStart: null,
+      periodEnd: null,
+      grantCredits: false,
+    });
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error("[ODESSEUS_EMPLOYER] subscription lifecycle sync failed", error);
+    return NextResponse.json({ error: "Could not sync employer subscription." }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -68,6 +195,14 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ received: true });
+  }
+
+  if (event.type === "invoice.paid") {
+    return handleInvoicePaid(event.data.object as Stripe.Invoice);
+  }
+
+  if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
+    return handleSubscriptionLifecycle(event.data.object as Stripe.Subscription, event.type);
   }
 
   if (event.type !== "checkout.session.completed") return NextResponse.json({ received: true });
