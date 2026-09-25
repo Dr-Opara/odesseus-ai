@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
-import { billingCatalog, type BillingSku, employerPlans, type EmployerPlanSku, employerRecruiterSeat } from "@/lib/billing/catalog";
+import { billingCatalog, type BillingSku, employerPlans, type EmployerPlanSku, employerRecruiterSeat, employerFeaturedTiers, type EmployerFeaturedTier } from "@/lib/billing/catalog";
 import { createClient } from "@supabase/supabase-js";
 import { partnerService } from "@/lib/partners/service";
 
@@ -241,6 +241,52 @@ async function handleSubscriptionLifecycle(
   }
 }
 
+// Featured listings are one-time purchases: the checkout session must carry
+// odesseus_org_id + odesseus_job_id + odesseus_featured_tier, and the charged
+// amount must match the featured catalog price or the webhook fails closed
+// without creating a listing. The RPC keys its insert on the payment intent,
+// so a replayed event returns the original listing instead of a duplicate.
+async function handleFeaturedListingCheckout(session: Stripe.Checkout.Session, event: Stripe.Event) {
+  const orgId = session.metadata?.odesseus_org_id;
+  const jobId = session.metadata?.odesseus_job_id;
+  const tier = session.metadata?.odesseus_featured_tier as EmployerFeaturedTier | undefined;
+  const item = tier ? employerFeaturedTiers[tier] : undefined;
+  if (!orgId || !jobId || !item) {
+    return NextResponse.json({ error: "Invalid featured checkout metadata." }, { status: 400 });
+  }
+
+  // Fail closed like the candidate path: a featured session charged for an
+  // amount or currency that does not match the catalog gets nothing.
+  const charged = session.amount_total;
+  const currency = session.currency ?? "usd";
+  if (charged !== item.amountCents || currency !== "usd") {
+    return NextResponse.json(
+      { error: "Checkout amount or currency does not match the featured listing." },
+      { status: 400 }
+    );
+  }
+
+  const paymentIntent = typeof session.payment_intent === "string" ? session.payment_intent : null;
+  if (!paymentIntent) {
+    return NextResponse.json({ error: "Featured checkout has no payment intent." }, { status: 400 });
+  }
+
+  try {
+    const supabase = createServiceClient();
+    const { error } = await supabase.rpc("odesseus_create_featured_listing", {
+      p_org_id: orgId,
+      p_job_id: jobId,
+      p_tier: tier,
+      p_stripe_payment_intent: paymentIntent,
+    });
+    if (error) throw error;
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error("[ODESSEUS_EMPLOYER] featured listing creation failed", error);
+    return NextResponse.json({ error: "Could not create featured listing." }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) return NextResponse.json({ error: "Webhook is not configured." }, { status: 500 });
@@ -309,6 +355,12 @@ export async function POST(request: Request) {
 
   const session = event.data.object as Stripe.Checkout.Session;
   if (session.payment_status !== "paid") return NextResponse.json({ received: true });
+
+  // Employer featured listings are one-time checkout purchases (not candidate
+  // wallet/earner SKUs). Route them before the candidate catalog path.
+  if (session.metadata?.odesseus_featured_tier) {
+    return handleFeaturedListingCheckout(session, event);
+  }
 
   const userId = session.metadata?.odesseus_user_id;
   const sku = session.metadata?.sku as BillingSku | undefined;

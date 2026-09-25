@@ -82,3 +82,30 @@ export const employerRecruiterSeat = {
   description: "Additional employer-team seat, billed monthly per seat",
   amountCents: 2000,
 } as const;
+
+// Featured listings are one-time purchases: boosted visibility for a fixed
+// window. tier values match public.featured_listings.tier exactly (the webhook
+// passes them through to odesseus_create_featured_listing after verifying the
+// paid checkout amount against this catalog).
+export const employerFeaturedTiers = {
+  featured_7d: {
+    label: "Featured — 7 days",
+    description: "Boosted visibility for 7 days",
+    amountCents: 2900,
+    days: 7,
+  },
+  featured_14d: {
+    label: "Featured — 14 days",
+    description: "Boosted visibility for 14 days",
+    amountCents: 4900,
+    days: 14,
+  },
+  ai_30d: {
+    label: "AI Featured — 30 days",
+    description: "AI-assisted boosted visibility for 30 days",
+    amountCents: 12900,
+    days: 30,
+  },
+} as const;
+
+export type EmployerFeaturedTier = keyof typeof employerFeaturedTiers;
