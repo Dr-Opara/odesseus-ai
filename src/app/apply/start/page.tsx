@@ -27,7 +27,7 @@ export default async function ApplyStartPage({
       .maybeSingle(),
     supabase
       .from("credit_balances")
-      .select("application_credits")
+      .select("wallet_balance_cents,application_credits")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -74,8 +74,8 @@ export default async function ApplyStartPage({
             <strong>{tailoring ? `Approved v${tailoring.version_number}` : "Not approved"}</strong>
           </div>
           <div className="card apply-preflight-item">
-            <span className="muted">Credits</span>
-            <strong>{credits?.application_credits ?? 0}</strong>
+            <span className="muted">Wallet</span>
+            <strong>${((credits?.wallet_balance_cents ?? 0) / 100).toFixed(2)}</strong>
           </div>
         </div>
 
@@ -83,17 +83,17 @@ export default async function ApplyStartPage({
           <div className="review-note">
             Approve a tailored resume before starting the application.
           </div>
-        ) : (credits?.application_credits ?? 0) < 1 ? (
+        ) : (credits?.wallet_balance_cents ?? 0) < 1 ? (
           <div className="review-note">
-            You need one application credit. <Link href="/billing" style={{ fontWeight: 700 }}>Buy credits</Link>
+            Your wallet needs funds to start Apply. <Link href="/billing" style={{ fontWeight: 700 }}>Top up</Link>
           </div>
         ) : (
           <ApplyStartForm jobId={job.id} defaultUrl={job.source_url} />
         )}
 
         <div className="apply-charge-note">
-          <strong>No credit is used when this starts.</strong>
-          <span>One application credit is consumed only after Odesseus verifies a successful submission.</span>
+          <strong>No charge when you start.</strong>
+          <span>Standard Apply $0.49 and Smart Apply $1.99 are charged only after Odesseus verifies a successful submission.</span>
         </div>
       </div>
     </main>

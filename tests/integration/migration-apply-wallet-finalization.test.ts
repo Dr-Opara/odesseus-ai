@@ -7,7 +7,10 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
 
 const MIGRATION =
   "supabase/migrations/20260925000000_apply_wallet_finalization.sql";
-const sql = readFileSync(path.join(repoRoot, MIGRATION), "utf8");
+// The repository stores LF, but Windows checkouts (core.autocrlf) may
+// materialize CRLF; make the file regexes and statement splitting
+// line-ending agnostic without altering the content under test.
+const sql = readFileSync(path.join(repoRoot, MIGRATION), "utf8").replace(/\r\n/g, "\n");
 
 /** Executable statements only (comments stripped) for "not built" checks. */
 function executableStatements(source: string): string[] {
