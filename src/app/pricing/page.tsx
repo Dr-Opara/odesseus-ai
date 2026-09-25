@@ -9,7 +9,6 @@ import {
   PROMOTION_PLANS,
   RECRUITER_SEAT_PRICE_LABEL,
   RECRUITER_SEAT_UNIT,
-  LIVE_PLANS,
   WALLET_TOPUP_AMOUNTS_CENTS,
   formatCents,
 } from "@/lib/pricing/candidate-pricing";
@@ -85,18 +84,6 @@ export default function PricingPage() {
               <h2>{RECRUITER_SEAT_PRICE_LABEL} <small style={{ fontSize: 16 }}>{RECRUITER_SEAT_UNIT}</small></h2>
               <p>Add teammates to your employer account as your hiring team grows.</p>
             </article>
-          </section>
-
-          <section style={{ margin: "40px 20px 8px" }}>
-            <span className="figma-eyebrow purple">ODESSEUS LIVE</span>
-          </section>
-          <section className="figma-three-grid compact">
-            {LIVE_PLANS.map((plan) => (
-              <article className="figma-price-card" key={plan.name}>
-                <strong>{plan.priceLabel}</strong>
-                <p>{plan.name} {plan.unit}</p>
-              </article>
-            ))}
           </section>
 
           <p className="figma-price-note">Localized market pricing can be shown based on account or billing region.</p>

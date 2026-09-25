@@ -5,7 +5,6 @@ import { useState } from "react";
 import {
   APPLY_TIERS,
   EMPLOYER_PLANS,
-  LIVE_PLANS,
   PREP_AGENT_PRICE_LABEL,
   PROMOTION_PLANS,
   RECRUITER_SEAT_PRICE_LABEL,
@@ -80,22 +79,6 @@ export default function MobilePricing() {
             </span>
           </div>
         </div>
-
-        <p className="m-eyebrow" style={{ margin: "20px 4px 8px" }}>ODESSEUS LIVE</p>
-        <div className="m-list">
-          {LIVE_PLANS.map((plan) => (
-            <div className="m-card" key={plan.name}>
-              <span className="m-copy">
-                <strong>{plan.name} · {plan.priceLabel}</strong>
-                <small>{plan.unit.replace(/^\//, "").trim() || "one pass per session"}</small>
-              </span>
-            </div>
-          ))}
-        </div>
-        <p className="m-note">
-          Odesseus Live runs in a desktop/web-browser session — there is no live
-          interview workflow in the mobile app.
-        </p>
 
         <div className="m-card" style={{ marginTop: 14 }}>
           <span className="m-copy">

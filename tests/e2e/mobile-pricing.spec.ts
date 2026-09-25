@@ -35,12 +35,13 @@ test.describe("mobile /pricing audience tabs (signed out)", () => {
       for (const figure of ["$0.49", "$1.99", "$10", "$20", "$50"]) {
         await expect(page.getByText(figure).filter({ visible: true }).first()).toBeVisible();
       }
-      await expect(page.getByText(/Interview preparation Â· Free/i)).toBeVisible();
-      // Live plans with an explicit desktop/web-only note (no mobile Live flow).
+      await expect(page.getByText(/Interview preparation · Free/i)).toBeVisible();
+      // Odesseus Live is private to signed-in applicants. The public mobile
+      // pricing surface must not advertise session prices, passes, or annual.
       for (const figure of ["$24.99", "$59.99", "$499"]) {
-        await expect(page.getByText(figure).filter({ visible: true }).first()).toBeVisible();
+        await expect(page.getByText(figure).filter({ visible: true })).toHaveCount(0);
       }
-      await expect(page.getByText(/Odesseus Live runs in a desktop/i)).toBeVisible();
+      await expect(page.getByText(/Odesseus Live/i).filter({ visible: true })).toHaveCount(0);
     });
 
     test(`${vp.name}: Business tab shows the employer contract and hides applicants`, async ({ page }) => {
@@ -61,7 +62,7 @@ test.describe("mobile /pricing audience tabs (signed out)", () => {
       for (const figure of ["$29", "$49", "$129"]) {
         await expect(page.getByText(figure).filter({ visible: true }).first()).toBeVisible();
       }
-      await expect(page.getByText(/Recruiter seat Â· \$20\/month/i)).toBeVisible();
+      await expect(page.getByText(/Recruiter seat · \$20\/month/i)).toBeVisible();
 
       // Applicant figures leave the visible tab.
       await expect(page.getByText("$0.49").filter({ visible: true })).toHaveCount(0);
@@ -82,8 +83,15 @@ test.describe("desktop /pricing unchanged", () => {
     ).toBeVisible();
     // The tab strip is mobile-only and invisible at desktop width.
     await expect(page.getByRole("tablist")).toHaveCount(0);
-    for (const figure of ["$0.49", "$1.99", "$10", "$20", "$50", "$79", "$149", "$299", "$29", "$49", "$129", "$24.99", "$59.99", "$499"]) {
+    for (const figure of ["$0.49", "$1.99", "$10", "$20", "$50", "$79", "$149", "$299", "$29", "$49", "$129"]) {
       await expect(page.getByText(figure).filter({ visible: true }).first()).toBeVisible();
     }
+    // Odesseus Live is private to signed-in applicants: the public desktop
+    // pricing surface advertises no session/pass/annual offers.
+    const body = (await page.locator("body").innerText()).toLowerCase();
+    expect(body).not.toContain("odesseus live");
+    expect(body).not.toContain("$24.99");
+    expect(body).not.toContain("$59.99");
+    expect(body).not.toContain("$499");
   });
 });

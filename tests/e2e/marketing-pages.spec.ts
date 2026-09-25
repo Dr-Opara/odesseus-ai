@@ -131,11 +131,13 @@ test.describe("pricing figures", () => {
     }
   });
 
-  test("/pricing keeps the Odesseus Live plans", async ({ page }) => {
+  test("/pricing does not advertise Odesseus Live (private to signed-in applicants)", async ({ page }) => {
     await page.goto("/pricing");
-    await expect(page.getByText("$24.99").filter({ visible: true }).first()).toBeVisible();
-    await expect(page.getByText("$59.99").filter({ visible: true }).first()).toBeVisible();
-    await expect(page.getByText("$499").filter({ visible: true }).first()).toBeVisible();
+    const body = (await page.locator("body").innerText()).toLowerCase();
+    expect(body).not.toContain("odesseus live");
+    expect(body).not.toContain("$24.99");
+    expect(body).not.toContain("$59.99");
+    expect(body).not.toContain("$499");
   });
 });
 
@@ -157,7 +159,7 @@ test.describe("wallet and pay-as-you-go pricing", () => {
     const headings = await page.locator(".figma-eyebrow").allInnerTexts();
     const joined = headings.join(" | ").toLowerCase();
     let previousIndex = -1;
-    for (const expected of ["candidate", "employer", "promotions", "recruiter", "odesseus live"]) {
+    for (const expected of ["candidate", "employer", "promotions", "recruiter"]) {
       const index = joined.indexOf(expected);
       expect(index).toBeGreaterThanOrEqual(0);
       expect(index).toBeGreaterThan(previousIndex);
