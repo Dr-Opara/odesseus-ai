@@ -80,6 +80,21 @@ export async function POST(request: Request) {
   if (!userId || !sku || !billingCatalog[sku]) return NextResponse.json({ error: "Invalid checkout metadata." }, { status: 400 });
 
   const item = billingCatalog[sku];
+
+  // The checkout session is created by our server with the catalog price and
+  // quantity 1 (mode: "payment"), but the webhook is the enforcement point:
+  // a session whose charged amount or currency does not match the sellable
+  // catalog must fail closed instead of crediting the catalog delta for a
+  // different price. Mirrored by tests/integration/stripe-fulfillment.test.ts.
+  const charged = session.amount_total;
+  const currency = session.currency ?? "usd";
+  if (charged !== item.amountCents || currency !== "usd") {
+    return NextResponse.json(
+      { error: "Checkout amount or currency does not match the catalog." },
+      { status: 400 }
+    );
+  }
+
   const supabase = createServiceClient();
   const { error } = await supabase.from("billing_events").insert({
     stripe_event_id: event.id,
@@ -88,8 +103,8 @@ export async function POST(request: Request) {
     credit_type: item.creditType,
     credit_delta: item.creditDelta,
     sku,
-    amount_cents: session.amount_total ?? item.amountCents,
-    currency: session.currency ?? "usd",
+    amount_cents: charged,
+    currency,
     stripe_customer_id: typeof session.customer === "string" ? session.customer : null,
     metadata: { payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : null },
   });
@@ -132,7 +147,7 @@ export async function POST(request: Request) {
 
         if (!selfReferral && new Date(referral.created_at) >= attributionCutoff) {
           const commissionBps = Number(partner.commission_bps || 0);
-          const amountCents = session.amount_total ?? item.amountCents;
+          const amountCents = charged;
           const commissionCents = Math.floor((amountCents * commissionBps) / 10_000);
 
           const { data: conversion } = await service
@@ -143,7 +158,7 @@ export async function POST(request: Request) {
               user_id: userId,
               billing_event_id: billingEvent.id,
               amount_cents: amountCents,
-              currency: session.currency ?? "usd",
+              currency,
               commission_cents: commissionCents,
               status: "qualified",
               qualified_at: new Date().toISOString(),
@@ -156,7 +171,7 @@ export async function POST(request: Request) {
               partner_id: partner.id,
               conversion_id: conversion.id,
               amount_cents: commissionCents,
-              currency: session.currency ?? "usd",
+              currency,
               status: "pending",
               reason: "Qualified referral purchase: " + sku,
             });

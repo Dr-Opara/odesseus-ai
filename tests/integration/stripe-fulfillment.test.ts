@@ -27,14 +27,22 @@ function checkoutCompletedEvent(overrides: {
   paymentStatus?: string;
   eventId?: string;
   amountTotal?: number | null;
+  currency?: string;
 }) {
   const {
     sku = "wallet_10",
     userId = "user-1",
     paymentStatus = "paid",
     eventId = "evt_test_1",
-    amountTotal = null,
+    amountTotal,
+    currency = "usd",
   } = overrides;
+
+  // Fulfillment requires the charged amount to match the catalog price, so
+  // tests default the session amount to the SKU's exact price. Pass an
+  // explicit amountTotal override to exercise mismatch paths.
+  const item = billingCatalog[sku as keyof typeof billingCatalog];
+  const charged = amountTotal ?? item?.amountCents ?? null;
 
   return {
     id: eventId,
@@ -43,8 +51,8 @@ function checkoutCompletedEvent(overrides: {
       object: {
         id: "cs_test_1",
         payment_status: paymentStatus,
-        amount_total: amountTotal,
-        currency: "usd",
+        amount_total: charged,
+        currency,
         customer: "cus_test_1",
         payment_intent: "pi_test_1",
         metadata: { odesseus_user_id: userId, sku },
@@ -93,6 +101,46 @@ describe("Stripe webhook fulfillment", () => {
 
   it("does not fulfill an unrecognized sku", async () => {
     constructEventMock.mockReturnValue(checkoutCompletedEvent({ sku: "not_a_real_sku" }));
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route");
+    const response = await POST(webhookRequest("{}"));
+
+    expect(response.status).toBe(400);
+    expect(insertMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the charged amount does not match the catalog price", async () => {
+    // The metadata names wallet_10 ($10 top-up) but the session charged $15.
+    // A tampered or mismatched amount must never credit the catalog delta.
+    constructEventMock.mockReturnValue(
+      checkoutCompletedEvent({ sku: "wallet_10", amountTotal: 1500 })
+    );
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route");
+    const response = await POST(webhookRequest("{}"));
+
+    expect(response.status).toBe(400);
+    expect(insertMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the currency is not USD", async () => {
+    constructEventMock.mockReturnValue(
+      checkoutCompletedEvent({ sku: "wallet_10", currency: "eur" })
+    );
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route");
+    const response = await POST(webhookRequest("{}"));
+
+    expect(response.status).toBe(400);
+    expect(insertMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the session carries no amount at all", async () => {
+    const event = checkoutCompletedEvent({ sku: "wallet_10" }) as {
+      data: { object: { amount_total: number | null } };
+    };
+    event.data.object.amount_total = null;
+    constructEventMock.mockReturnValue(event);
 
     const { POST } = await import("@/app/api/webhooks/stripe/route");
     const response = await POST(webhookRequest("{}"));
