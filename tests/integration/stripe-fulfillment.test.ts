@@ -12,6 +12,9 @@ vi.mock("@/lib/stripe", () => ({
 vi.mock("@supabase/supabase-js", () => ({
   createClient: () => createClientMock(),
 }));
+vi.mock("@/lib/observability/events", () => ({
+  logWebhookEvent: vi.fn(async () => undefined),
+}));
 
 function webhookRequest(body: string) {
   return new Request("http://localhost/api/webhooks/stripe", {

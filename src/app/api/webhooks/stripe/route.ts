@@ -4,6 +4,7 @@ import { getStripe } from "@/lib/stripe";
 import { billingCatalog, type BillingSku, employerPlans, type EmployerPlanSku, employerRecruiterSeat, employerFeaturedTiers, type EmployerFeaturedTier } from "@/lib/billing/catalog";
 import { createClient } from "@supabase/supabase-js";
 import { partnerService } from "@/lib/partners/service";
+import { logWebhookEvent } from "@/lib/observability/events";
 
 export const runtime = "nodejs";
 
@@ -109,7 +110,7 @@ async function syncRecruiterSeat(
 // a cycle's job-post credits. A replayed event is a no-op — the sync RPC keys
 // its credit grant on the subscription period, so the same period can only
 // grant once (also mirrored in the migration's idempotency tests).
-async function handleInvoicePaid(invoice: Stripe.Invoice) {
+async function handleInvoicePaid(invoice: Stripe.Invoice, event: Stripe.Event) {
   // In this Stripe API version the subscription that generated the invoice and
   // its metadata snapshot live under invoice.parent.subscription_details.
   const metadata = invoice.parent?.subscription_details?.metadata;
@@ -117,16 +118,33 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   // Recruiter seats are their own subscription with a seat-counted price: the
   // paid amount must equal seatCount x $20, or the webhook fails closed.
   const seatTarget = recruiterSeatSyncFromMetadata(metadata);
-  if (seatTarget) return handleRecruiterSeatInvoicePaid(invoice, seatTarget);
+  if (seatTarget) return handleRecruiterSeatInvoicePaid(invoice, seatTarget, event);
 
   const sync = employerSyncFromMetadata(metadata);
-  if (!sync) return NextResponse.json({ received: true });
+  if (!sync) {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "ignored",
+      httpStatus: 200,
+      reason: "Invoice is not an Odesseus employer or seat subscription.",
+    });
+    return NextResponse.json({ received: true });
+  }
 
   // Fail closed like the checkout path: an invoice charged for an amount or
   // currency that does not match the employer plan must not grant credits.
   const charged = invoice.amount_paid ?? invoice.total;
   const currency = invoice.currency ?? "usd";
   if (charged !== sync.plan.amountCents || currency !== "usd") {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "rejected",
+      httpStatus: 400,
+      orgId: sync.orgId,
+      reason: "Invoice amount or currency does not match the employer plan.",
+    });
     return NextResponse.json(
       { error: "Invoice amount or currency does not match the employer plan." },
       { status: 400 }
@@ -149,9 +167,25 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
       periodEnd,
       grantCredits: true,
     });
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "fulfilled",
+      httpStatus: 200,
+      orgId: sync.orgId,
+      details: { tier: sync.tier },
+    });
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] subscription sync failed", error);
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "errored",
+      httpStatus: 500,
+      orgId: sync.orgId,
+      reason: "Employer subscription sync failed.",
+    });
     return NextResponse.json({ error: "Could not sync employer subscription." }, { status: 500 });
   }
 }
@@ -160,12 +194,21 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 // mismatch is a 400 and nothing is synced (no silent entitlement).
 async function handleRecruiterSeatInvoicePaid(
   invoice: Stripe.Invoice,
-  target: RecruiterSeatSyncTarget
+  target: RecruiterSeatSyncTarget,
+  event: Stripe.Event
 ) {
   const charged = invoice.amount_paid ?? invoice.total;
   const currency = invoice.currency ?? "usd";
   const expected = target.seatCount * employerRecruiterSeat.amountCents;
   if (charged !== expected || currency !== "usd") {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "rejected",
+      httpStatus: 400,
+      orgId: target.orgId,
+      reason: "Invoice amount or currency does not match the recruiter seat price.",
+    });
     return NextResponse.json(
       { error: "Invoice amount or currency does not match the recruiter seat price." },
       { status: 400 }
@@ -187,9 +230,25 @@ async function handleRecruiterSeatInvoicePaid(
       periodStart,
       periodEnd,
     });
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "fulfilled",
+      httpStatus: 200,
+      orgId: target.orgId,
+      details: { seatCount: target.seatCount },
+    });
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] recruiter seat sync failed", error);
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "errored",
+      httpStatus: 500,
+      orgId: target.orgId,
+      reason: "Recruiter seat sync failed.",
+    });
     return NextResponse.json({ error: "Could not sync recruiter seats." }, { status: 500 });
   }
 }
@@ -202,14 +261,32 @@ async function handleRecruiterSeatInvoicePaid(
 // the paid period recorded by invoice.paid instead of wiping it.
 async function handleSubscriptionLifecycle(
   subscription: Stripe.Subscription,
-  eventType: "customer.subscription.updated" | "customer.subscription.deleted"
+  eventType: "customer.subscription.updated" | "customer.subscription.deleted",
+  event: Stripe.Event
 ) {
   const seatTarget = recruiterSeatSyncFromMetadata(subscription.metadata);
   const planTarget = employerSyncFromMetadata(subscription.metadata);
-  if (!seatTarget && !planTarget) return NextResponse.json({ received: true });
+  if (!seatTarget && !planTarget) {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "ignored",
+      httpStatus: 200,
+      reason: "Subscription is not an Odesseus employer or seat subscription.",
+    });
+    return NextResponse.json({ received: true });
+  }
 
   const status = eventType === "customer.subscription.deleted" ? "canceled" : subscription.status;
   if (!["active", "past_due", "canceled", "trialing", "incomplete"].includes(status)) {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "ignored",
+      httpStatus: 200,
+      orgId: (seatTarget ?? planTarget)?.orgId,
+      reason: `Subscription status requires no sync: ${status}.`,
+    });
     return NextResponse.json({ received: true });
   }
 
@@ -234,9 +311,25 @@ async function handleSubscriptionLifecycle(
         grantCredits: false,
       });
     }
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "fulfilled",
+      httpStatus: 200,
+      orgId: (seatTarget ?? planTarget)?.orgId,
+      details: { status },
+    });
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] subscription lifecycle sync failed", error);
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "errored",
+      httpStatus: 500,
+      orgId: (seatTarget ?? planTarget)?.orgId,
+      reason: "Subscription lifecycle sync failed.",
+    });
     return NextResponse.json({ error: "Could not sync employer subscription." }, { status: 500 });
   }
 }
@@ -252,6 +345,14 @@ async function handleFeaturedListingCheckout(session: Stripe.Checkout.Session, e
   const tier = session.metadata?.odesseus_featured_tier as EmployerFeaturedTier | undefined;
   const item = tier ? employerFeaturedTiers[tier] : undefined;
   if (!orgId || !jobId || !item) {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "rejected",
+      httpStatus: 400,
+      orgId: orgId ?? null,
+      reason: "Invalid featured checkout metadata.",
+    });
     return NextResponse.json({ error: "Invalid featured checkout metadata." }, { status: 400 });
   }
 
@@ -260,6 +361,14 @@ async function handleFeaturedListingCheckout(session: Stripe.Checkout.Session, e
   const charged = session.amount_total;
   const currency = session.currency ?? "usd";
   if (charged !== item.amountCents || currency !== "usd") {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "rejected",
+      httpStatus: 400,
+      orgId,
+      reason: "Checkout amount or currency does not match the featured listing.",
+    });
     return NextResponse.json(
       { error: "Checkout amount or currency does not match the featured listing." },
       { status: 400 }
@@ -268,6 +377,14 @@ async function handleFeaturedListingCheckout(session: Stripe.Checkout.Session, e
 
   const paymentIntent = typeof session.payment_intent === "string" ? session.payment_intent : null;
   if (!paymentIntent) {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "rejected",
+      httpStatus: 400,
+      orgId,
+      reason: "Featured checkout has no payment intent.",
+    });
     return NextResponse.json({ error: "Featured checkout has no payment intent." }, { status: 400 });
   }
 
@@ -280,25 +397,66 @@ async function handleFeaturedListingCheckout(session: Stripe.Checkout.Session, e
       p_stripe_payment_intent: paymentIntent,
     });
     if (error) throw error;
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "fulfilled",
+      httpStatus: 200,
+      orgId,
+      details: { jobId, tier },
+    });
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] featured listing creation failed", error);
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "errored",
+      httpStatus: 500,
+      orgId,
+      reason: "Featured listing creation failed.",
+    });
     return NextResponse.json({ error: "Could not create featured listing." }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!webhookSecret) return NextResponse.json({ error: "Webhook is not configured." }, { status: 500 });
+  if (!webhookSecret) {
+    await logWebhookEvent({
+      stripeEventId: null,
+      eventType: null,
+      outcome: "errored",
+      httpStatus: 500,
+      reason: "Webhook is not configured.",
+    });
+    return NextResponse.json({ error: "Webhook is not configured." }, { status: 500 });
+  }
 
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
-  if (!signature) return NextResponse.json({ error: "Missing signature." }, { status: 400 });
+  if (!signature) {
+    await logWebhookEvent({
+      stripeEventId: null,
+      eventType: null,
+      outcome: "rejected",
+      httpStatus: 400,
+      reason: "Missing signature.",
+    });
+    return NextResponse.json({ error: "Missing signature." }, { status: 400 });
+  }
 
   let event: Stripe.Event;
   try {
     event = getStripe().webhooks.constructEvent(body, signature, webhookSecret);
   } catch {
+    await logWebhookEvent({
+      stripeEventId: null,
+      eventType: null,
+      outcome: "rejected",
+      httpStatus: 400,
+      reason: "Invalid signature.",
+    });
     return NextResponse.json({ error: "Invalid signature." }, { status: 400 });
   }
 
@@ -340,21 +498,46 @@ export async function POST(request: Request) {
       }
     }
 
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "fulfilled",
+      httpStatus: 200,
+      details: { paymentIntent },
+    });
     return NextResponse.json({ received: true });
   }
 
   if (event.type === "invoice.paid") {
-    return handleInvoicePaid(event.data.object as Stripe.Invoice);
+    return handleInvoicePaid(event.data.object as Stripe.Invoice, event);
   }
 
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
-    return handleSubscriptionLifecycle(event.data.object as Stripe.Subscription, event.type);
+    return handleSubscriptionLifecycle(event.data.object as Stripe.Subscription, event.type, event);
   }
 
-  if (event.type !== "checkout.session.completed") return NextResponse.json({ received: true });
+  if (event.type !== "checkout.session.completed") {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "ignored",
+      httpStatus: 200,
+      reason: "Event type has no fulfillment path.",
+    });
+    return NextResponse.json({ received: true });
+  }
 
   const session = event.data.object as Stripe.Checkout.Session;
-  if (session.payment_status !== "paid") return NextResponse.json({ received: true });
+  if (session.payment_status !== "paid") {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "ignored",
+      httpStatus: 200,
+      reason: "Checkout session was not paid.",
+    });
+    return NextResponse.json({ received: true });
+  }
 
   // Employer featured listings are one-time checkout purchases (not candidate
   // wallet/earner SKUs). Route them before the candidate catalog path.
@@ -364,7 +547,18 @@ export async function POST(request: Request) {
 
   const userId = session.metadata?.odesseus_user_id;
   const sku = session.metadata?.sku as BillingSku | undefined;
-  if (!userId || !sku || !billingCatalog[sku]) return NextResponse.json({ error: "Invalid checkout metadata." }, { status: 400 });
+  if (!userId || !sku || !billingCatalog[sku]) {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "rejected",
+      httpStatus: 400,
+      userId: userId ?? null,
+      sku: sku ?? null,
+      reason: "Invalid checkout metadata.",
+    });
+    return NextResponse.json({ error: "Invalid checkout metadata." }, { status: 400 });
+  }
 
   const item = billingCatalog[sku];
 
@@ -376,6 +570,15 @@ export async function POST(request: Request) {
   const charged = session.amount_total;
   const currency = session.currency ?? "usd";
   if (charged !== item.amountCents || currency !== "usd") {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "rejected",
+      httpStatus: 400,
+      userId,
+      sku,
+      reason: "Checkout amount or currency does not match the catalog.",
+    });
     return NextResponse.json(
       { error: "Checkout amount or currency does not match the catalog." },
       { status: 400 }
@@ -397,7 +600,27 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    if (error.code === "23505") return NextResponse.json({ received: true, duplicate: true });
+    if (error.code === "23505") {
+      await logWebhookEvent({
+        stripeEventId: event.id,
+        eventType: event.type,
+        outcome: "duplicate",
+        httpStatus: 200,
+        userId,
+        sku,
+        reason: "Duplicate delivery: purchase already fulfilled.",
+      });
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "errored",
+      httpStatus: 500,
+      userId,
+      sku,
+      reason: "Could not insert billing event.",
+    });
     return NextResponse.json({ error: "Could not fulfill purchase." }, { status: 500 });
   }
 
@@ -470,5 +693,15 @@ export async function POST(request: Request) {
     console.error("[ODESSEUS_PARTNERS] paid conversion attribution failed", error);
   }
 
+  await logWebhookEvent({
+    stripeEventId: event.id,
+    eventType: event.type,
+    outcome: "fulfilled",
+    httpStatus: 200,
+    userId,
+    sku,
+    checkoutSessionId: session.id,
+    details: { creditType: item.creditType, creditDelta: item.creditDelta },
+  });
   return NextResponse.json({ received: true });
 }
