@@ -246,6 +246,29 @@ describe("Stripe webhook delivery observability", () => {
     });
   });
 
+  it("records a rejected delivery for a stale legacy 99-cent (app_*) checkout", async () => {
+    // Pre-wallet checkout sessions used sku "app_1" at 99 cents. The sellable
+    // catalog no longer contains app_* SKUs, so a replay must fail closed
+    // without granting anything (stale 99¢/legacy sweep).
+    const event = checkoutCompletedEvent({});
+    const metadata = event.data.object.metadata as { sku?: string; odesseus_user_id?: string };
+    metadata.sku = "app_1";
+    event.data.object.amount_total = 99;
+    constructEventMock.mockReturnValue(event);
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route");
+    const response = await POST(webhookRequest("{}"));
+
+    expect(response.status).toBe(400);
+    expect(insertMock).not.toHaveBeenCalled();
+    expect(logCallArgs()).toMatchObject({
+      p_outcome: "rejected",
+      p_http_status: 400,
+      p_stripe_event_id: "evt_test_1",
+      p_reason: "Invalid checkout metadata.",
+    });
+  });
+
   it("records a rejected delivery for invalid checkout metadata", async () => {
     const event = checkoutCompletedEvent({});
     (event.data.object.metadata as { sku?: string }).sku = "not_a_sku";
