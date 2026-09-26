@@ -7,12 +7,16 @@
 --   * a client cannot grant itself a seat or forge invited_by,
 --   * redemption requires the token AND the caller's own verified email,
 --   * redemption refuses revoked, expired, and already-accepted invitations,
---   * the 'recruiter' role is refused with no live paid seat, and admitted once
---     one exists; non-metered roles are admitted with no seats at all,
---   * capacity accounting refuses the N+1th recruiter and leaves membership
+--   * every non-owner role (recruiter, admin, viewer) is refused with no live
+--     paid seat and admitted once one exists, so no role is a way to take
+--     seats for free,
+--   * capacity accounting refuses the N+1th member and leaves membership
 --     untouched when it does,
 --   * a canceled or lapsed entitlement stops granting capacity,
 --   * recruiter_seats and employer_members keep their original policy surface.
+--
+-- The seat-role policy itself (which roles are metered, and the required-seat
+-- derivation) is covered in employer-seat-policy.test.sql.
 --
 -- Role discipline: fixtures that need to write auth.users or the service-role
 -- seat tables run before the role is switched to `authenticated`, and every
@@ -21,7 +25,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(56);
+SELECT plan(62);
 
 -- ---------------------------------------------------------------------------
 -- Phase 0. Fixtures (privileged role)
@@ -259,7 +263,7 @@ SELECT set_config(
 
 SELECT throws_ok(
   $$SELECT joined_org_id FROM public.odesseus_accept_employer_invitation('tok_recruiter_one_00001')$$,
-  'P0001', 'this team has no recruiter seats left; add a seat to invite another recruiter',
+  'P0001', 'this team has no paid seats left; add a seat to invite another member',
   'a recruiter cannot join with zero paid seats');
 
 SELECT is(
@@ -366,7 +370,7 @@ SELECT set_config(
 
 SELECT throws_ok(
   $$SELECT joined_org_id FROM public.odesseus_accept_employer_invitation('tok_recruiter_three_001')$$,
-  'P0001', 'this team has no recruiter seats left; add a seat to invite another recruiter',
+  'P0001', 'this team has no paid seats left; add a seat to invite another member',
   'a third recruiter is refused once both paid seats are used');
 
 SELECT set_config(
@@ -380,7 +384,7 @@ SELECT is(
   2, 'the refused accept left membership untouched');
 
 -- ---------------------------------------------------------------------------
--- Phase 7. Non-metered roles need no seat
+-- Phase 7. Every non-owner role consumes a paid seat
 -- ---------------------------------------------------------------------------
 SELECT lives_ok(
   $$INSERT INTO public.employer_member_invitations
@@ -396,9 +400,38 @@ SELECT set_config(
   '{"sub":"51111111-1111-4111-8111-555555555555","email":"viewer-four@example.com","role":"authenticated"}',
   true);
 
+-- A viewer is metered exactly like a recruiter. If it were not, handing a
+-- teammate the viewer role would be a free way to add a team member, which is
+-- the hole the seat policy exists to close.
+SELECT throws_ok(
+  $$SELECT joined_org_id FROM public.odesseus_accept_employer_invitation('tok_viewer_four_00001')$$,
+  'P0001', 'this team has no paid seats left; add a seat to invite another member',
+  'a viewer cannot join once the paid seats are used, because viewers are metered');
+
+-- The organization owner is not counted, so two recruiters against two seats is
+-- exactly balanced.
+SELECT is(
+  public.odesseus_org_required_seat_count('52222222-2222-4222-8222-222222222222'),
+  2, 'the required seat count excludes the organization owner');
+
+SELECT set_config('role', 'service_role', true);
+
+SELECT lives_ok(
+  $$SELECT seat_count FROM public.odesseus_sync_recruiter_seat(
+    '52222222-2222-4222-8222-222222222222', 3, 'active',
+    'sub_inv_seats_1', 'cus_inv_seats_1',
+    now(), now() + interval '1 month')$$,
+  'a third seat is paid for');
+
+SELECT set_config('role', 'authenticated', true);
+
 SELECT lives_ok(
   $$SELECT joined_org_id FROM public.odesseus_accept_employer_invitation('tok_viewer_four_00001')$$,
-  'a viewer joins with no seats left, because viewers are not seat-metered');
+  'a viewer joins once a seat is paid for');
+
+SELECT is(
+  public.odesseus_org_required_seat_count('52222222-2222-4222-8222-222222222222'),
+  3, 'a viewer consumes a paid seat like any other non-owner role');
 
 -- ---------------------------------------------------------------------------
 -- Phase 8. Revoked invitations
@@ -448,7 +481,7 @@ SELECT throws_ok(
 -- ---------------------------------------------------------------------------
 SELECT is(
   public.odesseus_org_live_seat_count('52222222-2222-4222-8222-222222222222'),
-  2, 'capacity is unchanged before the cancellation');
+  3, 'capacity is unchanged before the cancellation');
 
 -- A client cannot rewrite the entitlement itself; the lapse is simulated the way
 -- it actually happens, through the webhook's sync path.
@@ -456,7 +489,7 @@ SELECT set_config('role', 'service_role', true);
 
 SELECT lives_ok(
   $$SELECT seat_count FROM public.odesseus_sync_recruiter_seat(
-    '52222222-2222-4222-8222-222222222222', 2, 'canceled',
+    '52222222-2222-4222-8222-222222222222', 3, 'canceled',
     'sub_inv_seats_1', 'cus_inv_seats_1',
     now() - interval '1 month', now() - interval '1 second')$$,
   'the seat subscription is canceled');
@@ -495,6 +528,13 @@ SELECT ok(NOT has_function_privilege('anon', 'public.odesseus_accept_employer_in
 SELECT ok(
   has_function_privilege('authenticated', 'public.odesseus_org_live_seat_count(uuid)', 'EXECUTE'),
   'authenticated may read an org''s live seat count');
+
+SELECT ok(
+  has_function_privilege('authenticated', 'public.odesseus_org_required_seat_count(uuid)', 'EXECUTE'),
+  'authenticated may read an org''s required seat count');
+
+SELECT ok(NOT has_function_privilege('anon', 'public.odesseus_org_required_seat_count(uuid)', 'EXECUTE'),
+  'anon cannot read a required seat count');
 
 -- This migration did not widen access to the paid entitlement table or to team
 -- membership.

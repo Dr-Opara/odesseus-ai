@@ -67,6 +67,11 @@ describe("recruiter seat invitations migration (M5 invitation slice)", () => {
   });
 
   it("expresses the seat-metered roles in exactly one place", () => {
+    // As shipped in M5, the metered set was the recruiter role alone. The
+    // approved policy has since widened it to every invitable role, so this
+    // asserts the shape the current policy migration relies on (a single
+    // replaceable function the accept RPC reads) rather than the M5 role list.
+    // The current role set is asserted in migration-employer-seat-policy.test.ts.
     expect(sql).toMatch(
       /CREATE OR REPLACE FUNCTION public\.odesseus_metered_org_roles\(\)[\s\S]{0,400}select array\['recruiter'\]::text\[\];/
     );

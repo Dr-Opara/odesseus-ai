@@ -35,8 +35,20 @@ import { employerFeaturedTiers, type EmployerFeaturedTier } from "@/lib/billing/
 
 export type EmployerClient = SupabaseClient<Database>;
 
-/** Team roles that consume one paid recruiter seat each. */
-export const METERED_ROLES = ["recruiter"] as const;
+/**
+ * Team roles that consume one paid seat each.
+ *
+ * Every role an invitation can grant. The approved policy is that the
+ * organization owner is included and every additional active member costs
+ * $20/month, whatever their role -- otherwise a user could dodge seat billing
+ * by handing a teammate the admin or viewer role, which grants nearly the same
+ * access. Mirrors `public.odesseus_metered_org_roles()`, which is where the
+ * database enforces it; the two must agree.
+ *
+ * The owner is excluded by identity (employer_organizations.owner_user_id), not
+ * by role, so this list does not need an 'owner' entry.
+ */
+export const METERED_ROLES = ["admin", "recruiter", "viewer"] as const;
 export type MeteredRole = (typeof METERED_ROLES)[number];
 
 /** Every role an invitation may grant. 'owner' is set on the org row instead. */
@@ -76,6 +88,14 @@ export type SeatSummary = {
   seatsUsed: number;
   /** seatsPaid - seatsUsed, floored at 0. */
   seatsAvailable: number;
+  /**
+   * Seats the roster needs right now (one per non-owner member).
+   *
+   * Distinct from seatsUsed: this is the number the billing system should be
+   * charging for, which is what makes a post-removal Stripe sync able to tell
+   * "already correct" from "overpaying".
+   */
+  seatsRequired: number;
 };
 
 export type OrgTeamView = {
@@ -168,40 +188,44 @@ type SeatRow = { count: number; active_until: string | null };
 /**
  * Seat arithmetic for the caller's own view of an org.
  *
- * Reads recruiter_seats through the SECURITY DEFINER
- * `odesseus_org_live_seat_count` RPC rather than the table, because the table is
- * webhook-written and member grants are SELECT-only behind RLS; going through the
- * function keeps the "what counts as live" rule in one place instead of
- * re-deriving `count > 0 and active_until > now()` in TypeScript where it could
- * drift from the SQL the accept path enforces.
+ * Both numbers come from SECURITY DEFINER RPCs rather than from table reads:
+ * `odesseus_org_live_seat_count` for what has been paid for (recruiter_seats is
+ * webhook-written, so re-deriving `count > 0 and active_until > now()` in
+ * TypeScript could drift from the SQL the accept path enforces) and
+ * `odesseus_org_required_seat_count` for what the roster needs. The required
+ * count excludes the organization owner, which a client-side head-count over
+ * employer_members cannot do correctly -- the owner is not required to hold a
+ * member row, and may hold one in a metered role.
  */
 export async function getSeatSummary(
   client: EmployerClient,
   orgId: string
 ): Promise<SeatSummary> {
-  const [{ data: seatsPaid, error: seatError }, { count: seatsUsed, error: useError }] =
-    await Promise.all([
-      client.rpc("odesseus_org_live_seat_count", { p_org_id: orgId }),
-      client
-        .from("employer_members")
-        .select("user_id", { count: "exact", head: true })
-        .eq("org_id", orgId)
-        .in("role", [...METERED_ROLES]),
-    ]);
+  const [
+    { data: seatsPaid, error: seatError },
+    { data: seatsRequired, error: requiredError },
+  ] = await Promise.all([
+    client.rpc("odesseus_org_live_seat_count", { p_org_id: orgId }),
+    client.rpc("odesseus_org_required_seat_count", { p_org_id: orgId }),
+  ]);
 
   if (seatError) {
     throw new Error(`Could not load seat capacity: ${seatError.message}`);
   }
-  if (useError) {
-    throw new Error(`Could not load seat usage: ${useError.message}`);
+  if (requiredError) {
+    throw new Error(`Could not load required seats: ${requiredError.message}`);
   }
 
   const paid = typeof seatsPaid === "number" ? seatsPaid : 0;
-  const used = seatsUsed ?? 0;
+  const required = typeof seatsRequired === "number" ? seatsRequired : 0;
+  // Usage is the required count by definition: a metered member is an active
+  // member, and the owner is not metered.
+  const used = required;
 
   return {
     seatsPaid: paid,
     seatsUsed: used,
+    seatsRequired: required,
     seatsAvailable: Math.max(paid - used, 0),
   };
 }
@@ -450,7 +474,11 @@ export async function acceptInvitation(
 
   if (error) {
     const message = String(error.message ?? "");
-    if (message.includes("no recruiter seats left")) {
+    // Matched loosely on purpose: the RPC wording is a product-facing sentence
+    // that has changed once (it used to say "recruiter seats" before every role
+    // became metered). A stricter match would start reporting a seat-cap refusal
+    // as an opaque 500 the next time the wording moves.
+    if (message.includes("no paid seats left") || message.includes("no recruiter seats left")) {
       return { ok: false, code: "no_seats" };
     }
     if (

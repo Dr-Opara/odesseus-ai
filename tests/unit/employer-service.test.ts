@@ -4,6 +4,7 @@ const ORG_ID = "52222222-2222-4222-8222-222222222222";
 const OWNER_ID = "51111111-1111-4111-8111-111111111111";
 
 import {
+  INVITABLE_ROLES,
   INVITATION_TTL_DAYS,
   METERED_ROLES,
   OrgAccessError,
@@ -50,7 +51,7 @@ type Query = {
  */
 function employerDb(
   tables: Record<string, Canned>,
-  rpcResult: { data?: unknown; error?: unknown } = {}
+  rpcResult: { data?: unknown; error?: unknown } | Record<string, { data?: unknown; error?: unknown }> = {}
 ) {
   const queries: Query[] = [];
 
@@ -112,10 +113,16 @@ function employerDb(
     return b;
   });
 
-  const rpc = vi.fn(async () => ({
-    data: rpcResult.data ?? null,
-    error: rpcResult.error ?? null,
-  }));
+  // Per-RPC results, keyed by function name. Seat arithmetic calls two different
+  // SECURITY DEFINER functions (paid capacity, required capacity) and a single
+  // shared stub would make both answer the same number, hiding a swap.
+  const perRpc = rpcResult as Record<string, { data?: unknown; error?: unknown }>;
+  const shared = "data" in perRpc || "error" in perRpc ? perRpc : {};
+
+  const rpc = vi.fn(async (name: string) => {
+    const result = name in perRpc ? perRpc[name] : shared;
+    return { data: result?.data ?? null, error: result?.error ?? null };
+  });
 
   /** All recorded queries against a table, optionally filtered by projection. */
   const select = (table: string, columns?: string) =>
@@ -260,11 +267,10 @@ describe("getOrgTeamView", () => {
           "user_id,role,created_at": {
             data: [{ user_id: "u1", role: "recruiter", created_at: "2026-01-01T00:00:00Z" }],
           },
-          count: { count: 1 },
         },
         employer_member_invitations: { [INVITE_COLUMNS]: { data: [] } },
       },
-      { data: 3 }
+      { odesseus_org_live_seat_count: { data: 3 }, odesseus_org_required_seat_count: { data: 1 } }
     );
 
     const view = await getOrgTeamView(client, ORG_ID, "admin-user");
@@ -273,16 +279,20 @@ describe("getOrgTeamView", () => {
     expect(view.callerRole).toBe("admin");
     expect(view.isCallerAdmin).toBe(true);
     expect(view.members).toHaveLength(1);
-    // Capacity comes from the SECURITY DEFINER RPC, never re-derived here, so
-    // the "what counts as live" rule cannot drift between this read and the
-    // accept-path meter that enforces it.
+    // Both numbers come from SECURITY DEFINER RPCs, never re-derived here, so
+    // neither "what counts as live" nor "who counts as metered" can drift
+    // between this read and the accept-path meter that enforces it.
     expect(rpc).toHaveBeenCalledWith("odesseus_org_live_seat_count", { p_org_id: ORG_ID });
-    expect(view.seats).toEqual({ seatsPaid: 3, seatsUsed: 1, seatsAvailable: 2 });
-    // Seats used is a head-count over metered roles only.
-    expect(select("employer_members", "user_id").map((q) => q.filters)).toContainEqual([
-      ["org_id", ORG_ID],
-      ["role", ["recruiter"]],
-    ]);
+    expect(rpc).toHaveBeenCalledWith("odesseus_org_required_seat_count", { p_org_id: ORG_ID });
+    expect(view.seats).toEqual({
+      seatsPaid: 3,
+      seatsUsed: 1,
+      seatsAvailable: 2,
+      seatsRequired: 1,
+    });
+    // Usage is not a client-side head-count: only the required-seat RPC knows
+    // which member is the organization owner, and the owner is not metered.
+    expect(select("employer_members", "user_id")).toHaveLength(0);
     expect(from).toHaveBeenCalledWith("employer_member_invitations");
   });
 
@@ -290,13 +300,33 @@ describe("getOrgTeamView", () => {
     const { client } = employerDb(
       {
         employer_organizations: { "*": { data: orgRow } },
-        employer_members: { role: { data: null }, count: { count: 5 } },
+        employer_members: { role: { data: null } },
         employer_member_invitations: { [INVITE_COLUMNS]: { data: [] } },
       },
-      { data: 2 }
+      { odesseus_org_live_seat_count: { data: 2 }, odesseus_org_required_seat_count: { data: 5 } }
     );
     const view = await getOrgTeamView(client, ORG_ID, OWNER_ID);
-    expect(view.seats).toEqual({ seatsPaid: 2, seatsUsed: 5, seatsAvailable: 0 });
+    expect(view.seats).toEqual({
+      seatsPaid: 2,
+      seatsUsed: 5,
+      seatsAvailable: 0,
+      seatsRequired: 5,
+    });
+  });
+
+  it("fails loudly rather than reporting zero seats when the required-count RPC fails", async () => {
+    const { client } = employerDb(
+      {
+        employer_organizations: { "*": { data: orgRow } },
+        employer_members: { role: { data: null } },
+        employer_member_invitations: { [INVITE_COLUMNS]: { data: [] } },
+      },
+      {
+        odesseus_org_live_seat_count: { data: 5 },
+        odesseus_org_required_seat_count: { error: { message: "db down" } },
+      }
+    );
+    await expect(getOrgTeamView(client, ORG_ID, OWNER_ID)).rejects.toThrow(/db down/);
   });
 
   it("does not even ask for invitations when the caller is not an admin", async () => {
@@ -308,11 +338,10 @@ describe("getOrgTeamView", () => {
         employer_members: {
           role: { data: { role: "recruiter" } },
           "user_id,role,created_at": { data: [] },
-          count: { count: 1 },
         },
         employer_member_invitations: { [INVITE_COLUMNS]: { data: [] } },
       },
-      { data: 1 }
+      { odesseus_org_live_seat_count: { data: 1 }, odesseus_org_required_seat_count: { data: 1 } }
     );
 
     const view = await getOrgTeamView(client, ORG_ID, "recruiter-user");
@@ -568,7 +597,20 @@ describe("acceptInvitation", () => {
   it("maps the seat-cap error so the route can explain it", async () => {
     const { client } = employerDb(
       {},
-      { error: { message: "this team has no recruiter seats left; add a seat to invite another recruiter" } }
+      { error: { message: "this team has no paid seats left; add a seat to invite another member" } }
+    );
+    expect(await acceptInvitation(client, "a".repeat(48))).toEqual({
+      ok: false,
+      code: "no_seats",
+    });
+  });
+
+  it("still maps the cap error if the message names a role rather than 'paid seats'", async () => {
+    // The matcher must not silently start reporting a seat-cap refusal as a
+    // generic 500 the moment the RPC wording changes. Both wordings map.
+    const { client } = employerDb(
+      {},
+      { error: { message: "this team has no recruiter seats left; add a seat to invite another member" } }
     );
     expect(await acceptInvitation(client, "a".repeat(48))).toEqual({
       ok: false,
@@ -600,8 +642,14 @@ describe("acceptInvitation", () => {
 });
 
 describe("seat contract constants", () => {
-  it("meters exactly the recruiter role", () => {
-    expect([...METERED_ROLES]).toEqual(["recruiter"]);
+  it("meters every invitable role, so no role is a way to take a seat for free", () => {
+    expect([...METERED_ROLES]).toEqual(["admin", "recruiter", "viewer"]);
+    // The set must stay equal to the invitable set. A new invitable role that is
+    // not metered would be a free team member.
+    expect([...METERED_ROLES].sort()).toEqual([...INVITABLE_ROLES].sort());
+    // The owner is excluded by identity (employer_organizations.owner_user_id),
+    // so it must not appear here.
+    expect(METERED_ROLES).not.toContain("owner");
   });
 
   it("bounds a seat checkout quantity to whole seats in range", () => {

@@ -2205,6 +2205,10 @@ export type Database = {
         Args: { p_org_id: string }
         Returns: number
       }
+      odesseus_org_required_seat_count: {
+        Args: { p_org_id: string }
+        Returns: number
+      }
       odesseus_sync_recruiter_seat: {
         Args: {
           p_count: number

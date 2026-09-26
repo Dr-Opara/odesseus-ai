@@ -1,5 +1,12 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
+type MemberFixture = { user_id: string; role: string };
+
+// Spelled out rather than imported from the service: the point of these
+// fixtures is the policy, so a drift in METERED_ROLES has to show up here as a
+// failure rather than silently agreeing with itself.
+const PAID_ROLES = ["admin", "recruiter", "viewer"];
+
 const ORG_ID = "52222222-2222-4222-8222-222222222222";
 const OWNER_ID = "51111111-1111-4111-8111-111111111111";
 const INVITATION_ID = "6aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -65,9 +72,21 @@ function sessionClient(opts: {
     },
   };
 
+  const org = ("org" in opts ? opts.org : orgRow) as { owner_user_id?: string } | null;
+
   const rpc = vi.fn(async (name: string) => {
     if (name === "odesseus_org_live_seat_count") {
       return { data: opts.seatCount ?? 0, error: opts.seatError ?? null };
+    }
+    if (name === "odesseus_org_required_seat_count") {
+      // Mirror odesseus_org_required_seat_count: one seat per metered-role
+      // member, excluding the organization owner. Derived from the fixture
+      // rather than hardcoded so these tests express the policy itself.
+      const members = Array.isArray(opts.members) ? (opts.members as MemberFixture[]) : [];
+      const required = members.filter(
+        (m) => PAID_ROLES.includes(m.role) && m.user_id !== org?.owner_user_id
+      ).length;
+      return { data: required, error: null };
     }
     if (name === "odesseus_accept_employer_invitation") {
       return { data: opts.accept?.data ?? null, error: opts.accept?.error ?? null };
@@ -197,8 +216,54 @@ describe("GET /api/employer/orgs/[orgId]/team", () => {
 
     expect(response.status).toBe(200);
     expect(body.team.orgName).toBe("Seats Inc.");
-    expect(body.team.seats).toEqual({ seatsPaid: 2, seatsUsed: 1, seatsAvailable: 1 });
+    // The owner holds a member row but consumes no paid seat.
+    expect(body.team.seats).toEqual({
+      seatsPaid: 2,
+      seatsUsed: 0,
+      seatsAvailable: 2,
+      seatsRequired: 0,
+    });
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+  });
+
+  it("counts every non-owner member as a paid seat, whatever their role", async () => {
+    createClientMock.mockResolvedValue(
+      sessionClient({
+        userId: OWNER_ID,
+        seatCount: 3,
+        members: [
+          { user_id: OWNER_ID, role: "owner" },
+          { user_id: OTHER_MEMBER_ID, role: "admin" },
+          { user_id: MEMBER_ID, role: "recruiter" },
+          { user_id: "5ddddddd-dddd-4ddd-8ddd-dddddddddddd", role: "viewer" },
+        ],
+      })
+    );
+    const { GET } = await freshRoute(TEAM_ROUTE);
+    const response = await GET(getRequest("/x"), orgParams());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.team.seats).toEqual({
+      seatsPaid: 3,
+      seatsUsed: 3,
+      seatsAvailable: 0,
+      seatsRequired: 3,
+    });
+  });
+
+  it("reports no paid seats for an owner-only organization", async () => {
+    createClientMock.mockResolvedValue(
+      sessionClient({ userId: OWNER_ID, seatCount: 0, members: [] })
+    );
+    const { GET } = await freshRoute(TEAM_ROUTE);
+    const body = await (await GET(getRequest("/x"), orgParams())).json();
+    expect(body.team.seats).toEqual({
+      seatsPaid: 0,
+      seatsUsed: 0,
+      seatsAvailable: 0,
+      seatsRequired: 0,
+    });
   });
 
   it("404s a non-member rather than confirming the org exists", async () => {
