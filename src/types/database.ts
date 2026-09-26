@@ -561,6 +561,150 @@ export type Database = {
         }
         Relationships: []
       }
+      employer_job_post_credits: {
+        Row: {
+          expires_at: string | null
+          granted_at: string
+          id: string
+          org_id: string
+          total: number
+          used: number
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string
+          id?: string
+          org_id: string
+          total: number
+          used?: number
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string
+          id?: string
+          org_id?: string
+          total?: number
+          used?: number
+        }
+        Relationships: []
+      }
+      employer_jobs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          org_id: string
+          posted_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          org_id: string
+          posted_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          org_id?: string
+          posted_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      employer_members: {
+        Row: {
+          created_at: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          org_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      employer_organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_user_id?: string
+        }
+        Relationships: []
+      }
+      employer_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          job_posts_included: number
+          org_id: string
+          period_end: string | null
+          period_start: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_posts_included: number
+          org_id: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_posts_included?: number
+          org_id?: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
+        }
+        Relationships: []
+      }
       external_signals: {
         Row: {
           application_id: string | null
@@ -623,6 +767,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      featured_listings: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          job_id: string
+          org_id: string
+          starts_at: string
+          stripe_payment_intent: string | null
+          tier: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          job_id: string
+          org_id: string
+          starts_at?: string
+          stripe_payment_intent?: string | null
+          tier: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          job_id?: string
+          org_id?: string
+          starts_at?: string
+          stripe_payment_intent?: string | null
+          tier?: string
+        }
+        Relationships: []
       }
       follow_up_drafts: {
         Row: {
@@ -1059,6 +1239,33 @@ export type Database = {
         }
         Relationships: []
       }
+      job_post_credit_ledger: {
+        Row: {
+          created_at: string
+          delta: number
+          external_reference: string | null
+          id: string
+          org_id: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          external_reference?: string | null
+          id?: string
+          org_id: string
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          external_reference?: string | null
+          id?: string
+          org_id?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       job_preferences: {
         Row: {
           created_at: string
@@ -1101,6 +1308,42 @@ export type Database = {
           updated_at?: string
           user_id?: string
           work_authorization?: string | null
+        }
+        Relationships: []
+      }
+      job_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          job_id: string | null
+          moderation_note: string | null
+          reason: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          job_id?: string | null
+          moderation_note?: string | null
+          reason: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          job_id?: string | null
+          moderation_note?: string | null
+          reason?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1279,6 +1522,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_preferences: {
+        Row: {
+          activity: boolean
+          applications: boolean
+          created_at: string
+          documents: boolean
+          matches: boolean
+          product: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity?: boolean
+          applications?: boolean
+          created_at?: string
+          documents?: boolean
+          matches?: boolean
+          product?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity?: boolean
+          applications?: boolean
+          created_at?: string
+          documents?: boolean
+          matches?: boolean
+          product?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       post_interview_analyses: {
         Row: {
@@ -1569,6 +1845,36 @@ export type Database = {
           family?: string
           metadata?: Json
           product_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      recruiter_seats: {
+        Row: {
+          active_until: string | null
+          count: number
+          id: string
+          org_id: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active_until?: string | null
+          count?: number
+          id?: string
+          org_id: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active_until?: string | null
+          count?: number
+          id?: string
+          org_id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string
         }
         Relationships: []
