@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
 import MobileHome from "@/components/mobile/mobile-home";
+import LiveEntryCard from "@/components/live-entry-card";
 import {
   getApplications,
   getCandidateProfile,
@@ -22,7 +23,7 @@ function labelStatus(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function formatWhen(value: string | null) {
+export function formatWhen(value: string | null) {
   if (!value) return "Time pending";
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -231,6 +232,22 @@ export default async function DashboardPage() {
             <div className="dashboard-empty">Odesseus activity will appear here as your search moves forward.</div>
           )}
         </section>
+
+        <LiveEntryCard
+          interviewPasses={interviewPasses}
+          liveUnlimitedUntil={credits.live_unlimited_until}
+          upcomingInterview={nextInterview
+            ? {
+                id: nextInterview.id,
+                roleTitle: nextInterview.role_title || "Interview",
+                companyName: nextInterview.company_name || "Company",
+                stage: nextInterview.stage,
+                scheduledAt: nextInterview.scheduled_at,
+                meetingProvider: nextInterview.meeting_provider,
+                readinessGeneratedAt: nextInterview.readiness_generated_at,
+              }
+            : null}
+        />
       </section>
 
       <MobileHome

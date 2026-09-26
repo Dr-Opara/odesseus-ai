@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
 import MobileInterviews from "@/components/mobile/mobile-interviews";
+import LiveEntryCard from "@/components/live-entry-card";
 
 export default async function InterviewsPage() {
   const supabase = await createClient();
@@ -90,6 +91,39 @@ export default async function InterviewsPage() {
           </div>
         )}
       </div>
+      </section>
+
+      <section className="shell odesseus-desktop-only" style={{ padding: "0 0 90px" }}>
+        <div style={{ width: "min(820px,100%)", margin: "0 auto" }}>
+          <LiveEntryCard
+            interviewPasses={credits?.interview_passes ?? 0}
+            liveUnlimitedUntil={null}
+            upcomingInterview={upcoming[0]
+              ? {
+                  id: upcoming[0].id,
+                  roleTitle: upcoming[0].applications?.role_title || "Interview",
+                  companyName: upcoming[0].applications?.company_name || "Company",
+                  stage: upcoming[0].stage,
+                  scheduledAt: upcoming[0].scheduled_at,
+                  meetingProvider: upcoming[0].meeting_provider,
+                  readinessGeneratedAt: upcoming[0].readiness_generated_at,
+                }
+              : null}
+          />
+        </div>
+      </section>
+
+      <section className="shell odesseus-desktop-only" style={{ padding: "0 0 90px" }}>
+        <div style={{ width: "min(820px,100%)", margin: "0 auto" }}>
+          <Link href="/interviews/live-history" className="card live-history-link">
+            <div>
+              <div className="muted" style={{ fontSize: 13 }}>Odesseus Live</div>
+              <h2 style={{ fontSize: 24, margin: "7px 0 5px" }}>Live session history</h2>
+              <p className="muted" style={{ margin: 0 }}>View completed sessions, transcripts, and analysis</p>
+            </div>
+            <span className="muted" style={{ fontSize: 14 }}>→</span>
+          </Link>
+        </div>
       </section>
 
       <MobileInterviews upcoming={upcoming} />

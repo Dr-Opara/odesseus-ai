@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { canStartLive, createTurnSequencer } from "@/lib/live/session-state";
 import { waitForIceGatheringComplete, waitForPeerConnected } from "@/lib/live/webrtc-timing";
 
@@ -43,6 +44,17 @@ function extractSessionId(payload: any) {
 
 function wait(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  }
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 async function createCaptureStream(mode: CaptureMode) {
@@ -129,6 +141,8 @@ export default function OdesseusLiveClient({
   const [lastQuestion, setLastQuestion] = useState("");
   const [busyMode, setBusyMode] = useState<GuidanceMode | null>(null);
   const [error, setError] = useState("");
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const [sessionDuration, setSessionDuration] = useState(0);
 
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const channelRef = useRef<RTCDataChannel | null>(null);
@@ -136,6 +150,7 @@ export default function OdesseusLiveClient({
   const partialRef = useRef<Record<string, string>>({});
   const manualRequestIdRef = useRef(0);
   const turnSequencerRef = useRef(createTurnSequencer());
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const canStart = canStartLive(state, consent, interviewPasses);
 
@@ -153,6 +168,26 @@ export default function OdesseusLiveClient({
     (itemId: string) => turnSequencerRef.current.turnIndexFor(itemId),
     []
   );
+
+  // Session timer effect
+  useEffect(() => {
+    if (state === "live" && sessionStartTime) {
+      timerRef.current = setInterval(() => {
+        setSessionDuration(Date.now() - sessionStartTime);
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [state, sessionStartTime]);
 
   const saveTranscriptAndGuide = useCallback(
     async (
@@ -287,6 +322,10 @@ export default function OdesseusLiveClient({
   useEffect(() => {
     return () => {
       cleanupConnection();
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
   }, [cleanupConnection]);
 
@@ -419,6 +458,9 @@ export default function OdesseusLiveClient({
         );
       }
 
+      const startTime = Date.now();
+      setSessionStartTime(startTime);
+      setSessionDuration(0);
       setState("live");
       setStatusText("Odesseus Live is listening for interview questions.");
       router.refresh();
@@ -508,19 +550,42 @@ export default function OdesseusLiveClient({
     }
   }
 
+  function retryLive() {
+    setState("idle");
+    setError("");
+    setGuidance(null);
+    setLastQuestion("");
+    setTranscripts([]);
+    setSessionId(null);
+    setSessionStartTime(null);
+    setSessionDuration(0);
+    setStatusText("Ready when the interview starts.");
+  }
+
+  const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
+
   return (
     <div className="live-client-grid">
       <section className="card live-control-card">
-        <div>
-          <div className="muted" style={{ fontSize: 13 }}>
-            Audio source
+        <div className="live-control-header">
+          <div>
+            <div className="muted" style={{ fontSize: 13 }}>
+              Audio source
+            </div>
+            <h2 style={{ fontSize: 24, margin: "7px 0 6px" }}>
+              What should Odesseus listen to?
+            </h2>
+            <p className="muted" style={{ margin: 0, lineHeight: 1.55 }}>
+              {modeCopy}
+            </p>
           </div>
-          <h2 style={{ fontSize: 24, margin: "7px 0 6px" }}>
-            What should Odesseus listen to?
-          </h2>
-          <p className="muted" style={{ margin: 0, lineHeight: 1.55 }}>
-            {modeCopy}
-          </p>
+
+          {state === "live" && (
+            <div className="live-session-timer" aria-live="polite">
+              <span className="timer-label">Session</span>
+              <time className="timer-value">{formatDuration(sessionDuration)}</time>
+            </div>
+          )}
         </div>
 
         <div className="live-capture-options">
@@ -571,7 +636,7 @@ export default function OdesseusLiveClient({
             <button
               className="btn btn-primary"
               type="button"
-              onClick={startLive}
+              onClick={state === "error" ? retryLive : startLive}
               disabled={!consent || interviewPasses < 1}
             >
               {state === "error" ? "Try again" : "Start Odesseus Live"}
@@ -683,6 +748,63 @@ export default function OdesseusLiveClient({
           )}
         </div>
       </section>
+
+      {state === "ended" && (
+        <section className="card live-completed-card">
+          <div className="live-completed-icon" aria-hidden="true">✓</div>
+          <h2 style={{ fontSize: 28, margin: "10px 0 8px" }}>
+            Interview completed
+          </h2>
+          <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
+            The Live session has ended. Your transcript is saved and ready for
+            post-interview analysis.
+          </p>
+          <div className="live-completed-stats">
+            <div>
+              <strong>{transcripts.length}</strong>
+              <span className="muted">transcript turns</span>
+            </div>
+            <div>
+              <strong>{formatDuration(sessionDuration)}</strong>
+              <span className="muted">duration</span>
+            </div>
+          </div>
+          <Link
+            className="btn btn-primary"
+            href={`/interviews/${interviewId}/analysis`}
+            style={{ marginTop: 18 }}
+          >
+            Analyze interview
+          </Link>
+          <Link
+            className="btn btn-secondary"
+            href={`/interviews/${interviewId}`}
+            style={{ marginTop: 10 }}
+          >
+            Back to interview workspace
+          </Link>
+        </section>
+      )}
+
+      {state === "error" && (
+        <section className="card live-error-card">
+          <div className="live-error-icon" aria-hidden="true">⚠</div>
+          <h2 style={{ fontSize: 28, margin: "10px 0 8px" }}>
+            Something went wrong
+          </h2>
+          <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
+            {error || "Odesseus Live encountered an error. Please try again."}
+          </p>
+          <div className="live-error-actions">
+            <button className="btn btn-primary" type="button" onClick={retryLive}>
+              Try again
+            </button>
+            <Link className="btn btn-secondary" href={`/interviews/${interviewId}`}>
+              Back to workspace
+            </Link>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

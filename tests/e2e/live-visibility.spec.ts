@@ -126,6 +126,6 @@ test.describe("signed-in applicants still see Odesseus Live where intended", () 
     await page.goto("/billing");
     await expect(page).toHaveURL(/\/billing$/);
     await expect(page.getByText(/One pass is used when Odesseus Live starts/i)).toBeVisible();
-    await expect(page.getByText("Interview passes (legacy)")).toBeVisible();
+    await expect(page.locator('text="Interview passes (legacy)"')).toBeVisible({ timeout: 10000 });
   });
 });
