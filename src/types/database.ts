@@ -558,6 +558,311 @@ export type Database = {
         }
         Relationships: []
       }
+      employer_job_post_credits: {
+        Row: {
+          expires_at: string | null
+          granted_at: string
+          id: string
+          org_id: string
+          total: number
+          used: number
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string
+          id?: string
+          org_id: string
+          total: number
+          used?: number
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string
+          id?: string
+          org_id?: string
+          total?: number
+          used?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_job_post_credits_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "employer_organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      employer_jobs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          org_id: string
+          posted_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          org_id: string
+          posted_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          org_id?: string
+          posted_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_jobs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "employer_organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      employer_member_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_user_id: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          org_id: string
+          role: string
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_by: string
+          org_id: string
+          role: string
+          status?: string
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          org_id?: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_member_invitations_accepted_user_id_fkey"
+            columns: ["accepted_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employer_member_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employer_member_invitations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "employer_organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      employer_members: {
+        Row: {
+          created_at: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          org_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "employer_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employer_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      employer_organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_organizations_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      employer_seat_adjustments: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          idempotency_key: string | null
+          new_quantity: number
+          org_id: string
+          outcome: string
+          previous_quantity: number | null
+          removed_user_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          idempotency_key?: string | null
+          new_quantity: number
+          org_id: string
+          outcome?: string
+          previous_quantity?: number | null
+          removed_user_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          idempotency_key?: string | null
+          new_quantity?: number
+          org_id?: string
+          outcome?: string
+          previous_quantity?: number | null
+          removed_user_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_seat_adjustments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "employer_organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      employer_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          job_posts_included: number
+          org_id: string
+          period_end: string | null
+          period_start: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_posts_included: number
+          org_id: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_posts_included?: number
+          org_id?: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_subscriptions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "employer_organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       external_signals: {
         Row: {
           application_id: string | null
@@ -617,6 +922,57 @@ export type Database = {
             columns: ["integration_account_id"]
             isOneToOne: false
             referencedRelation: "integration_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      featured_listings: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          job_id: string
+          org_id: string
+          starts_at: string
+          stripe_payment_intent: string | null
+          tier: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          job_id: string
+          org_id: string
+          starts_at?: string
+          stripe_payment_intent?: string | null
+          tier: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          job_id?: string
+          org_id?: string
+          starts_at?: string
+          stripe_payment_intent?: string | null
+          tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_listings_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "employer_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "featured_listings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "employer_organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1570,6 +1926,44 @@ export type Database = {
         }
         Relationships: []
       }
+      recruiter_seats: {
+        Row: {
+          active_until: string | null
+          count: number
+          id: string
+          org_id: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active_until?: string | null
+          count: number
+          id?: string
+          org_id: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active_until?: string | null
+          count?: number
+          id?: string
+          org_id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiter_seats_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "employer_organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       resume_tailorings: {
         Row: {
           approved_at: string | null
@@ -1763,6 +2157,14 @@ export type Database = {
       odesseus_get_integration_secret: {
         Args: { p_secret_id: string }
         Returns: string
+      }
+      odesseus_org_live_seat_count: {
+        Args: { p_org_id: string }
+        Returns: number
+      }
+      odesseus_org_required_seat_count: {
+        Args: { p_org_id: string }
+        Returns: number
       }
       odesseus_store_integration_secret: {
         Args: { p_name: string; p_secret: string; p_user_id: string }
