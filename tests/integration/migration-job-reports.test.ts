@@ -23,6 +23,9 @@ describe("job reports migration (M7 backend slice)", () => {
   it("creates the RLS-protected job_reports table with own-row policies", () => {
     expect(sql).toMatch(/CREATE TABLE public\.job_reports/);
     expect(sql).toMatch(/reason\s+text\s+NOT NULL/);
+    // As shipped in M7 the filing state was named 'open'. The approved contract
+    // names it 'new', applied by 20261007000000_job_report_status_new.sql; the
+    // current domain is asserted in migration-job-report-status-new.test.ts.
     expect(sql).toMatch(/job_reports_status_check CHECK \(status IN \('open', 'reviewing', 'resolved', 'dismissed'\)\)/);
     expect(sql).toMatch(/CREATE POLICY "job_reports_select_own"/);
     expect(sql).toMatch(/CREATE POLICY "job_reports_insert_own"/);

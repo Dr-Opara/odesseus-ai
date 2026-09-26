@@ -26,7 +26,7 @@ function fakeReportsDb(opts: {
 } = {}) {
   const jobs = opts.jobs ? [...opts.jobs] : [];
   let reports = opts.reports ? [...opts.reports] : [];
-  const state: { lastUserId?: string | null } = {};
+  const state: { lastUserId?: string | null; lastInsert?: Record<string, unknown> } = {};
 
   const from = vi.fn((table: string) => {
     if (table === "job_opportunities") {
@@ -64,6 +64,7 @@ function fakeReportsDb(opts: {
       builder.insert = vi.fn((payload: Record<string, unknown>) => {
         mode.kind = "insert";
         mode.payload = payload;
+        state.lastInsert = payload;
         return builder;
       });
 
@@ -72,6 +73,11 @@ function fakeReportsDb(opts: {
           const payload = mode.payload ?? {};
           if (payload.user_id !== state.lastUserId) {
             // Mirrors the RLS WITH CHECK on job_reports_insert_own.
+            return Promise.resolve({ data: null, error: { message: "new row violates row-level security policy" } });
+          }
+          if (payload.status !== "new") {
+            // Mirrors the same policy's birth-status pin: a report is filed
+            // unreviewed, so a client cannot pre-judge its own report.
             return Promise.resolve({ data: null, error: { message: "new row violates row-level security policy" } });
           }
           const row = {
@@ -112,6 +118,7 @@ function fakeReportsDb(opts: {
   return {
     client: client as never,
     rows: () => reports,
+    inserted: () => state.lastInsert,
     asUser(userId: string | null) {
       currentUser = userId;
     },
@@ -146,21 +153,24 @@ describe("job report reason set", () => {
 
   it("mirrors the database status enum", () => {
     expect([...JOB_REPORT_STATUSES]).toEqual([
-      "open",
+      "new",
       "reviewing",
       "resolved",
       "dismissed",
     ]);
+    // The retired name must not linger in the domain: it would let a client
+    // pass an "open" status that the database now rejects.
+    expect(JOB_REPORT_STATUSES).not.toContain("open");
   });
 
   it("does not allow a moderator to move a report back to the filed state", () => {
-    // "open" is how a report is born, not a triage target.
+    // "new" is how a report is born, not a triage target.
     expect([...JOB_REPORT_MODERATION_STATUSES]).toEqual([
       "reviewing",
       "resolved",
       "dismissed",
     ]);
-    expect(isJobReportModerationStatus("open")).toBe(false);
+    expect(isJobReportModerationStatus("new")).toBe(false);
     expect(isJobReportModerationStatus("resolved")).toBe(true);
   });
 });
@@ -177,6 +187,16 @@ describe("fileJobReport", () => {
     db.asUser("user-a");
     const result = await fileJobReport(db.client, { ...base, userId: "user-a" });
     expect(result.ok).toBe(true);
+  });
+
+  it("always files a report as new, never as pre-judged", async () => {
+    const db = fakeReportsDb({ jobs: [{ id: "job-1", user_id: "user-a" }] });
+    db.asUser("user-a");
+    await fileJobReport(db.client, { ...base, userId: "user-a" });
+    // The filer has no moderation_status in its input type at all, and the row
+    // it writes is pinned to 'new'. The insert policy enforces the same thing
+    // server-side, so a direct PostgREST call cannot skip it.
+    expect(db.inserted()).toMatchObject({ user_id: "user-a", status: "new" });
   });
 
   it("refuses a job that belongs to someone else", async () => {
@@ -318,7 +338,7 @@ describe("setJobReportStatus", () => {
 
   it("refuses a transition back to the filed state without calling the RPC", async () => {
     const db = fakeReportsDb();
-    const result = await setJobReportStatus(db as never, "r1", "open" as never, null);
+    const result = await setJobReportStatus(db as never, "r1", "new" as never, null);
     expect(result.ok).toBe(false);
     expect(db.rpc).not.toHaveBeenCalled();
   });

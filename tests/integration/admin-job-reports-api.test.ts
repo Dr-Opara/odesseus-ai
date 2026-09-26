@@ -35,7 +35,7 @@ const QUEUE_ROW = {
   job_id: "11111111-1111-4111-8111-111111111111",
   reason: "Scam",
   details: "Asked for payment",
-  status: "open",
+  status: "new",
   moderation_note: null,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
@@ -327,7 +327,21 @@ describe("PATCH /api/admin/job-reports/[id]", () => {
     });
   });
 
-  it("never allows a report to be pushed back to open", async () => {
+  it("never allows a report to be pushed back to new", async () => {
+    const service = adminServiceClient();
+    createClientMock.mockResolvedValue(adminSession());
+    isAdminMock.mockResolvedValue(true);
+    serviceClientMock.mockReturnValue(service);
+    const { PATCH } = await freshItemRoute();
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+    const response = await PATCH(patchRequest({ status: "new" }), {
+      params: Promise.resolve({ id: REPORT_ID }),
+    });
+    expect(response.status).toBe(400);
+    expect(service.rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects the retired 'open' status instead of silently accepting it", async () => {
     const service = adminServiceClient();
     createClientMock.mockResolvedValue(adminSession());
     isAdminMock.mockResolvedValue(true);
