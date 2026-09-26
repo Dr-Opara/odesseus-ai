@@ -31,6 +31,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import { employerFeaturedTiers, type EmployerFeaturedTier } from "@/lib/billing/catalog";
 
 export type EmployerClient = SupabaseClient<Database>;
 
@@ -484,4 +485,208 @@ export function isValidSeatCount(value: number): boolean {
     value >= SEATS_PER_CHECKOUT_MIN &&
     value <= SEATS_PER_CHECKOUT_MAX
   );
+}
+
+// ---------------------------------------------------------------------------
+// Featured listings
+// ---------------------------------------------------------------------------
+
+/** A job the org could put in front of a featured purchase. */
+export type FeatureableJob = {
+  id: string;
+  title: string;
+  location: string | null;
+  status: string;
+  /** True when a paid boost is currently covering this posting. */
+  isBoosted: boolean;
+};
+
+export type FeaturedListing = {
+  id: string;
+  jobId: string;
+  /** Null when the posting was deleted after the purchase. */
+  jobTitle: string | null;
+  tier: EmployerFeaturedTier;
+  startsAt: string;
+  expiresAt: string;
+  isActive: boolean;
+  /**
+   * Whether the paid window is actually running right now.
+   *
+   * Deliberately not the same as `is_active`: that flag is cleared by the
+   * scheduled expire_ended_featured_listings() sweep, so between a listing
+   * lapsing and the sweep running, `is_active` would still say true. The
+   * timestamp is the honest answer, so the UI cannot advertise visibility that
+   * has already ended.
+   */
+  isBoosted: boolean;
+};
+
+export type OrgFeaturedView = {
+  orgId: string;
+  orgName: string;
+  /** Every listing this org has bought, newest window first. */
+  listings: FeaturedListing[];
+  /** The org's own postings, so a buyer can choose one to boost. */
+  jobs: FeatureableJob[];
+  /** Catalog tiers with prices, so the page cannot display a stale amount. */
+  tiers: FeaturedTierOffer[];
+};
+
+export type FeaturedTierOffer = {
+  tier: EmployerFeaturedTier;
+  label: string;
+  description: string;
+  amountCents: number;
+  days: number;
+};
+
+const FEATURED_TIER_KEYS = Object.keys(employerFeaturedTiers) as EmployerFeaturedTier[];
+
+export function isFeaturedTier(value: unknown): value is EmployerFeaturedTier {
+  return typeof value === "string" && FEATURED_TIER_KEYS.includes(value as EmployerFeaturedTier);
+}
+
+/** Catalog tiers shaped for the client. Prices come from the catalog, not a copy. */
+export function getFeaturedTierOffers(): FeaturedTierOffer[] {
+  return FEATURED_TIER_KEYS.map((tier) => {
+    const item = employerFeaturedTiers[tier];
+    return {
+      tier,
+      label: item.label,
+      description: item.description,
+      amountCents: item.amountCents,
+      days: item.days,
+    };
+  });
+}
+
+/**
+ * Confirms a job belongs to the org and can be boosted.
+ *
+ * This is a fail-fast check before a card is presented, not the security
+ * boundary: `odesseus_create_featured_listing` re-verifies ownership at
+ * fulfilment and fails closed, so forged checkout metadata still cannot boost
+ * another employer's posting. Rejecting here just avoids charging someone for a
+ * purchase that was never going to be granted.
+ */
+export async function getFeatureableJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string
+): Promise<{ job: FeatureableJob } | { reason: "not_found" | "closed" }> {
+  const { data, error } = await client
+    .from("employer_jobs")
+    .select("id,title,location,status")
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Could not load that job: ${error.message}`);
+  }
+  if (!data) return { reason: "not_found" };
+  if (data.status === "closed") return { reason: "closed" };
+
+  return {
+    job: {
+      id: data.id,
+      title: data.title,
+      location: data.location,
+      status: data.status,
+      isBoosted: false,
+    },
+  };
+}
+
+/**
+ * The featured-listings screen in one payload: what this org has already paid
+ * for, what it can boost, and what each tier costs.
+ *
+ * The tiers are included so the page renders the same figures the checkout
+ * charges. A hardcoded amount in the UI is how a $49 tier ends up advertised
+ * at $39 while the backend takes $49.
+ */
+export async function getOrgFeaturedView(
+  client: EmployerClient,
+  orgId: string,
+  userId: string
+): Promise<OrgFeaturedView> {
+  const [{ data: org, error: orgError }, role] = await Promise.all([
+    client
+      .from("employer_organizations")
+      .select("id,name")
+      .eq("id", orgId)
+      .maybeSingle(),
+    getOrgRole(client, orgId, userId),
+  ]);
+
+  if (orgError) {
+    throw new Error(`Could not load the organization: ${orgError.message}`);
+  }
+  if (!org || role === null) {
+    throw new OrgAccessError();
+  }
+
+  const [{ data: listingRows, error: listingError }, { data: jobRows, error: jobError }] =
+    await Promise.all([
+      client
+        .from("featured_listings")
+        .select("id,job_id,tier,starts_at,expires_at,is_active")
+        .eq("org_id", orgId)
+        .order("starts_at", { ascending: false }),
+      client
+        .from("employer_jobs")
+        .select("id,title,location,status")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false }),
+    ]);
+
+  if (listingError) {
+    throw new Error(`Could not load featured listings: ${listingError.message}`);
+  }
+  if (jobError) {
+    throw new Error(`Could not load your jobs: ${jobError.message}`);
+  }
+
+  const jobs = (jobRows ?? []) as Array<{
+    id: string;
+    title: string;
+    location: string | null;
+    status: string;
+  }>;
+  const titles = new Map(jobs.map((job) => [job.id, job.title]));
+  const now = Date.now();
+
+  const listings: FeaturedListing[] = (listingRows ?? [])
+    .map((row) => {
+      const expiresAtMs = Date.parse(row.expires_at);
+      const boosted = row.is_active && Number.isFinite(expiresAtMs) && expiresAtMs > now;
+      return {
+        id: row.id,
+        jobId: row.job_id,
+        jobTitle: titles.get(row.job_id) ?? null,
+        // A stored tier the catalog no longer sells is surfaced as-is rather
+        // than coerced, so history stays readable if a tier is ever retired.
+        tier: isFeaturedTier(row.tier) ? row.tier : (row.tier as EmployerFeaturedTier),
+        startsAt: row.starts_at,
+        expiresAt: row.expires_at,
+        isActive: row.is_active,
+        isBoosted: boosted,
+      };
+    })
+    .sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt));
+
+  const boostedJobIds = new Set(listings.filter((l) => l.isBoosted).map((l) => l.jobId));
+
+  return {
+    orgId: org.id,
+    orgName: org.name,
+    listings,
+    jobs: jobs.map((job) => ({
+      ...job,
+      isBoosted: boostedJobIds.has(job.id),
+    })),
+    tiers: getFeaturedTierOffers(),
+  };
 }

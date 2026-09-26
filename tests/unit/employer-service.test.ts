@@ -10,8 +10,12 @@ import {
   acceptInvitation,
   authorizeOrgAdmin,
   createInvitation,
+  getFeatureableJob,
+  getFeaturedTierOffers,
+  getOrgFeaturedView,
   getOrgRole,
   getOrgTeamView,
+  isFeaturedTier,
   isPlausibleEmail,
   isValidSeatCount,
   listOrgInvitations,
@@ -608,5 +612,305 @@ describe("seat contract constants", () => {
     expect(isValidSeatCount(1.5)).toBe(false);
     expect(isValidSeatCount(Number.NaN)).toBe(false);
     expect(isValidSeatCount(101)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Featured listings
+// ---------------------------------------------------------------------------
+
+const JOB_ID = "5ddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const OTHER_JOB_ID = "5eeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+const LISTING_COLUMNS = "id,job_id,tier,starts_at,expires_at,is_active";
+const JOB_COLUMNS = "id,title,location,status";
+
+const daysFromNow = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
+
+describe("isFeaturedTier", () => {
+  it("accepts only catalog tiers", () => {
+    expect(isFeaturedTier("featured_7d")).toBe(true);
+    expect(isFeaturedTier("featured_14d")).toBe(true);
+    expect(isFeaturedTier("ai_30d")).toBe(true);
+  });
+
+  it("rejects anything that is not a paid tier, including legacy keys", () => {
+    expect(isFeaturedTier("featured")).toBe(false);
+    expect(isFeaturedTier("FEATURED_7D")).toBe(false);
+    expect(isFeaturedTier("app_credit")).toBe(false);
+    expect(isFeaturedTier(undefined)).toBe(false);
+    expect(isFeaturedTier(7)).toBe(false);
+  });
+});
+
+describe("getFeaturedTierOffers", () => {
+  it("mirrors the catalog prices so the page cannot advertise a stale amount", () => {
+    expect(getFeaturedTierOffers()).toEqual([
+      {
+        tier: "featured_7d",
+        label: "Featured — 7 days",
+        description: "Boosted visibility for 7 days",
+        amountCents: 2900,
+        days: 7,
+      },
+      {
+        tier: "featured_14d",
+        label: "Featured — 14 days",
+        description: "Boosted visibility for 14 days",
+        amountCents: 4900,
+        days: 14,
+      },
+      {
+        tier: "ai_30d",
+        label: "AI Featured — 30 days",
+        description: "AI-assisted boosted visibility for 30 days",
+        amountCents: 12900,
+        days: 30,
+      },
+    ]);
+  });
+});
+
+describe("getFeatureableJob", () => {
+  it("returns the job when it belongs to the org and is open", async () => {
+    const { client, select } = employerDb({
+      employer_jobs: {
+        [JOB_COLUMNS]: {
+          data: { id: JOB_ID, title: "Staff Nurse", location: "Austin, TX", status: "published" },
+        },
+      },
+    });
+
+    expect(await getFeatureableJob(client, ORG_ID, JOB_ID)).toEqual({
+      job: {
+        id: JOB_ID,
+        title: "Staff Nurse",
+        location: "Austin, TX",
+        status: "published",
+        isBoosted: false,
+      },
+    });
+    // Scoped by org as well as id: ownership is the whole point of this check.
+    expect(select("employer_jobs", JOB_COLUMNS)[0].filters).toEqual([
+      ["id", JOB_ID],
+      ["org_id", ORG_ID],
+    ]);
+  });
+
+  it("reports a job the org does not own as not found, never as another org's job", async () => {
+    const { client } = employerDb({ employer_jobs: { [JOB_COLUMNS]: { data: null } } });
+    expect(await getFeatureableJob(client, ORG_ID, OTHER_JOB_ID)).toEqual({
+      reason: "not_found",
+    });
+  });
+
+  it("refuses a closed job: paying to boost a posting nobody can apply to is a refund request", async () => {
+    const { client } = employerDb({
+      employer_jobs: {
+        [JOB_COLUMNS]: { data: { id: JOB_ID, title: "Staff Nurse", location: null, status: "closed" } },
+      },
+    });
+    expect(await getFeatureableJob(client, ORG_ID, JOB_ID)).toEqual({ reason: "closed" });
+  });
+
+  it("allows a draft job so a posting can be featured before it goes live", async () => {
+    const { client } = employerDb({
+      employer_jobs: {
+        [JOB_COLUMNS]: { data: { id: JOB_ID, title: "Draft role", location: null, status: "draft" } },
+      },
+    });
+    expect(await getFeatureableJob(client, ORG_ID, JOB_ID)).toMatchObject({
+      job: { status: "draft" },
+    });
+  });
+
+  it("throws rather than returning a reason when the read fails", async () => {
+    const { client } = employerDb({
+      employer_jobs: { [JOB_COLUMNS]: { error: { message: "db down" } } },
+    });
+    await expect(getFeatureableJob(client, ORG_ID, JOB_ID)).rejects.toThrow(/db down/);
+  });
+});
+
+describe("getOrgFeaturedView", () => {
+  function featuredDb(overrides: Record<string, Canned> = {}) {
+    return employerDb({
+      // Both projections are needed: the view reads id,name and the role probe
+      // reads id,owner_user_id. OWNER_ID is the org owner, so authorization
+      // passes without a membership row.
+      employer_organizations: {
+        "id,name": { data: orgRow },
+        "id,owner_user_id": { data: { id: ORG_ID, owner_user_id: OWNER_ID } },
+      },
+      featured_listings: { [LISTING_COLUMNS]: { data: [] } },
+      employer_jobs: { [JOB_COLUMNS]: { data: [] } },
+      ...overrides,
+    });
+  }
+
+  it("raises OrgAccessError for a non-member so the route can answer 404", async () => {
+    const { client } = featuredDb({
+      employer_members: { role: { data: null } },
+    });
+    await expect(getOrgFeaturedView(client, ORG_ID, "stranger")).rejects.toBeInstanceOf(
+      OrgAccessError
+    );
+  });
+
+  it("treats a listing as boosted only while the paid window is genuinely running", async () => {
+    const { client } = featuredDb({
+      featured_listings: {
+        [LISTING_COLUMNS]: {
+          data: [
+            {
+              id: "7aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              job_id: JOB_ID,
+              tier: "featured_7d",
+              starts_at: daysFromNow(-1),
+              expires_at: daysFromNow(6),
+              is_active: true,
+            },
+            {
+              id: "7bbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+              job_id: OTHER_JOB_ID,
+              tier: "featured_14d",
+              starts_at: daysFromNow(-20),
+              expires_at: daysFromNow(-6),
+              is_active: true,
+            },
+          ],
+        },
+      },
+      employer_jobs: {
+        [JOB_COLUMNS]: {
+          data: [
+            { id: JOB_ID, title: "Staff Nurse", location: "Austin, TX", status: "published" },
+            { id: OTHER_JOB_ID, title: "Closed role", location: null, status: "closed" },
+          ],
+        },
+      },
+    });
+
+    const view = await getOrgFeaturedView(client, ORG_ID, OWNER_ID);
+    const [live, lapsed] = view.listings;
+
+    expect(live.isBoosted).toBe(true);
+    expect(lapsed.isBoosted).toBe(false);
+    // is_active is still true on the lapsed row: the sweep has not run yet. The
+    // view must not advertise a boost that has already ended.
+    expect(lapsed.isActive).toBe(true);
+    expect(view.jobs.map((job) => job.isBoosted)).toEqual([true, false]);
+  });
+
+  it("joins job titles so a listing is readable after the posting is renamed or gone", async () => {
+    const { client } = featuredDb({
+      featured_listings: {
+        [LISTING_COLUMNS]: {
+          data: [
+            {
+              id: "7aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              job_id: JOB_ID,
+              tier: "ai_30d",
+              starts_at: daysFromNow(0),
+              expires_at: daysFromNow(30),
+              is_active: true,
+            },
+            {
+              id: "7bbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+              job_id: "5ffffffff-ffff-4fff-8fff-ffffffffffff",
+              tier: "featured_7d",
+              starts_at: daysFromNow(-2),
+              expires_at: daysFromNow(5),
+              is_active: true,
+            },
+          ],
+        },
+      },
+      employer_jobs: {
+        [JOB_COLUMNS]: {
+          data: [{ id: JOB_ID, title: "Staff Nurse", location: null, status: "published" }],
+        },
+      },
+    });
+
+    const view = await getOrgFeaturedView(client, ORG_ID, OWNER_ID);
+    expect(view.listings.map((listing) => listing.jobTitle)).toEqual([
+      "Staff Nurse",
+      // The posting is gone; the purchase history is not.
+      null,
+    ]);
+  });
+
+  it("surfaces a stored tier the catalog no longer sells instead of coercing it", async () => {
+    const { client } = featuredDb({
+      featured_listings: {
+        [LISTING_COLUMNS]: {
+          data: [
+            {
+              id: "7aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              job_id: JOB_ID,
+              tier: "legacy_boost",
+              starts_at: daysFromNow(-1),
+              expires_at: daysFromNow(6),
+              is_active: true,
+            },
+          ],
+        },
+      },
+    });
+
+    const view = await getOrgFeaturedView(client, ORG_ID, OWNER_ID);
+    expect(view.listings[0].tier).toBe("legacy_boost");
+  });
+
+  it("orders listings newest first, by window start", async () => {
+    const { client } = featuredDb({
+      featured_listings: {
+        [LISTING_COLUMNS]: {
+          data: [
+            {
+              id: "7aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              job_id: JOB_ID,
+              tier: "featured_7d",
+              starts_at: daysFromNow(-1),
+              expires_at: daysFromNow(6),
+              is_active: true,
+            },
+            {
+              id: "7bbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+              job_id: OTHER_JOB_ID,
+              tier: "ai_30d",
+              starts_at: daysFromNow(-10),
+              expires_at: daysFromNow(20),
+              is_active: true,
+            },
+          ],
+        },
+      },
+    });
+
+    const view = await getOrgFeaturedView(client, ORG_ID, OWNER_ID);
+    expect(view.listings.map((listing) => listing.tier)).toEqual(["featured_7d", "ai_30d"]);
+  });
+
+  it("carries the catalog tiers on the payload", async () => {
+    const { client } = featuredDb();
+    const view = await getOrgFeaturedView(client, ORG_ID, OWNER_ID);
+    expect(view.tiers.map((tier) => tier.amountCents)).toEqual([2900, 4900, 12900]);
+  });
+
+  it("fails loudly when the listings read fails", async () => {
+    const { client } = featuredDb({
+      featured_listings: { [LISTING_COLUMNS]: { error: { message: "permission denied" } } },
+    });
+    await expect(getOrgFeaturedView(client, ORG_ID, OWNER_ID)).rejects.toThrow(
+      /permission denied/
+    );
+  });
+
+  it("fails loudly when the jobs read fails", async () => {
+    const { client } = featuredDb({
+      employer_jobs: { [JOB_COLUMNS]: { error: { message: "timeout" } } },
+    });
+    await expect(getOrgFeaturedView(client, ORG_ID, OWNER_ID)).rejects.toThrow(/timeout/);
   });
 });
