@@ -3129,7 +3129,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   body{background:var(--m-bg)}
   .odesseus-mobile-only{display:block}
   .odesseus-desktop-only{display:none!important}
-  .m-screen,.m-splash{width:100%;max-width:430px;margin:0 auto;background:var(--m-bg);color:var(--m-ink);position:relative;padding:34px 20px 104px;font-family:Inter,Arial,Helvetica,sans-serif}
+  .m-screen,.m-splash{width:100%;max-width:430px;margin:0 auto;background:var(--m-bg);color:var(--m-ink);position:relative;padding:34px 20px 104px;font-family:var(--font-sans),Inter,Arial,Helvetica,sans-serif}
   .m-screen-header{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:start;gap:8px;margin-bottom:10px}
   .m-screen-header button{width:32px;height:32px;border:0;border-radius:50%;background:#f3f3f8;color:var(--m-ink);font-size:17px;cursor:pointer}
   .m-screen-header h1{grid-column:2;font-size:24px;line-height:1.08;letter-spacing:-.04em;margin:7px 0 0;font-weight:800}
@@ -3478,7 +3478,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
  * independent viewport for media-query purposes, so Figma Mobile v1's
  * existing mobile-breakpoint rules apply inside it exactly as on a real
  * phone, with no separate mobile implementation and no forced CSS overrides. */
-.qa-mobile-page{min-height:100vh;background:#e7e7ef;display:flex;flex-direction:column;align-items:center;padding:20px 16px 48px;font-family:Inter,Arial,Helvetica,sans-serif}
+.qa-mobile-page{min-height:100vh;background:#e7e7ef;display:flex;flex-direction:column;align-items:center;padding:20px 16px 48px;font-family:var(--font-sans),Inter,Arial,Helvetica,sans-serif}
 .qa-mobile-bar{width:100%;max-width:430px;display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px;font-size:12px;font-weight:700;color:#44445c}
 .qa-mobile-bar-label{overflow-wrap:anywhere}
 .qa-mobile-bar-link{color:#7847e9;text-decoration:underline;white-space:nowrap}

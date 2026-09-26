@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import OdesseusWordmark from "@/components/odesseus-wordmark";
@@ -12,8 +11,20 @@ const links = [
   { href: "/about", label: "About" },
 ];
 
+// Signed-out mobile public navigation is intentionally minimal.
+//
+// On a phone the splash (screen 00) owns the public calls to action —
+// Get Started -> /signup, Business Login -> /employers/login, and
+// See Pricing -> /pricing. Repeating Sign In and Get Started inside a
+// collapsible phone menu was duplicating those exact actions, so the header
+// carries no hamburger at all below the desktop breakpoint. What remains at
+// phone width is the wordmark (a link home) plus the shared MarketingFooter,
+// which already lists every public route: How it works, Pricing, Agents,
+// About, Partner Program, FAQ, For Employers and Employer Pricing.
+//
+// The desktop navigation is unchanged: the same links, the same Sign In and
+// Get Started actions, and no hamburger at any width.
 export default function MarketingNav({ inverse = false }: { inverse?: boolean }) {
-  const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   return (
@@ -32,18 +43,7 @@ export default function MarketingNav({ inverse = false }: { inverse?: boolean })
           <Link className={`figma-text-link ${inverse ? "is-inverse" : ""}`} href="/login">Sign In</Link>
           <Link className="figma-btn figma-btn-orange" href="/signup">Get Started</Link>
         </div>
-        <button className="figma-nav-toggle" type="button" aria-expanded={open} aria-label="Toggle menu" onClick={() => setOpen(v => !v)}>
-          {open ? "✕" : "☰"}
-        </button>
       </div>
-      {open ? (
-        <div className={`figma-nav-mobile ${inverse ? "is-inverse" : ""}`}>
-          {links.map((link) => <Link key={link.href} href={link.href} onClick={() => setOpen(false)}>{link.label}</Link>)}
-          <Link href="/about#faq" onClick={() => setOpen(false)}>FAQ</Link>
-          <Link href="/login" onClick={() => setOpen(false)}>Sign In</Link>
-          <Link className="figma-btn figma-btn-orange" href="/signup" onClick={() => setOpen(false)}>Get Started</Link>
-        </div>
-      ) : null}
     </header>
   );
 }

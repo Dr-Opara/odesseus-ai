@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import OdesseusWordmark from "@/components/odesseus-wordmark";
@@ -10,14 +9,21 @@ const links = [
   { href: "/employers/pricing", label: "Pricing" },
 ];
 
-// The employer marketing header (its links and the mobile menu that carried
-// Employer Home / Pricing / For Candidates / Sign In / Post a Job) is
-// desktop-only. On phones the public entry points are owned by the splash —
-// Get Started, Business Login, See Pricing — so this header is not rendered
-// below 768px. The routes themselves stay public for desktop.
-
+// The employer marketing header is desktop-only, and it has no collapsible
+// mobile menu.
+//
+// Employer Home / Pricing / For Candidates / Sign In / Post a Job are
+// desktop links. They are deliberately NOT reproduced in a phone-width
+// menu: on phones the public business entry points are owned by the mobile
+// splash (Business Login -> /employers/login, See Pricing -> /pricing), and
+// duplicating Sign In / Post a Job there would just be the same two actions a
+// second time. The header therefore keeps no hamburger at all, so those five
+// labels can never appear below the desktop breakpoint.
+//
+// `odesseus-desktop-only` hides the header entirely under 768px. Between
+// 768px and 900px the marketing collapse rule hides the link and action rows,
+// which leaves the wordmark as a plain brand bar — still no employer menu.
 export default function EmployerNav({ inverse = false }: { inverse?: boolean }) {
-  const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   return (
@@ -36,18 +42,7 @@ export default function EmployerNav({ inverse = false }: { inverse?: boolean }) 
           <Link className={`figma-text-link ${inverse ? "is-inverse" : ""}`} href="/employers/login">Sign In</Link>
           <Link className="figma-btn figma-btn-orange" href="/employers/post-job">Post a Job</Link>
         </div>
-        <button className="figma-nav-toggle" type="button" aria-expanded={open} aria-label="Toggle menu" onClick={() => setOpen(v => !v)}>
-          {open ? "✕" : "☰"}
-        </button>
       </div>
-      {open ? (
-        <div className={`figma-nav-mobile ${inverse ? "is-inverse" : ""}`}>
-          {links.map((link) => <Link key={link.href} href={link.href} onClick={() => setOpen(false)}>{link.label}</Link>)}
-          <Link href="/" onClick={() => setOpen(false)}>For Candidates</Link>
-          <Link href="/employers/login" onClick={() => setOpen(false)}>Sign In</Link>
-          <Link className="figma-btn figma-btn-orange" href="/employers/post-job" onClick={() => setOpen(false)}>Post a Job</Link>
-        </div>
-      ) : null}
     </header>
   );
 }

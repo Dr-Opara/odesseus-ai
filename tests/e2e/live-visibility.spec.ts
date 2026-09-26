@@ -6,9 +6,10 @@ import { test, expect } from "@playwright/test";
 //  1. Signed-out visitors never encounter Odesseus Live — its name, the
 //     session/pass/annual prices, or any live-interview workflow — on any
 //     public page: marketing pages, public pricing, About/FAQ/Support,
-//     employer pages, the public mobile menus, and the desktop nav/footer.
+//     employer pages, the public navigation, and the desktop nav/footer.
 //     On phones the public entry points are owned by the splash
-//     (Get Started / Business Login / See Pricing).
+//     (Get Started / Business Login / See Pricing), and neither the marketing
+//     nor the employer header renders a collapsible menu at any width.
 //  2. A signed-in applicant still sees Odesseus Live where intended
 //     (billing keeps the feature and the interview-pass balance exposed).
 //
@@ -47,6 +48,10 @@ const PUBLIC_ROUTES = [
 
 const VIEWPORTS = [
   { name: "desktop", width: 1280, height: 800 },
+  // Tablet band: the marketing collapse rule hides desktop nav links below
+  // 900px while the mobile-only toggle kicks in at 767px, so 820px is the
+  // exact width where an employer/candidate hamburger could leak through.
+  { name: "tablet 820x900", width: 820, height: 900 },
   { name: "mobile 390x844", width: 390, height: 844 },
 ] as const;
 
@@ -75,27 +80,49 @@ test.describe("signed-out public surfaces never mention Odesseus Live", () => {
     }
   });
 
-  test("the public mobile menu (candidate nav) has no Live entry", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/how-it-works");
-    await page.locator(".figma-nav-toggle").click();
-    const panel = page.locator(".figma-nav-mobile");
-    await expect(panel).toBeVisible();
-    const text = (await panel.innerText()).toLowerCase();
-    for (const token of FORBIDDEN) {
-      expect(text).not.toContain(token);
+  test("the public mobile header has no collapsible menu at all", async ({ page }) => {
+    // Signed-out phone navigation is owned by the splash (Get Started /
+    // Business Login / See Pricing). The shared marketing header collapses
+    // to the wordmark and carries no hamburger, so it cannot introduce a
+    // second Sign In / Get Started pair — or any Live entry — on mobile.
+    for (const width of [390, 820]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/how-it-works");
+      await expect(page.locator(".figma-nav-toggle")).toHaveCount(0);
+      await expect(page.locator(".figma-nav-mobile")).toHaveCount(0);
+      const header = (await page.locator("header").innerText()).toLowerCase();
+      for (const token of FORBIDDEN) {
+        expect(header).not.toContain(token);
+      }
     }
   });
 
-  test("the employer mobile menu is not rendered — the splash owns the mobile entry points", async ({ page }) => {
+  test("the employer header has no mobile menu and is hidden on phones", async ({ page }) => {
+    // Employer Home / Pricing / For Candidates / Sign In / Post a Job are
+    // desktop-only. They must not reappear in a phone-width or tablet-width
+    // employer menu, because on phones the splash routes (Get Started /
+    // Business Login / See Pricing) are the public business entry points.
+    for (const width of [390, 820]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/employers");
+      await expect(page.locator(".figma-nav-toggle")).toHaveCount(0);
+      await expect(page.locator(".figma-nav-mobile")).toHaveCount(0);
+    }
+
+    // Under the mobile breakpoint the employer header is not rendered at all.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/employers");
-    // Employer Home, Pricing, For Candidates, Sign In and Post a Job were the
-    // contents of this header's mobile menu. On phones the splash routes
-    // (Get Started / Business Login / See Pricing) are the public entry
-    // points, so the header is not rendered below 768px (desktop unchanged).
     await expect(page.locator(".figma-nav")).toBeHidden();
-    await expect(page.locator(".figma-nav-mobile")).toHaveCount(0);
+  });
+
+  test("the desktop employer navigation still carries Sign In and Post a Job", async ({ page }) => {
+    // Removing the mobile menu must not touch desktop navigation.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/employers");
+    const links = page.locator(".figma-nav");
+    for (const label of ["Employer Home", "Pricing", "For Candidates", "Sign In", "Post a Job"]) {
+      await expect(links.getByRole("link", { name: label })).toBeVisible();
+    }
   });
 });
 
@@ -126,6 +153,12 @@ test.describe("signed-in applicants still see Odesseus Live where intended", () 
     await page.goto("/billing");
     await expect(page).toHaveURL(/\/billing$/);
     await expect(page.getByText(/One pass is used when Odesseus Live starts/i)).toBeVisible();
-    await expect(page.getByText("Interview passes (legacy)")).toBeVisible();
+    await expect(page.getByText("Interview passes")).toBeVisible();
+
+    // The legacy application-credit balance is gone from the candidate UI.
+    // /billing now leads with the wallet, which is the only currency that can
+    // start an application.
+    await expect(page.getByText("Wallet", { exact: true })).toBeVisible();
+    await expect(page.getByText(/app credits|application credits/i)).toHaveCount(0);
   });
 });

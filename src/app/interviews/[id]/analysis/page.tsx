@@ -52,7 +52,7 @@ export default async function PostInterviewPage({
       .limit(1)
       .maybeSingle(),
     supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
-    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("wallet_balance_cents,interview_passes").eq("user_id", userId).maybeSingle(),
   ]);
 
   const parsed = analysisRow
@@ -78,7 +78,7 @@ export default async function PostInterviewPage({
   return (
     <AppShell
       fullName={profile?.full_name}
-      applicationCredits={credits?.application_credits ?? 0}
+      walletBalanceCents={credits?.wallet_balance_cents ?? 0}
       interviewPasses={credits?.interview_passes ?? 0}
       active="interviews"
     >

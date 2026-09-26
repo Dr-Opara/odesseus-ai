@@ -1,6 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { mobileScreens } from "@/lib/mobile/screen-map";
+
+/** Screen 00's approved canvas height (src/lib/mobile/screen-map.ts). */
+const SCREEN_00 = mobileScreens.find((screen) => screen.index === "00");
+const MIN_HEIGHT = SCREEN_00?.minHeight ?? 844;
+
+/**
+ * The lavender gutter always fills the viewport (`100svh`) so there is never a
+ * bare strip below the dark card, and it never shrinks below the approved
+ * 844px artboard on the shorter QA phones.
+ */
+const CANVAS_HEIGHT = `max(${MIN_HEIGHT}px, 100svh)`;
 
 /**
  * Mobile Splash (screen 00) — the public landing at phone width.
@@ -16,10 +28,14 @@ import Link from "next/link";
  * Engineer foreground card), headline accents, pagination, stats and footer
  * are approved Figma marketing elements — illustrative live-job examples,
  * not a claim about real openings and never candidate data.
+ *
+ * The three public entry points are the whole signed-out mobile contract:
+ * Get Started -> /signup, Business Login -> /employers/login, and
+ * See Pricing -> /pricing.
  */
 export default function MobileSplash() {
   return (
-    <main className="m-splash odesseus-mobile-only">
+    <main className="m-splash odesseus-mobile-only" style={{ minHeight: CANVAS_HEIGHT }}>
       <div className="m-splash-card">
         <span className="m-splash-orb m-splash-orb-tl-a" aria-hidden="true" />
         <span className="m-splash-orb m-splash-orb-tl-b" aria-hidden="true" />
@@ -76,7 +92,7 @@ export default function MobileSplash() {
           </Link>
         </div>
         <Link href="/pricing" className="m-splash-cta-wide">
-          View Pricing <b aria-hidden="true">→</b>
+          See Pricing <b aria-hidden="true">→</b>
         </Link>
 
         <div className="m-splash-pagination" aria-hidden="true">

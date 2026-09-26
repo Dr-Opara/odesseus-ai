@@ -22,11 +22,27 @@ export type CandidateProfile = {
   onboarding_completed: boolean;
 };
 
+/**
+ * The candidate's spendable and Live balances.
+ *
+ * `walletBalanceCents` is the active currency for applications: Standard Apply
+ * costs 49c and Smart Apply 199c, both drawn from this balance (see
+ * `src/lib/pricing/candidate-pricing.ts` and the eligibility gate in
+ * `src/app/api/apply/start/route.ts`). It is the same column the apply gate
+ * reads, so the number a candidate sees is the number that decides whether an
+ * application can start.
+ *
+ * `interviewPasses` / `liveUnlimitedUntil` remain because Odesseus Live is a
+ * real authenticated product; only its *public* visibility is restricted.
+ *
+ * The legacy `application_credits` column still exists in the database but is
+ * deliberately absent here: it no longer gates or displays anything.
+ */
 export type CreditBalance = {
-  application_credits: number;
-  interview_passes: number;
+  walletBalanceCents: number;
+  interviewPasses: number;
   /** Set only when an Odesseus Live annual entitlement is active (candidate-owned, server-driven). */
-  live_unlimited_until: string | null;
+  liveUnlimitedUntil: string | null;
 };
 
 export type CandidateJob = {

@@ -19,7 +19,7 @@ export default async function BillingPage({
   const [{ data: credits }, { data: transactions }, { data: annualPurchases }, { data: profile }] = await Promise.all([
     supabase
       .from("credit_balances")
-      .select("application_credits,interview_passes,live_unlimited_until")
+      .select("wallet_balance_cents,interview_passes,live_unlimited_until")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -42,16 +42,22 @@ export default async function BillingPage({
     supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
   ]);
 
+  // Only Live purchases appear in billing history. Legacy `application`
+  // credit_transactions rows are historical facts about a currency that is no
+  // longer valid, so listing them next to wallet top-ups would imply they
+  // still buy something.
   const activity = [
-    ...(transactions ?? []).map((t) => ({
-      id: `credit:${t.id}`,
-      createdAt: t.created_at,
-      label: `${t.delta > 0 ? "Purchased" : "Used"} ${Math.abs(t.delta)} ${
-        t.credit_type === "application" ? "application credit" : "interview pass"
-      }${Math.abs(t.delta) === 1 ? "" : "es"}`,
-      amountText: t.delta > 0 && t.amount_cents ? `$${(t.amount_cents / 100).toFixed(2)}` : null,
-      deltaText: `${t.delta > 0 ? "+" : ""}${t.delta}`,
-    })),
+    ...(transactions ?? [])
+      .filter((t) => t.credit_type !== "application")
+      .map((t) => ({
+        id: `credit:${t.id}`,
+        createdAt: t.created_at,
+        label: `${t.delta > 0 ? "Purchased" : "Used"} ${Math.abs(t.delta)} interview ${
+          Math.abs(t.delta) === 1 ? "pass" : "passes"
+        }`,
+        amountText: t.delta > 0 && t.amount_cents ? `$${(t.amount_cents / 100).toFixed(2)}` : null,
+        deltaText: `${t.delta > 0 ? "+" : ""}${t.delta}`,
+      })),
     ...(annualPurchases ?? []).map((purchase) => ({
       id: `annual:${purchase.id}`,
       createdAt: purchase.created_at,
@@ -64,7 +70,7 @@ export default async function BillingPage({
   return (
     <AppShell
       fullName={profile?.full_name}
-      applicationCredits={credits?.application_credits ?? 0}
+      walletBalanceCents={credits?.wallet_balance_cents ?? 0}
       interviewPasses={credits?.interview_passes ?? 0}
     >
       <section className="shell" style={{ padding: "54px 0 100px" }}>
@@ -95,27 +101,13 @@ export default async function BillingPage({
           </div>
         ) : null}
 
-        <div className="billing-balance-grid">
-          <div className="card billing-balance-card">
-            <div className="muted" style={{ fontSize: 13 }}>Application credits (legacy)</div>
-            <strong>{credits?.application_credits ?? 0}</strong>
-            <span className="muted">Consumed only after a successful submission.</span>
-          </div>
-
-          <div className="card billing-balance-card">
-            <div className="muted" style={{ fontSize: 13 }}>Interview passes (legacy)</div>
-            <strong>{credits?.interview_passes ?? 0}</strong>
-            <span className="muted">One pass is used when Odesseus Live starts.</span>
-          </div>
-        </div>
-
-        {credits?.live_unlimited_until && new Date(credits.live_unlimited_until) > new Date() ? (
-          <div className="billing-success" style={{ marginTop: 18 }}>
-            Odesseus Live Annual is active through {new Date(credits.live_unlimited_until).toLocaleDateString()}.
-          </div>
-        ) : null}
-
-        <section style={{ marginTop: 34 }}>
+        {/*
+          The wallet is the only application-spend surface now, so it leads.
+          The legacy `application_credits` balance is deliberately not rendered:
+          it can no longer start an application, and showing a number that does
+          not buy anything would be misleading.
+        */}
+        <section style={{ marginTop: 26 }}>
           <div className="muted" style={{ fontSize: 13 }}>Pay as you go</div>
           <h2 style={{ fontSize: 24, margin: "7px 0 8px" }}>Wallet</h2>
           <p className="muted" style={{ margin: "0 0 18px", maxWidth: 620 }}>
@@ -127,8 +119,31 @@ export default async function BillingPage({
         </section>
 
         <section style={{ marginTop: 34 }}>
-          <div className="muted" style={{ fontSize: 13 }}>Recent activity</div>
-          <h2 style={{ fontSize: 24, margin: "7px 0 12px" }}>Legacy credit purchases</h2>
+          <div className="muted" style={{ fontSize: 13 }}>Interview</div>
+          <h2 style={{ fontSize: 24, margin: "7px 0 12px" }}>Odesseus Live</h2>
+
+          <div className="billing-balance-grid">
+            <div className="card billing-balance-card">
+              <div className="muted" style={{ fontSize: 13 }}>Interview passes</div>
+              <strong>{credits?.interview_passes ?? 0}</strong>
+              <span className="muted">One pass is used when Odesseus Live starts.</span>
+            </div>
+
+            {credits?.live_unlimited_until && new Date(credits.live_unlimited_until) > new Date() ? (
+              <div className="card billing-balance-card">
+                <div className="muted" style={{ fontSize: 13 }}>Live Annual</div>
+                <strong>Active</strong>
+                <span className="muted">
+                  Through {new Date(credits.live_unlimited_until).toLocaleDateString()}.
+                </span>
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        <section style={{ marginTop: 34 }}>
+          <div className="muted" style={{ fontSize: 13 }}>History</div>
+          <h2 style={{ fontSize: 24, margin: "7px 0 12px" }}>Recent Live purchases</h2>
 
           <div className="card">
             {activity.length ? activity.slice(0, 8).map((item, index) => (
@@ -154,9 +169,13 @@ export default async function BillingPage({
                 </div>
               </div>
             )) : (
-              <div className="muted" style={{ padding: 26 }}>No credit activity yet.</div>
+              <div className="muted" style={{ padding: 26 }}>No Live purchases yet.</div>
             )}
           </div>
+          <p className="muted" style={{ fontSize: 13, marginTop: 10 }}>
+            Earlier application purchases are no longer listed here. That currency was replaced
+            by the wallet, so it is not valid for anything today.
+          </p>
         </section>
       </div>
       </section>

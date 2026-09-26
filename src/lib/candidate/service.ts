@@ -64,28 +64,39 @@ export async function getCandidateProfile(
   return (data as CandidateProfile | null) ?? null;
 }
 
-/** Live credit/entitlement balance. Always returns a numeric balance pair. */
+/**
+ * The candidate's wallet balance plus Live entitlement state.
+ *
+ * `wallet_balance_cents` is intentionally the only application-spend column
+ * read here. The legacy `application_credits` column is still in the schema
+ * but is never surfaced: the wallet is the active currency, and reading both
+ * would invite a second, contradictory balance into the UI.
+ */
 export async function getCreditBalance(
   client: CandidateClient,
   userId: string
 ): Promise<CreditBalance> {
   const { data, error } = await client
     .from("credit_balances")
-    .select("application_credits,interview_passes,live_unlimited_until")
+    .select("wallet_balance_cents,interview_passes,live_unlimited_until")
     .eq("user_id", userId)
     .maybeSingle();
 
   if (error) {
     throw new Error(`Could not load credit balance: ${error.message}`);
   }
-  const row = data as Pick<
-    CreditBalance,
-    "application_credits" | "interview_passes" | "live_unlimited_until"
-  > | null;
+  // The row is snake_case from Postgres; the returned CreditBalance is
+  // camelCase. The mapping is explicit so a column rename breaks the build
+  // rather than silently rendering a $0.00 balance.
+  const row = data as {
+    wallet_balance_cents?: number | null;
+    interview_passes?: number | null;
+    live_unlimited_until?: string | null;
+  } | null;
   return {
-    application_credits: row?.application_credits ?? 0,
-    interview_passes: row?.interview_passes ?? 0,
-    live_unlimited_until: row?.live_unlimited_until ?? null,
+    walletBalanceCents: row?.wallet_balance_cents ?? 0,
+    interviewPasses: row?.interview_passes ?? 0,
+    liveUnlimitedUntil: row?.live_unlimited_until ?? null,
   };
 }
 

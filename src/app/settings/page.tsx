@@ -35,7 +35,7 @@ export default async function SettingsPage({
       )
       .eq("id", userId)
       .maybeSingle(),
-    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("wallet_balance_cents,interview_passes").eq("user_id", userId).maybeSingle(),
     supabase
       .from("job_preferences")
       .select("min_match_score,target_titles,target_locations,remote_only")
@@ -47,7 +47,7 @@ export default async function SettingsPage({
   return (
     <AppShell
       fullName={profile?.full_name}
-      applicationCredits={credits?.application_credits ?? 0}
+      walletBalanceCents={credits?.wallet_balance_cents ?? 0}
       interviewPasses={credits?.interview_passes ?? 0}
     >
       <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 100px" }}>

@@ -43,21 +43,21 @@ test.describe("mobile splash CTA area (screen 00)", () => {
   ] as const;
 
   for (const vp of viewports) {
-    test(`${vp.name}: pills sit side-by-side with a full-width View Pricing button below`, async ({ page }) => {
+    test(`${vp.name}: pills sit side-by-side with a full-width See Pricing button below`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto("/");
       const splash = page.locator(".m-splash");
 
       const getStarted = splash.getByRole("link", { name: /Get Started/i });
       const businessLogin = splash.getByRole("link", { name: "Business Login" });
-      const viewPricing = splash.getByRole("link", { name: /View Pricing/i });
+      const seePricing = splash.getByRole("link", { name: /See Pricing/i });
 
       await expect(getStarted).toBeVisible();
       await expect(businessLogin).toBeVisible();
-      await expect(viewPricing).toBeVisible();
+      await expect(seePricing).toBeVisible();
       await expect(getStarted).toHaveAttribute("href", "/signup");
       await expect(businessLogin).toHaveAttribute("href", "/employers/login");
-      await expect(viewPricing).toHaveAttribute("href", "/pricing");
+      await expect(seePricing).toHaveAttribute("href", "/pricing");
 
       const a = await splash.locator(".m-splash-cta").nth(0).boundingBox();
       const b = await splash.locator(".m-splash-cta").nth(1).boundingBox();
@@ -68,7 +68,7 @@ test.describe("mobile splash CTA area (screen 00)", () => {
       // Both pills share one row on the ~390px canvas and stay touch-friendly.
       expect(Math.abs(a!.y - b!.y)).toBeLessThanOrEqual(2);
       expect(a!.height).toBeGreaterThanOrEqual(48);
-      // View Pricing sits on its own row below the pills and spans the column.
+      // See Pricing sits on its own row below the pills and spans the column.
       expect(w!.y).toBeGreaterThan(b!.y + b!.height - 1);
       expect(w!.width).toBeGreaterThan(200);
     });
@@ -84,8 +84,139 @@ test.describe("mobile splash CTA area (screen 00)", () => {
       await splash.getByRole("link", { name: "Business Login" }).click();
       await expect(page).toHaveURL(/\/employers\/login$/);
       await page.goto("/");
-      await splash.getByRole("link", { name: /View Pricing/i }).click();
+      await splash.getByRole("link", { name: /See Pricing/i }).click();
       await expect(page).toHaveURL(/\/pricing$/);
+    });
+
+    // Full Screen 00 element audit at each QA width. Everything the approved
+    // Figma node 32:2 specifies has to be present, unclipped, and inside the
+    // viewport — the failure mode this catches is a card or CTA pushed off
+    // screen by a font or width change, which a single-width test misses.
+    test(`${vp.name}: every approved Screen 00 element is present and inside the canvas`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await page.goto("/");
+      const splash = page.locator(".m-splash");
+
+      // The whole mobile experience is on one non-scrolling canvas.
+      await expect(splash).toBeVisible();
+      const overflowX = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflowX, "the splash must never scroll horizontally").toBeLessThanOrEqual(0);
+
+      // 1. Decorative orbs — two top-left, two bottom-right, behind content.
+      const orbs = splash.locator(".m-splash-orb");
+      await expect(orbs).toHaveCount(4);
+      for (const cls of ["tl-a", "tl-b", "br-a", "br-b"]) {
+        const orb = splash.locator(`.m-splash-orb-${cls}`);
+        await expect(orb).toHaveCount(1);
+        const box = (await orb.boundingBox())!;
+        expect(box.width).toBeGreaterThan(0);
+        expect(box.height).toBeGreaterThan(0);
+      }
+
+      // 2. Job card stack — three receding company cards plus the foreground
+      //    Microsoft card, each wider than the one behind it.
+      const stack = splash.locator(".m-stack-card");
+      await expect(stack).toHaveCount(4);
+      const widths: number[] = [];
+      for (let i = 0; i < 4; i += 1) {
+        widths.push((await stack.nth(i).boundingBox())!.width);
+      }
+      for (let i = 1; i < widths.length; i += 1) {
+        expect(widths[i], "the stack widens toward the foreground card").toBeGreaterThan(widths[i - 1]);
+      }
+      for (const company of ["NVIDIA", "Amazon", "Google", "Microsoft"]) {
+        await expect(stack.getByText(company, { exact: false })).toBeVisible();
+      }
+
+      // 3. Microsoft card — logo, role, salary, and both in-card actions.
+      const ms = splash.locator(".m-stack-ms");
+      await expect(ms).toHaveCount(1);
+      await expect(ms.locator(".m-stack-ms-logo")).toBeVisible();
+      await expect(ms.getByRole("heading")).toContainText("GenAI Security");
+      await expect(ms.getByText(/\$247K/)).toBeVisible();
+      await expect(ms.getByText(/See Details/)).toBeVisible();
+      await expect(ms.getByText(/Next Match/)).toBeVisible();
+      const msBox = (await ms.boundingBox())!;
+      const splashBox = (await splash.boundingBox())!;
+      expect(msBox.x).toBeGreaterThanOrEqual(splashBox.x);
+      expect(msBox.x + msBox.width).toBeLessThanOrEqual(splashBox.x + splashBox.width + 1);
+
+      // 4. Headline with its two accent spans.
+      const headline = splash.locator(".m-splash-card > h1");
+      await expect(headline).toBeVisible();
+      await expect(headline).toHaveText(/Discover Your\s*Dream Job\s*with\s*Odesseus\.ai/);
+      await expect(headline.locator("em")).toHaveCount(2);
+      await expect(headline.getByText("Dream Job")).toBeVisible();
+      await expect(headline.getByText("Odesseus.ai")).toBeVisible();
+
+      // 5. Pagination — four dots with the first one active.
+      const dots = splash.locator(".m-dot");
+      await expect(dots).toHaveCount(4);
+      await expect(splash.locator(".m-dot.is-active")).toHaveCount(1);
+      expect((await splash.locator(".m-dot.is-active").boundingBox())!.width).toBeGreaterThan(
+        (await dots.nth(1).boundingBox())!.width,
+      );
+
+      // 6. Metrics — the four-up marketing figures.
+      const stats = splash.locator(".m-splash-stats span");
+      await expect(stats).toHaveCount(4);
+      for (const [value, label] of [
+        ["500K+", "Applicants"],
+        ["100K+", "Hires"],
+        ["10+", "Countries"],
+        ["95%", "Satisfaction"],
+      ] as const) {
+        await expect(splash.locator(".m-splash-stats")).toContainText(value);
+        await expect(splash.locator(".m-splash-stats")).toContainText(label);
+      }
+
+      // 7. Footer.
+      const footer = splash.locator(".m-splash-footer");
+      await expect(footer).toBeVisible();
+      await expect(footer.getByText("Odesseus.ai")).toBeVisible();
+      const footerBox = (await footer.boundingBox())!;
+      expect(footerBox.y).toBeGreaterThan((await stats.nth(3).boundingBox())!.y);
+
+      // 8. No public navigation chrome duplicates the splash actions.
+      await expect(page.locator(".figma-nav-toggle")).toHaveCount(0);
+      await expect(page.locator(".figma-nav-mobile")).toHaveCount(0);
+    });
+
+    // Spacing: the approved artboard insets the dark card by 36px on the
+    // sides and 28px on top, with 26px of card padding, at every QA width.
+    test(`${vp.name}: canvas insets and card padding match the approved artboard`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await page.goto("/");
+
+      const metrics = await page.evaluate(() => {
+        const rect = (sel: string) => {
+          const el = document.querySelector(sel);
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return { x: r.x, y: r.y, w: r.width, h: r.height };
+        };
+        const card = document.querySelector(".m-splash-card")!;
+        return {
+          viewport: { w: window.innerWidth, h: window.innerHeight },
+          splash: rect(".m-splash"),
+          card: rect(".m-splash-card"),
+          cardPadLeft: parseFloat(getComputedStyle(card).paddingLeft),
+          headline: rect(".m-splash-card > h1"),
+        };
+      });
+
+      expect(metrics.splash).not.toBeNull();
+      expect(metrics.card).not.toBeNull();
+      // The lavender gutter fills the viewport height — no bare strip below.
+      expect(metrics.splash!.h).toBeGreaterThanOrEqual(metrics.viewport.h);
+      // 36px side inset, centred canvas capped at 430px.
+      expect(metrics.card!.x).toBeCloseTo(36, 0);
+      expect(metrics.viewport.w - (metrics.card!.x + metrics.card!.w)).toBeCloseTo(36, 0);
+      // 26px of card padding puts the headline 62px from the canvas edge.
+      expect(metrics.cardPadLeft).toBeCloseTo(26, 0);
+      expect(metrics.headline!.x).toBeCloseTo(62, 0);
     });
   }
 });

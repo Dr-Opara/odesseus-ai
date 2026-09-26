@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import OdesseusWordmark from "@/components/odesseus-wordmark";
 import { logout } from "@/app/login/actions";
 import { resolveMobileScreen } from "@/lib/mobile/screen-map";
+import { formatCents } from "@/lib/pricing/candidate-pricing";
 
 function firstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "there";
@@ -12,13 +13,19 @@ function firstName(name?: string | null) {
 
 export default function AppShell({
   fullName,
-  applicationCredits,
+  walletBalanceCents,
   interviewPasses,
   active,
   children,
 }: {
   fullName?: string | null;
-  applicationCredits: number;
+  /**
+   * Spendable wallet balance in cents. This is the active candidate currency
+   * (Standard Apply 49c / Smart Apply 199c) and matches the eligibility gate in
+   * `src/app/api/apply/start/route.ts`, so the header can never advertise a
+   * balance that would then be refused at apply time.
+   */
+  walletBalanceCents: number;
   interviewPasses: number;
   active?: "home" | "jobs" | "applications" | "interviews" | "profile";
   children: React.ReactNode;
@@ -60,7 +67,7 @@ export default function AppShell({
 
           <div className="app-account">
             <Link href="/billing" className="app-balance-link">
-              <span>{applicationCredits} app credits</span>
+              <span>{formatCents(walletBalanceCents)} wallet</span>
               <span>{interviewPasses} live passes</span>
             </Link>
             <details className="account-menu">
