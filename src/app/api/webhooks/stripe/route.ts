@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
-import { billingCatalog, type BillingSku, employerPlans, type EmployerPlanSku, employerRecruiterSeat, employerFeaturedTiers, type EmployerFeaturedTier } from "@/lib/billing/catalog";
+import { billingCatalog, type BillingSku, employerPlans, type EmployerPlanSku, employerRecruiterSeat, employerFeaturedTiers, type EmployerFeaturedTier, employerPlanForAmount } from "@/lib/billing/catalog";
 import { createClient } from "@supabase/supabase-js";
 import { partnerService } from "@/lib/partners/service";
 import { logWebhookEvent } from "@/lib/observability/events";
@@ -29,7 +29,11 @@ type RecruiterSeatSyncTarget = {
 };
 
 /** Derive an employer-sync target from Stripe metadata. Returns null when the
- * event does not belong to an Odesseus employer subscription. */
+ * event does not belong to an Odesseus employer subscription.
+ *
+ * The org id always comes from metadata, because that is the one thing Stripe
+ * does not change when a customer switches plan. The tier is metadata's answer
+ * only as a *fallback*: see `employerPlanTargetForAmount`. */
 function employerSyncFromMetadata(metadata?: Stripe.Metadata | null): EmployerSyncTarget | null {
   const orgId = metadata?.odesseus_org_id;
   const tier = metadata?.odesseus_tier;
@@ -37,6 +41,54 @@ function employerSyncFromMetadata(metadata?: Stripe.Metadata | null): EmployerSy
   const plan = Object.values(employerPlans).find((p) => p.tier === tier);
   if (!plan) return null;
   return { orgId, tier: tier as (typeof EMPLOYER_TIERS)[number], plan };
+}
+
+/**
+ * An employer-sync target for an invoice, with the plan taken from the amount
+ * actually charged.
+ *
+ * `odesseus_tier` is written once, when the subscription is created. A customer
+ * who upgrades -- in the Stripe dashboard or the customer portal -- changes the
+ * price and leaves the metadata saying `starter`. Using metadata here had two
+ * consequences, and both bit real customers:
+ *
+ *   1. The upgrade's own invoice charged the new amount, was compared against
+ *      the old plan's price, mismatched, and was answered 400. Stripe marks the
+ *      endpoint failing and retries, and the new cycle's job-post credits are
+ *      never granted.
+ *   2. `customer.subscription.updated` recorded the old tier, so the org kept
+ *      the old quota until the metadata was corrected by hand.
+ *
+ * Resolving the plan from the charged amount fixes both without loosening the
+ * check: a plan is only ever returned when the charge is exactly that plan's
+ * catalog price, so an invoice for an amount that is not a catalog price is
+ * still rejected below.
+ */
+function employerPlanTargetForAmount(
+  amountCents: number | null | undefined,
+  metadata?: Stripe.Metadata | null
+): EmployerSyncTarget | null {
+  const plan = employerPlanForAmount(amountCents);
+  if (!plan) return null;
+  const orgId = metadata?.odesseus_org_id;
+  if (!orgId) return null;
+  return { orgId, tier: plan.tier, plan };
+}
+
+/**
+ * The recurring price a subscription is currently charging, per period.
+ *
+ * Used so `customer.subscription.updated` can see a plan change. A subscription
+ * carries its own line items, and each item's `unit_amount` is the plan price
+ * regardless of quantity, so an employer plan resolves to exactly one catalog
+ * entry. Null when there is no usable line item.
+ */
+function subscriptionPeriodUnitAmount(subscription: Stripe.Subscription): number | null {
+  const item = subscription.items?.data?.[0];
+  // This Stripe API version keeps the amount on the nested price, not on the
+  // subscription item itself.
+  const amount = item?.price?.unit_amount ?? null;
+  return typeof amount === "number" ? amount : null;
 }
 
 /** Derive a recruiter-seat sync target from Stripe metadata. Requires the
@@ -110,6 +162,10 @@ async function syncRecruiterSeat(
 // a cycle's job-post credits. A replayed event is a no-op — the sync RPC keys
 // its credit grant on the subscription period, so the same period can only
 // grant once (also mirrored in the migration's idempotency tests).
+//
+// The plan is derived from the charged amount, not from `odesseus_tier`
+// metadata, so an upgrade or downgrade grants the tier that was actually paid
+// for. See `employerPlanTargetForAmount`.
 async function handleInvoicePaid(invoice: Stripe.Invoice, event: Stripe.Event) {
   // In this Stripe API version the subscription that generated the invoice and
   // its metadata snapshot live under invoice.parent.subscription_details.
@@ -120,23 +176,44 @@ async function handleInvoicePaid(invoice: Stripe.Invoice, event: Stripe.Event) {
   const seatTarget = recruiterSeatSyncFromMetadata(metadata);
   if (seatTarget) return handleRecruiterSeatInvoicePaid(invoice, seatTarget, event);
 
-  const sync = employerSyncFromMetadata(metadata);
+  const charged = invoice.amount_paid ?? invoice.total;
+  const currency = invoice.currency ?? "usd";
+
+  const sync = employerPlanTargetForAmount(charged, metadata);
   if (!sync) {
+    // Distinguish a wholly foreign invoice from an Odesseus employer invoice
+    // that charged a price we do not sell. The first is ignored; the second is
+    // a pricing problem and must fail closed rather than paper over itself with
+    // the metadata tier, because metadata is exactly what a stale upgrade
+    // leaves behind.
+    if (!employerSyncFromMetadata(metadata)) {
+      await logWebhookEvent({
+        stripeEventId: event.id,
+        eventType: event.type,
+        outcome: "ignored",
+        httpStatus: 200,
+        reason: "Invoice is not an Odesseus employer or seat subscription.",
+      });
+      return NextResponse.json({ received: true });
+    }
+
     await logWebhookEvent({
       stripeEventId: event.id,
       eventType: event.type,
-      outcome: "ignored",
-      httpStatus: 200,
-      reason: "Invoice is not an Odesseus employer or seat subscription.",
+      outcome: "rejected",
+      httpStatus: 400,
+      orgId: metadata?.odesseus_org_id ?? null,
+      reason: "Invoice amount or currency does not match the employer plan.",
     });
-    return NextResponse.json({ received: true });
+    return NextResponse.json(
+      { error: "Invoice amount or currency does not match the employer plan." },
+      { status: 400 }
+    );
   }
 
-  // Fail closed like the checkout path: an invoice charged for an amount or
-  // currency that does not match the employer plan must not grant credits.
-  const charged = invoice.amount_paid ?? invoice.total;
-  const currency = invoice.currency ?? "usd";
-  if (charged !== sync.plan.amountCents || currency !== "usd") {
+  // The amount already matched a catalog plan price, so what is left to verify is
+  // the currency: every plan we sell is a USD price.
+  if (currency !== "usd") {
     await logWebhookEvent({
       stripeEventId: event.id,
       eventType: event.type,
@@ -288,7 +365,17 @@ async function handleSubscriptionLifecycle(
   event: Stripe.Event
 ) {
   const seatTarget = recruiterSeatSyncFromMetadata(subscription.metadata);
-  const planTarget = employerSyncFromMetadata(subscription.metadata);
+  // Prefer the tier the subscription is actually charging. Metadata is written
+  // once at creation and does not follow a plan change made in the dashboard or
+  // the customer portal, so trusting it here left an upgraded org on its old
+  // plan until someone corrected Stripe by hand. Falls back to metadata when the
+  // price is not a catalog price, which is the right answer for a discounted
+  // price an operator configured deliberately.
+  const planTarget =
+    employerPlanTargetForAmount(
+      subscriptionPeriodUnitAmount(subscription),
+      subscription.metadata
+    ) ?? employerSyncFromMetadata(subscription.metadata);
   if (!seatTarget && !planTarget) {
     await logWebhookEvent({
       stripeEventId: event.id,

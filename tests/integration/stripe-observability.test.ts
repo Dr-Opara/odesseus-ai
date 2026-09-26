@@ -136,6 +136,12 @@ function subscriptionLifecycleEvent(
     eventId?: string;
     status?: string;
     seatCount?: number;
+    /**
+     * The recurring price the subscription's line item carries. Left null by
+     * default so the common case stays "the price is not in the payload" and the
+     * metadata fallback is what gets exercised.
+     */
+    unitAmount?: number | null;
   } = {}
 ) {
   const {
@@ -144,6 +150,7 @@ function subscriptionLifecycleEvent(
     eventId = type === "customer.subscription.deleted" ? "evt_sub_del_1" : "evt_sub_upd_1",
     status = "past_due",
     seatCount,
+    unitAmount = null,
   } = overrides;
 
   const metadata: Record<string, string> = seatCount
@@ -166,6 +173,9 @@ function subscriptionLifecycleEvent(
         current_period_start: 1_730_000_000,
         current_period_end: 1_732_000_000,
         metadata,
+        items: {
+          data: unitAmount === null ? [] : [{ id: "si_1", price: { id: "price_1", unit_amount: unitAmount } }],
+        },
       },
     },
   };
@@ -583,7 +593,6 @@ describe("Stripe webhook delivery observability", () => {
 
     it("records a rejected delivery when the invoiced amount does not match the plan", async () => {
       constructEventMock.mockReturnValue(invoicePaidEvent({ tier: "starter", amountPaid: 7901 }));
-
       const { POST } = await import("@/app/api/webhooks/stripe/route");
       const response = await POST(webhookRequest("{}"));
 
@@ -594,6 +603,107 @@ describe("Stripe webhook delivery observability", () => {
         p_org_id: "org-1",
         p_reason: "Invoice amount or currency does not match the employer plan.",
       });
+    });
+
+    // -------------------------------------------------------------------------
+    // Plan changes
+    //
+    // `odesseus_tier` is written once, when the subscription is created. A
+    // customer who changes plan in the Stripe dashboard or the customer portal
+    // changes the price and leaves the metadata saying the old tier. These cases
+    // are the ones that were broken: the upgrade's own invoice was compared
+    // against the old plan's price, mismatched, and answered 400, so Stripe
+    // retried a legitimate event and the new cycle's job-post credits were never
+    // granted.
+    // -------------------------------------------------------------------------
+    it("grants the upgraded tier when the invoice price no longer matches the metadata tier", async () => {
+      constructEventMock.mockReturnValue(
+        invoicePaidEvent({ tier: "starter", amountPaid: 14900 })
+      );
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      const response = await POST(webhookRequest("{}"));
+
+      // 200, not 400: this is a paid invoice for a plan we sell, on an org we
+      // know, and rejecting it would only make Stripe retry.
+      expect(response.status).toBe(200);
+      expect(rpcMock).toHaveBeenCalledWith(
+        "odesseus_sync_employer_subscription",
+        expect.objectContaining({ p_tier: "growth", p_grant_credits: true })
+      );
+      expect(logCallArgs()).toMatchObject({
+        p_outcome: "fulfilled",
+        p_http_status: 200,
+        p_org_id: "org-1",
+        p_details: { tier: "growth" },
+      });
+    });
+
+    it("grants the downgraded tier on the invoice that reflects the lower price", async () => {
+      constructEventMock.mockReturnValue(
+        invoicePaidEvent({ tier: "business", amountPaid: 7900 })
+      );
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      const response = await POST(webhookRequest("{}"));
+
+      expect(response.status).toBe(200);
+      // A downgrade must not keep handing out the old tier's larger quota.
+      expect(rpcMock).toHaveBeenCalledWith(
+        "odesseus_sync_employer_subscription",
+        expect.objectContaining({ p_tier: "starter" })
+      );
+    });
+
+    it("still rejects an invoice whose amount is not any catalog price", async () => {
+      // The upgrade fix must not become a hole: an amount matching no plan is
+      // still a pricing problem, and answering 200 on it would grant the
+      // metadata tier on a charge we cannot verify.
+      constructEventMock.mockReturnValue(
+        invoicePaidEvent({ tier: "business", amountPaid: 25_000 })
+      );
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      const response = await POST(webhookRequest("{}"));
+
+      expect(response.status).toBe(400);
+      expect(rpcMock).not.toHaveBeenCalledWith(
+        "odesseus_sync_employer_subscription",
+        expect.anything()
+      );
+    });
+
+    it("rejects a catalog price charged in a currency we do not sell", async () => {
+      constructEventMock.mockReturnValue(
+        invoicePaidEvent({ tier: "starter", amountPaid: 7900, currency: "eur" })
+      );
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      const response = await POST(webhookRequest("{}"));
+
+      expect(response.status).toBe(400);
+      expect(rpcMock).not.toHaveBeenCalledWith(
+        "odesseus_sync_employer_subscription",
+        expect.anything()
+      );
+    });
+
+    it("ignores a catalog price with no org to credit", async () => {
+      // The amount alone is not enough. The org comes from metadata, and Stripe
+      // does not change that on a plan change.
+      const event = invoicePaidEvent({ tier: "starter", amountPaid: 14900 });
+      delete event.data.object.parent.subscription_details.metadata.odesseus_org_id;
+      constructEventMock.mockReturnValue(event);
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      const response = await POST(webhookRequest("{}"));
+
+      expect(response.status).toBe(200);
+      expect(rpcMock).not.toHaveBeenCalledWith(
+        "odesseus_sync_employer_subscription",
+        expect.anything()
+      );
+      expect(logCallArgs()).toMatchObject({ p_outcome: "ignored" });
     });
 
     it("records an errored delivery when the employer sync fails", async () => {
@@ -645,6 +755,80 @@ describe("Stripe webhook delivery observability", () => {
         p_outcome: "ignored",
         p_http_status: 200,
       });
+    });
+
+    it("records the new tier when a plan change arrives with stale metadata", async () => {
+      // The subscription is now charging the Business price; `odesseus_tier` still
+      // says starter because nothing rewrites it. Recording starter would leave
+      // the org on 3 job posts instead of 25.
+      constructEventMock.mockReturnValue(
+        subscriptionLifecycleEvent("customer.subscription.updated", {
+          status: "active",
+          tier: "starter",
+          unitAmount: 29900,
+        })
+      );
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      const response = await POST(webhookRequest("{}"));
+
+      expect(response.status).toBe(200);
+      expect(rpcMock).toHaveBeenCalledWith(
+        "odesseus_sync_employer_subscription",
+        expect.objectContaining({ p_tier: "business", p_status: "active" })
+      );
+      // A lifecycle event is not a payment, so it must not grant credits.
+      expect(rpcMock).toHaveBeenCalledWith(
+        "odesseus_sync_employer_subscription",
+        expect.objectContaining({ p_grant_credits: false })
+      );
+    });
+
+    it("falls back to the metadata tier when the price is not a catalog price", async () => {
+      // A discounted price an operator configured deliberately has no catalog
+      // entry. Metadata is then the only source of truth, and using it is correct
+      // -- but only here, where there is nothing to contradict it.
+      constructEventMock.mockReturnValue(
+        subscriptionLifecycleEvent("customer.subscription.updated", {
+          status: "active",
+          tier: "growth",
+          unitAmount: 12_000,
+        })
+      );
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      const response = await POST(webhookRequest("{}"));
+
+      expect(response.status).toBe(200);
+      expect(rpcMock).toHaveBeenCalledWith(
+        "odesseus_sync_employer_subscription",
+        expect.objectContaining({ p_tier: "growth" })
+      );
+    });
+
+    it("does not treat a seat subscription's line item as an employer plan", async () => {
+      // A seat subscription charges $20 per seat, which is not a plan price, so
+      // it must not resolve to a plan. The seat path has already claimed it.
+      constructEventMock.mockReturnValue(
+        subscriptionLifecycleEvent("customer.subscription.updated", {
+          status: "active",
+          seatCount: 3,
+          unitAmount: 2000,
+        })
+      );
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      const response = await POST(webhookRequest("{}"));
+
+      expect(response.status).toBe(200);
+      expect(rpcMock).toHaveBeenCalledWith(
+        "odesseus_sync_recruiter_seat",
+        expect.objectContaining({ p_count: 3, p_status: "active" })
+      );
+      expect(rpcMock).not.toHaveBeenCalledWith(
+        "odesseus_sync_employer_subscription",
+        expect.anything()
+      );
     });
 
     it("records an ignored delivery when the status needs no sync", async () => {

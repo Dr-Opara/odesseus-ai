@@ -15,7 +15,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(39);
+SELECT plan(51);
 
 -- ---------------------------------------------------------------------------
 -- Schema shape
@@ -262,6 +262,103 @@ SELECT throws_ok(
       '', 'cus_bad_4', now(), now() + interval '30 days', true)$$,
   NULL, 'a stripe subscription id is required to sync',
   'missing stripe subscription id fails closed');
+
+-- ---------------------------------------------------------------------------
+-- Failed payment
+--
+-- A payment that fails must not grant a new cycle of job-post credits, and it
+-- must not let an employer publish beyond the period they already paid for.
+-- The policy is deliberately: a past_due org keeps spending what it has already
+-- bought, and gains nothing further until money arrives. Revoking credits
+-- mid-period would take down job postings an employer is actively advertising.
+-- ---------------------------------------------------------------------------
+SELECT lives_ok(
+  $$INSERT INTO auth.users (id, instance_id, aud, role, email,
+    encrypted_password, email_confirmed_at, created_at, updated_at)
+  VALUES (
+    '99999999-1111-4111-8111-111111111111',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated', 'emp-jobs-pastdue@example.com',
+    'not-a-real-password', now(), now(), now())$$,
+  'create second employer owner user');
+
+SELECT lives_ok(
+  $$INSERT INTO public.employer_organizations (id, name, owner_user_id)
+  VALUES (
+    '44444444-4444-4444-8444-444444444444', 'Past Due Inc.',
+    '99999999-1111-4111-8111-111111111111')$$,
+  'create second employer organization');
+
+SELECT is(
+  (SELECT credits_granted FROM public.odesseus_sync_employer_subscription(
+    '44444444-4444-4444-8444-444444444444', 'starter', 'active',
+    'sub_pastdue_1', 'cus_pastdue_1',
+    now() - interval '10 days', now() + interval '20 days', true)),
+  3, 'the first paid period grants a baseline cycle');
+
+-- A payment failure is a lifecycle event, not a payment. Even with
+-- p_grant_credits true -- which only the money-verified path passes -- a
+-- non-active status must not mint credits.
+SELECT is(
+  (SELECT credits_granted FROM public.odesseus_sync_employer_subscription(
+    '44444444-4444-4444-8444-444444444444', 'starter', 'past_due',
+    'sub_pastdue_1', 'cus_pastdue_1',
+    now() + interval '20 days', now() + interval '50 days', true)),
+  0, 'a past_due sync grants no new job-post credits');
+
+SELECT is(
+  (SELECT status FROM public.employer_subscriptions
+   WHERE org_id = '44444444-4444-4444-8444-444444444444'),
+  'past_due', 'a past_due sync records the failed status');
+
+-- The point of not granting: the grant table is untouched, so the period it was
+-- bought for is the only period an employer can spend against.
+SELECT is(
+  (SELECT count(*)::int FROM public.employer_job_post_credits
+   WHERE org_id = '44444444-4444-4444-8444-444444444444'),
+  1, 'a past_due sync creates no additional grant row');
+
+SELECT is(
+  (SELECT used FROM public.employer_job_post_credits
+   WHERE org_id = '44444444-4444-4444-8444-444444444444'),
+  0, 'a past_due org still has its paid-for credits unspent');
+
+-- Taking those away mid-period would pull down postings an employer is actively
+-- advertising, so a past_due org may still spend what it has bought.
+SELECT lives_ok(
+  $$INSERT INTO public.employer_jobs (id, org_id, title, status)
+  VALUES (
+    '55555555-5555-4555-8555-555555555555', '44444444-4444-4444-8444-444444444444',
+    'Published during a payment failure', 'published')$$,
+  'a past_due org can still spend credits it already paid for');
+
+-- Once that paid period ends there is nothing left to spend, which is where the
+-- failed payment actually bites.
+SELECT lives_ok(
+  $$UPDATE public.employer_job_post_credits
+    SET expires_at = now() - interval '1 day'
+    WHERE org_id = '44444444-4444-4444-8444-444444444444'$$,
+  'expire the past_due org only grant');
+
+SELECT throws_ok(
+  $$INSERT INTO public.employer_jobs (id, org_id, title, status)
+  VALUES (
+    '55555555-5555-4555-8555-555555555556', '44444444-4444-4444-8444-444444444444',
+    'Published after the paid period ended', 'published')$$,
+  NULL, 'no job post credits available for this employer',
+  'a past_due org cannot publish past the period it paid for');
+
+SELECT is(
+  (SELECT credits_granted FROM public.odesseus_sync_employer_subscription(
+    '44444444-4444-4444-8444-444444444444', 'starter', 'canceled',
+    'sub_pastdue_1', 'cus_pastdue_1',
+    now() + interval '50 days', now() + interval '80 days', true)),
+  0, 'a canceled sync grants no job-post credits');
+
+SELECT is(
+  (SELECT status FROM public.employer_subscriptions
+   WHERE org_id = '44444444-4444-4444-8444-444444444444'),
+  'canceled', 'a canceled sync is recorded so the org stops accruing quota');
 
 -- ---------------------------------------------------------------------------
 -- Privileges

@@ -1,7 +1,65 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { applyRates, billingCatalog, type BillingSku } from "@/lib/billing/catalog";
+import { applyRates, billingCatalog, type BillingSku, employerPlans, employerPlanForAmount, employerRecruiterSeat } from "@/lib/billing/catalog";
+
+describe("employerPlanForAmount", () => {
+  it("resolves each catalog price to its own tier", () => {
+    // The webhook uses this to learn which plan a subscription is on after a
+    // customer changes it, because `odesseus_tier` metadata is written once and
+    // does not follow a plan change.
+    expect(employerPlanForAmount(7900)?.tier).toBe("starter");
+    expect(employerPlanForAmount(14900)?.tier).toBe("growth");
+    expect(employerPlanForAmount(29900)?.tier).toBe("business");
+  });
+
+  it("returns null for an amount that is not a catalog price", () => {
+    // A discounted or otherwise unrecognised price must fall back to metadata
+    // rather than being silently mapped to the nearest plan.
+    expect(employerPlanForAmount(7901)).toBeNull();
+    expect(employerPlanForAmount(12000)).toBeNull();
+    expect(employerPlanForAmount(0)).toBeNull();
+  });
+
+  it("returns null rather than a partial match for a near miss", () => {
+    // Being off by a cent is a pricing problem, not a rounding question.
+    expect(employerPlanForAmount(29901)).toBeNull();
+    expect(employerPlanForAmount(14900 - 1)).toBeNull();
+  });
+
+  it("never resolves a seat or featured price to a plan", () => {
+    // A $20 recruiter seat and a $29 featured listing are not plans. If either
+    // resolved to one, a seat invoice would grant job-post credits.
+    expect(employerPlanForAmount(employerRecruiterSeat.amountCents)).toBeNull();
+    expect(employerPlanForAmount(2900)).toBeNull();
+    expect(employerPlanForAmount(4900)).toBeNull();
+    expect(employerPlanForAmount(12900)).toBeNull();
+  });
+
+  it("rejects non-integer and missing amounts instead of coercing them", () => {
+    // `Number(null)` and `Number("")` are both 0, which is not a plan. Anything
+    // that is not already a clean integer is not a price we recognise.
+    expect(employerPlanForAmount(null)).toBeNull();
+    expect(employerPlanForAmount(undefined)).toBeNull();
+    expect(employerPlanForAmount(Number.NaN)).toBeNull();
+    expect(employerPlanForAmount(14900.5)).toBeNull();
+  });
+
+  it("resolves every plan the catalog defines, so a new plan cannot be unreachable", () => {
+    // A plan added to the catalog without this working would be sellable but
+    // unsyncable, which is the same class of bug as the stale metadata.
+    for (const plan of Object.values(employerPlans)) {
+      expect(employerPlanForAmount(plan.amountCents)).toBe(plan);
+    }
+  });
+
+  it("has distinct prices per plan, so an amount identifies exactly one tier", () => {
+    // Two plans sharing a price would make the tier ambiguous and the grant
+    // arbitrary.
+    const prices = Object.values(employerPlans).map((p) => p.amountCents);
+    expect(new Set(prices).size).toBe(prices.length);
+  });
+});
 
 describe("applyRates", () => {
   it("prices Standard Apply at exactly $0.49 per verified successful submission", () => {

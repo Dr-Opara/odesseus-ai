@@ -74,6 +74,38 @@ export const employerPlans = {
 
 export type EmployerPlanSku = keyof typeof employerPlans;
 
+export type EmployerPlan = (typeof employerPlans)[EmployerPlanSku];
+
+/**
+ * The catalog entry for a recurring employer plan charged `amountCents`.
+ *
+ * This is how the webhook learns which plan a subscription is *on* when a
+ * customer upgrades or downgrades. `odesseus_tier` in Stripe metadata is set once
+ * at subscription creation and does not follow a plan change made in the Stripe
+ * dashboard or the customer portal, so trusting it after an upgrade means
+ * recording the old tier, the old job-post quota, and -- worse -- rejecting the
+ * upgrade's own invoice as an amount mismatch.
+ *
+ * The money is the authority. It is also self-verifying: a plan is only returned
+ * when the charged amount is exactly that plan's catalog price, so this cannot
+ * widen what the webhook accepts. It is still keyed on metadata for *which org*
+ * the subscription belongs to, which Stripe does not change on a plan change.
+ *
+ * Returns null for an amount that is not a catalog price, so a discounted or
+ * otherwise unrecognised price can fall back to metadata rather than being
+ * silently mapped to the wrong tier.
+ */
+export function employerPlanForAmount(
+  amountCents: number | null | undefined
+): EmployerPlan | null {
+  if (typeof amountCents !== "number" || !Number.isInteger(amountCents)) return null;
+  return (
+    Object.values(employerPlans).find(
+      (plan) => plan.amountCents === amountCents
+    ) ?? null
+  );
+}
+
 // Recruiter seats are billed per seat per month ($20). Each seat is a line on
 // an employer subscription; a subscription's seat_count x 2000 must match the
 // paid invoice before the webhook syncs recruiter_seats.
