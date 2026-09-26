@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { isAdmin } from "@/lib/partners/service";
+import {
+  ADMIN_RESPONSE_HEADERS,
+  adminAuthorizationError,
+  requireCapability,
+} from "@/lib/admin/authorize";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import {
   JOB_REPORT_STATUSES,
@@ -22,19 +25,15 @@ const statusFilter = z.enum(JOB_REPORT_STATUSES);
  * so this route is the deliberate, audited exception. Reporters' details are
  * never exposed to employers — the only non-admin reader of job_reports is the
  * reporting candidate, and only for their own rows.
+ *
+ * Requires `job_reports:read`, so a finance admin is refused: settling a
+ * billing dispute is not a reason to see who reported a job listing.
  */
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getClaims();
-  const userId = auth?.claims?.sub;
+  const authorization = await requireCapability(request, "job_reports:read");
+  if (!authorization.ok) return adminAuthorizationError(authorization);
 
-  if (!userId) {
-    return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
-  }
-
-  if (!(await isAdmin(userId))) {
-    return NextResponse.json({ error: "Admin access required." }, { status: 403 });
-  }
+  const userId = authorization.userId;
 
   // A queue viewer is trusted, but the queue is still a bounded read: cap the
   // page size and throttle so one admin client cannot pull the whole table in
@@ -67,9 +66,7 @@ export async function GET(request: Request) {
 
   try {
     const page = await listJobReportQueue(createServiceClient(), { status, limit, offset });
-    return NextResponse.json(page, {
-      headers: { "Cache-Control": "private, no-store" },
-    });
+    return NextResponse.json(page, { headers: ADMIN_RESPONSE_HEADERS });
   } catch (error) {
     console.error("[ODESSEUS_JOB_REPORT] queue read failed", error);
     return NextResponse.json(

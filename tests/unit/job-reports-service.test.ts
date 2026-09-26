@@ -325,35 +325,78 @@ describe("listCandidateJobReports", () => {
 });
 
 describe("setJobReportStatus", () => {
-  it("routes moderation through the service-role RPC", async () => {
+  const ACTOR = { userId: "admin-1", role: "admin" as const, email: "admin@example.com" };
+
+  it("routes moderation through the service-role RPC, with the actor for the audit row", async () => {
     const db = fakeReportsDb();
-    const result = await setJobReportStatus(db as never, "r1", "resolved", "handled");
+    const result = await setJobReportStatus(db as never, {
+      reportId: "r1",
+      status: "resolved",
+      note: "handled",
+      actor: ACTOR,
+    });
     expect(result.ok).toBe(true);
+    // The actor is not optional. The RPC writes the audit row in the same
+    // transaction as the transition, so an un-attributed moderation is one the
+    // database cannot record.
     expect(db.rpc).toHaveBeenCalledWith("odesseus_update_job_report_status", {
       p_report_id: "r1",
       p_status: "resolved",
       p_note: "handled",
+      p_actor_user_id: "admin-1",
+      p_actor_email: "admin@example.com",
+      p_actor_role: "admin",
     });
   });
 
   it("refuses a transition back to the filed state without calling the RPC", async () => {
     const db = fakeReportsDb();
-    const result = await setJobReportStatus(db as never, "r1", "new" as never, null);
+    const result = await setJobReportStatus(db as never, {
+      reportId: "r1",
+      status: "new" as never,
+      note: null,
+      actor: ACTOR,
+    });
     expect(result.ok).toBe(false);
     expect(db.rpc).not.toHaveBeenCalled();
   });
 
   it("refuses an over-long moderation note", async () => {
     const db = fakeReportsDb();
-    const result = await setJobReportStatus(db as never, "r1", "dismissed", "x".repeat(2001));
+    const result = await setJobReportStatus(db as never, {
+      reportId: "r1",
+      status: "dismissed",
+      note: "x".repeat(2001),
+      actor: ACTOR,
+    });
     expect(result.ok).toBe(false);
     expect(db.rpc).not.toHaveBeenCalled();
   });
 
   it("returns a failure when the RPC rejects the transition", async () => {
     const db = fakeReportsDb({ rpcError: { message: "job report not found" } });
-    const result = await setJobReportStatus(db as never, "missing", "resolved", null);
+    const result = await setJobReportStatus(db as never, {
+      reportId: "missing",
+      status: "resolved",
+      note: null,
+      actor: ACTOR,
+    });
     expect(result.ok).toBe(false);
     expect(result.error).toBe("job report not found");
+  });
+
+  it("carries a moderation performed by a non-admin role into the audit row", async () => {
+    // The role is recorded, not just the person: "who" in an audit is both.
+    const db = fakeReportsDb();
+    await setJobReportStatus(db as never, {
+      reportId: "r1",
+      status: "dismissed",
+      note: null,
+      actor: { userId: "mkt-1", role: "marketing_admin" as const, email: null },
+    });
+    expect(db.rpc).toHaveBeenCalledWith(
+      "odesseus_update_job_report_status",
+      expect.objectContaining({ p_actor_role: "marketing_admin", p_actor_email: null })
+    );
   });
 });

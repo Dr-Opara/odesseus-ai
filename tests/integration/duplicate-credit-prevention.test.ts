@@ -32,11 +32,11 @@ describe("duplicate credit prevention on Live activation", () => {
 
   it("never writes directly to credit_transactions/credit_balances from the route — all credit consumption is delegated to the atomic RPC", async () => {
     const rpc = vi.fn(async () => ({
-      data: { id: sessionId, status: "active" },
+      data: [{ session: { id: sessionId, status: "active" }, entitlement_consumed: true, entitlement_type: "passes", passes_remaining: 0 }],
       error: null,
     }));
     const fromSpy = vi.fn((table: string) =>
-      fakeQueryResult({ id: sessionId, interview_id: "iv-1", status: "prepared" })
+      fakeQueryResult({ id: sessionId, interview_id: "iv-1", status: "ready" })
     );
     createServiceClientMock.mockReturnValue(
       fakeAuthedClient({ userId: "service", from: fromSpy, rpc })
@@ -51,11 +51,14 @@ describe("duplicate credit prevention on Live activation", () => {
   });
 
   it("calling activate twice for an already-active session is safe: the RPC (which owns idempotency via ON CONFLICT DO NOTHING on external_reference) is invoked both times and its idempotent result is passed straight through, with no extra route-level side effects", async () => {
-    // Mirrors odesseus_activate_live_session's real behavior: once a session
+    // Mirrors odesseus_activate_live_session_v2's real behavior: once a session
     // is already 'active', the RPC returns early with the same row instead
     // of inserting a second credit_transactions debit.
     const activeSession = { id: sessionId, status: "active", openai_session_id: "sess_abc123" };
-    const rpc = vi.fn(async () => ({ data: activeSession, error: null }));
+    const rpc = vi.fn(async () => ({
+      data: [{ session: activeSession, entitlement_consumed: false, entitlement_type: "passes", passes_remaining: 0 }],
+      error: null,
+    }));
     const fromSpy = vi.fn((_table: string) =>
       fakeQueryResult({ id: sessionId, interview_id: "iv-1", status: "active" })
     );

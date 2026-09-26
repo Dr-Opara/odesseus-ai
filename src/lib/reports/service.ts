@@ -24,6 +24,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import type { AdminRole } from "@/lib/admin/capabilities";
 
 export type ReportsClient = SupabaseClient<Database>;
 
@@ -257,26 +258,37 @@ export async function listJobReportQueue(
 
 /**
  * Moves a report through the moderation queue via the service-role-only RPC.
- * The RPC re-validates the status and report existence, so this returns a
- * failure rather than throwing for a malformed transition.
+ * The RPC re-validates the status and report existence, and writes the audit row
+ * for the transition inside the same transaction, so this returns a failure
+ * rather than throwing for a malformed transition.
+ *
+ * The actor is a required argument rather than an optional one. An audit trail
+ * with a nullable actor is an audit trail that is silently empty for any caller
+ * who forgot one.
  */
 export async function setJobReportStatus(
   client: SupabaseClient<Database>,
-  reportId: string,
-  status: JobReportModerationStatus,
-  note: string | null
+  input: {
+    reportId: string;
+    status: JobReportModerationStatus;
+    note: string | null;
+    actor: { userId: string; role: AdminRole; email: string | null };
+  }
 ): Promise<{ ok: boolean; error?: string }> {
-  if (!isJobReportModerationStatus(status)) {
+  if (!isJobReportModerationStatus(input.status)) {
     return { ok: false, error: "That moderation status is not allowed." };
   }
-  if (note !== null && note.length > JOB_REPORT_DETAILS_MAX) {
+  if (input.note !== null && input.note.length > JOB_REPORT_DETAILS_MAX) {
     return { ok: false, error: "That moderation note is too long." };
   }
 
   const { error } = await client.rpc("odesseus_update_job_report_status", {
-    p_report_id: reportId,
-    p_status: status,
-    p_note: note,
+    p_report_id: input.reportId,
+    p_status: input.status,
+    p_note: input.note,
+    p_actor_user_id: input.actor.userId,
+    p_actor_email: input.actor.email,
+    p_actor_role: input.actor.role,
   });
 
   if (error) return { ok: false, error: error.message };

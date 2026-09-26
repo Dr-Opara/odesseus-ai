@@ -6,9 +6,11 @@ import { checkRateLimit } from "@/lib/security/rate-limit";
 import {
   INVITABLE_ROLES,
   createInvitation,
+  getOrgName,
   isPlausibleEmail,
   requireOrgAdmin,
 } from "@/lib/employer/service";
+import { sendInvitationEmail } from "@/lib/employer/invitation-email";
 
 export const runtime = "nodejs";
 
@@ -23,14 +25,17 @@ const schema = z.object({
 });
 
 /**
- * Invites someone to an employer team.
+ * Invites someone to an employer team and emails them the redemption link.
  *
- * Returns the invitation plus its token so the calling admin can pass the link
- * on. Delivery is deliberately not implemented here: outbound email is an
- * integration concern with its own authorization and provider plumbing, and
- * quietly assuming a mail transport exists would be inventing infrastructure.
- * The token is only a redemption secret — the accept path additionally requires
- * the recipient's verified email to match.
+ * The invitation row is written first, then the email is sent. That order is
+ * deliberate: the row is the fact, the email is a notification about it. If
+ * delivery fails, the invitation still exists and the admin can pass the link on,
+ * so the response stays 201 and reports the delivery outcome separately. The
+ * reverse order would mean an email referring to an invitation that was then
+ * rejected as a duplicate.
+ *
+ * The token is still returned to the calling admin so a manual copy is always
+ * possible, and so a delivery outage is not a dead end. It is never logged.
  */
 export async function POST(
   request: Request,
@@ -110,11 +115,36 @@ export async function POST(
   });
 
   if (result.ok) {
+    // Naming the team makes the message recognisable; a missing name only costs
+    // the recipient some context, so it must not block delivery.
+    const orgName = await getOrgName(supabase, orgId);
+    const delivery = await sendInvitationEmail({
+      to: result.invitation.email,
+      orgName: orgName ?? "",
+      role: input.role,
+      token: result.token,
+      expiresAt: new Date(result.invitation.expires_at),
+    });
+
+    if (!delivery.sent) {
+      // Logged, not thrown: the invitation is real and the admin can still pass
+      // the link on. Not logging the address keeps a bounce investigation
+      // possible without writing invitee addresses into server logs.
+      console.error(
+        "[ODESSEUS_EMPLOYER_TEAM] invitation email not delivered",
+        orgId,
+        delivery.reason
+      );
+    }
+
     return NextResponse.json(
       {
         invitation: result.invitation,
         // The redemption secret, for the admin to pass on. Never logged.
         token: result.token,
+        // Whether the invitee was actually emailed. The admin still has the
+        // token above, so a false here is a degraded delivery, not a failure.
+        emailed: delivery.sent,
       },
       { status: 201 }
     );

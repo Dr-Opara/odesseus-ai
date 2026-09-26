@@ -41,13 +41,18 @@ export async function POST(
     return NextResponse.json({ error: "Live session not found." }, { status: 404 });
   }
 
-  const { error } = await service.rpc("odesseus_end_live_session", {
+  const { error } = await service.rpc("odesseus_complete_live_session", {
     p_session_id: input.sessionId,
     p_user_id: userId,
   });
 
   if (error) {
-    return NextResponse.json({ error: "Odesseus could not end the session cleanly." }, { status: 500 });
+    const msg = error.message?.toLowerCase() || "";
+    const notFound = msg.includes("not found");
+    return NextResponse.json(
+      { error: notFound ? "Live session not found." : "Odesseus could not end the session cleanly." },
+      { status: notFound ? 404 : 500 }
+    );
   }
 
   return NextResponse.json({ ok: true });

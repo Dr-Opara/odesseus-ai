@@ -16,7 +16,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(42);
+SELECT plan(54);
 
 -- ---------------------------------------------------------------------------
 -- Fixture: reporter user + an opportunity to report
@@ -129,11 +129,25 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 -- Moderation queue via the service-role RPC
 -- ---------------------------------------------------------------------------
+-- The acting admin is a required argument. The RPC writes the audit row in the
+-- same transaction as the transition, so "who moved this report" cannot be lost
+-- even if the caller crashes immediately afterwards.
+SELECT lives_ok(
+  $$INSERT INTO auth.users (id, instance_id, aud, role, email,
+    encrypted_password, email_confirmed_at, created_at, updated_at)
+  VALUES (
+    'aaaaaaaa-9999-4999-8999-111111111111',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated', 'mod@example.com',
+    'not-a-real-password', now(), now(), now())$$,
+  'create the moderating admin user');
+
 SELECT lives_ok(
   $$SELECT public.odesseus_update_job_report_status(
       (SELECT id FROM public.job_reports
        WHERE user_id = 'aaaaaaaa-1111-4111-8111-111111111111' AND reason = 'Scam'),
-      'reviewing')$$,
+      'reviewing', NULL,
+      'aaaaaaaa-9999-4999-8999-111111111111', 'admin', 'mod@example.com')$$,
   'move a report to reviewing');
 
 SELECT is(
@@ -145,7 +159,8 @@ SELECT lives_ok(
   $$SELECT public.odesseus_update_job_report_status(
       (SELECT id FROM public.job_reports
        WHERE user_id = 'aaaaaaaa-1111-4111-8111-111111111111' AND reason = 'Scam'),
-      'resolved', 'confirmed by trust & safety, job flagged')$$,
+      'resolved', 'confirmed by trust & safety, job flagged',
+      'aaaaaaaa-9999-4999-8999-111111111111', 'marketing_admin', 'mod@example.com')$$,
   'resolve a report with a moderator note');
 
 SELECT is(
@@ -168,20 +183,97 @@ SELECT throws_ok(
   $$SELECT public.odesseus_update_job_report_status(
       (SELECT id FROM public.job_reports
        WHERE user_id = 'aaaaaaaa-1111-4111-8111-111111111111' AND reason = 'Scam'),
-      'deleted')$$,
+      'deleted', NULL, 'aaaaaaaa-9999-4999-8999-111111111111')$$,
   NULL, 'unknown job report moderation status: deleted',
   'an unknown moderation status fails closed');
 
 SELECT throws_ok(
   $$SELECT public.odesseus_update_job_report_status(
-      '99999999-9999-4999-8999-999999999999', 'resolved')$$,
+      '99999999-9999-4999-8999-999999999999', 'resolved', NULL,
+      'aaaaaaaa-9999-4999-8999-111111111111')$$,
   NULL, 'job report not found',
   'a missing report fails closed');
 
+-- A rejected transition must leave no audit row behind. The audit write and the
+-- status change share a transaction, so a failure rolls both back: otherwise
+-- the log would claim a moderation that never happened, which is worse than no
+-- log at all.
+SELECT is(
+  (SELECT count(*)::int FROM public.admin_audit_log
+   WHERE action = 'job_report.status_changed'
+     AND subject_id = '99999999-9999-4999-8999-999999999999'),
+  0, 'a rejected transition writes no audit row');
+
+SELECT throws_ok(
+  $$SELECT public.odesseus_update_job_report_status(
+      (SELECT id FROM public.job_reports
+       WHERE user_id = 'aaaaaaaa-1111-4111-8111-111111111111' AND reason = 'Scam'),
+      'reviewing', NULL,
+      'aaaaaaaa-9999-4999-8999-111111111111', 'superadmin')$$,
+  NULL, 'unknown admin role: superadmin',
+  'an actor with an unrecognised role cannot moderate');
+
+SELECT is(
+  (SELECT status FROM public.job_reports
+   WHERE user_id = 'aaaaaaaa-1111-4111-8111-111111111111' AND reason = 'Scam'),
+  'resolved', 'a rejected actor leaves the report untouched');
+
 SELECT ok(
-  has_function_privilege('service_role', 'public.odesseus_update_job_report_status(uuid, text, text)', 'EXECUTE')
-  AND NOT has_function_privilege('authenticated', 'public.odesseus_update_job_report_status(uuid, text, text)', 'EXECUTE'),
+  has_function_privilege('service_role', 'public.odesseus_update_job_report_status(uuid, text, text, uuid, text, text)', 'EXECUTE')
+  AND NOT has_function_privilege('authenticated', 'public.odesseus_update_job_report_status(uuid, text, text, uuid, text, text)', 'EXECUTE'),
   'odesseus_update_job_report_status is service-role-only');
+
+-- The pre-audit four-argument overload is gone. Leaving it would be an
+-- unaudited moderation path, which is exactly what the migration removed.
+SELECT hasnt_function(
+  'public', 'odesseus_update_job_report_status',
+  ARRAY['uuid', 'text', 'text'],
+  'the unaudited four-argument overload no longer exists');
+
+-- Selected by content, not by recency. Every row in this file is written inside
+-- one transaction, and `now()` is transaction-stable, so all of them share an
+-- identical created_at and `ORDER BY created_at DESC` picks arbitrarily. That
+-- would have passed for the wrong reason on a different run.
+SELECT is(
+  (SELECT actor_user_id FROM public.admin_audit_log
+   WHERE action = 'job_report.status_changed' AND details->>'to' = 'resolved'),
+  'aaaaaaaa-9999-4999-8999-111111111111',
+  'the audit row records the acting admin, not the subject');
+
+SELECT is(
+  (SELECT actor_email FROM public.admin_audit_log
+   WHERE action = 'job_report.status_changed' AND details->>'to' = 'resolved'),
+  'mod@example.com',
+  'the audit row records the acting admin email');
+
+SELECT is(
+  (SELECT subject_id FROM public.admin_audit_log
+   WHERE action = 'job_report.status_changed' AND details->>'to' = 'resolved'),
+  (SELECT id::text FROM public.job_reports
+   WHERE user_id = 'aaaaaaaa-1111-4111-8111-111111111111' AND reason = 'Scam'),
+  'the audit row records the moderated report as the subject');
+
+SELECT is(
+  (SELECT actor_role FROM public.admin_audit_log
+   WHERE action = 'job_report.status_changed' AND details->>'to' = 'resolved'),
+  'marketing_admin', 'the audit row records the role that acted');
+
+SELECT is(
+  (SELECT details->>'from' FROM public.admin_audit_log
+   WHERE action = 'job_report.status_changed' AND details->>'to' = 'resolved'),
+  'reviewing',
+  'the audit row records the status the report actually left');
+
+SELECT is(
+  (SELECT details->>'to' FROM public.admin_audit_log
+   WHERE action = 'job_report.status_changed' AND details->>'to' = 'resolved'),
+  'resolved', 'the audit row records the status the report reached');
+
+-- Two moderated transitions, two rows. Collapsing them would lose a step.
+SELECT is(
+  (SELECT count(*)::int FROM public.admin_audit_log
+   WHERE action = 'job_report.status_changed'),
+  2, 'each successful transition writes exactly one audit row');
 
 -- ---------------------------------------------------------------------------
 -- The approved status domain: new / reviewing / resolved / dismissed
