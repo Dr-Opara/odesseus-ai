@@ -82,12 +82,16 @@ const csp = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'none'",
+  // Same-origin framing only. Cross-origin clickjacking stays blocked; this
+  // also lets the /qa/mobile/* preview embed the real routes it mirrors.
+  "frame-ancestors 'self'",
 ].join("; ");
 
 const securityHeaders = [
   { key: "Content-Security-Policy", value: csp },
-  { key: "X-Frame-Options", value: "DENY" },
+  // SAMEORIGIN (not DENY) so the /qa/mobile/* preview can frame the real
+  // routes on the same origin; cross-origin framing is still refused.
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Live needs microphone + display-media (for shared interview audio)

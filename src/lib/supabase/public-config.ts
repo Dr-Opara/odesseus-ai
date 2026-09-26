@@ -12,11 +12,21 @@ const productionPublishableKey =
 
 const isLocalDevelopment = process.env.NODE_ENV === "development";
 
+// NEXT_PUBLIC_* values must be read with a literal member expression
+// (`process.env.NEXT_PUBLIC_...`) so bundlers can statically inline them into
+// client bundles. A dynamic `process.env[envName]` lookup cannot be inlined,
+// so in the browser it always reads undefined — which made the development
+// guard below throw on every client page that imported the Supabase client
+// (e.g. /signup). The guard itself stays: local dev still fails loudly
+// instead of silently pointing at the production project.
 function resolvePublicConfig(
   envName: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   productionFallback: string
 ): string {
-  const value = process.env[envName];
+  const value =
+    envName === "NEXT_PUBLIC_SUPABASE_URL"
+      ? process.env.NEXT_PUBLIC_SUPABASE_URL
+      : process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (value) return value;
 
   if (isLocalDevelopment) {
