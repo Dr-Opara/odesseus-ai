@@ -624,6 +624,48 @@ export type Database = {
         }
         Relationships: []
       }
+      employer_member_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_user_id: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          org_id: string
+          role: string
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_by: string
+          org_id: string
+          role: string
+          status?: string
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          org_id?: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Relationships: []
+      }
       employer_members: {
         Row: {
           created_at: string
@@ -2145,6 +2187,23 @@ export type Database = {
           p_tier: string
         }
         Returns: unknown
+      }
+      odesseus_accept_employer_invitation: {
+        Args: { p_token: string }
+        Returns: {
+          invitation_id: string
+          joined_org_id: string
+          joined_role: string
+          org_name: string
+        }[]
+      }
+      odesseus_metered_org_roles: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
+      odesseus_org_live_seat_count: {
+        Args: { p_org_id: string }
+        Returns: number
       }
       odesseus_sync_recruiter_seat: {
         Args: {
