@@ -47,17 +47,45 @@ export const UNAVAILABLE_REASONS = {
 export type UnavailableReason =
   (typeof UNAVAILABLE_REASONS)[keyof typeof UNAVAILABLE_REASONS];
 
-/** Machine-readable product keys from the canonical catalog. */
+/**
+ * Machine-readable product keys of the current pricing contract.
+ *
+ * The retired pay-as-you-go application-credit packs
+ * (`candidate_application_single`, `candidate_application_pack_25/50/100`) and
+ * the legacy employer bundles (`employer_starter_bundle`,
+ * `employer_addon_post`) are deliberately absent: the
+ * `current_pricing_contract` migration flips their rows to `active = false`
+ * rather than deleting them, so they stay resolvable by key for rollback and
+ * history while never being offered for sale. Apply is now billed as a
+ * wallet debit (`candidate_standard_apply` 49 / `candidate_smart_apply` 199),
+ * funded by the `wallet_topup_*` products.
+ *
+ * This list is a typing/ownership reference only — runtime resolution is
+ * driven by the `pricing_products.active` column, and request keys are
+ * validated by `PRODUCT_KEY_PATTERN`.
+ */
 export const PRODUCT_KEYS = [
-  "candidate_application_single",
-  "candidate_application_pack_25",
-  "candidate_application_pack_50",
-  "candidate_application_pack_100",
+  // Candidate apply rates (wallet debits on verified successful submission).
+  "candidate_standard_apply",
+  "candidate_smart_apply",
+  // Candidate wallet top-ups.
+  "wallet_topup_10",
+  "wallet_topup_20",
+  "wallet_topup_50",
+  // Odesseus Live (unchanged by the wallet contract).
   "candidate_live_single",
   "candidate_live_pack_3",
   "candidate_live_annual",
-  "employer_starter_bundle",
-  "employer_addon_post",
+  // Employer plans (recurring).
+  "employer_starter",
+  "employer_growth",
+  "employer_business",
+  // Featured listings (one-time).
+  "featured_7d",
+  "featured_14d",
+  "featured_30d_ai",
+  // Recruiter seat (recurring per seat).
+  "recruiter_seat_month",
 ] as const;
 
 export type ProductKey = (typeof PRODUCT_KEYS)[number];
