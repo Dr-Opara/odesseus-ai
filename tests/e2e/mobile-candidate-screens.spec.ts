@@ -37,6 +37,7 @@ test.describe("mobile landing splash (screen 00)", () => {
 
 test.describe("mobile splash CTA area (screen 00)", () => {
   const viewports = [
+    { name: "375x812", width: 375, height: 812 },
     { name: "390x844", width: 390, height: 844 },
     { name: "393x852", width: 393, height: 852 },
     { name: "430x932", width: 430, height: 932 },

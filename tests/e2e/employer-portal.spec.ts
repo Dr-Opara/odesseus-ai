@@ -17,6 +17,7 @@ import { test, expect } from "@playwright/test";
  */
 
 const mobileViewports = [
+  { name: "375x812", width: 375, height: 812 },
   { name: "390x844", width: 390, height: 844 },
   { name: "393x852", width: 393, height: 852 },
   { name: "430x932", width: 430, height: 932 },
