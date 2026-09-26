@@ -1,10 +1,12 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function GoogleSignupButton() {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function continueWithGoogle() {
     setLoading(true);
@@ -23,7 +25,7 @@ export default function GoogleSignupButton() {
     });
 
     if (error) {
-      window.location.href = `/signup?error=${encodeURIComponent(error.message)}`;
+      router.push(`/signup?error=${encodeURIComponent(error.message)}`);
     }
   }
 
