@@ -18,10 +18,14 @@ const serviceClientMock = vi.fn();
 const checkoutCreate = vi.fn();
 const subscriptionUpdate = vi.fn();
 const subscriptionRetrieve = vi.fn();
+const sendEmailMock = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: () => createClientMock() }));
 vi.mock("@/lib/supabase/service", () => ({
   createServiceClient: () => serviceClientMock(),
+}));
+vi.mock("@/lib/email/send", () => ({
+  sendEmail: (...args: unknown[]) => sendEmailMock(...args),
 }));
 vi.mock("@/lib/stripe", () => ({
   getStripe: () => ({
@@ -222,12 +226,35 @@ function deleteOnlyService(
 
 const orgParams = (orgId = ORG_ID) => ({ params: Promise.resolve({ orgId }) });
 
+/**
+ * A realistic inserted invitation row.
+ *
+ * `email` and `expires_at` are not optional in practice: the delivery path reads
+ * both, so a partial fixture would test a shape the database never produces.
+ */
+function invitationRow(overrides: Record<string, unknown> = {}) {
+  const now = Date.now();
+  return {
+    id: INVITATION_ID,
+    org_id: ORG_ID,
+    email: "new.recruiter@example.com",
+    role: "recruiter",
+    status: "pending",
+    invited_by: OWNER_ID,
+    expires_at: new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date(now).toISOString(),
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   createClientMock.mockReset();
   serviceClientMock.mockReset();
   checkoutCreate.mockReset();
   subscriptionUpdate.mockReset();
   subscriptionRetrieve.mockReset();
+  sendEmailMock.mockReset();
+  sendEmailMock.mockResolvedValue({ sent: true });
   subscriptionUpdate.mockResolvedValue({});
   subscriptionRetrieve.mockResolvedValue({
     id: "sub_seats_1",
@@ -399,10 +426,10 @@ describe("POST /api/employer/orgs/[orgId]/invitations", () => {
     expect(response.status).toBe(404);
   });
 
-  it("issues an invitation and returns the redemption token", async () => {
+  it("issues an invitation, emails it, and returns the redemption token", async () => {
     const client = sessionClient({
       userId: OWNER_ID,
-      inviteInsert: { data: { id: INVITATION_ID, status: "pending" } },
+      inviteInsert: { data: invitationRow() },
     });
     createClientMock.mockResolvedValue(client);
     const { POST } = await freshRoute(INVITE_ROUTE);
@@ -416,9 +443,134 @@ describe("POST /api/employer/orgs/[orgId]/invitations", () => {
 
     expect(response.status).toBe(201);
     expect(body.invitation.id).toBe(INVITATION_ID);
-    // The token is returned so the admin can pass the link on; email delivery is
-    // deliberately not implemented here.
+    // The token is still returned so the admin can pass the link on, even if the
+    // email never arrives.
     expect(body.token).toMatch(/^[0-9a-f]{48}$/);
+    expect(body.emailed).toBe(true);
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends the invitation to the normalized stored address", async () => {
+    createClientMock.mockResolvedValue(
+      sessionClient({ userId: OWNER_ID, inviteInsert: { data: invitationRow() } })
+    );
+    const { POST } = await freshRoute(INVITE_ROUTE);
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+
+    await POST(
+      postRequest("/x", { email: "New.Recruiter@Example.com", role: "recruiter" }),
+      orgParams()
+    );
+
+    // The accept RPC compares lower(email), so the message has to go to the
+    // same normalized form the database will match on.
+    const [message] = sendEmailMock.mock.calls[0] as [{ to: string }];
+    expect(message.to).toBe("new.recruiter@example.com");
+  });
+
+  it("sends a link that carries the token returned to the admin", async () => {
+    createClientMock.mockResolvedValue(
+      sessionClient({ userId: OWNER_ID, inviteInsert: { data: invitationRow() } })
+    );
+    const { POST } = await freshRoute(INVITE_ROUTE);
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+
+    const response = await POST(
+      postRequest("/x", { email: "new.recruiter@example.com", role: "recruiter" }),
+      orgParams()
+    );
+    const body = await response.json();
+    const [message] = sendEmailMock.mock.calls[0] as [{ ctaHref: string }];
+
+    // The link an admin copies and the link the recipient clicks must be the
+    // same invitation.
+    expect(message.ctaHref).toContain(body.token);
+  });
+
+  it("names the team in the invitation", async () => {
+    createClientMock.mockResolvedValue(
+      sessionClient({ userId: OWNER_ID, inviteInsert: { data: invitationRow() } })
+    );
+    const { POST } = await freshRoute(INVITE_ROUTE);
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+
+    await POST(
+      postRequest("/x", { email: "new.recruiter@example.com", role: "recruiter" }),
+      orgParams()
+    );
+
+    const [message] = sendEmailMock.mock.calls[0] as [{ subject: string }];
+    expect(message.subject).toContain("Seats Inc.");
+  });
+
+  it("still returns the invitation and token when delivery fails", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    sendEmailMock.mockResolvedValue({ sent: false, reason: "not_configured" });
+    createClientMock.mockResolvedValue(
+      sessionClient({ userId: OWNER_ID, inviteInsert: { data: invitationRow() } })
+    );
+    const { POST } = await freshRoute(INVITE_ROUTE);
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+
+    const response = await POST(
+      postRequest("/x", { email: "new.recruiter@example.com", role: "recruiter" }),
+      orgParams()
+    );
+    const body = await response.json();
+
+    // The row is the fact; the email is a notification about it. Reporting a
+    // failure would tell the admin nothing was invited when they can still pass
+    // the link on themselves.
+    expect(response.status).toBe(201);
+    expect(body.invitation.id).toBe(INVITATION_ID);
+    expect(body.token).toMatch(/^[0-9a-f]{48}$/);
+    expect(body.emailed).toBe(false);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("never logs the redemption token or the invitee address on a delivery failure", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    sendEmailMock.mockResolvedValue({ sent: false, reason: "provider_error" });
+    createClientMock.mockResolvedValue(
+      sessionClient({ userId: OWNER_ID, inviteInsert: { data: invitationRow() } })
+    );
+    const { POST } = await freshRoute(INVITE_ROUTE);
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+
+    const response = await POST(
+      postRequest("/x", { email: "new.recruiter@example.com", role: "recruiter" }),
+      orgParams()
+    );
+    const { token } = await response.json();
+
+    // Both are secrets or personal data that must not land in a log line someone
+    // pastes into a ticket.
+    for (const call of consoleError.mock.calls) {
+      const line = JSON.stringify(call);
+      expect(line).not.toContain(token);
+      expect(line).not.toContain("new.recruiter@example.com");
+    }
+    consoleError.mockRestore();
+  });
+
+  it("does not email anyone when the invitation is a duplicate", async () => {
+    createClientMock.mockResolvedValue(
+      sessionClient({
+        userId: OWNER_ID,
+        inviteInsert: { error: { code: "23505", message: "duplicate" } },
+      })
+    );
+    const { POST } = await freshRoute(INVITE_ROUTE);
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+    const response = await POST(
+      postRequest("/x", { email: "a@example.com", role: "recruiter" }),
+      orgParams()
+    );
+
+    expect(response.status).toBe(409);
+    // The row does not exist, so there is no token to put in an email.
+    expect(sendEmailMock).not.toHaveBeenCalled();
   });
 
   it("409s a duplicate pending invitation", async () => {
@@ -454,7 +606,7 @@ describe("POST /api/employer/orgs/[orgId]/invitations", () => {
     createClientMock.mockResolvedValue(
       sessionClient({
         userId: OWNER_ID,
-        inviteInsert: { data: { id: INVITATION_ID, status: "pending" } },
+        inviteInsert: { data: invitationRow() },
       })
     );
     const { POST } = await freshRoute(INVITE_ROUTE);

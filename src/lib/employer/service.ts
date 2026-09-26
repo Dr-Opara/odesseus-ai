@@ -183,6 +183,30 @@ export async function requireOrgAdmin(
 // Reads
 // ---------------------------------------------------------------------------
 
+/**
+ * An org's display name, for messages that name the team.
+ *
+ * Returns null rather than throwing when the org is missing or unreadable: a
+ * name is presentational, and failing to obtain one must not block the action
+ * the caller actually asked for.
+ */
+export async function getOrgName(
+  client: EmployerClient,
+  orgId: string
+): Promise<string | null> {
+  const { data, error } = await client
+    .from("employer_organizations")
+    .select("name")
+    .eq("id", orgId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[ODESSEUS_EMPLOYER_TEAM] org name read failed", orgId);
+    return null;
+  }
+  return data?.name ?? null;
+}
+
 type SeatRow = { count: number; active_until: string | null };
 
 /**
