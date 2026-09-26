@@ -25,14 +25,14 @@ export async function POST(
   try {
     input = schema.parse(await request.json());
   } catch {
-    return NextResponse.json({ error: "Invalid Live activation." }, { status: 400 });
+    return NextResponse.json({ error: "Invalid recovery request." }, { status: 400 });
   }
 
   const service = createServiceClient();
 
   const { data: liveSession } = await service
     .from("live_interview_sessions")
-    .select("id,interview_id,status")
+    .select("id,interview_id,status,activated_at")
     .eq("id", input.sessionId)
     .eq("interview_id", id)
     .eq("user_id", userId)
@@ -42,7 +42,7 @@ export async function POST(
     return NextResponse.json({ error: "Live session not found." }, { status: 404 });
   }
 
-  const { data, error } = await service.rpc("odesseus_activate_live_session_v2", {
+  const { data, error } = await service.rpc("odesseus_recover_live_session", {
     p_session_id: input.sessionId,
     p_user_id: userId,
     p_openai_session_id: input.openaiSessionId,
@@ -50,21 +50,18 @@ export async function POST(
 
   if (error) {
     const msg = error.message?.toLowerCase() || "";
-    const insufficient = msg.includes("insufficient") || msg.includes("no live entitlement") || msg.includes("fair use limit");
     const notFound = msg.includes("not found");
+    const cannotRecover = msg.includes("cannot be recovered") || msg.includes("never activated");
     return NextResponse.json(
-      { error: insufficient ? "No interview pass is available." : notFound ? "Live session not found." : "Odesseus could not activate Live." },
-      { status: insufficient ? 402 : notFound ? 404 : 500 }
+      { error: notFound ? "Live session not found." : cannotRecover ? "This session cannot be recovered." : "Odesseus could not recover the session." },
+      { status: notFound ? 404 : cannotRecover ? 409 : 500 }
     );
   }
 
-  // data is a setof record; take the first row
   const row = data?.[0];
   return NextResponse.json({
     ok: true,
     session: row?.session,
-    entitlementConsumed: row?.entitlement_consumed ?? false,
-    entitlementType: row?.entitlement_type ?? null,
-    passesRemaining: row?.passes_remaining ?? null,
+    recovered: row?.recovered ?? false,
   });
 }

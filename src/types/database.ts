@@ -2319,6 +2319,204 @@ export type Database = {
         }
         Returns: string
       }
+      odesseus_get_live_entitlement: {
+        Args: { p_user_id: string }
+        Returns: {
+          entitlement_type: string
+          fair_use_count: number
+          fair_use_reset: string
+          has_entitlement: boolean
+          passes_remaining: number
+          unlimited_until: string | null
+        }[]
+      }
+      odesseus_create_live_session: {
+        Args: {
+          p_capture_mode?: string
+          p_context_snapshot?: Json
+          p_interview_id: string
+          p_user_id: string
+        }
+        Returns: {
+          entitlement_type: string
+          passes_after: number
+          passes_before: number
+          session_id: string
+          status: string
+          unlimited_until: string | null
+        }[]
+      }
+      odesseus_activate_live_session_v2: {
+        Args: {
+          p_openai_session_id: string
+          p_session_id: string
+          p_user_id: string
+        }
+        Returns: {
+          entitlement_consumed: boolean
+          entitlement_type: string
+          passes_remaining: number
+          session: {
+            activated_at: string | null
+            application_id: string
+            capture_mode: string
+            consented_at: string | null
+            context_snapshot: Json
+            created_at: string
+            ended_at: string | null
+            error_message: string | null
+            guidance_model: string
+            id: string
+            interview_id: string
+            last_transcript_at: string | null
+            openai_session_id: string | null
+            status: string
+            transcription_model: string
+            updated_at: string
+            user_id: string
+          }
+        }[]
+      }
+      odesseus_recover_live_session: {
+        Args: {
+          p_openai_session_id: string
+          p_session_id: string
+          p_user_id: string
+        }
+        Returns: {
+          recovered: boolean
+          session: {
+            activated_at: string | null
+            application_id: string
+            capture_mode: string
+            consented_at: string | null
+            context_snapshot: Json
+            created_at: string
+            ended_at: string | null
+            error_message: string | null
+            guidance_model: string
+            id: string
+            interview_id: string
+            last_transcript_at: string | null
+            openai_session_id: string | null
+            status: string
+            transcription_model: string
+            updated_at: string
+            user_id: string
+          }
+        }[]
+      }
+      odesseus_complete_live_session: {
+        Args: { p_session_id: string; p_user_id: string }
+        Returns: {
+          activated_at: string | null
+          application_id: string
+          capture_mode: string
+          consented_at: string | null
+          context_snapshot: Json
+          created_at: string
+          ended_at: string | null
+          error_message: string | null
+          guidance_model: string
+          id: string
+          interview_id: string
+          last_transcript_at: string | null
+          openai_session_id: string | null
+          status: string
+          transcription_model: string
+          updated_at: string
+          user_id: string
+        }
+      }
+      odesseus_fail_live_session: {
+        Args: { p_error_message: string; p_session_id: string; p_user_id: string }
+        Returns: {
+          activated_at: string | null
+          application_id: string
+          capture_mode: string
+          consented_at: string | null
+          context_snapshot: Json
+          created_at: string
+          ended_at: string | null
+          error_message: string | null
+          guidance_model: string
+          id: string
+          interview_id: string
+          last_transcript_at: string | null
+          openai_session_id: string | null
+          status: string
+          transcription_model: string
+          updated_at: string
+          user_id: string
+        }
+      }
+      odesseus_expire_live_session: {
+        Args: { p_session_id: string; p_user_id: string }
+        Returns: {
+          activated_at: string | null
+          application_id: string
+          capture_mode: string
+          consented_at: string | null
+          context_snapshot: Json
+          created_at: string
+          ended_at: string | null
+          error_message: string | null
+          guidance_model: string
+          id: string
+          interview_id: string
+          last_transcript_at: string | null
+          openai_session_id: string | null
+          status: string
+          transcription_model: string
+          updated_at: string
+          user_id: string
+        }
+      }
+      odesseus_record_live_session_audit: {
+        Args: {
+          p_action: string
+          p_actor_email: string | null
+          p_actor_role: string
+          p_actor_user_id: string
+          p_details: Json
+          p_entitlement_type: string
+          p_error_message: string | null
+          p_from_status: string
+          p_passes_remaining: number
+          p_session_id: string
+          p_to_status: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      odesseus_check_live_rate_limit: {
+        Args: {
+          p_max_sessions?: number
+          p_user_id: string
+          p_window_minutes?: number
+        }
+        Returns: boolean
+      }
+      odesseus_cleanup_stale_live_sessions: {
+        Args: { p_max_age_hours?: number }
+        Returns: number
+      }
+      odesseus_admin_audit_trail: {
+        Args: {
+          p_limit?: number
+          p_subject_id: string
+          p_subject_type: string
+        }
+        Returns: {
+          action: string
+          actor_email: string | null
+          actor_role: string
+          actor_user_id: string
+          created_at: string
+          details: Json
+          id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

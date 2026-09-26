@@ -136,13 +136,13 @@ describe("POST /api/interviews/[id]/live/activate", () => {
 
   it("activates via the RPC and returns the activated session", async () => {
     const rpc = vi.fn(async () => ({
-      data: { id: sessionId, status: "active" },
+      data: [{ session: { id: sessionId, status: "active" }, entitlement_consumed: true, entitlement_type: "passes", passes_remaining: 0 }],
       error: null,
     }));
     createServiceClientMock.mockReturnValue(
       fakeAuthedClient({
         userId: "service",
-        from: () => fakeQueryResult({ id: sessionId, interview_id: "iv-1", status: "prepared" }),
+        from: () => fakeQueryResult({ id: sessionId, interview_id: "iv-1", status: "ready" }),
         rpc,
       })
     );
@@ -154,7 +154,7 @@ describe("POST /api/interviews/[id]/live/activate", () => {
     expect(response.status).toBe(200);
     expect(body.session.status).toBe("active");
     expect(rpc).toHaveBeenCalledWith(
-      "odesseus_activate_live_session",
+      "odesseus_activate_live_session_v2",
       expect.objectContaining({ p_session_id: sessionId, p_user_id: "user-1" })
     );
   });
@@ -167,7 +167,7 @@ describe("POST /api/interviews/[id]/live/activate", () => {
     createServiceClientMock.mockReturnValue(
       fakeAuthedClient({
         userId: "service",
-        from: () => fakeQueryResult({ id: sessionId, interview_id: "iv-1", status: "prepared" }),
+        from: () => fakeQueryResult({ id: sessionId, interview_id: "iv-1", status: "ready" }),
         rpc,
       })
     );
@@ -196,7 +196,7 @@ describe("POST /api/interviews/[id]/live/end", () => {
   });
 
   it("ends the session via the RPC", async () => {
-    const rpc = vi.fn(async () => ({ data: { id: sessionId, status: "ended" }, error: null }));
+    const rpc = vi.fn(async () => ({ data: { id: sessionId, status: "completed" }, error: null }));
     createServiceClientMock.mockReturnValue(
       fakeAuthedClient({
         userId: "service",
@@ -209,7 +209,7 @@ describe("POST /api/interviews/[id]/live/end", () => {
     const response = await POST(jsonRequest({ sessionId }), params);
     expect(response.status).toBe(200);
     expect(rpc).toHaveBeenCalledWith(
-      "odesseus_end_live_session",
+      "odesseus_complete_live_session",
       expect.objectContaining({ p_session_id: sessionId, p_user_id: "user-1" })
     );
   });
