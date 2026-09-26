@@ -19,7 +19,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(17);
+SELECT plan(19);
 
 -- ---------------------------------------------------------------------------
 -- 1. Baseline inventory
@@ -29,7 +29,7 @@ SELECT is(
    JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public' AND c.relkind = 'r'
      AND c.relname <> 'schema_migrations'),
-  54, 'public schema holds exactly 54 tables (audit inventory is current)');
+  55, 'public schema holds exactly 55 tables (audit inventory is current)');
 
 SELECT is(
   (SELECT count(*)::int FROM pg_class c
@@ -201,6 +201,26 @@ SELECT is(
    WHERE table_schema = 'odesseus_private'
      AND grantee IN ('anon', 'authenticated')),
   0, 'odesseus_private tables carry no anon/authenticated privileges');
+
+-- ---------------------------------------------------------------------------
+-- 8. The admin audit log is append-only, and not writable by anyone who could
+--    forge an entry. The table grants no INSERT, UPDATE or DELETE to any role,
+--    so the only write path is the SECURITY DEFINER RPC. A log an admin can
+--    edit is not evidence of anything.
+-- ---------------------------------------------------------------------------
+SELECT is(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema = 'public' AND table_name = 'admin_audit_log'
+     AND grantee IN ('anon', 'authenticated', 'service_role', 'PUBLIC')
+     AND privilege_type IN ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')),
+  0, 'no role may insert into, update, or delete an admin_audit_log row');
+
+SELECT is(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema = 'public' AND table_name = 'admin_audit_log'
+     AND grantee IN ('anon', 'authenticated')
+     AND privilege_type = 'SELECT'),
+  0, 'browser roles may not read the admin audit log');
 
 SELECT * FROM finish();
 ROLLBACK;

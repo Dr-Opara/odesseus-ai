@@ -3,16 +3,12 @@ import { fakeAuthedClient, fakeQueryResult } from "../helpers/fake-supabase";
 
 const createClientMock = vi.fn();
 const serviceClientMock = vi.fn();
-const isAdminMock = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: () => createClientMock(),
 }));
 vi.mock("@/lib/supabase/service", () => ({
   createServiceClient: () => serviceClientMock(),
-}));
-vi.mock("@/lib/partners/service", () => ({
-  isAdmin: (userId: string) => isAdminMock(userId),
 }));
 
 // The rate limiter is process-global; reset the module registry per test so
@@ -64,18 +60,32 @@ function queueBuilder(opts: { data?: unknown; error?: unknown; count?: number | 
 }
 
 function adminServiceClient(opts: {
+  /** The caller's row in admin_users. Omit for "not an admin at all". */
+  role?: string | null;
   data?: unknown;
   error?: unknown;
   count?: number | null;
   rpcError?: unknown;
 } = {}) {
-  const seen: { filters: unknown[][]; range: unknown[] | null } = {
+  const seen: { filters: unknown[][]; range: unknown[] | null; tables: string[] } = {
     filters: [],
     range: null,
+    tables: [],
   };
   return {
     __seen: seen,
     from: vi.fn((table: string) => {
+      seen.tables.push(table);
+
+      // The admin role lookup goes through the same service client. Served here
+      // rather than by mocking the resolver, so these tests exercise the real
+      // capability check rather than a stub of it.
+      if (table === "admin_users") {
+        return queueBuilder({
+          data: opts.role ? { user_id: "admin-1", role: opts.role } : null,
+        });
+      }
+
       // Record the filters and the paged range the service actually issues, so
       // a test can assert the moderation query is bounded and filtered.
       const builder = queueBuilder({ data: opts.data, error: opts.error, count: opts.count });
@@ -97,7 +107,7 @@ function adminServiceClient(opts: {
 }
 
 function adminSession() {
-  return fakeAuthedClient({ userId: "admin-1" });
+  return fakeAuthedClient({ userId: "admin-1", email: "admin@odesseus.ai" });
 }
 
 function queueRequest(query = "") {
@@ -116,7 +126,6 @@ describe("GET /api/admin/job-reports", () => {
   beforeEach(() => {
     createClientMock.mockReset();
     serviceClientMock.mockReset();
-    isAdminMock.mockReset();
   });
 
   it("rejects an unauthenticated caller", async () => {
@@ -128,19 +137,56 @@ describe("GET /api/admin/job-reports", () => {
   });
 
   it("rejects a signed-in non-admin before any privileged read", async () => {
+    // The role lookup itself needs the service client, so the assertion is that
+    // the moderation queue was never touched -- not that no client was built.
+    const service = adminServiceClient({ role: null, data: [QUEUE_ROW], count: 1 });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(false);
+    serviceClientMock.mockReturnValue(service);
+
     const { GET } = await freshRoute();
     const response = await GET(queueRequest());
     expect(response.status).toBe(403);
-    expect(serviceClientMock).not.toHaveBeenCalled();
+    expect(service.__seen.tables).not.toContain("job_reports");
+  });
+
+  it("refuses a finance admin, who may settle money but not moderate reports", async () => {
+    // Before the capability map, every route accepted all three roles, so a
+    // finance admin could dismiss a job report.
+    const service = adminServiceClient({ role: "finance_admin", data: [QUEUE_ROW], count: 1 });
+    createClientMock.mockResolvedValue(adminSession());
+    serviceClientMock.mockReturnValue(service);
+
+    const { GET } = await freshRoute();
+    const response = await GET(queueRequest());
+    expect(response.status).toBe(403);
+    expect(service.__seen.tables).not.toContain("job_reports");
+  });
+
+  it("lets a marketing admin read the queue", async () => {
+    const service = adminServiceClient({ role: "marketing_admin", data: [QUEUE_ROW], count: 1 });
+    createClientMock.mockResolvedValue(adminSession());
+    serviceClientMock.mockReturnValue(service);
+
+    const { GET } = await freshRoute();
+    expect((await GET(queueRequest())).status).toBe(200);
+  });
+
+  it("refuses an admin_users row carrying an unrecognised role", async () => {
+    // A role nobody recognises is a hand-inserted row. It must grant nothing,
+    // rather than falling through as if it were full admin.
+    const service = adminServiceClient({ role: "superadmin", data: [QUEUE_ROW], count: 1 });
+    createClientMock.mockResolvedValue(adminSession());
+    serviceClientMock.mockReturnValue(service);
+
+    const { GET } = await freshRoute();
+    expect((await GET(queueRequest())).status).toBe(403);
+    expect(service.__seen.tables).not.toContain("job_reports");
   });
 
   it("reads the queue with a service-role client and never with the caller's", async () => {
-    const service = adminServiceClient({ data: [QUEUE_ROW], count: 1 });
+    const service = adminServiceClient({ role: "admin", data: [QUEUE_ROW], count: 1 });
     const session = adminSession();
     createClientMock.mockResolvedValue(session);
-    isAdminMock.mockResolvedValue(true);
     serviceClientMock.mockReturnValue(service);
 
     const { GET } = await freshRoute();
@@ -159,9 +205,8 @@ describe("GET /api/admin/job-reports", () => {
   });
 
   it("does not filter by status unless one is requested", async () => {
-    const service = adminServiceClient({ data: [QUEUE_ROW], count: 1 });
+    const service = adminServiceClient({ role: "admin", data: [QUEUE_ROW], count: 1 });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
     serviceClientMock.mockReturnValue(service);
 
     const { GET } = await freshRoute();
@@ -170,9 +215,8 @@ describe("GET /api/admin/job-reports", () => {
   });
 
   it("filters the queue by a valid status", async () => {
-    const service = adminServiceClient({ data: [], count: 0 });
+    const service = adminServiceClient({ role: "admin", data: [], count: 0 });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
     serviceClientMock.mockReturnValue(service);
 
     const { GET } = await freshRoute();
@@ -182,25 +226,28 @@ describe("GET /api/admin/job-reports", () => {
   });
 
   it("rejects a status outside the fixed set", async () => {
+    const service = adminServiceClient({ role: "admin" });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
+    serviceClientMock.mockReturnValue(service);
     const { GET } = await freshRoute();
     const response = await GET(queueRequest("?status=banished"));
     expect(response.status).toBe(400);
-    expect(serviceClientMock).not.toHaveBeenCalled();
+    // The role check reads admin_users, but the queue itself must stay unread.
+    expect(service.__seen.tables).not.toContain("job_reports");
   });
 
   it("rejects non-numeric pagination", async () => {
+    const service = adminServiceClient({ role: "admin" });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
+    serviceClientMock.mockReturnValue(service);
     const { GET } = await freshRoute();
     expect((await GET(queueRequest("?limit=lots"))).status).toBe(400);
+    expect(service.__seen.tables).not.toContain("job_reports");
   });
 
   it("translates limit/offset into a bounded range read", async () => {
-    const service = adminServiceClient({ data: [], count: 0 });
+    const service = adminServiceClient({ role: "admin", data: [], count: 0 });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
     serviceClientMock.mockReturnValue(service);
 
     const { GET } = await freshRoute();
@@ -211,9 +258,8 @@ describe("GET /api/admin/job-reports", () => {
   });
 
   it("sets Retry-After when the admin queue read is throttled", async () => {
-    const service = adminServiceClient({ data: [], count: 0 });
+    const service = adminServiceClient({ role: "admin", data: [], count: 0 });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
     serviceClientMock.mockReturnValue(service);
 
     const { GET } = await freshRoute();
@@ -230,9 +276,8 @@ describe("GET /api/admin/job-reports", () => {
   });
 
   it("returns 500 when the queue read fails", async () => {
-    const service = adminServiceClient({ data: null, error: { message: "db down" } });
+    const service = adminServiceClient({ role: "admin", data: null, error: { message: "db down" } });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
     serviceClientMock.mockReturnValue(service);
 
     const { GET } = await freshRoute();
@@ -246,7 +291,6 @@ describe("PATCH /api/admin/job-reports/[id]", () => {
   beforeEach(() => {
     createClientMock.mockReset();
     serviceClientMock.mockReset();
-    isAdminMock.mockReset();
   });
 
   afterEach(() => {
@@ -260,7 +304,7 @@ describe("PATCH /api/admin/job-reports/[id]", () => {
       params: Promise.resolve({ id: REPORT_ID }),
     });
     expect(response.status).toBe(403);
-    expect(isAdminMock).not.toHaveBeenCalled();
+    expect(serviceClientMock).not.toHaveBeenCalled();
     expect(serviceClientMock).not.toHaveBeenCalled();
   });
 
@@ -276,21 +320,34 @@ describe("PATCH /api/admin/job-reports/[id]", () => {
   });
 
   it("rejects a signed-in non-admin", async () => {
+    const service = adminServiceClient({ role: null });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(false);
+    serviceClientMock.mockReturnValue(service);
     const { PATCH } = await freshItemRoute();
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
     const response = await PATCH(patchRequest({ status: "resolved" }), {
       params: Promise.resolve({ id: REPORT_ID }),
     });
     expect(response.status).toBe(403);
-    expect(serviceClientMock).not.toHaveBeenCalled();
+    expect(service.rpc).not.toHaveBeenCalled();
+  });
+
+  it("refuses a finance admin, who may read money but not moderate a report", async () => {
+    const service = adminServiceClient({ role: "finance_admin" });
+    createClientMock.mockResolvedValue(adminSession());
+    serviceClientMock.mockReturnValue(service);
+    const { PATCH } = await freshItemRoute();
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+    const response = await PATCH(patchRequest({ status: "resolved" }), {
+      params: Promise.resolve({ id: REPORT_ID }),
+    });
+    expect(response.status).toBe(403);
+    expect(service.rpc).not.toHaveBeenCalled();
   });
 
   it("moves a report through the service-role RPC", async () => {
-    const service = adminServiceClient();
+    const service = adminServiceClient({ role: "admin" });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
     serviceClientMock.mockReturnValue(service);
 
     const { PATCH } = await freshItemRoute();
@@ -306,13 +363,18 @@ describe("PATCH /api/admin/job-reports/[id]", () => {
       p_report_id: REPORT_ID,
       p_status: "reviewing",
       p_note: "Contacted the job poster",
+      // The actor travels with the transition so the database can write the
+      // audit row in the same transaction. Without these the moderation
+      // succeeds and nothing records who did it.
+      p_actor_user_id: "admin-1",
+      p_actor_email: "admin@odesseus.ai",
+      p_actor_role: "admin",
     });
   });
 
   it("normalises a blank note to null", async () => {
-    const service = adminServiceClient();
+    const service = adminServiceClient({ role: "admin" });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
     serviceClientMock.mockReturnValue(service);
 
     const { PATCH } = await freshItemRoute();
@@ -324,13 +386,31 @@ describe("PATCH /api/admin/job-reports/[id]", () => {
       p_report_id: REPORT_ID,
       p_status: "dismissed",
       p_note: null,
+      p_actor_user_id: "admin-1",
+      p_actor_email: "admin@odesseus.ai",
+      p_actor_role: "admin",
     });
   });
 
-  it("never allows a report to be pushed back to new", async () => {
-    const service = adminServiceClient();
+  it("records the moderating role, not just the person, for the audit row", async () => {
+    const service = adminServiceClient({ role: "marketing_admin" });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
+    serviceClientMock.mockReturnValue(service);
+
+    const { PATCH } = await freshItemRoute();
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+    await PATCH(patchRequest({ status: "dismissed" }), {
+      params: Promise.resolve({ id: REPORT_ID }),
+    });
+    expect(service.rpc).toHaveBeenCalledWith(
+      "odesseus_update_job_report_status",
+      expect.objectContaining({ p_actor_role: "marketing_admin" })
+    );
+  });
+
+  it("never allows a report to be pushed back to new", async () => {
+    const service = adminServiceClient({ role: "admin" });
+    createClientMock.mockResolvedValue(adminSession());
     serviceClientMock.mockReturnValue(service);
     const { PATCH } = await freshItemRoute();
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
@@ -342,9 +422,8 @@ describe("PATCH /api/admin/job-reports/[id]", () => {
   });
 
   it("rejects the retired 'open' status instead of silently accepting it", async () => {
-    const service = adminServiceClient();
+    const service = adminServiceClient({ role: "admin" });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
     serviceClientMock.mockReturnValue(service);
     const { PATCH } = await freshItemRoute();
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
@@ -357,8 +436,7 @@ describe("PATCH /api/admin/job-reports/[id]", () => {
 
   it("rejects a status outside the fixed set", async () => {
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
-    serviceClientMock.mockReturnValue(adminServiceClient());
+    serviceClientMock.mockReturnValue(adminServiceClient({ role: "admin" }));
     const { PATCH } = await freshItemRoute();
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
     const response = await PATCH(patchRequest({ status: "banished" }), {
@@ -369,8 +447,7 @@ describe("PATCH /api/admin/job-reports/[id]", () => {
 
   it("rejects a note beyond the stored cap", async () => {
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
-    serviceClientMock.mockReturnValue(adminServiceClient());
+    serviceClientMock.mockReturnValue(adminServiceClient({ role: "admin" }));
     const { PATCH } = await freshItemRoute();
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
     const response = await PATCH(
@@ -381,9 +458,8 @@ describe("PATCH /api/admin/job-reports/[id]", () => {
   });
 
   it("404s a non-uuid report id", async () => {
-    const service = adminServiceClient();
+    const service = adminServiceClient({ role: "admin" });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
     serviceClientMock.mockReturnValue(service);
     const { PATCH } = await freshItemRoute();
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
@@ -395,9 +471,8 @@ describe("PATCH /api/admin/job-reports/[id]", () => {
   });
 
   it("400s when the RPC rejects the transition", async () => {
-    const service = adminServiceClient({ rpcError: { message: "report not found" } });
+    const service = adminServiceClient({ role: "admin", rpcError: { message: "report not found" } });
     createClientMock.mockResolvedValue(adminSession());
-    isAdminMock.mockResolvedValue(true);
     serviceClientMock.mockReturnValue(service);
 
     const { PATCH } = await freshItemRoute();

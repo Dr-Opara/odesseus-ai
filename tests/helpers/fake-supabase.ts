@@ -35,13 +35,22 @@ export function fakeQueryResult<T = unknown>(data: T, error: unknown = null) {
 
 export function fakeAuthedClient(opts: {
   userId?: string | null;
+  /** Mirrors the session JWT, which is where the admin audit actor email comes from. */
+  email?: string | null;
   from?: (table: string) => unknown;
   rpc?: (...args: unknown[]) => Promise<unknown>;
 }) {
   return {
     auth: {
       getClaims: vi.fn(async () => ({
-        data: opts.userId ? { claims: { sub: opts.userId } } : { claims: null },
+        data: opts.userId
+          ? {
+              claims: {
+                sub: opts.userId,
+                ...(opts.email ? { email: opts.email } : {}),
+              },
+            }
+          : { claims: null },
       })),
     },
     from: vi.fn(opts.from || (() => fakeQueryResult(null))),

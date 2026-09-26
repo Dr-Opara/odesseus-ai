@@ -81,6 +81,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          role: string
+          user_id: string
+        }
+        Insert: {
+          role: string
+          user_id: string
+        }
+        Update: {
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_role: string
+          actor_user_id: string
+          created_at: string
+          details: Json
+          id: string
+          subject_id: string | null
+          subject_type: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_role: string
+          actor_user_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          subject_id?: string | null
+          subject_type: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_role?: string
+          actor_user_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          subject_id?: string | null
+          subject_type?: string
+        }
+        Relationships: []
+      }
       application_answer_vault: {
         Row: {
           answer_key: string
@@ -2246,8 +2297,27 @@ export type Database = {
         Returns: unknown
       }
       odesseus_update_job_report_status: {
-        Args: { p_note?: string | null; p_report_id: string; p_status: string }
+        Args: {
+          p_actor_email?: string | null
+          p_actor_role?: string
+          p_actor_user_id: string
+          p_note?: string | null
+          p_report_id: string
+          p_status: string
+        }
         Returns: undefined
+      }
+      odesseus_record_admin_action: {
+        Args: {
+          p_action: string
+          p_actor_email?: string | null
+          p_actor_role: string
+          p_actor_user_id: string
+          p_details?: Json
+          p_subject_id?: string | null
+          p_subject_type: string
+        }
+        Returns: string
       }
     }
     Enums: {
