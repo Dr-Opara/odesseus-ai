@@ -502,6 +502,7 @@ export type Database = {
           live_unlimited_until: string | null
           updated_at: string
           user_id: string
+          wallet_balance_cents: number
         }
         Insert: {
           application_credits?: number
@@ -509,6 +510,7 @@ export type Database = {
           live_unlimited_until?: string | null
           updated_at?: string
           user_id: string
+          wallet_balance_cents?: number
         }
         Update: {
           application_credits?: number
@@ -516,6 +518,7 @@ export type Database = {
           live_unlimited_until?: string | null
           updated_at?: string
           user_id?: string
+          wallet_balance_cents?: number
         }
         Relationships: []
       }

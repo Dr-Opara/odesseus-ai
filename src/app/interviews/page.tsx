@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
+import MobileInterviews from "@/components/mobile/mobile-interviews";
 
 export default async function InterviewsPage() {
   const supabase = await createClient();
@@ -31,7 +32,7 @@ export default async function InterviewsPage() {
       interviewPasses={credits?.interview_passes ?? 0}
       active="interviews"
     >
-      <section className="shell" style={{ padding: "54px 0 90px" }}>
+      <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 90px" }}>
       <div style={{ width: "min(820px,100%)", margin: "30px auto 0" }}>
         <div className="muted" style={{ fontSize: 14 }}>Interviews</div>
         <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: "10px 0 6px" }}>
@@ -90,6 +91,8 @@ export default async function InterviewsPage() {
         )}
       </div>
       </section>
+
+      <MobileInterviews upcoming={upcoming} />
     </AppShell>
   );
 }

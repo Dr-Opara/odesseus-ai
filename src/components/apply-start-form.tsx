@@ -2,13 +2,23 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { ApplyTier } from "@/lib/pricing/candidate-pricing";
 
 export default function ApplyStartForm({
   jobId,
   defaultUrl,
+  applyTier,
 }: {
   jobId: string;
   defaultUrl?: string | null;
+  /**
+   * Apply tier, sent to /api/apply/start. The server validates the wallet
+   * balance against the tier price (Standard ≥ 49¢, Smart ≥ 199¢) before
+   * accepting the run and persists it as the run's execution_mode, which the
+   * backend finalization RPC uses to debit the wallet at the tier rate on
+   * verified successful submission.
+   */
+  applyTier?: ApplyTier;
 }) {
   const router = useRouter();
   const [url, setUrl] = useState(defaultUrl || "");
@@ -23,7 +33,7 @@ export default function ApplyStartForm({
     const response = await fetch("/api/apply/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId, targetUrl: url }),
+      body: JSON.stringify({ jobId, targetUrl: url, applyTier }),
     });
 
     const data = await response.json();

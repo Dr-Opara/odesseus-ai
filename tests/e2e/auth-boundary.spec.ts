@@ -17,9 +17,9 @@ test.describe("landing page", () => {
     // job-search dashboard showcase with no visible headline) — check it's
     // present for accessibility/SEO rather than visible.
     await expect(
-      page.getByRole("heading", { name: "Odesseus finds, scores, and applies to jobs for you.", level: 1 })
+      page.getByRole("heading", { name: "Discover Your Dream Job with Odesseus.ai", level: 1 })
     ).toBeAttached();
-    await expect(page.getByText("Job Match Score")).toBeVisible();
+    await expect(page.getByText("Scored from your resume")).toBeVisible();
     await expect(page.locator("header").getByRole("link", { name: "Sign In" })).toBeVisible();
     await expect(page.locator("header").getByRole("link", { name: "Get Started" })).toBeVisible();
   });
@@ -34,20 +34,27 @@ test.describe("login and signup pages", () => {
     await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
   });
 
-  test("signup page renders the account-creation form", async ({ page }) => {
+  test("signup page renders the account-creation form", async ({ page, isMobile }) => {
     await page.goto("/signup");
-    await expect(page.getByRole("heading", { name: "Meet Odesseus.ai Agent" })).toBeVisible();
-    await expect(page.getByLabel("Name")).toBeVisible();
-    await expect(page.getByLabel("Email")).toBeVisible();
-    await expect(page.getByLabel("Password")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: isMobile ? "Create your account" : "Create Account", level: 1 })
+    ).toBeVisible();
+    // Desktop and mobile signup forms both live in the DOM (the wrong one is
+    // hidden by CSS), so scope every field assertion to the visible form.
+    await expect(page.getByLabel(isMobile ? "Email" : "Email Address").filter({ visible: true })).toBeVisible();
+    await expect(page.getByLabel("Password").filter({ visible: true })).toBeVisible();
   });
 
+  // Desktop-only: the mobile wizard folds account creation into a two-step
+  // flow without a cross-link back to login; the desktop pages keep the
+  // explicit cross-links.
   test("login and signup pages link to each other", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/login");
-    await page.getByRole("link", { name: "Create an account" }).click();
+    await page.getByRole("link", { name: "Create a candidate account" }).click();
     await expect(page).toHaveURL(/\/signup$/);
 
-    await page.getByRole("link", { name: "Sign in" }).click();
+    await page.getByRole("link", { name: "Sign In" }).click();
     await expect(page).toHaveURL(/\/login$/);
   });
 });
@@ -79,12 +86,28 @@ test.describe("protected route boundary", () => {
 });
 
 test.describe("public marketing routes", () => {
-  const publicRoutes = ["/how-it-works", "/apply", "/live", "/pricing", "/about", "/partners", "/partners/apply", "/partners/terms"];
+  // /live is intentionally public but now redirects to the agents page (the
+  // three-core-agent simplification), so its public-route check asserts the
+  // redirect target rather than the literal path.
+  const publicRoutes = [
+    "/how-it-works",
+    "/apply",
+    "/live",
+    "/pricing",
+    "/about",
+    "/partners",
+    "/partners/apply",
+    "/partners/terms",
+  ];
 
   for (const route of publicRoutes) {
     test(`does not redirect an unauthenticated visitor away from ${route}`, async ({ page }) => {
       await page.goto(route);
-      await expect(page).toHaveURL(new RegExp(`${route}$`));
+      if (route === "/live") {
+        await expect(page).toHaveURL(/\/agents/);
+      } else {
+        await expect(page).toHaveURL(new RegExp(`${route}$`));
+      }
       await expect(page).not.toHaveURL(/\/login/);
     });
   }

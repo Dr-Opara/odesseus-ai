@@ -1,5 +1,22 @@
 import { withWorkflow } from "workflow/next";
 
+// Local development must not silently fall back to the production Supabase
+// project — see public-config.ts for the same rule and .env.example for the
+// local stack values. `next dev` runs with NODE_ENV=development, so this
+// guard fails fast with instructions instead of inlining production
+// credentials for a developer's laptop.
+if (process.env.NODE_ENV === "development") {
+  const missing = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"]
+    .filter((name) => !process.env[name]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Local development requires ${missing.join(" and ")} in .env.local ` +
+        `(target the local Supabase stack; see .env.example). Refusing to ` +
+        `silently fall back to the production Supabase project.`
+    );
+  }
+}
+
 // `||` (not `??`) is deliberate: an env var configured as an empty string
 // must fall back the same as an unset one, or a blank NEXT_PUBLIC_SUPABASE_URL
 // silently produces an empty Supabase client URL app-wide (see the incident
@@ -57,7 +74,14 @@ const csp = [
   // hydration also emits an inline bootstrap script — both need
   // 'unsafe-inline' without a nonce-based CSP, which this middleware-free
   // config does not implement. Documented residual risk (see AGENTS.md).
-  "script-src 'self' 'unsafe-inline'",
+  //
+  // 'unsafe-eval' is added for development builds only: React's dev build
+  // uses eval() for debugging features (callstack reconstruction) and will
+  // not hydrate without it. Production builds are eval-free, so the stricter
+  // header stays in place for deployments.
+  `script-src 'self' 'unsafe-inline'${
+    process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""
+  }`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
@@ -80,6 +104,11 @@ const securityHeaders = [
 ];
 
 export default withWorkflow({
+  // Next.js 16 blocks dev-only resources (RSC/HMR) for hosts not on this
+  // list. The Playwright e2e suite drives http://127.0.0.1:3000, so 127.0.0.1
+  // must be allowed or the client never hydrates there (React never attaches
+  // a root and client interactivity is dead). localhost is always allowed.
+  allowedDevOrigins: ["127.0.0.1"],
   env: {
     NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: supabasePublishableKey,

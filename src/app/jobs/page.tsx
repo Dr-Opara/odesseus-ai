@@ -4,6 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
 import JobDiscoveryButton from "@/components/job-discovery-button";
 import JobDiscoveryActions from "@/components/job-discovery-actions";
+import MobileJobs from "@/components/mobile/mobile-jobs";
+import {
+  getCandidateProfile,
+  getCandidateUserId,
+  getCreditBalance,
+  getJobPreferences,
+  getRecommendedJobs,
+} from "@/lib/candidate/service";
 
 function sourceLabel(source: string | null) {
   if (!source) return "Job source";
@@ -16,45 +24,30 @@ function sourceLabel(source: string | null) {
 
 export default async function JobsPage() {
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getClaims();
-  const userId = auth?.claims?.sub;
+  const userId = await getCandidateUserId(supabase);
   if (!userId) redirect("/login");
 
-  const [
-    { data: profile },
-    { data: credits },
-    { data: preferences },
-    { data: jobs },
-  ] = await Promise.all([
-    supabase.from("profiles").select("full_name,onboarding_completed").eq("id", userId).maybeSingle(),
-    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
-    supabase.from("job_preferences").select("min_match_score,target_titles,target_locations,remote_only").eq("user_id", userId).maybeSingle(),
-    supabase
-      .from("job_opportunities")
-      .select("id,company_name,role_title,location,work_arrangement,employment_type,salary_text,match_score,status,source,source_url,discovered_at")
-      .eq("user_id", userId)
-      .neq("status", "closed")
-      .order("match_score", { ascending: false, nullsFirst: false })
-      .order("discovered_at", { ascending: false })
-      .limit(100),
+  const [profile, credits, preferences, jobs] = await Promise.all([
+    getCandidateProfile(supabase, userId),
+    getCreditBalance(supabase, userId),
+    getJobPreferences(supabase, userId),
+    getRecommendedJobs(supabase, userId, { limit: 100 }),
   ]);
 
   if (!profile?.onboarding_completed) redirect("/onboarding");
 
   const threshold = preferences?.min_match_score ?? 85;
-  const strongMatches = (jobs || []).filter(
-    (job) => (job.match_score ?? 0) >= threshold && job.status !== "rejected"
-  );
-  const saved = (jobs || []).filter((job) => job.status === "saved");
+  const strongMatches = jobs.filter((job) => (job.match_score ?? 0) >= threshold);
+  const saved = jobs.filter((job) => job.status === "saved");
 
   return (
     <AppShell
       fullName={profile.full_name}
-      applicationCredits={credits?.application_credits ?? 0}
-      interviewPasses={credits?.interview_passes ?? 0}
+      applicationCredits={credits.application_credits}
+      interviewPasses={credits.interview_passes}
       active="jobs"
     >
-      <section className="shell" style={{ padding: "54px 0 100px" }}>
+      <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 100px" }}>
         <div className="jobs-heading">
           <div>
             <div className="badge">Job Discovery</div>
@@ -131,6 +124,8 @@ export default async function JobsPage() {
           </div>
         )}
       </section>
+
+      <MobileJobs jobs={jobs} minMatchScore={threshold} />
     </AppShell>
   );
 }

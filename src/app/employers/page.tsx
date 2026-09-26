@@ -30,7 +30,7 @@ export default function EmployersPage() {
           </div>
         </section>
         <section id="pricing" className="figma-pricing-section">
-          <div className="figma-section-heading"><span className="figma-eyebrow">AI STARTER BUNDLE</span><h2>$100 every 30 days</h2><p>5 job-post credits included.</p></div>
+          <div className="figma-section-heading"><span className="figma-eyebrow">STARTER PLAN</span><h2>$79 every month</h2><p>3 active job posts included.</p></div>
           <Link className="figma-btn figma-btn-orange" href="/employers/pricing">See Employer Pricing</Link>
         </section>
       </div>

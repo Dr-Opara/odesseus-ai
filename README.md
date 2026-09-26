@@ -52,6 +52,16 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
+### Local development must use the local Supabase stack
+
+`npm run dev` refuses to start when the Supabase variables are missing — it
+will **not** silently fall back to the production project. Local development
+targets the local Docker stack started with `supabase start` (kong on
+`http://127.0.0.1:54321`); use the values printed by `supabase status` for
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and
+`SUPABASE_SERVICE_ROLE_KEY` in `.env.local`. Real deployed credentials are
+configured per environment in the Vercel dashboard.
+
 Do not add Supabase secret/service-role keys to browser environment variables.
 
 ## Product principles
@@ -60,14 +70,16 @@ Do not add Supabase secret/service-role keys to browser environment variables.
 2. Show what needs attention, not everything Odesseus knows.
 3. Keep AI behavior understandable and reviewable.
 4. Never fabricate candidate qualifications.
-5. Charge application credits only after confirmed successful submission.
+5. Charge applications from the wallet only after confirmed successful submission.
 6. Keep interview workspace free; consume an interview pass only when Odesseus Live starts.
 
 ## Pricing direction
 
 No subscription. Pay when Odesseus works for you.
 
-- $0.99 per successfully submitted application, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
+- Standard Apply — $0.49 per successfully submitted application
+- Smart Apply — $1.99 per successfully submitted application (deeper role-specific tailoring and a closer pass on hard requirements)
+- Wallet top-ups of $10, $20, or $50 — Odesseus is charged from the wallet only after a verified successful submission, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
 - $24.99 per successfully activated Odesseus Live interview session
 - No required subscription
 
@@ -140,14 +152,15 @@ See `docs/development/codex.md` for the recommended VS Code + Codex workflow.
 
 ## Odesseus Billing v0.4
 
-Billing adds prepaid application credits and interview passes without a subscription.
+Billing started with prepaid application credits and interview passes without a subscription. The wallet replaces prepaid application credit packs: users top up $10 / $20 / $50 and Odesseus is charged per verified submission (Standard $0.49 / Smart $1.99) from the wallet. The wallet ledger is backend-owned (`backend/pricing-wallet`); this branch ships the frontend wallet UI only, with honest not-yet-available states until that API exists.
 
-### Application credit
+### Application pricing
 
-- 1 application credit — $0.99
+- Standard Apply — $0.49 per successful submission
+- Smart Apply — $1.99 per successful submission
 - Covers a successful submission across any supported job board or employer career site (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
 
-Application credits are not consumed at purchase time. The Apply workflow consumes one credit only after a successful application submission.
+Charges are not applied at start time. The Apply workflow charges from the candidate wallet only after a successful application submission.
 
 ### Interview pass
 
@@ -183,11 +196,11 @@ Odesseus Apply is an assisted, human-in-the-loop application browser.
 7. Candidate can open the live browser and take over when needed.
 8. Odesseus pauses again before final submission.
 9. Candidate explicitly presses **Submit application**.
-10. One application credit is consumed only after a success confirmation is detected.
+10. The wallet is charged (Standard $0.49 / Smart $1.99) only after a success confirmation is detected.
 
 ### Coverage
 
-Odesseus applies across supported job boards and direct employer career sites, including Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites — at the same $0.99 price regardless of which platform the job is on. This is not a claim of universal technical compatibility with every site; coverage is scoped to supported job boards and employer career sites.
+Odesseus applies across supported job boards and direct employer career sites, including Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites — at the same per-application price (Standard $0.49 / Smart $1.99) regardless of which platform the job is on. This is not a claim of universal technical compatibility with every site; coverage is scoped to supported job boards and employer career sites.
 
 ### Browser runtime
 

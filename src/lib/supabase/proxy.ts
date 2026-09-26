@@ -12,6 +12,7 @@ const publicExactPaths = [
   "/how-it-works",
   "/apply",
   "/live",
+  "/agents",
   "/pricing",
   "/about",
   "/terms",
@@ -26,6 +27,11 @@ const publicExactPaths = [
   "/partners/terms",
   "/preview/job-showcase",
   "/robots.txt",
+  "/legal",
+  "/accessibility",
+  "/licenses",
+  "/faq",
+  "/support",
 ];
 const publicPrefixPaths = ["/auth", "/api/partners", "/api/referrals"];
 

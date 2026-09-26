@@ -12,6 +12,19 @@ import { execSync } from "node:child_process";
 // already completed it, so it marks the profile complete directly via SQL
 // rather than re-driving the upload flow.
 
+function dbContainer(): string {
+  try {
+    const lines = execSync(`docker ps --format "{{.Names}}"`, { encoding: "utf8" })
+      .split("\n")
+      .map((l) => l.trim());
+    const found = lines.find((l) => l.startsWith("supabase_db_"));
+    if (found) return found;
+  } catch {
+    // fall through to the default name
+  }
+  return "supabase_db_Odysseus-ai";
+}
+
 test("a signed-up user can log out from the dashboard, and the session is really cleared server-side", async ({
   page,
 }) => {
@@ -19,17 +32,22 @@ test("a signed-up user can log out from the dashboard, and the session is really
   const email = `qa-logout-${stamp}@example.com`;
   const password = "TestPassword123!";
 
+  // The signup flow is two-step at phone width, so run the desktop
+  // single-page form for a deterministic sign-up (same as the wired
+  // settings screen spec).
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/signup");
-  await page.fill('input[name="full_name"]', "Grace Hopper");
+  await page.fill('input[name="first_name"]', "Grace");
+  await page.fill('input[name="last_name"]', "Hopper");
   await page.fill('input[name="email"]', email);
   await page.fill('input[name="password"]', password);
   await Promise.all([
     page.waitForURL("**/onboarding", { timeout: 15000 }),
-    page.click('button[type="submit"]'),
+    page.click('button.candidate-continue-button[type="submit"]'),
   ]);
 
   execSync(
-    `docker exec supabase_db_Odesseus-ai psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c ` +
+    `docker exec ${dbContainer()} psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c ` +
       `"update public.profiles set onboarding_completed = true from auth.users where profiles.id = auth.users.id and auth.users.email = '${email}';"`,
     { stdio: "inherit" }
   );

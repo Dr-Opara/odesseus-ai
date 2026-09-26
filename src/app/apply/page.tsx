@@ -3,8 +3,8 @@ import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 
 export const metadata: Metadata = {
-  title: "Apply with Odesseus — $0.99 per successful application",
-  description: "Odesseus matches the role, tailors your resume, completes the application, and tracks it — $0.99 only after a successful submission.",
+  title: "Apply with Odesseus — from $0.49 per successful application",
+  description: "Odesseus matches the role, tailors your resume, completes the application, and tracks it — Standard Apply from $0.49, Smart Apply from $1.99, only after a successful submission.",
 };
 
 const platforms = [
@@ -54,7 +54,8 @@ const stages = [
 ];
 
 const billingRules = [
-  { label: "Successful submission", amount: "$0.99", charge: true },
+  { label: "Standard Apply — successful submission", amount: "$0.49", charge: true },
+  { label: "Smart Apply — successful submission", amount: "$1.99", charge: true },
   { label: "Unsupported", amount: "$0", charge: false },
   { label: "Failed", amount: "$0", charge: false },
   { label: "Cancelled", amount: "$0", charge: false },
@@ -70,15 +71,16 @@ export default function ApplyPage() {
       </div>
 
       <section className="shell page-hero">
-        <div className="badge">$0.99 · Apply with Odesseus</div>
+        <div className="badge">From $0.49 · Apply with Odesseus</div>
         <h1 className="font-display page-hero-headline">Apply anywhere your next opportunity lives.</h1>
         <p className="muted page-hero-copy">
-          Odesseus matches the role, tailors your resume, completes the application, and tracks it—all for $0.99 after a successful submission.
+          Odesseus matches the role, tailors your resume, completes the application, and tracks it —
+          Standard Apply from $0.49, Smart Apply from $1.99, only after a successful submission.
         </p>
         <div className="hero-ctas" style={{ marginTop: 26 }}>
 
           <span className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
-            $0.99 only after successful submission
+            Charged from your wallet only after successful submission
           </span>
         </div>
       </section>
@@ -87,7 +89,7 @@ export default function ApplyPage() {
         <div className="card" style={{ padding: 30 }}>
           <h2 style={{ fontSize: 24, margin: "0 0 8px" }}>Cross-platform coverage</h2>
           <p className="muted" style={{ margin: "0 0 4px", maxWidth: 620 }}>
-            Odesseus applies across supported job boards and employer career sites — at the same $0.99 price, regardless of platform.
+            Odesseus applies across supported job boards and employer career sites — at the same price, regardless of platform.
           </p>
           <div className="platform-coverage-grid">
             {platforms.map((platform) => (
