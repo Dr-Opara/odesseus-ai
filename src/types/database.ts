@@ -2084,13 +2084,83 @@ export type Database = {
           run_id: string
         }[]
       }
+      expire_ended_featured_listings: {
+        Args: Record<PropertyKey, never>
+        Returns: { expired: number }[]
+      }
+      grant_employer_tier_job_posts: {
+        Args: { p_org_id: string; p_tier: string }
+        Returns: { total: number }[]
+      }
+      odesseus_create_featured_listing: {
+        Args: {
+          p_job_id: string
+          p_org_id: string
+          p_stripe_payment_intent: string
+          p_tier: string
+        }
+        Returns: { expires_at: string; listing_id: string }[]
+      }
       odesseus_get_integration_secret: {
         Args: { p_secret_id: string }
         Returns: string
       }
+      odesseus_log_webhook_event: {
+        Args: {
+          p_checkout_session_id?: string | null
+          p_details?: Json
+          p_event_type: string | null
+          p_http_status: number
+          p_org_id?: string | null
+          p_outcome: string
+          p_reason?: string | null
+          p_sku?: string | null
+          p_stripe_event_id: string | null
+          p_user_id?: string | null
+        }
+        Returns: string
+      }
+      odesseus_reverse_credit_transaction: {
+        Args: { p_external_reference: string; p_reason?: string }
+        Returns: {
+          already_reversed: boolean
+          original_delta: number
+          reversal_delta: number
+          reversal_reference: string
+        }[]
+      }
       odesseus_store_integration_secret: {
         Args: { p_name: string; p_secret: string; p_user_id: string }
         Returns: string
+      }
+      odesseus_sync_employer_subscription: {
+        Args: {
+          p_grant_credits?: boolean
+          p_org_id: string
+          p_period_end?: string | null
+          p_period_start?: string | null
+          p_status: string
+          p_stripe_customer_id: string | null
+          p_stripe_subscription_id: string | null
+          p_tier: string
+        }
+        Returns: unknown
+      }
+      odesseus_sync_recruiter_seat: {
+        Args: {
+          p_count: number
+          p_org_id: string
+          p_period_end?: string | null
+          p_period_start?: string | null
+          p_status: string
+          p_stripe_customer_id: string | null
+          p_stripe_subscription_id: string | null
+        }
+        Returns: unknown
+      }
+      odesseus_update_job_report_status: {
+        Args: { p_note?: string | null; p_report_id: string; p_status: string }
+        Returns: undefined
       }
     }
     Enums: {
