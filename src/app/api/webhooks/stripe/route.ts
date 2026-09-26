@@ -192,11 +192,34 @@ async function handleInvoicePaid(invoice: Stripe.Invoice, event: Stripe.Event) {
 
 // Recruiter-seat invoices are seat-counted: charged == seatCount x $20. Any
 // mismatch is a 400 and nothing is synced (no silent entitlement).
+//
+// One exception, and it is an important one: a seat quantity *downgrade* issues a
+// proration invoice for the unused remainder of the period. That invoice is a
+// credit, not a payment for seats, so its amount will never equal
+// seatCount x $20. Treating it as a tampered invoice would answer 400 on a
+// completely legitimate billing event, which makes Stripe mark this endpoint as
+// failing and retry it. It is recorded as `ignored` and grants nothing -- the
+// quantity change itself is already applied by the `customer.subscription.updated`
+// event that accompanies it. The security property is unchanged: a renewal
+// invoice must still match the seat count exactly before any seat is granted.
 async function handleRecruiterSeatInvoicePaid(
   invoice: Stripe.Invoice,
   target: RecruiterSeatSyncTarget,
   event: Stripe.Event
 ) {
+  if (invoice.billing_reason === "subscription_update") {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "ignored",
+      httpStatus: 200,
+      orgId: target.orgId,
+      reason: "Seat proration invoice from a quantity change; no entitlement granted.",
+      details: { seatCount: target.seatCount },
+    });
+    return NextResponse.json({ received: true });
+  }
+
   const charged = invoice.amount_paid ?? invoice.total;
   const currency = invoice.currency ?? "usd";
   const expected = target.seatCount * employerRecruiterSeat.amountCents;

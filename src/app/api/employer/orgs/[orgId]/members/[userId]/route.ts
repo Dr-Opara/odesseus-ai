@@ -8,12 +8,13 @@ import {
   requireOrgAdmin,
   type OrgAuthorization,
 } from "@/lib/employer/service";
+import { syncSeatsAfterMemberChange } from "@/lib/employer/seat-sync";
 
 export const runtime = "nodejs";
 
 /**
- * Removes someone from an employer team, which frees the recruiter seat they
- * were consuming.
+ * Removes someone from an employer team, and resizes the paid seat
+ * subscription to match.
  *
  * Two authorization questions are answered separately on purpose:
  *
@@ -30,10 +31,17 @@ export const runtime = "nodejs";
  * employer_members by design, so a client cannot remove a teammate directly; the
  * authorization above is the only way in.
  *
- * Note: this frees seat *capacity* but does not reduce the Stripe subscription.
- * Capacity is derived live from the member roster, so the freed seat is
- * immediately re-usable. Cancelling or resizing a paid subscription is a
- * separate billing action, not something a membership change should do silently.
+ * Ordering: the membership row is deleted FIRST, so the seat sync recomputes
+ * the requirement from a roster that already excludes the removed member. The
+ * reverse order would resize Stripe against a stale roster and then fail to
+ * converge.
+ *
+ * A failed seat sync does not fail the removal. The member is gone and seat
+ * capacity is already correct -- it is derived live from the roster -- so the
+ * removal succeeded. The billing adjustment is recorded as failed with a
+ * released claim, and a retry can pick it up. Folding a Stripe outage into the
+ * response would leave the caller believing a successful removal did not happen
+ * and inviting a repeat attempt against a membership row that is already gone.
  */
 export async function DELETE(
   request: Request,
@@ -126,5 +134,20 @@ export async function DELETE(
     );
   }
 
-  return NextResponse.json({ removed: targetUserId });
+  // The membership row is gone, so the roster already reflects the change.
+  // Resize the paid seat subscription to stop billing for the removed seat.
+  const sync = await syncSeatsAfterMemberChange(service, {
+    orgId,
+    removedUserId: targetUserId,
+  });
+  if (sync.outcome === "failed") {
+    // The removal itself succeeded; only the billing adjustment did not.
+    console.error(
+      "[ODESSEUS_EMPLOYER_SEATS] seat sync failed after member removal",
+      orgId,
+      sync.detail
+    );
+  }
+
+  return NextResponse.json({ removed: targetUserId, seatSync: sync.outcome });
 }

@@ -16,13 +16,18 @@ const OTHER_MEMBER_ID = "5ccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const createClientMock = vi.fn();
 const serviceClientMock = vi.fn();
 const checkoutCreate = vi.fn();
+const subscriptionUpdate = vi.fn();
+const subscriptionRetrieve = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: () => createClientMock() }));
 vi.mock("@/lib/supabase/service", () => ({
   createServiceClient: () => serviceClientMock(),
 }));
 vi.mock("@/lib/stripe", () => ({
-  getStripe: () => ({ checkout: { sessions: { create: checkoutCreate } } }),
+  getStripe: () => ({
+    checkout: { sessions: { create: checkoutCreate } },
+    subscriptions: { update: subscriptionUpdate, retrieve: subscriptionRetrieve },
+  }),
 }));
 
 async function freshRoute(path: string) {
@@ -165,8 +170,41 @@ function getRequest(path: string) {
   return new Request(`http://localhost${path}`);
 }
 
-/** A service-role client that supports only the member delete chain. */
-function deleteOnlyService(result: { error: unknown } = { error: null }) {
+/**
+ * A service-role client that supports the member delete chain plus the three
+ * RPCs the seat synchronization uses.
+ *
+ * The seat-sync results are explicit rather than defaulted so a route test has
+ * to say what Stripe would be asked to do, and an unexpected call shows up as a
+ * failure instead of a silent no-op.
+ */
+function deleteOnlyService(
+  result: { error: unknown } = { error: null },
+  seatSync: {
+    required?: number;
+    entitlement?: unknown;
+    claim?: boolean;
+    finishError?: { message: string } | null;
+  } = {}
+) {
+  const claims: Array<Record<string, unknown>> = [];
+  const rpc = vi.fn(async (name: string, args: Record<string, unknown> = {}) => {
+    if (name === "odesseus_org_required_seat_count") {
+      return { data: seatSync.required ?? 0, error: null };
+    }
+    if (name === "odesseus_org_live_seat_subscription") {
+      return { data: seatSync.entitlement ?? [], error: null };
+    }
+    if (name === "odesseus_claim_seat_adjustment") {
+      claims.push(args);
+      return { data: seatSync.claim ?? true, error: null };
+    }
+    if (name === "odesseus_finish_seat_adjustment") {
+      return { data: null, error: seatSync.finishError ?? null };
+    }
+    throw new Error(`unexpected rpc ${name}`);
+  });
+
   return {
     from: vi.fn(() => {
       const b: Record<string, unknown> = {};
@@ -177,6 +215,8 @@ function deleteOnlyService(result: { error: unknown } = { error: null }) {
         Promise.resolve(result).then(r, j);
       return b;
     }),
+    rpc,
+    __claims: claims,
   };
 }
 
@@ -186,6 +226,14 @@ beforeEach(() => {
   createClientMock.mockReset();
   serviceClientMock.mockReset();
   checkoutCreate.mockReset();
+  subscriptionUpdate.mockReset();
+  subscriptionRetrieve.mockReset();
+  subscriptionUpdate.mockResolvedValue({});
+  subscriptionRetrieve.mockResolvedValue({
+    id: "sub_seats_1",
+    metadata: { odesseus_recruiter_seats: "true", odesseus_seat_count: "3" },
+    items: { data: [{ id: "si_1", quantity: 3 }] },
+  });
 });
 
 afterEach(() => {
@@ -641,9 +689,229 @@ describe("DELETE /api/employer/orgs/[orgId]/members/[userId]", () => {
     const response = await DELETE(deleteRequest("/x"), params(ORG_ID, MEMBER_ID));
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ removed: MEMBER_ID });
+    // The org has no paid seat subscription, so there was nothing to resize.
+    expect(await response.json()).toEqual({
+      removed: MEMBER_ID,
+      seatSync: "skipped_no_subscription",
+    });
     // The delete is privileged work, so it runs on the service role.
     expect(serviceClientMock).toHaveBeenCalled();
+  });
+
+  it("stops billing for the freed seat when a member is removed", async () => {
+    // The target's role comes from the session client's employer_members read,
+    // so it has to exist or the route 404s before it reaches the delete.
+    createClientMock.mockResolvedValue(
+      sessionClient({ userId: OWNER_ID, role: { role: "recruiter" } })
+    );
+    const service = deleteOnlyService(
+      { error: null },
+      {
+        // The roster now needs 2 seats; the org is paying for 3.
+        required: 2,
+        entitlement: [
+          {
+            seat_count: 3,
+            active_until: "2026-12-01T00:00:00Z",
+            stripe_subscription_id: "sub_seats_1",
+            stripe_customer_id: "cus_1",
+          },
+        ],
+      }
+    );
+    serviceClientMock.mockReturnValue(service);
+
+    const { DELETE } = await freshRoute(MEMBER_ROUTE);
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+    const response = await DELETE(deleteRequest("/x"), params(ORG_ID, MEMBER_ID));
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).seatSync).toBe("updated");
+    expect(subscriptionUpdate).toHaveBeenCalledWith(
+      "sub_seats_1",
+      expect.objectContaining({ items: [{ id: "si_1", quantity: 2 }] })
+    );
+  });
+
+  it("derives the new quantity from the roster after the delete, not before", async () => {
+    createClientMock.mockResolvedValue(
+      sessionClient({ userId: OWNER_ID, role: { role: "recruiter" } })
+    );
+    const service = deleteOnlyService(
+      { error: null },
+      {
+        required: 1,
+        entitlement: [
+          {
+            seat_count: 2,
+            active_until: "2026-12-01T00:00:00Z",
+            stripe_subscription_id: "sub_seats_1",
+            stripe_customer_id: "cus_1",
+          },
+        ],
+      }
+    );
+    // Record the order the route did things in, so the sequencing claim is
+    // checked rather than asserted in a comment.
+    const order: string[] = [];
+    const realFrom = service.from;
+    service.from = vi.fn((...args: Parameters<typeof realFrom>) => {
+      order.push("from");
+      const chain = realFrom(...args) as { delete: () => unknown; then: unknown };
+      const realDelete = chain.delete;
+      chain.delete = vi.fn(() => {
+        order.push("delete");
+        return realDelete();
+      });
+      return chain;
+    });
+    const realRpc = service.rpc;
+    service.rpc = vi.fn(async (name: string, ...rest: unknown[]) => {
+      order.push(name);
+      return (realRpc as unknown as (n: string, ...r: unknown[]) => Promise<unknown>)(
+        name,
+        ...rest
+      );
+    }) as typeof service.rpc;
+    serviceClientMock.mockReturnValue(service);
+
+    const { DELETE } = await freshRoute(MEMBER_ROUTE);
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+    await DELETE(deleteRequest("/x"), params(ORG_ID, MEMBER_ID));
+
+    // The required count must be read after the membership row is gone.
+    // Resizing against the pre-delete roster would leave the employer paying for
+    // the seat that was just freed.
+    expect(order.indexOf("delete")).toBeLessThan(
+      order.indexOf("odesseus_org_required_seat_count")
+    );
+    expect(order.indexOf("odesseus_org_required_seat_count")).toBeLessThan(
+      order.indexOf("odesseus_claim_seat_adjustment")
+    );
+  });
+
+  it("cancels at period end when the last paid seat is freed", async () => {
+    createClientMock.mockResolvedValue(
+      sessionClient({ userId: OWNER_ID, role: { role: "recruiter" } })
+    );
+    serviceClientMock.mockReturnValue(
+      deleteOnlyService(
+        { error: null },
+        {
+          required: 0,
+          entitlement: [
+            {
+              seat_count: 1,
+              active_until: "2026-12-01T00:00:00Z",
+              stripe_subscription_id: "sub_seats_1",
+              stripe_customer_id: "cus_1",
+            },
+          ],
+        }
+      )
+    );
+
+    const { DELETE } = await freshRoute(MEMBER_ROUTE);
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+    const response = await DELETE(deleteRequest("/x"), params(ORG_ID, MEMBER_ID));
+
+    expect((await response.json()).seatSync).toBe("cancelled_at_period_end");
+    expect(subscriptionUpdate).toHaveBeenCalledWith("sub_seats_1", {
+      cancel_at_period_end: true,
+    });
+  });
+
+  it("does not re-issue the Stripe update when the same removal runs twice", async () => {
+    createClientMock.mockResolvedValue(
+      sessionClient({ userId: OWNER_ID, role: { role: "recruiter" } })
+    );
+    serviceClientMock.mockReturnValue(
+      deleteOnlyService(
+        { error: null },
+        {
+          required: 2,
+          entitlement: [
+            {
+              seat_count: 3,
+              active_until: "2026-12-01T00:00:00Z",
+              stripe_subscription_id: "sub_seats_1",
+              stripe_customer_id: "cus_1",
+            },
+          ],
+          // The claim for this exact adjustment already exists.
+          claim: false,
+        }
+      )
+    );
+
+    const { DELETE } = await freshRoute(MEMBER_ROUTE);
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+    const response = await DELETE(deleteRequest("/x"), params(ORG_ID, MEMBER_ID));
+
+    expect((await response.json()).seatSync).toBe("already_applied");
+    expect(subscriptionUpdate).not.toHaveBeenCalled();
+    expect(subscriptionRetrieve).not.toHaveBeenCalled();
+  });
+
+  it("still reports a successful removal when the seat sync fails", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    createClientMock.mockResolvedValue(
+      sessionClient({ userId: OWNER_ID, role: { role: "recruiter" } })
+    );
+    serviceClientMock.mockReturnValue(
+      deleteOnlyService(
+        { error: null },
+        {
+          required: 2,
+          entitlement: [
+            {
+              seat_count: 3,
+              active_until: "2026-12-01T00:00:00Z",
+              stripe_subscription_id: "sub_seats_1",
+              stripe_customer_id: "cus_1",
+            },
+          ],
+        }
+      )
+    );
+    subscriptionRetrieve.mockRejectedValue(new Error("stripe is down"));
+
+    const { DELETE } = await freshRoute(MEMBER_ROUTE);
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+    const response = await DELETE(deleteRequest("/x"), params(ORG_ID, MEMBER_ID));
+
+    // The member really is gone and seat capacity is already correct, so a
+    // billing outage must not be reported as a failed removal -- that would
+    // invite a repeat attempt against a row that no longer exists.
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.removed).toBe(MEMBER_ID);
+    expect(body.seatSync).toBe("failed");
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("does not attempt a seat sync when the delete itself failed", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    createClientMock.mockResolvedValue(
+      sessionClient({ userId: OWNER_ID, role: { role: "recruiter" } })
+    );
+    const service = deleteOnlyService(
+      { error: { message: "db down" } },
+      { required: 0, entitlement: [] }
+    );
+    serviceClientMock.mockReturnValue(service);
+
+    const { DELETE } = await freshRoute(MEMBER_ROUTE);
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
+    const response = await DELETE(deleteRequest("/x"), params(ORG_ID, MEMBER_ID));
+
+    expect(response.status).toBe(500);
+    // Resizing Stripe against a roster that still contains the member would
+    // bill for the wrong number of seats.
+    expect(service.rpc).not.toHaveBeenCalled();
+    expect(subscriptionUpdate).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it("refuses to remove the organization owner", async () => {

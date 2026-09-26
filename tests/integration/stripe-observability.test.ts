@@ -80,6 +80,7 @@ function invoicePaidEvent(overrides: {
   periodStart?: number;
   periodEnd?: number;
   seatCount?: number;
+  billingReason?: string;
 }) {
   const {
     tier = "starter",
@@ -91,6 +92,7 @@ function invoicePaidEvent(overrides: {
     periodStart = 1_730_000_000,
     periodEnd = 1_732_000_000,
     seatCount,
+    billingReason,
   } = overrides;
 
   const plan = employerPlans[`employer_${tier}` as keyof typeof employerPlans];
@@ -116,6 +118,7 @@ function invoicePaidEvent(overrides: {
         status: "paid",
         period_start: periodStart,
         period_end: periodEnd,
+        billing_reason: billingReason,
         parent: {
           type: "subscription_details",
           subscription_details: { metadata, subscription },
@@ -477,6 +480,103 @@ describe("Stripe webhook delivery observability", () => {
         p_stripe_event_id: "evt_inv_1",
         p_event_type: "invoice.paid",
         p_outcome: "ignored",
+        p_http_status: 200,
+      });
+    });
+
+    it("records a seat proration invoice as ignored rather than rejected", async () => {
+      // Removing a teammate resizes the seat subscription, which issues a
+      // proration credit for the unused remainder of the month. That amount will
+      // never equal seatCount x $20, so the strict check would answer 400 on a
+      // legitimate billing event -- which makes Stripe mark this endpoint as
+      // failing and retry. It must be a 200 that grants nothing.
+      constructEventMock.mockReturnValue(
+        invoicePaidEvent({
+          tier: "business",
+          seatCount: 2,
+          amountPaid: -1333,
+          billingReason: "subscription_update",
+        })
+      );
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      const response = await POST(webhookRequest("{}"));
+
+      expect(response.status).toBe(200);
+      // A credit is not payment for seats, so it must not create an entitlement.
+      expect(rpcMock).not.toHaveBeenCalledWith(
+        "odesseus_sync_recruiter_seat",
+        expect.anything()
+      );
+      expect(logCallArgs()).toMatchObject({
+        p_outcome: "ignored",
+        p_http_status: 200,
+        p_org_id: "org-1",
+      });
+    });
+
+    it("still rejects a seat renewal invoice whose amount does not match", async () => {
+      // The proration exception is scoped by billing_reason. A renewal for the
+      // wrong amount is still tampering, and must keep failing closed.
+      constructEventMock.mockReturnValue(
+        invoicePaidEvent({
+          tier: "business",
+          seatCount: 2,
+          amountPaid: 10_000,
+          billingReason: "subscription_cycle",
+        })
+      );
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      const response = await POST(webhookRequest("{}"));
+
+      expect(response.status).toBe(400);
+      expect(rpcMock).not.toHaveBeenCalledWith(
+        "odesseus_sync_recruiter_seat",
+        expect.anything()
+      );
+      expect(logCallArgs()).toMatchObject({ p_outcome: "rejected", p_http_status: 400 });
+    });
+
+    it("still rejects a seat invoice with no billing_reason at all", async () => {
+      // If the field is ever missing, the strict check must apply rather than
+      // silently waving the invoice through.
+      constructEventMock.mockReturnValue(
+        invoicePaidEvent({ tier: "business", seatCount: 2, amountPaid: 10_000 })
+      );
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      const response = await POST(webhookRequest("{}"));
+
+      expect(response.status).toBe(400);
+      expect(rpcMock).not.toHaveBeenCalledWith(
+        "odesseus_sync_recruiter_seat",
+        expect.anything()
+      );
+    });
+
+    it("applies a paid seat renewal to the entitlement", async () => {
+      // The counterpart to the proration case: the money path still works, so
+      // the proration exception has not weakened it.
+      constructEventMock.mockReturnValue(
+        invoicePaidEvent({
+          tier: "business",
+          seatCount: 2,
+          amountPaid: 4000,
+          billingReason: "subscription_cycle",
+        })
+      );
+
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      const response = await POST(webhookRequest("{}"));
+
+      expect(response.status).toBe(200);
+      expect(rpcMock).toHaveBeenCalledWith(
+        "odesseus_sync_recruiter_seat",
+        expect.objectContaining({ p_count: 2 })
+      );
+      expect(logCallArgs()).toMatchObject({
+        p_outcome: "fulfilled",
         p_http_status: 200,
       });
     });
