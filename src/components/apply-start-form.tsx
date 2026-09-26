@@ -12,11 +12,11 @@ export default function ApplyStartForm({
   jobId: string;
   defaultUrl?: string | null;
   /**
-   * INTEGRATION POINT: /api/apply/start (backend/pricing-wallet) does not
-   * read this field yet — it still charges from the legacy application
-   * credit balance regardless of tier. Sent additively so the backend can
-   * start reading it once the wallet per-tier charge lands, without another
-   * frontend change.
+   * Apply tier, sent to /api/apply/start. The server validates the wallet
+   * balance against the tier price (Standard ≥ 49¢, Smart ≥ 199¢) before
+   * accepting the run and persists it as the run's execution_mode, which the
+   * backend finalization RPC uses to debit the wallet at the tier rate on
+   * verified successful submission.
    */
   applyTier?: ApplyTier;
 }) {

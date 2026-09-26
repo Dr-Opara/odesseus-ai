@@ -225,6 +225,54 @@ describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
     expect(body.error).toMatch(/Smart Apply/);
   });
 
+  it("honours `applyTier`, the field the shipped client actually sends", async () => {
+    // ApplyStartForm posts `applyTier`, not `mode`. If the route reads only
+    // `mode`, the selected tier silently falls back to "standard" and a Smart
+    // Apply run is both gated and settled at the 49c Standard rate. 100c is
+    // above the Standard floor and below the Smart rate, so this only passes
+    // when the request's real field is read.
+    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 100 }));
+    createServiceClientMock.mockReturnValue(makeServiceClientMock());
+
+    const { POST } = await import("@/app/api/apply/start/route");
+    const response = await POST(
+      jsonRequest({ jobId: JOB_ID, targetUrl: "https://employer.example.com/apply", applyTier: "smart" })
+    );
+
+    expect(response.status).toBe(402);
+    const body = await response.json();
+    expect(body.error).toMatch(/\$1\.99/);
+    expect(body.error).toMatch(/Smart Apply/);
+    expect(createServiceClientMock).not.toHaveBeenCalled();
+  });
+
+  it("records execution_mode smart when the tier arrives as applyTier", async () => {
+    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 1000 }));
+    createServiceClientMock.mockReturnValue(makeServiceClientMock());
+
+    const { POST } = await import("@/app/api/apply/start/route");
+    await POST(
+      jsonRequest({ jobId: JOB_ID, targetUrl: "https://employer.example.com/apply", applyTier: "smart" })
+    );
+
+    // execution_mode is what the finalization RPC reads to pick 49c vs 199c,
+    // so a mislabelled run debits the wrong amount on verified success.
+    expect(runInserts[0].execution_mode).toBe("smart");
+  });
+
+  it("rejects an unknown tier sent as applyTier", async () => {
+    createClientMock.mockResolvedValue(makeAuthedClient({}));
+    createServiceClientMock.mockReturnValue(makeServiceClientMock());
+
+    const { POST } = await import("@/app/api/apply/start/route");
+    const response = await POST(
+      jsonRequest({ jobId: JOB_ID, targetUrl: "https://employer.example.com/apply", applyTier: "turbo" })
+    );
+
+    expect(response.status).toBe(400);
+    expect(runInserts).toHaveLength(0);
+  });
+
   it("accepts a wallet that holds exactly the mode rate (49¢ for standard)", async () => {
     createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 49 }));
     createServiceClientMock.mockReturnValue(makeServiceClientMock());

@@ -7,12 +7,21 @@ import { applicationWorkflow } from "@/workflows/application";
 import { isSafeExternalUrl } from "@/lib/security/url-safety";
 import { isTrustedOrigin } from "@/lib/security/origin-check";
 import { integrationNotConfigured, missingEnv } from "@/lib/config/readiness";
-import { applyRates } from "@/lib/billing/catalog";
+import { applyRates, type ApplyMode } from "@/lib/billing/catalog";
 
 const schema = z.object({
   jobId: z.string().uuid(),
   targetUrl: z.string().url(),
-  mode: z.enum(["standard", "smart"]).default("standard"),
+  // The tier the candidate selected, carried under either name.
+  //
+  // `applyTier` is what the shipped client (ApplyStartForm) actually sends, so
+  // it must be honoured. `mode` is accepted as an alias because the server
+  // contract was specified against it. Reading only one of the two silently
+  // falls back to "standard", which would gate and settle a Smart Apply run at
+  // the 49c Standard rate. Both are strict enums, so an unknown tier is still
+  // rejected with 400 before any run is created.
+  applyTier: z.enum(["standard", "smart"]).optional(),
+  mode: z.enum(["standard", "smart"]).optional(),
 });
 
 export async function POST(request: Request) {
@@ -53,7 +62,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Odesseus only opens secure, public application pages." }, { status: 400 });
   }
 
-  const [{ data: job }, { data: credits }, { data: tailoring }, { data: activeRun }] = await Promise.all([
+  const [{ data: job }, { data: balance }, { data: tailoring }, { data: activeRun }] = await Promise.all([
     supabase
       .from("job_opportunities")
       .select("id,company_name,role_title,status")
@@ -90,11 +99,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Approve a tailored resume before starting Apply." }, { status: 400 });
   }
 
-  const applyRate = applyRates[input.mode];
-  if ((credits?.wallet_balance_cents ?? 0) < applyRate.amountCents) {
+  // Wallet eligibility gate — the selected tier's price is the requirement
+  // (Standard Apply >= 49c, Smart Apply >= 199c). The legacy application-credit
+  // balance never decides whether an application can start; it is preserved
+  // only as historical data. Amounts come from the billing catalog, which is
+  // the pricing source of truth, so the gate and the settlement RPC cannot
+  // drift apart.
+  const tier = (input.applyTier ?? input.mode ?? "standard") as ApplyMode;
+  const applyRate = applyRates[tier];
+  const walletBalanceCents = balance?.wallet_balance_cents ?? 0;
+
+  if (walletBalanceCents < applyRate.amountCents) {
     const needed = (applyRate.amountCents / 100).toFixed(2);
     return NextResponse.json(
-      { error: `Your wallet needs $${needed} to start a ${applyRate.label}. Top up in Billing.` },
+      {
+        error: `Your wallet needs $${needed} to start a ${applyRate.label}. Top up in Billing.`,
+      },
       { status: 402 }
     );
   }
@@ -114,7 +134,7 @@ export async function POST(request: Request) {
       job_id: job.id,
       approved_resume_id: tailoring.approved_resume_id,
       target_url: input.targetUrl,
-      execution_mode: input.mode,
+      execution_mode: tier,
       status: "queued",
     })
     .select("id")

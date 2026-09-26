@@ -36,6 +36,24 @@ export function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
 }
 
+/**
+ * Minimum wallet balance (cents) required to START any apply. The cheapest
+ * tier is Standard Apply, so no candidate with less than this can begin an
+ * application — charging only happens on verified successful submission, but
+ * the start gate uses the tier price so no one burns an assisted run they
+ * cannot pay for.
+ */
+export const MIN_APPLY_PRICE_CENTS = APPLY_TIERS.standard.priceCents;
+
+/**
+ * Wallet-based eligibility for a single apply tier. Standard Apply needs at
+ * least 49 cents; Smart Apply needs at least 199 cents. Application-credit
+ * balances never participate in apply eligibility.
+ */
+export function canAffordTier(tier: ApplyTier, walletBalanceCents: number): boolean {
+  return walletBalanceCents >= APPLY_TIERS[tier].priceCents;
+}
+
 export const PREP_AGENT_PRICE_LABEL = "Free";
 
 export const EMPLOYER_PLANS = [

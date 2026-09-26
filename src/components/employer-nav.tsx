@@ -10,12 +10,18 @@ const links = [
   { href: "/employers/pricing", label: "Pricing" },
 ];
 
+// The employer marketing header (its links and the mobile menu that carried
+// Employer Home / Pricing / For Candidates / Sign In / Post a Job) is
+// desktop-only. On phones the public entry points are owned by the splash —
+// Get Started, Business Login, See Pricing — so this header is not rendered
+// below 768px. The routes themselves stay public for desktop.
+
 export default function EmployerNav({ inverse = false }: { inverse?: boolean }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   return (
-    <header className={`figma-nav ${inverse ? "is-inverse" : ""}`}>
+    <header className={`figma-nav odesseus-desktop-only ${inverse ? "is-inverse" : ""}`}>
       <div className="figma-nav-inner">
         <OdesseusWordmark href="/employers" size="sm" inverse={inverse} />
         <nav className="figma-nav-links" aria-label="Employer">

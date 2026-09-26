@@ -1,7 +1,6 @@
 import Link from "next/link";
+import { APPLY_TIERS, formatCents, MIN_APPLY_PRICE_CENTS } from "@/lib/pricing/candidate-pricing";
 import ApplyTierAndStart from "@/components/apply/apply-tier-and-start";
-import { applyRates } from "@/lib/billing/catalog";
-import { formatCents } from "@/lib/pricing/candidate-pricing";
 
 type Job = {
   id: string;
@@ -15,13 +14,8 @@ type Job = {
 /**
  * Mobile Approval screen (screen 09) — reuses the exact same preflight data
  * and apply tier + start flow (POST /api/apply/start) the desktop approval
- * page uses. No separate approval logic; the same wallet/tailoring gate
- * applies.
- *
- * Eligibility is funded from `wallet_balance_cents` only. `application_credits`
- * is legacy, is not a source of truth, and must never gate Apply. The minimum
- * balance to start is the Standard Apply rate; Smart Apply ($1.99) is debited
- * later, only after a verified successful submission.
+ * page uses. No separate approval logic; eligibility is the wallet-based
+ * per-tier check (Standard 49¢ / Smart 199¢), matching the desktop gate.
  */
 export default function MobileApplyStart({
   job,
@@ -34,9 +28,6 @@ export default function MobileApplyStart({
   approvedVersion: number | null;
   walletBalanceCents: number;
 }) {
-  const canApply =
-    approvedVersion !== null && walletBalanceCents >= applyRates.standard.amountCents;
-
   return (
     <main className="odesseus-mobile-only m-screen m-screen-09">
       <header className="m-screen-header">
@@ -79,22 +70,22 @@ export default function MobileApplyStart({
         <div className="m-warning" style={{ marginTop: 14 }}>
           <strong>Approve a tailored resume before starting the application.</strong>
         </div>
-      ) : !canApply ? (
+      ) : walletBalanceCents < MIN_APPLY_PRICE_CENTS ? (
         <div className="m-warning" style={{ marginTop: 14 }}>
           <strong>
-            Your wallet needs funds to start Apply. <Link href="/billing">Top up</Link>
+            You need wallet balance to apply. <Link href="/billing">Go to Wallet</Link>
           </strong>
         </div>
       ) : (
         <div style={{ margin: "14px 4px 0" }}>
-          <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} />
+          <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} walletBalanceCents={walletBalanceCents} />
         </div>
       )}
 
-      <div className="m-note" style={{ opacity: canApply ? 1 : 0.7 }}>
-        No charge when you start. {applyRates.standard.label} {formatCents(applyRates.standard.amountCents)} and{" "}
-        {applyRates.smart.label} {formatCents(applyRates.smart.amountCents)} are charged only after Odesseus
-        verifies a successful submission.
+      <div className="m-note">
+        No charge when you start. {APPLY_TIERS.standard.label} {formatCents(APPLY_TIERS.standard.priceCents)} and{" "}
+        {APPLY_TIERS.smart.label} {formatCents(APPLY_TIERS.smart.priceCents)} are charged only after Odesseus verifies
+        a successful submission.
       </div>
     </main>
   );
