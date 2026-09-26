@@ -48,7 +48,7 @@ export type JobReportReason = (typeof JOB_REPORT_REASONS)[number];
 
 /** Mirrors `job_reports_status_check`. */
 export const JOB_REPORT_STATUSES = [
-  "open",
+  "new",
   "reviewing",
   "resolved",
   "dismissed",
@@ -57,9 +57,10 @@ export const JOB_REPORT_STATUSES = [
 export type JobReportStatus = (typeof JOB_REPORT_STATUSES)[number];
 
 /**
- * Statuses a moderator may set. `open` is the filing state and is deliberately
+ * Statuses a moderator may set. `new` is the filing state and is deliberately
  * not a valid target: a report is triaged forward from the queue, never back
- * into "newly filed". Mirrors the RPC's own guard.
+ * into "newly filed". Mirrors the RPC's own guard, and is separately enforced
+ * by the authenticated insert policy so a filer cannot pre-judge their report.
  */
 export const JOB_REPORT_MODERATION_STATUSES = [
   "reviewing",
@@ -174,7 +175,9 @@ export async function fileJobReport(
       job_id: jobId,
       reason,
       details,
-      status: "open",
+      // A report is always born unreviewed. The insert policy pins this too, so
+      // a direct PostgREST call cannot pre-judge its own moderation outcome.
+      status: "new",
     })
     .select(CANDIDATE_COLUMNS)
     .maybeSingle();

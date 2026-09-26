@@ -36,7 +36,7 @@ const REPORT = {
   job_id: "11111111-1111-4111-8111-111111111111",
   reason: "Scam",
   details: "Asked for payment",
-  status: "open",
+  status: "new",
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
 };

@@ -16,7 +16,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(35);
+SELECT plan(42);
 
 -- ---------------------------------------------------------------------------
 -- Fixture: reporter user + an opportunity to report
@@ -114,7 +114,7 @@ SELECT lives_ok(
 SELECT is(
   (SELECT status FROM public.job_reports
    WHERE user_id = 'aaaaaaaa-1111-4111-8111-111111111111' AND reason = 'Scam'),
-  'open', 'a new report starts in the open queue state');
+  'new', 'a report starts in the new queue state');
 
 SELECT ok((SELECT created_at IS NOT NULL FROM public.job_reports
    WHERE user_id = 'aaaaaaaa-1111-4111-8111-111111111111' AND reason = 'Scam'),
@@ -182,6 +182,75 @@ SELECT ok(
   has_function_privilege('service_role', 'public.odesseus_update_job_report_status(uuid, text, text)', 'EXECUTE')
   AND NOT has_function_privilege('authenticated', 'public.odesseus_update_job_report_status(uuid, text, text)', 'EXECUTE'),
   'odesseus_update_job_report_status is service-role-only');
+
+-- ---------------------------------------------------------------------------
+-- The approved status domain: new / reviewing / resolved / dismissed
+-- ---------------------------------------------------------------------------
+
+-- 'open' is the retired name. It must be rejected by the CHECK rather than
+-- lingering as a synonym, or a client could still file or filter on it.
+SELECT throws_ok(
+  $$INSERT INTO public.job_reports (user_id, reason, status) VALUES (
+      'aaaaaaaa-1111-4111-8111-111111111111', 'Fake Company', 'open')$$,
+  '23514', NULL, 'the retired open status is rejected by the status CHECK');
+
+-- Each of the four approved states is accepted by the domain.
+SELECT is(
+  (SELECT count(*)::int
+     FROM unnest(ARRAY['new', 'reviewing', 'resolved', 'dismissed']) AS s(v)
+    WHERE pg_get_constraintdef(
+            (SELECT oid FROM pg_constraint
+              WHERE conrelid = 'public.job_reports'::regclass
+                AND conname = 'job_reports_status_check')) LIKE '%' || quote_literal(s.v) || '%'),
+  4, 'the status CHECK admits all four approved states');
+
+SELECT is(
+  (SELECT pg_get_constraintdef(oid) LIKE '%open%'
+     FROM pg_constraint
+    WHERE conrelid = 'public.job_reports'::regclass
+      AND conname = 'job_reports_status_check'),
+  false, 'the status CHECK no longer contains the retired open state');
+
+-- A report is born unreviewed and a filer cannot pre-judge it: `authenticated`
+-- holds INSERT, and the insert policy now pins the birth status as well as
+-- ownership. Without this pin a direct PostgREST call could file a report
+-- already marked resolved.
+SELECT set_config('role', 'authenticated', true);
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"aaaaaaaa-1111-4111-8111-111111111111","email":"reporter@example.com","role":"authenticated"}',
+  true);
+
+SELECT throws_ok(
+  $$INSERT INTO public.job_reports (user_id, reason, status)
+   VALUES ('aaaaaaaa-1111-4111-8111-111111111111', 'Phishing Attempt', 'resolved')$$,
+  '42501', NULL, 'a filer cannot pre-judge their own report as resolved');
+
+SELECT throws_ok(
+  $$INSERT INTO public.job_reports (user_id, reason, status)
+   VALUES ('aaaaaaaa-1111-4111-8111-111111111111', 'Duplicate Listing', 'dismissed')$$,
+  '42501', NULL, 'a filer cannot pre-judge their own report as dismissed');
+
+SELECT lives_ok(
+  $$INSERT INTO public.job_reports (user_id, reason, status)
+   VALUES ('aaaaaaaa-1111-4111-8111-111111111111', 'Requests Payment', 'new')$$,
+  'a filer may still file a report as new');
+
+-- Ownership is still enforced: the pin must not have displaced it.
+SELECT throws_ok(
+  $$INSERT INTO public.job_reports (user_id, reason, status)
+   VALUES ('bbbbbbbb-1111-1111-8111-111111111111', 'Other', 'new')$$,
+  '42501', NULL, 'a filer still cannot report as another user');
+
+-- Restore the file's ambient role (postgres), not service_role: the cascade
+-- tests below delete from auth.users, which service_role cannot do.
+SELECT set_config('role', 'postgres', true);
+
+-- Remove the extra report again. The assertion above is about the insert being
+-- permitted at all, and the cascade tests count this user's reports, so
+-- leaving a second row behind would change what they are actually measuring.
+-- Done as postgres because `authenticated` has no DELETE on job_reports.
+DELETE FROM public.job_reports WHERE reason = 'Requests Payment';
 
 -- ---------------------------------------------------------------------------
 -- Referential behavior: job removal nulls the reference; user removal cascades

@@ -4,11 +4,17 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isAdmin } from "@/lib/partners/service";
 import { checkRateLimit } from "@/lib/security/rate-limit";
-import { listJobReportQueue } from "@/lib/reports/service";
+import {
+  JOB_REPORT_STATUSES,
+  listJobReportQueue,
+  type JobReportStatus,
+} from "@/lib/reports/service";
 
 export const runtime = "nodejs";
 
-const statusFilter = z.enum(["open", "reviewing", "resolved", "dismissed"]);
+// Built from the shared constant rather than re-listing the states, so the
+// queue filter cannot drift from the domain the database enforces.
+const statusFilter = z.enum(JOB_REPORT_STATUSES);
 
 /**
  * The moderation queue. Admin-only and service-role backed: reading every
@@ -50,7 +56,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid pagination." }, { status: 400 });
   }
 
-  let status: "open" | "reviewing" | "resolved" | "dismissed" | null = null;
+  let status: JobReportStatus | null = null;
   if (rawStatus !== null) {
     const parsed = statusFilter.safeParse(rawStatus);
     if (!parsed.success) {
