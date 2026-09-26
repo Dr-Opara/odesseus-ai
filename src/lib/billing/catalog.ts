@@ -6,10 +6,12 @@
 // top-up SKUs below; the debit is applied server-side by the atomic
 // finalization RPC only after the submission is verified as successful.
 //
-// Employer products (plans, featured listings, recruiter seats) are sold
-// through Stripe subscriptions in a later milestone and deliberately do not
-// appear in this one-time checkout catalog yet. Odesseus Live SKUs are
-// unchanged from the legacy catalog.
+// Employer products (plans, featured listings, recruiter seats) are NOT part
+// of `billingCatalog`: they are sold through Stripe subscription/one-time
+// checkouts and are exported below as `employerPlans`,
+// `employerRecruiterSeat`, and `employerFeaturedTiers` so the webhook can
+// verify paid amounts server-side before granting entitlements. Odesseus Live
+// SKUs are unchanged from the legacy catalog.
 
 export const applyRates = {
   standard: {
@@ -42,3 +44,70 @@ export const billingCatalog = {
   // positive placeholder only to satisfy billing_events_credit_delta_check.
   interview_annual: { label: "Odesseus Live Annual", description: "Odesseus Live access for 12 months, subject to fair use", amountCents: 49900, creditType: "interview" as const, creditDelta: 1 },
 } as const;
+
+// Employer plans are recurring subscriptions: the recurring plan price is the
+// monthly charge, and jobPostsIncluded is the per-cycle job-post credit grant
+// (Starter 3 / Growth 10 / Business 25). These are not one-time checkout SKUs:
+// they are sold through a subscription checkout, and the webhook verifies the
+// paid invoice amount against this catalog before granting a cycle's credits.
+export const employerPlans = {
+  employer_starter: {
+    label: "Employer Starter",
+    description: "3 active job postings per month",
+    amountCents: 7900,
+    tier: "starter" as const,
+    jobPostsIncluded: 3,
+  },
+  employer_growth: {
+    label: "Employer Growth",
+    description: "10 active job postings per month",
+    amountCents: 14900,
+    tier: "growth" as const,
+    jobPostsIncluded: 10,
+  },
+  employer_business: {
+    label: "Employer Business",
+    description: "25 active job postings per month",
+    amountCents: 29900,
+    tier: "business" as const,
+    jobPostsIncluded: 25,
+  },
+} as const;
+
+export type EmployerPlanSku = keyof typeof employerPlans;
+
+// Recruiter seats are billed per seat per month ($20). Each seat is a line on
+// an employer subscription; a subscription's seat_count x 2000 must match the
+// paid invoice before the webhook syncs recruiter_seats.
+export const employerRecruiterSeat = {
+  label: "Recruiter Seat",
+  description: "Additional employer-team seat, billed monthly per seat",
+  amountCents: 2000,
+} as const;
+
+// Featured listings are one-time purchases: boosted visibility for a fixed
+// window. tier values match public.featured_listings.tier exactly (the webhook
+// passes them through to odesseus_create_featured_listing after verifying the
+// paid checkout amount against this catalog).
+export const employerFeaturedTiers = {
+  featured_7d: {
+    label: "Featured — 7 days",
+    description: "Boosted visibility for 7 days",
+    amountCents: 2900,
+    days: 7,
+  },
+  featured_14d: {
+    label: "Featured — 14 days",
+    description: "Boosted visibility for 14 days",
+    amountCents: 4900,
+    days: 14,
+  },
+  ai_30d: {
+    label: "AI Featured — 30 days",
+    description: "AI-assisted boosted visibility for 30 days",
+    amountCents: 12900,
+    days: 30,
+  },
+} as const;
+
+export type EmployerFeaturedTier = keyof typeof employerFeaturedTiers;

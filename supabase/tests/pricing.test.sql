@@ -258,7 +258,7 @@ SELECT ok(has_function_privilege('authenticated', 'odesseus_private.is_org_admin
 SELECT is(
   (SELECT count(*)::int FROM pg_constraint
    WHERE conrelid = 'public.featured_listings'::regclass AND contype = 'f'),
-  1, 'featured_listings has exactly one FK (org_id) — no FK to the nonexistent job_postings table');
+  2, 'featured_listings has two FKs (org_id + job_id -> employer_jobs, added in M4)');
 
 -- ---------------------------------------------------------------------------
 -- Products
@@ -695,6 +695,13 @@ SELECT throws_ok(
       'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1', 'platinum')$$,
   NULL, 'unknown employer tier: platinum',
   'unknown tier is rejected');
+
+INSERT INTO public.employer_jobs (id, org_id, title, status)
+VALUES (
+  'cccccccc-cccc-4ccc-8ccc-ccccccccccc1',
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1',
+  'Draft fixture job',
+  'draft');
 
 INSERT INTO public.featured_listings
   (org_id, job_id, tier, starts_at, expires_at, is_active)

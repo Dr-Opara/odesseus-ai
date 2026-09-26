@@ -34,7 +34,7 @@ export default function Home() {
             <div className="figma-job-stack" aria-label="Live job match examples">
               <article className="figma-job-card card-orange"><small>Your match target</small><h3>Roles that clear the bar</h3><strong>85%+</strong><span>Scored from your resume</span></article>
               <article className="figma-job-card card-purple"><small>Resume Agent</small><h3>Tailored from your master</h3><strong>Verified</strong><span>Your facts only</span></article>
-              <article className="figma-job-card card-cyan"><small>Application Agent</small><h3>Submitted with your approval</h3><strong>{APPLY_TIERS.standard.priceLabel}+</strong><span>After verified submission</span></article>
+              <article className="figma-job-card card-cyan"><small>Application Agent</small><h3>Submitted with your approval</h3><strong>from {APPLY_TIERS.standard.priceLabel}</strong><span>After verified submission</span></article>
               <div className="figma-live-label">YOUR SEARCH • SCORED AND UPDATED FOR YOU</div>
             </div>
           </div>

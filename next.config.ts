@@ -1,5 +1,22 @@
 import { withWorkflow } from "workflow/next";
 
+// Local development must not silently fall back to the production Supabase
+// project — see public-config.ts for the same rule and .env.example for the
+// local stack values. `next dev` runs with NODE_ENV=development, so this
+// guard fails fast with instructions instead of inlining production
+// credentials for a developer's laptop.
+if (process.env.NODE_ENV === "development") {
+  const missing = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"]
+    .filter((name) => !process.env[name]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Local development requires ${missing.join(" and ")} in .env.local ` +
+        `(target the local Supabase stack; see .env.example). Refusing to ` +
+        `silently fall back to the production Supabase project.`
+    );
+  }
+}
+
 // `||` (not `??`) is deliberate: an env var configured as an empty string
 // must fall back the same as an unset one, or a blank NEXT_PUBLIC_SUPABASE_URL
 // silently produces an empty Supabase client URL app-wide (see the incident
@@ -72,12 +89,16 @@ const csp = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'none'",
+  // Same-origin framing only. Cross-origin clickjacking stays blocked; this
+  // also lets the /qa/mobile/* preview embed the real routes it mirrors.
+  "frame-ancestors 'self'",
 ].join("; ");
 
 const securityHeaders = [
   { key: "Content-Security-Policy", value: csp },
-  { key: "X-Frame-Options", value: "DENY" },
+  // SAMEORIGIN (not DENY) so the /qa/mobile/* preview can frame the real
+  // routes on the same origin; cross-origin framing is still refused.
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Live needs microphone + display-media (for shared interview audio)

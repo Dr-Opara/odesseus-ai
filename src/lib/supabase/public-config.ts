@@ -5,6 +5,11 @@
 // or incomplete .env.local would silently point every request at the
 // production Supabase project. Development therefore throws with setup
 // instructions instead of falling back.
+//
+// This module is imported by browser code, so it must only ever expose
+// browser-safe values: the project URL and the *publishable* key. The
+// service-role key is server-only and must never be read, referenced, or
+// re-exported here.
 
 const productionSupabaseUrl = "https://ievsjfudakeugfalihzq.supabase.co";
 const productionPublishableKey =
@@ -12,12 +17,14 @@ const productionPublishableKey =
 
 const isLocalDevelopment = process.env.NODE_ENV === "development";
 
-// These are read with static property access (never `process.env[name]` with a
-// variable key): bundlers only statically inline `process.env.NEXT_PUBLIC_*`
-// literal accesses into browser bundles. Dynamic indexing survives to the
-// client as an empty `process.env`, which previously crashed hydration of any
-// page importing `@/lib/supabase/client` (module-scope throw) the moment the
-// dev client actually hydrated.
+// NEXT_PUBLIC_* values are read with static property access (never
+// `process.env[envName]` with a variable key): bundlers only statically inline
+// `process.env.NEXT_PUBLIC_*` literal member expressions into browser bundles.
+// A dynamic indexing lookup survives to the client as an empty `process.env`
+// and always reads undefined, which previously made the development guard
+// below throw on every client page that imported the Supabase client (e.g.
+// /signup). The guard itself stays: local dev still fails loudly instead of
+// silently pointing at the production project.
 const candidateSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const candidatePublishableKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;

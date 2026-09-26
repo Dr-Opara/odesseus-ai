@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ApplyTierAndStart from "@/components/apply/apply-tier-and-start";
+import { applyRates } from "@/lib/billing/catalog";
 import MobileApplyStart from "@/components/mobile/mobile-apply-start";
 
 export default async function ApplyStartPage({
@@ -27,7 +28,7 @@ export default async function ApplyStartPage({
       .maybeSingle(),
     supabase
       .from("credit_balances")
-      .select("application_credits")
+      .select("wallet_balance_cents,application_credits")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -74,8 +75,8 @@ export default async function ApplyStartPage({
             <strong>{tailoring ? `Approved v${tailoring.version_number}` : "Not approved"}</strong>
           </div>
           <div className="card apply-preflight-item">
-            <span className="muted">Legacy credits</span>
-            <strong>{credits?.application_credits ?? 0}</strong>
+            <span className="muted">Wallet</span>
+            <strong>${((credits?.wallet_balance_cents ?? 0) / 100).toFixed(2)}</strong>
           </div>
         </div>
 
@@ -83,13 +84,18 @@ export default async function ApplyStartPage({
           <div className="review-note">
             Approve a tailored resume before starting the application.
           </div>
-        ) : (credits?.application_credits ?? 0) < 1 ? (
+        ) : (credits?.wallet_balance_cents ?? 0) < applyRates.standard.amountCents ? (
           <div className="review-note">
-            You need wallet balance to apply. <Link href="/billing" style={{ fontWeight: 700 }}>Go to Wallet</Link>
+            Your wallet needs funds to start Apply. <Link href="/billing" style={{ fontWeight: 700 }}>Top up</Link>
           </div>
         ) : (
           <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} />
         )}
+
+        <div className="apply-charge-note">
+          <strong>No charge when you start.</strong>
+          <span>Standard Apply $0.49 and Smart Apply $1.99 are charged only after Odesseus verifies a successful submission.</span>
+        </div>
       </div>
     </main>
 
@@ -97,7 +103,7 @@ export default async function ApplyStartPage({
       job={job}
       matchScore={job.match_score}
       approvedVersion={tailoring?.approved_resume_id ? tailoring.version_number : null}
-      applicationCredits={credits?.application_credits ?? 0}
+      walletBalanceCents={credits?.wallet_balance_cents ?? 0}
     />
     </>
   );

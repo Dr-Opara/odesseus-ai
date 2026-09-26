@@ -52,6 +52,16 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
+### Local development must use the local Supabase stack
+
+`npm run dev` refuses to start when the Supabase variables are missing — it
+will **not** silently fall back to the production project. Local development
+targets the local Docker stack started with `supabase start` (kong on
+`http://127.0.0.1:54321`); use the values printed by `supabase status` for
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and
+`SUPABASE_SERVICE_ROLE_KEY` in `.env.local`. Real deployed credentials are
+configured per environment in the Vercel dashboard.
+
 Do not add Supabase secret/service-role keys to browser environment variables.
 
 ## Product principles
@@ -67,10 +77,13 @@ Do not add Supabase secret/service-role keys to browser environment variables.
 
 Candidate core usage is pay-per-use from a prepaid wallet. No subscription for candidate core usage; employer plans and recruiter seats may be recurring subscriptions.
 
-- Standard Apply $0.49 and Smart Apply $1.99 per verified successful submission, charged from the wallet across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
-- Wallet top-ups: $10 / $20 / $50
-- $24.99 per successfully activated Odesseus Live interview session
-- No required subscription
+- Standard Apply — $0.49 per verified successful submission, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
+- Smart Apply — $1.99 per verified successful submission; deeper automation, with user approval still required before final submission
+- Wallet top-ups — $10 / $20 / $50
+- $24.99 per successfully activated Odesseus Live interview session (3 passes $59.99, annual $499)
+- Employer plans — Starter $79 / 3 jobs, Growth $149 / 10 jobs, Business $299 / 25 jobs (recurring)
+- Featured listings — $29 / 7 days, $49 / 14 days, AI Featured $129 / 30 days
+- Recruiter seat — $20/month per additional employer-team seat
 
 ## Next milestone
 
@@ -141,14 +154,17 @@ See `docs/development/codex.md` for the recommended VS Code + Codex workflow.
 
 ## Odesseus Billing v0.4
 
-Billing adds a prepaid wallet and interview passes without a subscription.
+Billing adds a prepaid candidate wallet, Standard/Smart Apply charges, and interview passes.
 
-### Wallet
+### Candidate wallet
 
-- Wallet top-ups: $10 / $20 / $50 (funds the prepaid wallet)
-- Standard Apply debits $0.49 and Smart Apply debits $1.99 per verified successful submission from the wallet, across any supported job board or employer career site (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
+- Top-ups: $10 / $20 / $50, added to a server-controlled wallet balance (minor units)
+- Standard Apply — $0.49 per verified successful submission, across any supported job board or employer career site (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
+- Smart Apply — $1.99 per verified successful submission; deeper automation (multi-page ATS navigation, question completion from known candidate data, document attachment, retry/recovery) with user approval still required before final submission
 
-Wallet funds are not consumed at top-up time. The wallet is debited only after an application submission is verified as successful.
+Wallet funds are not spent at top-up time. The Apply workflow draws the Standard or Smart rate only after a successful application submission is verified. Failed, unsupported, paused, cancelled, or unconfirmed submissions never deduct wallet funds.
+
+Legacy note: the pre-wallet model charged one "$0.99 application credit" per submission. Existing credit balances are preserved until the legacy-credit reconciliation and conversion (see `docs/development/pricing-migration-plan.md`).
 
 ### Interview pass
 

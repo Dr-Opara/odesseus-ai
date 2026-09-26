@@ -561,6 +561,192 @@ export type Database = {
         }
         Relationships: []
       }
+      employer_job_post_credits: {
+        Row: {
+          expires_at: string | null
+          granted_at: string
+          id: string
+          org_id: string
+          total: number
+          used: number
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string
+          id?: string
+          org_id: string
+          total: number
+          used?: number
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string
+          id?: string
+          org_id?: string
+          total?: number
+          used?: number
+        }
+        Relationships: []
+      }
+      employer_jobs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          org_id: string
+          posted_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          org_id: string
+          posted_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          org_id?: string
+          posted_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      employer_member_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_user_id: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          org_id: string
+          role: string
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_by: string
+          org_id: string
+          role: string
+          status?: string
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          org_id?: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Relationships: []
+      }
+      employer_members: {
+        Row: {
+          created_at: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          org_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      employer_organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_user_id?: string
+        }
+        Relationships: []
+      }
+      employer_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          job_posts_included: number
+          org_id: string
+          period_end: string | null
+          period_start: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_posts_included: number
+          org_id: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_posts_included?: number
+          org_id?: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
+        }
+        Relationships: []
+      }
       external_signals: {
         Row: {
           application_id: string | null
@@ -623,6 +809,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      featured_listings: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          job_id: string
+          org_id: string
+          starts_at: string
+          stripe_payment_intent: string | null
+          tier: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          job_id: string
+          org_id: string
+          starts_at?: string
+          stripe_payment_intent?: string | null
+          tier: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          job_id?: string
+          org_id?: string
+          starts_at?: string
+          stripe_payment_intent?: string | null
+          tier?: string
+        }
+        Relationships: []
       }
       follow_up_drafts: {
         Row: {
@@ -1059,6 +1281,33 @@ export type Database = {
         }
         Relationships: []
       }
+      job_post_credit_ledger: {
+        Row: {
+          created_at: string
+          delta: number
+          external_reference: string | null
+          id: string
+          org_id: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          external_reference?: string | null
+          id?: string
+          org_id: string
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          external_reference?: string | null
+          id?: string
+          org_id?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       job_preferences: {
         Row: {
           created_at: string
@@ -1101,6 +1350,42 @@ export type Database = {
           updated_at?: string
           user_id?: string
           work_authorization?: string | null
+        }
+        Relationships: []
+      }
+      job_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          job_id: string | null
+          moderation_note: string | null
+          reason: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          job_id?: string | null
+          moderation_note?: string | null
+          reason: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          job_id?: string | null
+          moderation_note?: string | null
+          reason?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1279,6 +1564,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_preferences: {
+        Row: {
+          activity: boolean
+          applications: boolean
+          created_at: string
+          documents: boolean
+          matches: boolean
+          product: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity?: boolean
+          applications?: boolean
+          created_at?: string
+          documents?: boolean
+          matches?: boolean
+          product?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity?: boolean
+          applications?: boolean
+          created_at?: string
+          documents?: boolean
+          matches?: boolean
+          product?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       post_interview_analyses: {
         Row: {
@@ -1573,6 +1891,36 @@ export type Database = {
         }
         Relationships: []
       }
+      recruiter_seats: {
+        Row: {
+          active_until: string | null
+          count: number
+          id: string
+          org_id: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active_until?: string | null
+          count?: number
+          id?: string
+          org_id: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active_until?: string | null
+          count?: number
+          id?: string
+          org_id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       resume_tailorings: {
         Row: {
           approved_at: string | null
@@ -1778,13 +2126,104 @@ export type Database = {
           run_id: string
         }[]
       }
+      expire_ended_featured_listings: {
+        Args: Record<PropertyKey, never>
+        Returns: { expired: number }[]
+      }
+      grant_employer_tier_job_posts: {
+        Args: { p_org_id: string; p_tier: string }
+        Returns: { total: number }[]
+      }
+      odesseus_create_featured_listing: {
+        Args: {
+          p_job_id: string
+          p_org_id: string
+          p_stripe_payment_intent: string
+          p_tier: string
+        }
+        Returns: { expires_at: string; listing_id: string }[]
+      }
       odesseus_get_integration_secret: {
         Args: { p_secret_id: string }
         Returns: string
       }
+      odesseus_log_webhook_event: {
+        Args: {
+          p_checkout_session_id?: string | null
+          p_details?: Json
+          p_event_type: string | null
+          p_http_status: number
+          p_org_id?: string | null
+          p_outcome: string
+          p_reason?: string | null
+          p_sku?: string | null
+          p_stripe_event_id: string | null
+          p_user_id?: string | null
+        }
+        Returns: string
+      }
+      odesseus_reverse_credit_transaction: {
+        Args: { p_external_reference: string; p_reason?: string }
+        Returns: {
+          already_reversed: boolean
+          original_delta: number
+          reversal_delta: number
+          reversal_reference: string
+        }[]
+      }
       odesseus_store_integration_secret: {
         Args: { p_name: string; p_secret: string; p_user_id: string }
         Returns: string
+      }
+      odesseus_sync_employer_subscription: {
+        Args: {
+          p_grant_credits?: boolean
+          p_org_id: string
+          p_period_end?: string | null
+          p_period_start?: string | null
+          p_status: string
+          p_stripe_customer_id: string | null
+          p_stripe_subscription_id: string | null
+          p_tier: string
+        }
+        Returns: unknown
+      }
+      odesseus_accept_employer_invitation: {
+        Args: { p_token: string }
+        Returns: {
+          invitation_id: string
+          joined_org_id: string
+          joined_role: string
+          org_name: string
+        }[]
+      }
+      odesseus_metered_org_roles: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
+      odesseus_org_live_seat_count: {
+        Args: { p_org_id: string }
+        Returns: number
+      }
+      odesseus_org_required_seat_count: {
+        Args: { p_org_id: string }
+        Returns: number
+      }
+      odesseus_sync_recruiter_seat: {
+        Args: {
+          p_count: number
+          p_org_id: string
+          p_period_end?: string | null
+          p_period_start?: string | null
+          p_status: string
+          p_stripe_customer_id: string | null
+          p_stripe_subscription_id: string | null
+        }
+        Returns: unknown
+      }
+      odesseus_update_job_report_status: {
+        Args: { p_note?: string | null; p_report_id: string; p_status: string }
+        Returns: undefined
       }
     }
     Enums: {

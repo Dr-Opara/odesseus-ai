@@ -1,5 +1,7 @@
 import Link from "next/link";
 import ApplyTierAndStart from "@/components/apply/apply-tier-and-start";
+import { applyRates } from "@/lib/billing/catalog";
+import { formatCents } from "@/lib/pricing/candidate-pricing";
 
 type Job = {
   id: string;
@@ -13,20 +15,28 @@ type Job = {
 /**
  * Mobile Approval screen (screen 09) — reuses the exact same preflight data
  * and apply tier + start flow (POST /api/apply/start) the desktop approval
- * page uses. No separate approval logic; the same legacy credit/tailoring
- * gate applies until the wallet per-tier charge is available.
+ * page uses. No separate approval logic; the same wallet/tailoring gate
+ * applies.
+ *
+ * Eligibility is funded from `wallet_balance_cents` only. `application_credits`
+ * is legacy, is not a source of truth, and must never gate Apply. The minimum
+ * balance to start is the Standard Apply rate; Smart Apply ($1.99) is debited
+ * later, only after a verified successful submission.
  */
 export default function MobileApplyStart({
   job,
   matchScore,
   approvedVersion,
-  applicationCredits,
+  walletBalanceCents,
 }: {
   job: Job;
   matchScore: number | null;
   approvedVersion: number | null;
-  applicationCredits: number;
+  walletBalanceCents: number;
 }) {
+  const canApply =
+    approvedVersion !== null && walletBalanceCents >= applyRates.standard.amountCents;
+
   return (
     <main className="odesseus-mobile-only m-screen m-screen-09">
       <header className="m-screen-header">
@@ -69,10 +79,10 @@ export default function MobileApplyStart({
         <div className="m-warning" style={{ marginTop: 14 }}>
           <strong>Approve a tailored resume before starting the application.</strong>
         </div>
-      ) : applicationCredits < 1 ? (
+      ) : !canApply ? (
         <div className="m-warning" style={{ marginTop: 14 }}>
           <strong>
-            You need wallet balance to apply. <Link href="/billing">Go to Wallet</Link>
+            Your wallet needs funds to start Apply. <Link href="/billing">Top up</Link>
           </strong>
         </div>
       ) : (
@@ -80,6 +90,12 @@ export default function MobileApplyStart({
           <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} />
         </div>
       )}
+
+      <div className="m-note" style={{ opacity: canApply ? 1 : 0.7 }}>
+        No charge when you start. {applyRates.standard.label} {formatCents(applyRates.standard.amountCents)} and{" "}
+        {applyRates.smart.label} {formatCents(applyRates.smart.amountCents)} are charged only after Odesseus
+        verifies a successful submission.
+      </div>
     </main>
   );
 }
