@@ -9,8 +9,8 @@ export default function EmployersPage() {
         <EmployerNav inverse />
         <section className="figma-page-hero inverse">
           <span className="figma-eyebrow">FOR EMPLOYERS</span>
-          <h1>Find candidates who already fit the role.</h1>
-          <p>Post your opportunity. Let Odesseus AI surface qualified applicants across global markets — so you spend less time sorting resumes.</p>
+          <h1>Post once. Let AI surface the candidates worth reviewing.</h1>
+          <p>Post roles, review matched applicants, manage your hiring pipeline, and let Odesseus surface evidence-backed fit so your team spends less time sorting resumes.</p>
           <div className="figma-hero-actions">
             <Link className="figma-btn figma-btn-orange" href="/employers/post-job">Post a Job</Link>
             <Link className="figma-text-cta is-inverse" href="/employers/pricing">See Employer Pricing →</Link>
@@ -22,7 +22,7 @@ export default function EmployersPage() {
           <article className="figma-info-card cyan"><h2>Verified Employers</h2><p>Layered company verification keeps the platform trustworthy for every candidate.</p></article>
         </section>
         <section className="figma-pricing-section">
-          <div className="figma-section-heading"><span className="figma-eyebrow">POST. MATCH. HIRE.</span><h2>Everything you need to hire well</h2></div>
+          <div className="figma-section-heading"><span className="figma-eyebrow">POST. MATCH. HIRE.</span><h2>One hiring workflow. Less manual sorting.</h2></div>
           <div className="figma-three-grid">
             <article className="figma-info-card white"><h2>1 · Post your opportunity</h2><p>Publish role details, location, salary and work arrangement in minutes.</p></article>
             <article className="figma-info-card lavender"><h2>2 · Odesseus surfaces matches</h2><p>AI ranks candidates by fit — skills, experience and location alignment.</p></article>
