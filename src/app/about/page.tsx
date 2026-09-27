@@ -2,9 +2,9 @@ import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 
 const faqs=[
- ["Does Odesseus require a subscription?","No. Candidate application credits are purchased as you use them."],
+ ["Does Odesseus require an application subscription?","No. Fund your Odesseus Wallet and pay only after a successful application submission."],
  ["Does Odesseus read my email?","No. Candidate inbox access is not required."],
- ["Do application credits expire?","No. Candidate application credits remain available until used."],
+ ["Does my wallet balance expire?","No. Your Odesseus Wallet balance remains available until you use it."],
  ["Is Prep Agent free?","Yes. Role-specific interview preparation is free."],
  ["Can I target jobs in other countries?","Yes. Odesseus is being designed for multi-country job preferences."],
 ];
