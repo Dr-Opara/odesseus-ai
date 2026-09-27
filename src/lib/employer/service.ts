@@ -32,6 +32,9 @@
  * `getEmployerOverview` function and supporting types used by the desktop
  * employer surfaces and the mobile employer portal. Both call the same
  * authenticated Supabase client so the two renderings cannot drift.
+ *
+ * The owner is excluded by identity (employer_organizations.owner_user_id), not
+ * by role, so this list does not need an 'owner' entry.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -84,6 +87,7 @@ export type InvitableRole = (typeof INVITABLE_ROLES)[number];
 
 export type OrgRole = "owner" | "admin" | "recruiter" | "viewer";
 
+/** How long an invitation stays redeemable. */
 /** How long an invitation stays redeemable. */
 export const INVITATION_TTL_DAYS = 7;
 
@@ -179,7 +183,7 @@ export async function getOrgRole(
     .maybeSingle();
 
   if (orgError) {
-    throw new Error(`Could not load the organization: ${orgError.message}`);
+    throw new Error("Could not load the organization: " + orgError.message);
   }
   if (!org) return null;
   if (org.owner_user_id === userId) return "owner";
@@ -192,7 +196,7 @@ export async function getOrgRole(
     .maybeSingle();
 
   if (memberError) {
-    throw new Error(`Could not load your team membership: ${memberError.message}`);
+    throw new Error("Could not load your team membership: " + memberError.message);
   }
   return (membership?.role as OrgRole | undefined) ?? null;
 }
@@ -767,6 +771,13 @@ export async function getSeatSummary(
       .eq("org_id", orgId),
   ]);
 
+  const seatError = paidResult.error;
+  const requiredError = null; // We don't fetch required seats in this query, it's done via RPC later
+
+  if (seatError) {
+    throw new Error("Could not load seat capacity: " + seatError.message);
+  }
+
   const seatsPaid = paidResult.data?.count ?? 0;
 
   const members = (membersResult.data ?? []) as Array<{
@@ -844,19 +855,38 @@ export async function getOrgTeamView(
   orgId: string,
   userId: string
 ): Promise<OrgTeamView> {
-  const [seats, members, invitations, orgName, callerRole] = await Promise.all([
+  const [orgResult, role] = await Promise.all([
+    client
+      .from("employer_organizations")
+      .select("id,name,owner_user_id")
+      .eq("id", orgId)
+      .maybeSingle(),
+    getOrgRole(client, orgId, userId),
+  ]);
+
+  if (orgResult.error) {
+    throw new Error("Could not load the organization: " + orgResult.error.message);
+  }
+  const org = orgResult.data;
+  if (!org || role === null) {
+    throw new OrgAccessError();
+  }
+
+  const [seats, members, invitations, orgName] = await Promise.all([
     getSeatSummary(client, orgId),
     listOrgMembers(client, orgId),
-    listOrgInvitations(client, orgId),
+    // A non-admin gets no invitations from RLS, so the field is simply empty.
+    role === "owner" || role === "admin"
+      ? listOrgInvitations(client, orgId)
+      : Promise.resolve([]),
     getOrgName(client, orgId),
-    getOrgRole(client, orgId, userId),
   ]);
 
   return {
     orgId,
     orgName: orgName ?? "Unnamed organization",
-    callerRole,
-    isCallerAdmin: callerRole === "owner" || callerRole === "admin",
+    callerRole: role,
+    isCallerAdmin: role === "owner" || role === "admin",
     seats,
     members,
     invitations,
@@ -1019,17 +1049,22 @@ export type FeatureableJob = {
 };
 
 export type FeaturedListing = {
-  job_id: string;
+  id: string;
+  jobId: string;
+  jobTitle: string | null;
   tier: string;
-  is_active: boolean;
-  starts_at: string | null;
-  expires_at: string | null;
+  isActive: boolean;
+  isBoosted: boolean;
+  startsAt: string | null;
+  expiresAt: string | null;
 };
 
 export type OrgFeaturedView = {
-  jobs: FeatureableJob[];
+  orgId: string;
+  orgName: string;
   listings: FeaturedListing[];
-  unrecognisedTiers: string[];
+  jobs: Array<{ id: string; title: string; location: string | null; status: string; isBoosted: boolean }>;
+  tiers: FeaturedTierOffer[];
 };
 
 export type FeaturedTierOffer = {
@@ -1066,7 +1101,7 @@ export async function getFeatureableJob(
     .eq("status", "published")
     .maybeSingle();
 
-  if (error) throw new Error(`Could not load job: ${error.message}`);
+if (error) throw new Error(`Could not load job: ${error.message}`);
   if (!data) return { reason: "not_found" };
   if ((data as { status: string }).status === "closed") return { reason: "closed" };
   return { job: data as FeatureableJob };
@@ -1076,23 +1111,392 @@ export async function getFeatureableJob(
 export async function getOrgFeaturedView(
   client: EmployerClient,
   orgId: string,
-  _userId?: string
+  userId: string
 ): Promise<OrgFeaturedView> {
-  const [jobsResult, listingsResult] = await Promise.all([
+  const [orgResult, role] = await Promise.all([
     client
-      .from("employer_jobs")
-      .select("id,title,location,status")
-      .eq("org_id", orgId)
-      .eq("status", "published"),
-    client
-      .from("featured_listings")
-      .select("job_id,tier,is_active,starts_at,expires_at")
-      .eq("org_id", orgId),
+      .from("employer_organizations")
+      .select("id,name,owner_user_id")
+      .eq("id", orgId)
+      .maybeSingle(),
+    getOrgRole(client, orgId, userId),
   ]);
 
-  const jobs = (jobsResult.data ?? []) as FeatureableJob[];
-  const listings = (listingsResult.data ?? []) as FeaturedListing[];
-  const unrecognisedTiers = [...new Set(listings.map((l) => l.tier).filter((t) => !isFeaturedTier(t)))];
+  if (orgResult.error) {
+    throw new Error("Could not load the organization: " + orgResult.error.message);
+  }
+  const org = orgResult.data;
+  if (!org || role === null) {
+    throw new OrgAccessError();
+  }
 
-  return { jobs, listings, unrecognisedTiers };
+  const [{ data: listingRows, error: listingError }, { data: jobRows, error: jobError }] =
+    await Promise.all([
+      client
+        .from("featured_listings")
+        .select("id,job_id,tier,starts_at,expires_at,is_active")
+        .eq("org_id", orgId)
+        .order("starts_at", { ascending: false }),
+      client
+        .from("employer_jobs")
+        .select("id,title,location,status")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false }),
+    ]);
+
+  if (listingError) {
+    throw new Error("Could not load featured listings: " + listingError.message);
+  }
+  if (jobError) {
+    throw new Error("Could not load your jobs: " + jobError.message);
+  }
+
+  const jobs = (jobRows ?? []) as Array<{
+    id: string;
+    title: string;
+    location: string | null;
+    status: string;
+  }>;
+  const titles = new Map(jobs.map((job) => [job.id, job.title]));
+  const now = Date.now();
+
+  const listings: FeaturedListing[] = (listingRows ?? [])
+    .map((row) => {
+      const expiresAtMs = Date.parse(row.expires_at);
+      const boosted = row.is_active && Number.isFinite(expiresAtMs) && expiresAtMs > now;
+      return {
+        id: row.id,
+        jobId: row.job_id,
+        jobTitle: titles.get(row.job_id) ?? null,
+        tier: isFeaturedTier(row.tier) ? row.tier : (row.tier as EmployerFeaturedTier),
+        startsAt: row.starts_at,
+        expiresAt: row.expires_at,
+        isActive: row.is_active,
+        isBoosted: boosted,
+      };
+    })
+    .sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt));
+
+  const boostedJobIds = new Set(listings.filter((l) => l.isBoosted).map((l) => l.jobId));
+
+  return {
+    orgId: org.id,
+    orgName: org.name,
+    listings,
+    jobs: jobs.map((job) => ({
+      ...job,
+      isBoosted: boostedJobIds.has(job.id),
+    })),
+    tiers: getFeaturedTierOffers(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Job CRUD (Phase 14B)
+// ---------------------------------------------------------------------------
+
+export type CreateJobInput = {
+  title: string;
+  description?: string | null;
+  location?: string | null;
+};
+
+export type CreateJobResult =
+  | { ok: true; job: EmployerJob }
+  | { ok: false; reason: string };
+
+export type ListJobsResult = {
+  items: EmployerJob[];
+  total: number;
+};
+
+/**
+ * Create a new job posting for the organization.
+ *
+ * The job starts in 'draft' status and does not consume a job-post credit.
+ * Credits are only consumed when the job is published (triggered by the
+ * claim_job_post_credit database trigger when status becomes 'published').
+ */
+export async function createJob(
+  client: EmployerClient,
+  orgId: string,
+  input: CreateJobInput
+): Promise<EmployerJob> {
+  const { data, error } = await client
+    .from("employer_jobs")
+    .insert({
+      org_id: orgId,
+      title: input.title.trim(),
+      description: input.description?.trim() ?? null,
+      location: input.location?.trim() ?? null,
+      status: "draft",
+    })
+    .select(
+      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+    )
+    .single();
+
+  if (error) {
+    throw new Error("Could not create job: " + error.message);
+  }
+
+  return data as unknown as EmployerJob;
+}
+
+/**
+ * List all jobs for an organization, with pagination.
+ */
+export async function listJobs(
+  client: EmployerClient,
+  orgId: string,
+  options?: { limit?: number; offset?: number }
+): Promise<{ items: EmployerJob[]; total: number }> {
+  const limit = Math.min(Math.max(options?.limit ?? 25, 1), 100);
+  const offset = Math.max(options?.offset ?? 0, 0);
+
+  const { data, error, count } = await client
+    .from("employer_jobs")
+    .select(
+      "id,org_id,title,description,location,status,posted_at,created_at,updated_at",
+      { count: "exact" }
+    )
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    throw new Error("Could not load jobs: " + error.message);
+  }
+
+  return {
+    items: (data ?? []).map(d => d as unknown as EmployerJob),
+    total: count ?? 0,
+  };
+}
+
+/**
+ * Get a single job by ID, ensuring it belongs to the organization.
+ */
+export async function getJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string
+): Promise<EmployerJob | null> {
+  const { data, error } = await client
+    .from("employer_jobs")
+    .select(
+      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+    )
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("Could not load job: " + error.message);
+  }
+
+  return data ? (data as unknown as EmployerJob) : null;
+}
+
+export type UpdateJobInput = {
+  title?: string;
+  description?: string | null;
+  location?: string | null;
+};
+
+export async function updateJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string,
+  input: UpdateJobInput
+): Promise<EmployerJob | { reason: "not_found" | "wrong_status" }> {
+  const { data: job, error: fetchError } = await client
+    .from("employer_jobs")
+    .select("status")
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error("Could not load job: " + fetchError.message);
+  }
+  if (!job) return { reason: "not_found" };
+
+  if (job.status !== "draft") {
+    return { reason: "wrong_status" };
+  }
+
+  const updates: Partial<{
+    title: string;
+    description: string | null;
+    location: string | null;
+  }> = {};
+
+  if (input.title !== undefined) updates.title = input.title.trim();
+  if (input.description !== undefined) updates.description = input.description?.trim() ?? null;
+  if (input.location !== undefined) updates.location = input.location?.trim() ?? null;
+
+  if (Object.keys(updates).length === 0) {
+    const { data, error } = await client
+      .from("employer_jobs")
+      .select(
+        "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+      )
+      .eq("id", jobId)
+      .eq("org_id", orgId)
+      .single();
+    if (error) throw new Error("Could not load job: " + error.message);
+    return data as unknown as EmployerJob;
+  }
+
+  const { data, error } = await client
+    .from("employer_jobs")
+    .update(updates)
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .select(
+      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+    )
+    .single();
+
+  if (error) {
+    throw new Error("Could not update job: " + error.message);
+  }
+
+  return data as unknown as EmployerJob;
+}
+
+/**
+ * Publish a draft job.
+ *
+ * This transitions the job from 'draft' to 'published', which triggers the
+ * claim_job_post_credit database trigger to consume a job-post credit from
+ * the organization's available credits. The operation is atomic and idempotent:
+ * re-publishing an already-published job is a no-op and does not consume a
+ * second credit.
+ */
+export async function publishJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string
+): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: "not_found" | "wrong_status" | "no_credits" }> {
+  const { data: job, error: fetchError } = await client
+    .from("employer_jobs")
+    .select("status")
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error("Could not load job: " + fetchError.message);
+  }
+  if (!job) return { ok: false, reason: "not_found" };
+
+  if (job.status !== "draft") {
+    return { ok: false, reason: "wrong_status" };
+  }
+
+  const { data, error } = await client
+    .from("employer_jobs")
+    .update({ status: "published", posted_at: new Date().toISOString() })
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .select(
+      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+    )
+    .maybeSingle();
+
+  if (error) {
+    if (error.message.includes("no_credits")) {
+      return { ok: false, reason: "no_credits" };
+    }
+    throw new Error("Could not publish job: " + error.message);
+  }
+
+  if (!data) {
+    return { ok: false, reason: "no_credits" };
+  }
+
+  return { ok: true, job: data as unknown as EmployerJob };
+}
+
+/**
+ * Close a published job.
+ */
+export async function closeJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string
+): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: "not_found" | "wrong_status" }> {
+  const { data: job, error: fetchError } = await client
+    .from("employer_jobs")
+    .select("status")
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error("Could not load job: " + fetchError.message);
+  }
+  if (!job) return { ok: false, reason: "not_found" };
+
+  if (job.status !== "published") {
+    return { ok: false, reason: "wrong_status" };
+  }
+
+  const { data, error } = await client
+    .from("employer_jobs")
+    .update({ status: "closed" })
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .select(
+      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+    )
+    .single();
+
+  if (error) {
+    throw new Error("Could not close job: " + error.message);
+  }
+
+  return { ok: true, job: data as unknown as EmployerJob };
+}
+
+/**
+ * Delete a job.
+ *
+ * Only draft jobs can be deleted. Published jobs must be closed first.
+ * Deleting a draft job does not consume any job-post credits.
+ */
+export async function deleteJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string
+): Promise<{ ok: true } | { ok: false; reason: "not_found" | "wrong_status" }> {
+  const { data: job, error: fetchError } = await client
+    .from("employer_jobs")
+    .select("status")
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error("Could not load job: " + fetchError.message);
+  }
+  if (!job) return { ok: false, reason: "not_found" };
+
+  if (job.status !== "draft") {
+    return { ok: false, reason: "wrong_status" };
+  }
+
+  const { error } = await client
+    .from("employer_jobs")
+    .delete()
+    .eq("id", jobId)
+    .eq("org_id", orgId);
+
+  if (error) {
+    throw new Error("Could not delete job: " + error.message);
+  }
+
+  return { ok: true };
 }
