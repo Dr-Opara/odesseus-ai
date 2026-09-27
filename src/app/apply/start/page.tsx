@@ -35,15 +35,15 @@ export default async function ApplyStartPage({ searchParams }: { searchParams: P
         </div>
         <div className="figma-two-grid" style={{ marginTop: 24 }}>
           <section className="card" style={{ padding: 24 }}>
-            <div className="badge">Apply · $0.49</div><h2>Use your existing resume</h2><p className="muted">Odesseus uses your approved master resume and verified profile. No resume rewrite.</p>
-            {!masterResume?.id ? <div className="review-note">Approve a master resume to use Apply.</div> : balance < 49 && legacy < 1 ? <div className="review-note">Add funds to your <Link href="/billing" style={{fontWeight:700}}>Odesseus wallet</Link>.</div> : <ApplyStartForm jobId={job.id} defaultUrl={job.source_url} mode="apply" />}
+            <div className="badge">Apply · $0.39</div><h2>Use your existing resume</h2><p className="muted">Odesseus uses your approved master resume and verified profile. No resume rewrite.</p>
+            {!masterResume?.id ? <div className="review-note">Approve a master resume to use Apply.</div> : balance < 39 && legacy < 1 ? <div className="review-note">Add funds to your <Link href="/billing" style={{fontWeight:700}}>Odesseus wallet</Link>.</div> : <ApplyStartForm jobId={job.id} defaultUrl={job.source_url} mode="apply" />}
           </section>
           <section className="card" style={{ padding: 24 }}>
-            <div className="badge">Smart Apply · $1.99</div><h2>Tailor before submission</h2><p className="muted">Uses the job-specific approved resume plus verified profile and application answers.</p>
-            {!tailoring?.approved_resume_id ? <div className="review-note">Approve a tailored resume to use Smart Apply.</div> : balance < 199 && legacy < 1 ? <div className="review-note">Add funds to your <Link href="/billing" style={{fontWeight:700}}>Odesseus wallet</Link>.</div> : <ApplyStartForm jobId={job.id} defaultUrl={job.source_url} mode="smart_apply" />}
+            <div className="badge">Smart Apply · $0.99</div><h2>Tailor before submission</h2><p className="muted">Uses the job-specific approved resume plus verified profile and application answers.</p>
+            {!tailoring?.approved_resume_id ? <div className="review-note">Approve a tailored resume to use Smart Apply.</div> : balance < 99 && legacy < 1 ? <div className="review-note">Add funds to your <Link href="/billing" style={{fontWeight:700}}>Odesseus wallet</Link>.</div> : <ApplyStartForm jobId={job.id} defaultUrl={job.source_url} mode="smart_apply" />}
           </section>
         </div>
-        <div className="apply-charge-note"><strong>Nothing is deducted when the browser starts.</strong><span>Odesseus deducts $0.49 or $1.99 only after it verifies a successful submission. Existing application credits remain usable during migration.</span></div>
+        <div className="apply-charge-note"><strong>Nothing is deducted when the browser starts.</strong><span>Odesseus deducts $0.39 or $0.99 only after it verifies a successful submission. Existing application credits remain usable during migration.</span></div>
       </div>
     </main>
   );
