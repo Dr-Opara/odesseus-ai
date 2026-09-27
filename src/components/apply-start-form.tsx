@@ -39,7 +39,7 @@ export default function ApplyStartForm({ jobId, defaultUrl, mode }: {
       </label>
       <div className="apply-boundaries"><strong>Odesseus can handle the repetitive parts.</strong><span>It will pause for login, MFA, CAPTCHA, identity checks, sensitive questions, or anything it cannot answer from verified information.</span></div>
       {error ? <div className="apply-error">{error}</div> : null}
-      <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "Starting secure browser…" : mode === "smart_apply" ? "Start Smart Apply · $1.99" : "Start Apply · $0.49"}</button>
+      <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "Starting secure browser…" : mode === "smart_apply" ? "Start Smart Apply · $0.99" : "Start Apply · $0.39"}</button>
     </form>
   );
 }
