@@ -27,6 +27,9 @@
  * Which team roles consume a seat is a single decision, `METERED_ROLES`, which
  * mirrors `public.odesseus_metered_org_roles()`. Plan tiers price job posts, not
  * seats, so the included allowance is 0 and a recruiter needs a paid seat.
+ *
+ * The owner is excluded by identity (employer_organizations.owner_user_id), not
+ * by role, so this list does not need an 'owner' entry.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -56,6 +59,18 @@ export const INVITABLE_ROLES = ["admin", "recruiter", "viewer"] as const;
 export type InvitableRole = (typeof INVITABLE_ROLES)[number];
 
 export type OrgRole = "owner" | "admin" | "recruiter" | "viewer";
+
+export type EmployerJob = {
+  id: string;
+  org_id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  status: "draft" | "published" | "closed";
+  posted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 /** How long an invitation stays redeemable. */
 export const INVITATION_TTL_DAYS = 7;
@@ -136,7 +151,7 @@ export async function getOrgRole(
     .maybeSingle();
 
   if (orgError) {
-    throw new Error(`Could not load the organization: ${orgError.message}`);
+    throw new Error("Could not load the organization: " + orgError.message);
   }
   if (!org) return null;
   if (org.owner_user_id === userId) return "owner";
@@ -149,7 +164,7 @@ export async function getOrgRole(
     .maybeSingle();
 
   if (memberError) {
-    throw new Error(`Could not load your team membership: ${memberError.message}`);
+    throw new Error("Could not load your team membership: " + memberError.message);
   }
   return (membership?.role as OrgRole | undefined) ?? null;
 }
@@ -234,10 +249,10 @@ export async function getSeatSummary(
   ]);
 
   if (seatError) {
-    throw new Error(`Could not load seat capacity: ${seatError.message}`);
+    throw new Error("Could not load seat capacity: " + seatError.message);
   }
   if (requiredError) {
-    throw new Error(`Could not load required seats: ${requiredError.message}`);
+    throw new Error("Could not load required seats: " + requiredError.message);
   }
 
   const paid = typeof seatsPaid === "number" ? seatsPaid : 0;
@@ -269,7 +284,7 @@ export async function listOrgMembers(
     .order("created_at", { ascending: true });
 
   if (error) {
-    throw new Error(`Could not load the team: ${error.message}`);
+    throw new Error("Could not load the team: " + error.message);
   }
   return (data ?? []) as OrgMembership[];
 }
@@ -289,7 +304,7 @@ export async function listOrgInvitations(
     .order("created_at", { ascending: false });
 
   if (error) {
-    throw new Error(`Could not load invitations: ${error.message}`);
+    throw new Error("Could not load invitations: " + error.message);
   }
   return (data ?? []) as OrgInvitation[];
 }
@@ -313,7 +328,7 @@ export async function getOrgTeamView(
   ]);
 
   if (orgError) {
-    throw new Error(`Could not load the organization: ${orgError.message}`);
+    throw new Error("Could not load the organization: " + orgError.message);
   }
   if (!org || role === null) {
     throw new OrgAccessError();
@@ -468,7 +483,7 @@ export async function revokeInvitation(
     .select("id");
 
   if (error) {
-    throw new Error(`Could not revoke that invitation: ${error.message}`);
+    throw new Error("Could not revoke that invitation: " + error.message);
   }
   return { ok: true, revoked: (data ?? []).length > 0 };
 }
@@ -635,7 +650,7 @@ export async function getFeatureableJob(
     .maybeSingle();
 
   if (error) {
-    throw new Error(`Could not load that job: ${error.message}`);
+    throw new Error("Could not load that job: " + error.message);
   }
   if (!data) return { reason: "not_found" };
   if (data.status === "closed") return { reason: "closed" };
@@ -674,7 +689,7 @@ export async function getOrgFeaturedView(
   ]);
 
   if (orgError) {
-    throw new Error(`Could not load the organization: ${orgError.message}`);
+    throw new Error("Could not load the organization: " + orgError.message);
   }
   if (!org || role === null) {
     throw new OrgAccessError();
@@ -695,10 +710,10 @@ export async function getOrgFeaturedView(
     ]);
 
   if (listingError) {
-    throw new Error(`Could not load featured listings: ${listingError.message}`);
+    throw new Error("Could not load featured listings: " + listingError.message);
   }
   if (jobError) {
-    throw new Error(`Could not load your jobs: ${jobError.message}`);
+    throw new Error("Could not load your jobs: " + jobError.message);
   }
 
   const jobs = (jobRows ?? []) as Array<{
@@ -741,4 +756,316 @@ export async function getOrgFeaturedView(
     })),
     tiers: getFeaturedTierOffers(),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Job CRUD
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a new job posting for the organization.
+ *
+ * The job starts in 'draft' status and does not consume a job-post credit.
+ * Credits are only consumed when the job is published (triggered by the
+ * claim_job_post_credit database trigger when status becomes 'published').
+ */
+export async function createJob(
+  client: EmployerClient,
+  orgId: string,
+  input: {
+    title: string;
+    description?: string | null;
+    location?: string | null;
+  }
+): Promise<EmployerJob> {
+  const { data, error } = await client
+    .from("employer_jobs")
+    .insert({
+      org_id: orgId,
+      title: input.title.trim(),
+      description: input.description?.trim() ?? null,
+      location: input.location?.trim() ?? null,
+      status: "draft",
+    })
+    .select(
+      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+    )
+    .single();
+
+  if (error) {
+    throw new Error("Could not create job: " + error.message);
+  }
+
+  return data as EmployerJob;
+}
+
+/**
+ * List all jobs for an organization, with pagination.
+ */
+export async function listJobs(
+  client: EmployerClient,
+  orgId: string,
+  options?: { limit?: number; offset?: number }
+): Promise<{ items: EmployerJob[]; total: number }> {
+  const limit = Math.min(Math.max(options?.limit ?? 25, 1), 100);
+  const offset = Math.max(options?.offset ?? 0, 0);
+
+  const { data, error, count } = await client
+    .from("employer_jobs")
+    .select(
+      "id,org_id,title,description,location,status,posted_at,created_at,updated_at",
+      { count: "exact" }
+    )
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    throw new Error("Could not load jobs: " + error.message);
+  }
+
+  return {
+    items: (data ?? []) as EmployerJob[],
+    total: count ?? 0,
+  };
+}
+
+/**
+ * Get a single job by ID, ensuring it belongs to the organization.
+ */
+export async function getJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string
+): Promise<EmployerJob | null> {
+  const { data, error } = await client
+    .from("employer_jobs")
+    .select(
+      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+    )
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("Could not load job: " + error.message);
+  }
+
+  return (data as EmployerJob) ?? null;
+}
+
+export type UpdateJobInput = {
+  title?: string;
+  description?: string | null;
+  location?: string | null;
+};
+
+/**
+ * Update a job's details.
+ *
+ * Only draft jobs can have their details changed. Published jobs must be
+ * closed first, and closed jobs cannot be modified.
+ */
+export async function updateJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string,
+  input: UpdateJobInput
+): Promise<EmployerJob | { reason: "not_found" | "wrong_status" }> {
+  const { data: job, error: fetchError } = await client
+    .from("employer_jobs")
+    .select("status")
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error("Could not load job: " + fetchError.message);
+  }
+  if (!job) return { reason: "not_found" };
+
+  if (job.status !== "draft") {
+    return { reason: "wrong_status" };
+  }
+
+  const updates: Partial<{
+    title: string;
+    description: string | null;
+    location: string | null;
+  }> = {};
+
+  if (input.title !== undefined) updates.title = input.title.trim();
+  if (input.description !== undefined) updates.description = input.description?.trim() ?? null;
+  if (input.location !== undefined) updates.location = input.location?.trim() ?? null;
+
+  if (Object.keys(updates).length === 0) {
+    const { data, error } = await client
+      .from("employer_jobs")
+      .select(
+        "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+      )
+      .eq("id", jobId)
+      .eq("org_id", orgId)
+      .single();
+    if (error) throw new Error("Could not load job: " + error.message);
+    return data as EmployerJob;
+  }
+
+  const { data, error } = await client
+    .from("employer_jobs")
+    .update(updates)
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .select(
+      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+    )
+    .single();
+
+  if (error) {
+    throw new Error("Could not update job: " + error.message);
+  }
+
+  return data as EmployerJob;
+}
+
+/**
+ * Publish a draft job.
+ *
+ * This transitions the job from 'draft' to 'published', which triggers the
+ * claim_job_post_credit database trigger to consume a job-post credit from
+ * the organization's available credits. The operation is atomic and idempotent:
+ * re-publishing an already-published job is a no-op and does not consume a
+ * second credit.
+ */
+export async function publishJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string
+): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: "not_found" | "wrong_status" | "no_credits" }> {
+  const { data: job, error: fetchError } = await client
+    .from("employer_jobs")
+    .select("status")
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error("Could not load job: " + fetchError.message);
+  }
+  if (!job) return { ok: false, reason: "not_found" };
+
+  if (job.status !== "draft") {
+    return { ok: false, reason: "wrong_status" };
+  }
+
+  const { data, error } = await client
+    .from("employer_jobs")
+    .update({ status: "published", posted_at: new Date().toISOString() })
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .select(
+      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+    )
+    .maybeSingle();
+
+  if (error) {
+    // The claim_job_post_credit trigger raises 'no job post credits available for this employer'
+    // when there are no available credits. We surface this as a clear error.
+    const message = error.message.toLowerCase();
+    if (message.includes("no job post credits available")) {
+      return { ok: false, reason: "no_credits" };
+    }
+    throw new Error("Could not publish job: " + error.message);
+  }
+
+  if (!data) {
+    return { ok: false, reason: "not_found" };
+  }
+
+  return { ok: true, job: data as EmployerJob };
+}
+
+/**
+ * Close a published job.
+ *
+ * A closed job no longer appears in candidate searches but retains its record
+ * for audit purposes. The job-post credit consumed when the job was published
+ * is NOT refunded -- credits are per posting, not per duration.
+ */
+export async function closeJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string
+): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: "not_found" | "wrong_status" }> {
+  const { data: job, error: fetchError } = await client
+    .from("employer_jobs")
+    .select("status")
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error("Could not load job: " + fetchError.message);
+  }
+  if (!job) return { ok: false, reason: "not_found" };
+
+  if (job.status !== "published") {
+    return { ok: false, reason: "wrong_status" };
+  }
+
+  const { data, error } = await client
+    .from("employer_jobs")
+    .update({ status: "closed" })
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .select(
+      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+    )
+    .single();
+
+  if (error) {
+    throw new Error("Could not close job: " + error.message);
+  }
+
+  return { ok: true, job: data as EmployerJob };
+}
+
+/**
+ * Delete a job.
+ *
+ * Only draft jobs can be deleted. Published jobs must be closed first.
+ * Deleting a draft job does not consume any job-post credits.
+ */
+export async function deleteJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string
+): Promise<{ ok: true } | { ok: false; reason: "not_found" | "wrong_status" }> {
+  const { data: job, error: fetchError } = await client
+    .from("employer_jobs")
+    .select("status")
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error("Could not load job: " + fetchError.message);
+  }
+  if (!job) return { ok: false, reason: "not_found" };
+
+  if (job.status !== "draft") {
+    return { ok: false, reason: "wrong_status" };
+  }
+
+  const { error } = await client
+    .from("employer_jobs")
+    .delete()
+    .eq("id", jobId)
+    .eq("org_id", orgId);
+
+  if (error) {
+    throw new Error("Could not delete job: " + error.message);
+  }
+
+  return { ok: true };
 }
