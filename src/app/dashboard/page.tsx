@@ -37,6 +37,7 @@ export default async function DashboardPage() {
     { data: interviews },
     { data: applicationEvents },
     { data: externalSignals },
+    { data: wallet },
   ] = await Promise.all([
     supabase.from("profiles").select("full_name,headline,onboarding_completed").eq("id", userId).maybeSingle(),
     supabase.from("credit_balances").select("application_credits,interview_passes,live_unlimited_until").eq("user_id", userId).maybeSingle(),
@@ -46,6 +47,7 @@ export default async function DashboardPage() {
     supabase.from("interviews").select("id,stage,scheduled_at,status,meeting_provider,readiness_generated_at,applications(company_name,role_title)").eq("user_id", userId).in("status", ["invited","scheduled","ready","live"]).order("scheduled_at", { ascending: true }).limit(3),
     supabase.from("application_status_events").select("id,title,detail,occurred_at").eq("user_id", userId).order("occurred_at", { ascending: false }).limit(6),
     supabase.from("external_signals").select("id,title,signal_type,occurred_at,created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(4),
+    supabase.from("wallet_balances").select("balance_cents").eq("user_id", userId).maybeSingle(),
   ]);
 
   if (!profile?.onboarding_completed) redirect("/onboarding");
@@ -119,6 +121,7 @@ export default async function DashboardPage() {
       applicationCredits={appCredits}
       interviewPasses={interviewPasses}
       active="home"
+      walletBalanceCents={wallet?.balance_cents ?? 0}
     >
       <section className="shell dashboard-v2">
         <div className="dashboard-heading">
@@ -128,6 +131,7 @@ export default async function DashboardPage() {
             <p className="muted dashboard-subtitle">
               {profile.headline || "Here’s what needs your attention."}
             </p>
+            <div className="badge" style={{ marginTop: 12 }}>Application Agent · Hybrid · {matchThreshold}% minimum match · 10/day · Smart Apply $0.99</div>
           </div>
           <Link className="btn btn-primary" href="/jobs">Find jobs</Link>
         </div>
@@ -213,12 +217,13 @@ export default async function DashboardPage() {
                 <Link href="/billing" className="muted">Manage</Link>
               </div>
               <div className="dashboard-balance-grid">
-                <div><strong>{appCredits}</strong><span className="muted">Application credits</span></div>
-                <div><strong>{interviewPasses}</strong><span className="muted">Interview passes</span></div>
+                <div><strong>{`${((wallet?.balance_cents ?? 0) / 100).toFixed(2)}`}</strong><span className="muted">Odesseus Wallet</span></div>
+                <div><strong>{interviewPasses}</strong><span className="muted">Legacy interview passes</span></div>
               </div>
+              <div className="muted" style={{ fontSize: 13, marginTop: 12 }}>Apply $0.39 · Smart Apply $0.99 · charged only after verified submission.</div>
               {liveAnnualActive ? (
                 <div className="badge" style={{ marginTop: 14 }}>
-                  Odesseus Live Annual active through {new Date(credits!.live_unlimited_until!).toLocaleDateString()}
+                  Premium interview access active through {new Date(credits!.live_unlimited_until!).toLocaleDateString()}
                 </div>
               ) : null}
             </section>
