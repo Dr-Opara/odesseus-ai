@@ -22,11 +22,11 @@ export const mobileScreens: MobileScreenSpec[] = [
   ["14","Account Settings","65:36",844],
   ["15","Password & Security","65:77",844],
   ["16","Notifications","65:110",844],
-  ["17","Job Preferences","65:156",950],
+  ["17","Job Preferences","65:156",1188],
   ["18","Documents","65:192",844],
   ["19","Language & Region","65:215",844],
   ["20","Appearance","65:244",844],
-  ["21","Refer a Friend","65:264",844],
+  ["21","Earn with Odesseus","65:264",844],
   ["22","Legal","66:2",844],
   ["23","Terms of Service","66:31",844],
   ["24","Privacy Policy","66:48",844],
@@ -68,7 +68,7 @@ export function resolveMobileScreen(pathname: string): MobileScreenSpec | null {
   if (pathname === "/settings/documents") return byIndex.get("18") ?? null;
   if (pathname === "/settings/language-region") return byIndex.get("19") ?? null;
   if (pathname === "/settings/appearance") return byIndex.get("20") ?? null;
-  if (pathname === "/settings/referrals") return byIndex.get("21") ?? null;
+  if (pathname === "/settings/referrals" || pathname === "/earn") return byIndex.get("21") ?? null;
   if (pathname === "/legal") return byIndex.get("22") ?? null;
   if (pathname === "/terms") return byIndex.get("23") ?? null;
   if (pathname === "/privacy") return byIndex.get("24") ?? null;
@@ -113,7 +113,7 @@ export const SCREEN_REAL_PATHS: Partial<Record<string, string>> = {
   "18": "/settings/documents",
   "19": "/settings/language-region",
   "20": "/settings/appearance",
-  "21": "/settings/referrals",
+  "21": "/earn",
   "22": "/legal",
   "23": "/terms",
   "24": "/privacy",
@@ -139,6 +139,7 @@ export const QA_MOBILE_ALIASES: Record<string, string> = {
   profile: "12",
   settings: "14",
   pricing: "30",
+  earn: "21",
 };
 
 export type QaMobileResolution = {
