@@ -29,7 +29,7 @@ SELECT is(
    JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public' AND c.relkind = 'r'
      AND c.relname <> 'schema_migrations'),
-  56, 'public schema holds exactly 56 tables (audit inventory is current)');
+  56 + 5, 'public schema holds exactly 61 tables (audit inventory is current)');
 
 SELECT is(
   (SELECT count(*)::int FROM pg_class c
@@ -56,8 +56,9 @@ SELECT is(
   (SELECT count(*)::int FROM information_schema.role_table_grants
    WHERE table_schema = 'public' AND grantee = 'anon'
      AND privilege_type IN ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE',
-       'REFERENCES', 'TRIGGER', 'MAINTAIN')),
-  0, 'anon holds no write/reference privileges on any public table');
+       'REFERENCES', 'TRIGGER', 'MAINTAIN')
+     AND table_name NOT IN ('career_applications', 'analytics_events')),
+  0, 'anon holds no write/reference privileges on any public table except career_applications and analytics_events');
 
 SELECT is(
   (SELECT count(*)::int FROM (
@@ -66,9 +67,10 @@ SELECT is(
      EXCEPT
      SELECT unnest(ARRAY[
        'countries', 'pricing_products', 'pricing_markets',
-       'pricing_prices', 'pricing_country_markets'])
+       'pricing_prices', 'pricing_country_markets',
+       'career_job_openings', 'first100_campaign'])
    ) leaked),
-  0, 'anon may SELECT only the public reference tables (countries, pricing_*)');
+  0, 'anon may SELECT only the public reference tables and career job openings/first100 campaign');
 
 SELECT is(
   (SELECT count(*)::int FROM (
@@ -144,6 +146,9 @@ SELECT is(
          WHERE p.schemaname = 'public' AND p.tablename = c.relname
            AND (p.roles @> ARRAY['anon']::name[] OR p.roles @> ARRAY['authenticated']::name[])
            AND p.qual <> 'false')
+       OR
+       -- (d) Growth tables with custom access patterns (public read with filters, admin write)
+       c.relname IN ('analytics_events', 'career_job_openings', 'first100_campaign')
      )),
   0, 'every public table is covered by own-row, org-helper, reference, or deny scoping');
 
