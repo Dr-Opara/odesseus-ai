@@ -61,7 +61,7 @@ export default function AppShell({
           <div className="app-account">
             <Link href="/billing" className="app-balance-link">
               <span>{walletBalanceCents !== undefined ? `Wallet ${(walletBalanceCents / 100).toFixed(2)}` : applicationCredits > 0 ? `${applicationCredits} legacy app credit${applicationCredits === 1 ? "" : "s"}` : "Wallet"}</span>
-              <span>{interviewPasses} live pass{interviewPasses === 1 ? "" : "es"}</span>
+              <span>{interviewPasses} interview pass{interviewPasses === 1 ? "" : "es"}</span>
             </Link>
             <details className="account-menu">
               <summary className="avatar" title={fullName || undefined}>
@@ -70,6 +70,7 @@ export default function AppShell({
               <div className="account-menu-panel">
                 <div className="account-menu-name">{fullName || "Your account"}</div>
                 <Link href="/billing">Billing</Link>
+                <Link href="/earn">Earn with Odesseus</Link>
                 <Link href="/integrations">Integrations</Link>
                 <Link href="/settings">Settings</Link>
                 <form action={logout}>
