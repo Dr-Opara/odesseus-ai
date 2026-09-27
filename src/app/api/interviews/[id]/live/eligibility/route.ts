@@ -43,19 +43,14 @@ export async function GET(
     .eq("user_id", userId)
     .maybeSingle();
 
-  // Get entitlement
+  // One authoritative access decision. This RPC is service-role only and is
+  // the same function behind /api/live/entitlement, so an interview screen can
+  // never disagree with billing about whether a session may start.
   const { data: entitlement } = await service.rpc("odesseus_get_live_entitlement", {
     p_user_id: userId,
   });
 
-  const e = entitlement?.[0] ?? {
-    has_entitlement: false,
-    entitlement_type: "none",
-    passes_remaining: 0,
-    unlimited_until: null,
-    fair_use_count: 0,
-    fair_use_reset: new Date().toISOString(),
-  };
+  const e = entitlement?.[0];
 
   // Determine eligibility state
   let eligibilityState: "eligible" | "payment_required" | "has_session" | "completed" = "eligible";
@@ -65,7 +60,7 @@ export async function GET(
     } else {
       eligibilityState = "has_session";
     }
-  } else if (!e.has_entitlement) {
+  } else if (!e?.has_access) {
     eligibilityState = "payment_required";
   }
 
@@ -73,12 +68,19 @@ export async function GET(
     interviewId: id,
     eligibility: eligibilityState,
     entitlement: {
-      hasEntitlement: e.has_entitlement,
-      type: e.entitlement_type,
-      passesRemaining: e.passes_remaining,
-      unlimitedUntil: e.unlimited_until,
-      fairUseCount: e.fair_use_count,
-      fairUseReset: e.fair_use_reset,
+      hasEntitlement: e?.has_access ?? false,
+      source: e?.source ?? "none",
+      plan: e?.plan ?? null,
+      // Uniformly meaningful across every entitlement kind, including the
+      // legacy annual window: the headroom left in the current fair-use
+      // window, or the unspent passes when a discrete pass was bought.
+      passesRemaining: e?.sessions_remaining ?? 0,
+      unlimitedUntil: e?.period_end ?? null,
+      isOwner: e?.is_owner ?? false,
+      isGuest: e?.is_guest ?? false,
+      membershipId: e?.membership_id ?? null,
+      guestLimit: e?.guest_limit ?? 0,
+      activatedGuestCount: e?.activated_guest_count ?? 0,
     },
     existingSession: existing
       ? {

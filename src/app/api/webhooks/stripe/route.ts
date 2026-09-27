@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
-import { billingCatalog, type BillingSku, employerPlans, type EmployerPlanSku, employerRecruiterSeat, employerFeaturedTiers, type EmployerFeaturedTier, employerPlanForAmount } from "@/lib/billing/catalog";
+import { billingCatalog, liveSkus, type BillingSku, employerPlans, type EmployerPlanSku, employerRecruiterSeat, employerFeaturedTiers, type EmployerFeaturedTier, employerPlanForAmount } from "@/lib/billing/catalog";
 import { createClient } from "@supabase/supabase-js";
 import { partnerService } from "@/lib/partners/service";
 import { logWebhookEvent } from "@/lib/observability/events";
+import {
+  enqueueRetryJob,
+  employerSubscriptionSyncIdempotencyKey,
+  recruiterSeatSyncIdempotencyKey,
+  featuredJobActivationIdempotencyKey,
+  stripeWebhookIdempotencyKey,
+} from "@/lib/retry/service";
 
 export const runtime = "nodejs";
 
@@ -179,6 +186,75 @@ async function handleInvoicePaid(invoice: Stripe.Invoice, event: Stripe.Event) {
   const charged = invoice.amount_paid ?? invoice.total;
   const currency = invoice.currency ?? "usd";
 
+  // Live renewals. A recurring Live plan grants no per-cycle credits, so a
+  // paid invoice's only job is to roll the membership's period forward. The
+  // amount is verified against the catalog before the period moves, so a
+  // mismatched invoice cannot extend anyone's access, and a proration invoice
+  // from a mid-cycle plan change is ignored rather than treated as a renewal.
+  const liveTarget = liveSubscriptionTarget(metadata, charged);
+  if (liveTarget) {
+    if (currency !== "usd") {
+      await logWebhookEvent({
+        stripeEventId: event.id,
+        eventType: event.type,
+        outcome: "rejected",
+        httpStatus: 400,
+        userId: liveTarget.userId,
+        sku: liveTarget.sku,
+        reason: "Live invoice currency is not USD.",
+      });
+      return NextResponse.json({ error: "Live invoice currency is not USD." }, { status: 400 });
+    }
+
+    const liveSubscriptionId =
+      typeof invoice.parent?.subscription_details?.subscription === "string"
+        ? invoice.parent.subscription_details.subscription
+        : null;
+
+    if (invoice.billing_reason === "subscription_update") {
+      await logWebhookEvent({
+        stripeEventId: event.id,
+        eventType: event.type,
+        outcome: "ignored",
+        httpStatus: 200,
+        userId: liveTarget.userId,
+        sku: liveTarget.sku,
+        reason: "Live proration invoice from a plan change; the period is not rolled forward.",
+      });
+      return NextResponse.json({ received: true });
+    }
+
+    if (!liveSubscriptionId) {
+      await logWebhookEvent({
+        stripeEventId: event.id,
+        eventType: event.type,
+        outcome: "ignored",
+        httpStatus: 200,
+        userId: liveTarget.userId,
+        sku: liveTarget.sku,
+        reason: "Live invoice carries no subscription id; nothing to roll forward.",
+      });
+      return NextResponse.json({ received: true });
+    }
+
+    // The paid invoice's own period is the new entitlement window, so no
+    // extra Stripe lookup is needed to decide the renewal.
+    return syncLiveMembership(
+      liveTarget,
+      {
+        stripeSubscriptionId: liveSubscriptionId,
+        stripeCustomerId:
+          typeof invoice.customer === "string" ? invoice.customer : null,
+        status: "active",
+        periodStart: invoice.period_start
+          ? new Date(invoice.period_start * 1000)
+          : null,
+        periodEnd: invoice.period_end ? new Date(invoice.period_end * 1000) : null,
+      },
+      event
+    );
+  }
+
   const sync = employerPlanTargetForAmount(charged, metadata);
   if (!sync) {
     // Distinguish a wholly foreign invoice from an Odesseus employer invoice
@@ -255,6 +331,28 @@ async function handleInvoicePaid(invoice: Stripe.Invoice, event: Stripe.Event) {
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] subscription sync failed", error);
+    // Stripe will also redeliver this webhook on the 500 below, but that
+    // window is finite. This durably records the attempt so
+    // /api/cron/process-retry-jobs keeps retrying (and eventually
+    // dead-letters, visibly) past whatever Stripe gives up.
+    if (subscriptionId) {
+      await enqueueRetryJob(
+        "employer_subscription_sync",
+        employerSubscriptionSyncIdempotencyKey(sync.orgId, subscriptionId, event.type),
+        {
+          orgId: sync.orgId,
+          tier: sync.tier,
+          status: "active",
+          stripeSubscriptionId: subscriptionId,
+          stripeCustomerId: typeof invoice.customer === "string" ? invoice.customer : null,
+          periodStart: periodStart?.toISOString() ?? null,
+          periodEnd: periodEnd?.toISOString() ?? null,
+          grantCredits: true,
+        }
+      ).catch((enqueueErr) => {
+        console.error("[ODESSEUS_RETRY] failed to enqueue employer_subscription_sync", enqueueErr);
+      });
+    }
     await logWebhookEvent({
       stripeEventId: event.id,
       eventType: event.type,
@@ -341,6 +439,23 @@ async function handleRecruiterSeatInvoicePaid(
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] recruiter seat sync failed", error);
+    if (subscriptionId) {
+      await enqueueRetryJob(
+        "recruiter_seat_sync",
+        recruiterSeatSyncIdempotencyKey(target.orgId, subscriptionId, event.type),
+        {
+          orgId: target.orgId,
+          seatCount: target.seatCount,
+          status: "active",
+          stripeSubscriptionId: subscriptionId,
+          stripeCustomerId: typeof invoice.customer === "string" ? invoice.customer : null,
+          periodStart: periodStart?.toISOString() ?? null,
+          periodEnd: periodEnd?.toISOString() ?? null,
+        }
+      ).catch((enqueueErr) => {
+        console.error("[ODESSEUS_RETRY] failed to enqueue recruiter_seat_sync", enqueueErr);
+      });
+    }
     await logWebhookEvent({
       stripeEventId: event.id,
       eventType: event.type,
@@ -350,6 +465,147 @@ async function handleRecruiterSeatInvoicePaid(
       reason: "Recruiter seat sync failed.",
     });
     return NextResponse.json({ error: "Could not sync recruiter seats." }, { status: 500 });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Odesseus Live subscriptions (monthly / personal annual / share annual)
+// ---------------------------------------------------------------------------
+
+const LIVE_PLAN_TYPES = ["monthly", "personal_annual", "share_annual"] as const;
+type LivePlanType = (typeof LIVE_PLAN_TYPES)[number];
+
+type LiveSubscriptionTarget = {
+  userId: string;
+  planType: LivePlanType;
+  sku: string;
+};
+
+function isLivePlanType(value: unknown): value is LivePlanType {
+  return typeof value === "string" && (LIVE_PLAN_TYPES as readonly string[]).includes(value);
+}
+
+/**
+ * Recognise an Odesseus Live subscription from its Stripe metadata.
+ *
+ * The plan is taken from `plan_type` (written at checkout from the server-side
+ * catalog) and cross-checked against the recurring Live catalog prices, so a
+ * metadata value that names a plan we do not sell resolves to nothing rather
+ * than to a membership the customer never paid for. Falling back to the amount
+ * is what lets a Live subscription still be recognised after an operator edits
+ * the price in the Stripe dashboard.
+ */
+function liveSubscriptionTarget(
+  metadata: Stripe.Metadata | null | undefined,
+  amountCents?: number | null
+): LiveSubscriptionTarget | null {
+  const planType = metadata?.plan_type;
+  if (!isLivePlanType(planType)) return null;
+
+  const userId = metadata?.odesseus_user_id;
+  if (!userId) return null;
+
+  const byPlan = liveSkus.find((sku) => {
+    const item = billingCatalog[sku];
+    return "planType" in item && item.planType === planType;
+  });
+  if (!byPlan) return null;
+
+  const item = billingCatalog[byPlan];
+  if (amountCents != null && item.amountCents !== amountCents) return null;
+
+  return { userId, planType, sku: byPlan };
+}
+
+/** The subscription's current period, which this API version nests per item. */
+function liveSubscriptionPeriod(
+  subscription: Stripe.Subscription
+): { start: Date | null; end: Date | null } {
+  const item = subscription.items?.data?.[0] as
+    | { current_period_start?: number; current_period_end?: number }
+    | undefined;
+  if (!item || typeof item.current_period_start !== "number") {
+    return { start: null, end: null };
+  }
+  return {
+    start: new Date(item.current_period_start * 1000),
+    end:
+      typeof item.current_period_end === "number"
+        ? new Date(item.current_period_end * 1000)
+        : null,
+  };
+}
+
+type LiveMembershipUpdate = {
+  stripeSubscriptionId: string;
+  stripeCustomerId: string | null;
+  status: string;
+  periodStart: Date | null;
+  periodEnd: Date | null;
+};
+
+/**
+ * Roll a Live membership forward (renewal) or change its state (cancel,
+ * delinquency). Idempotent by stripe_subscription_id, so a retried webhook
+ * converges on the same row instead of granting a second period.
+ *
+ * The database is the authority here, not the redirect: nothing is treated as
+ * granted because a browser came back from Checkout.
+ */
+async function syncLiveMembership(
+  target: LiveSubscriptionTarget,
+  update: LiveMembershipUpdate,
+  event: Stripe.Event
+) {
+  try {
+    const supabase = createServiceClient();
+    const { error } = await supabase.rpc("odesseus_sync_live_membership", {
+      p_stripe_subscription_id: update.stripeSubscriptionId,
+      p_user_id: target.userId,
+      p_status: update.status,
+      p_period_start: update.periodStart?.toISOString() ?? null,
+      p_period_end: update.periodEnd?.toISOString() ?? null,
+      p_stripe_customer_id: update.stripeCustomerId,
+    });
+    if (error) throw new Error(error.message);
+
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "fulfilled",
+      httpStatus: 200,
+      userId: target.userId,
+      sku: target.sku,
+      details: {
+        status: update.status,
+        planType: target.planType,
+        periodEnd: update.periodEnd?.toISOString() ?? null,
+      },
+    });
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error("[ODESSEUS_LIVE] membership sync failed", error);
+    await enqueueRetryJob("live_membership_sync", stripeWebhookIdempotencyKey(event.id, event.type), {
+      userId: target.userId,
+      planType: target.planType,
+      status: update.status,
+      stripeSubscriptionId: update.stripeSubscriptionId,
+      stripeCustomerId: update.stripeCustomerId,
+      periodStart: update.periodStart?.toISOString() ?? null,
+      periodEnd: update.periodEnd?.toISOString() ?? null,
+    }).catch((enqueueErr) => {
+      console.error("[ODESSEUS_RETRY] failed to enqueue live_membership_sync", enqueueErr);
+    });
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "errored",
+      httpStatus: 500,
+      userId: target.userId,
+      sku: target.sku,
+      reason: "Live membership sync failed.",
+    });
+    return NextResponse.json({ error: "Could not sync Live membership." }, { status: 500 });
   }
 }
 
@@ -365,6 +621,32 @@ async function handleSubscriptionLifecycle(
   event: Stripe.Event
 ) {
   const seatTarget = recruiterSeatSyncFromMetadata(subscription.metadata);
+  // A Live subscription is resolved before the employer branches: it carries a
+  // candidate user id and a plan_type, never an org id, so the employer helpers
+  // correctly return null for it.
+  const liveTarget = liveSubscriptionTarget(
+    subscription.metadata,
+    subscriptionPeriodUnitAmount(subscription)
+  );
+  if (liveTarget) {
+    // A deleted subscription is recorded as canceled, which still grants access
+    // until the paid period ends; anything else keeps Stripe's own status.
+    const liveStatus =
+      eventType === "customer.subscription.deleted" ? "canceled" : subscription.status;
+    const period = liveSubscriptionPeriod(subscription);
+    return syncLiveMembership(
+      liveTarget,
+      {
+        stripeSubscriptionId: subscription.id,
+        stripeCustomerId:
+          typeof subscription.customer === "string" ? subscription.customer : null,
+        status: liveStatus,
+        periodStart: period.start,
+        periodEnd: period.end,
+      },
+      event
+    );
+  }
   // Prefer the tier the subscription is actually charging. Metadata is written
   // once at creation and does not follow a plan change made in the dashboard or
   // the customer portal, so trusting it here left an upgraded org on its old
@@ -432,6 +714,40 @@ async function handleSubscriptionLifecycle(
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] subscription lifecycle sync failed", error);
+    if (seatTarget) {
+      await enqueueRetryJob(
+        "recruiter_seat_sync",
+        recruiterSeatSyncIdempotencyKey(seatTarget.orgId, subscription.id, event.type),
+        {
+          orgId: seatTarget.orgId,
+          seatCount: seatTarget.seatCount,
+          status,
+          stripeSubscriptionId: subscription.id,
+          stripeCustomerId: typeof subscription.customer === "string" ? subscription.customer : null,
+          periodStart: null,
+          periodEnd: null,
+        }
+      ).catch((enqueueErr) => {
+        console.error("[ODESSEUS_RETRY] failed to enqueue recruiter_seat_sync", enqueueErr);
+      });
+    } else if (planTarget) {
+      await enqueueRetryJob(
+        "employer_subscription_sync",
+        employerSubscriptionSyncIdempotencyKey(planTarget.orgId, subscription.id, event.type),
+        {
+          orgId: planTarget.orgId,
+          tier: planTarget.tier,
+          status,
+          stripeSubscriptionId: subscription.id,
+          stripeCustomerId: typeof subscription.customer === "string" ? subscription.customer : null,
+          periodStart: null,
+          periodEnd: null,
+          grantCredits: false,
+        }
+      ).catch((enqueueErr) => {
+        console.error("[ODESSEUS_RETRY] failed to enqueue employer_subscription_sync", enqueueErr);
+      });
+    }
     await logWebhookEvent({
       stripeEventId: event.id,
       eventType: event.type,
@@ -518,6 +834,15 @@ async function handleFeaturedListingCheckout(session: Stripe.Checkout.Session, e
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] featured listing creation failed", error);
+    // orgId/jobId/tier are guaranteed defined here — the `!orgId || !jobId || !item` guard
+    // above already returned 400 otherwise.
+    await enqueueRetryJob(
+      "featured_job_activation",
+      featuredJobActivationIdempotencyKey(orgId!, jobId!, tier!),
+      { orgId: orgId!, jobId: jobId!, tier: tier!, stripePaymentIntent: paymentIntent }
+    ).catch((enqueueErr) => {
+      console.error("[ODESSEUS_RETRY] failed to enqueue featured_job_activation", enqueueErr);
+    });
     await logWebhookEvent({
       stripeEventId: event.id,
       eventType: event.type,
@@ -695,6 +1020,36 @@ export async function POST(request: Request) {
     );
   }
 
+  // A recurring Live plan is fulfilled into a live_memberships row by the
+  // billing_events trigger, which needs the subscription id and the paid
+  // period to do it. Fetching the period is best-effort: the trigger falls
+  // back to the catalog's billing_period_days when it is absent, so a failed
+  // lookup must not cost the customer their purchase.
+  let liveSubscriptionMetadata: Record<string, string> = {};
+  if ("planType" in item) {
+    const subscriptionId =
+      typeof session.subscription === "string" ? session.subscription : null;
+    liveSubscriptionMetadata = { plan_type: item.planType };
+    if (subscriptionId) liveSubscriptionMetadata.stripe_subscription_id = subscriptionId;
+
+    if (subscriptionId) {
+      try {
+        const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
+        const period = liveSubscriptionPeriod(subscription);
+        if (period.start) {
+          liveSubscriptionMetadata.current_period_start = period.start.toISOString();
+        }
+        if (period.end) {
+          liveSubscriptionMetadata.current_period_end = period.end.toISOString();
+        }
+      } catch (lookupError) {
+        // Recorded but not fatal: the catalog period fallback still grants a
+        // correctly-bounded membership.
+        console.error("[ODESSEUS_LIVE] could not read the subscription period", lookupError);
+      }
+    }
+  }
+
   const supabase = createServiceClient();
   const { error } = await supabase.from("billing_events").insert({
     stripe_event_id: event.id,
@@ -706,7 +1061,10 @@ export async function POST(request: Request) {
     amount_cents: charged,
     currency,
     stripe_customer_id: typeof session.customer === "string" ? session.customer : null,
-    metadata: { payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : null },
+    metadata: {
+      payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : null,
+      ...liveSubscriptionMetadata,
+    },
   });
 
   if (error) {

@@ -62,13 +62,13 @@ describe("employerPlanForAmount", () => {
 });
 
 describe("applyRates", () => {
-  it("prices Standard Apply at exactly $0.49 per verified successful submission", () => {
-    expect(applyRates.standard.amountCents).toBe(49);
+  it("prices Standard Apply at exactly $0.39 per verified successful submission", () => {
+    expect(applyRates.standard.amountCents).toBe(39);
     expect(applyRates.standard.creditType).toBe("standard_apply");
   });
 
-  it("prices Smart Apply at exactly $1.99 per verified successful submission", () => {
-    expect(applyRates.smart.amountCents).toBe(199);
+  it("prices Smart Apply at exactly $0.99 per verified successful submission", () => {
+    expect(applyRates.smart.amountCents).toBe(99);
     expect(applyRates.smart.creditType).toBe("smart_apply");
   });
 
@@ -91,26 +91,42 @@ describe("billingCatalog", () => {
     expect(billingCatalog).not.toHaveProperty("app_100");
   });
 
-  it("prices one interview pass at exactly $24.99", () => {
-    expect(billingCatalog.interview_1.amountCents).toBe(2499);
-    expect(billingCatalog.interview_1.creditType).toBe("interview");
-    expect(billingCatalog.interview_1.creditDelta).toBe(1);
+  // Every Live SKU records creditType "interview": billing_events_credit_type_check
+  // admits only application/interview/wallet_topup, and odesseus_private.fulfill_billing_event
+  // branches on the product key (sku), not credit_type, to decide whether a
+  // purchase becomes a discrete pass or a live_memberships row. Widening the
+  // CHECK constraint to carry per-plan credit types is unneeded complexity
+  // this contract deliberately avoids.
+  it("prices Live Single at exactly $14.99 per session", () => {
+    expect(billingCatalog.live_single.amountCents).toBe(1499);
+    expect(billingCatalog.live_single.creditType).toBe("interview");
+    expect(billingCatalog.live_single.creditDelta).toBe(1);
   });
 
-  it("prices the 3-pack interview pass bundle at $59.99 for 3 passes", () => {
-    expect(billingCatalog.interview_3).toMatchObject({ amountCents: 5999, creditDelta: 3, creditType: "interview" });
+  it("prices Live Monthly at exactly $19.99/month", () => {
+    expect(billingCatalog.live_monthly.amountCents).toBe(1999);
+    expect(billingCatalog.live_monthly.creditType).toBe("interview");
+    expect(billingCatalog.live_monthly.creditDelta).toBe(1);
   });
 
-  it("prices Odesseus Live Annual at $499/year", () => {
-    expect(billingCatalog.interview_annual.amountCents).toBe(49900);
-    expect(billingCatalog.interview_annual.creditType).toBe("interview");
+  it("prices Live Personal Annual at exactly $99/year", () => {
+    expect(billingCatalog.live_personal_annual.amountCents).toBe(9900);
+    expect(billingCatalog.live_personal_annual.creditType).toBe("interview");
+    expect(billingCatalog.live_personal_annual.creditDelta).toBe(1);
+  });
+
+  it("prices Live Share Annual at exactly $499/year", () => {
+    expect(billingCatalog.live_share_annual.amountCents).toBe(49900);
+    expect(billingCatalog.live_share_annual.creditType).toBe("interview");
+    expect(billingCatalog.live_share_annual.creditDelta).toBe(1);
   });
 
   it("exposes exactly the wallet top-up and Live SKUs (no legacy application or employer SKUs yet)", () => {
     expect(Object.keys(billingCatalog).sort()).toEqual([
-      "interview_1",
-      "interview_3",
-      "interview_annual",
+      "live_monthly",
+      "live_personal_annual",
+      "live_share_annual",
+      "live_single",
       "wallet_10",
       "wallet_20",
       "wallet_50",

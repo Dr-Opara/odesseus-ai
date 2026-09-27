@@ -158,7 +158,7 @@ Active products (15):
 | `employer_starter` | employer | recurring 30d | 7900¢ | 3 job posts, no rollover |
 | `employer_growth` | employer | recurring 30d | 14900¢ | 10 job posts, no rollover |
 | `employer_business` | employer | recurring 30d | 29900¢ | 25 job posts, no rollover |
-| `featured_7d` / `featured_14d` / `featured_30d_ai` | employer | one_time | 2900 / 4900 / 12900¢ | 7 / 14 / 30 days (AI flag on 30d) |
+| `featured_7d` / `featured_14d` / `ai_30d` | employer | one_time | 2900 / 4900 / 12900¢ | 7 / 14 / 30 days (AI flag on 30d) |
 | `recruiter_seat_month` | employer | recurring 30d | 2000¢ | per additional team seat |
 
 Deactivated in place (6, never deleted): `candidate_application_single`,
@@ -175,7 +175,7 @@ Deactivated in place (6, never deleted): `candidate_application_single`,
 - Employer plans: `charge_type = "employer_plan"`, `jobs = 3|10|25`,
   `rollover = false`, `billing_period_days = 30`.
 - Featured listings: `charge_type = "featured"`, `featured_days = 7|14|30`,
-  `ai = true` for `featured_30d_ai`.
+  `ai = true` for `ai_30d`.
 - Recruiter seat: `charge_type = "recruiter_seat"`, `billing_period_days = 30`.
 - Live single / pack of 3: passes never expire.
 - Live annual: 12 calendar months from purchase.

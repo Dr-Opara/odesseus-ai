@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createCheckoutSession } from "@/app/actions/billing";
-import { billingCatalog, applyRates } from "@/lib/billing/catalog";
+import { billingCatalog, applyRates, liveSkus, LIVE_FAIR_USE, LIVE_SHARE_GUEST_LIMIT } from "@/lib/billing/catalog";
 import AppShell from "@/components/app-shell";
 
 /** Formats integer minor units as a USD string (e.g. 49 -> "$0.49"). */
@@ -10,13 +10,24 @@ const formatUsd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 // Amounts are read from the sellable catalog rather than hardcoded so the
 // page can never advertise a price the checkout action would reject. The
 // wallet top-ups below are the only way a candidate funds Apply under the
-// current contract (Standard Apply 49c / Smart Apply 199c are wallet debits,
+// current contract (Standard Apply 39c / Smart Apply 99c are wallet debits,
 // not purchasable products).
 const WALLET_TOPUPS = [
-  { sku: "wallet_10", blurb: "Covers roughly 20 Standard Apply submissions." },
-  { sku: "wallet_20", blurb: "Covers roughly 40 Standard Apply submissions." },
-  { sku: "wallet_50", blurb: "Covers roughly 100 Standard Apply submissions." },
+  { sku: "wallet_10", blurb: "Covers roughly 25 Standard Apply submissions." },
+  { sku: "wallet_20", blurb: "Covers roughly 51 Standard Apply submissions." },
+  { sku: "wallet_50", blurb: "Covers roughly 128 Standard Apply submissions." },
 ] as const;
+
+/** Recurring Live plans, in the order the interview workflow presents them. */
+const LIVE_PLANS = liveSkus.filter((sku) => "planType" in billingCatalog[sku]);
+
+/** Short billing cadence for a recurring Live plan. */
+function liveCadence(sku: (typeof liveSkus)[number]): string {
+  return "planType" in billingCatalog[sku] && billingCatalog[sku].planType === "monthly"
+    ? "per month"
+    : "per year";
+}
+
 
 /** Human label for one wallet/credit ledger credit_type. */
 function activityLabel(creditType: string, delta: number): string {
@@ -57,15 +68,17 @@ export default async function BillingPage({
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(8),
-    // Odesseus Live Annual is a time-boxed entitlement, not a discrete
-    // credit grant — it never writes a credit_transactions row (see
-    // add_live_annual_entitlement migration), so without this it would
-    // never appear in "Recent activity" despite being a real purchase.
+    // Recurring Odesseus Live plans are time-boxed entitlements, not discrete
+    // credit grants — they never write a credit_transactions row (see
+    // fulfill_billing_event), so without this they would never appear in
+    // "Recent activity" despite being real purchases. interview_annual is
+    // included because entitlements bought under the retired catalog stay
+    // usable and stay visible.
     supabase
       .from("billing_events")
-      .select("id,amount_cents,created_at")
+      .select("id,sku,amount_cents,created_at")
       .eq("user_id", userId)
-      .eq("sku", "interview_annual")
+      .in("sku", ["live_monthly", "live_personal_annual", "live_share_annual", "interview_annual"])
       .order("created_at", { ascending: false })
       .limit(8),
     supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
@@ -79,13 +92,21 @@ export default async function BillingPage({
       amountText: t.delta > 0 && t.amount_cents ? `$${(t.amount_cents / 100).toFixed(2)}` : null,
       deltaText: t.credit_type === "wallet_topup" ? `+$${(t.amount_cents ?? 0) / 100}` : `${t.delta > 0 ? "+" : ""}${t.delta}`,
     })),
-    ...(annualPurchases ?? []).map((purchase) => ({
-      id: `annual:${purchase.id}`,
-      createdAt: purchase.created_at,
-      label: "Purchased Odesseus Live Annual",
-      amountText: `$${(purchase.amount_cents / 100).toFixed(2)}`,
-      deltaText: "12 mo",
-    })),
+    ...(annualPurchases ?? []).map((purchase) => {
+      // interview_annual is the retired catalog's SKU; it is absent from
+      // billingCatalog now, so the label falls back to its own name.
+      const item = billingCatalog[purchase.sku as keyof typeof billingCatalog] as
+        | { label?: string }
+        | undefined;
+      const isMonthly = purchase.sku === "live_monthly";
+      return {
+        id: `live:${purchase.id}`,
+        createdAt: purchase.created_at,
+        label: `Purchased ${item?.label ?? "Odesseus Live Annual"}`,
+        amountText: `$${(purchase.amount_cents / 100).toFixed(2)}`,
+        deltaText: isMonthly ? "1 mo" : "12 mo",
+      };
+    }),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
@@ -166,10 +187,12 @@ export default async function BillingPage({
               <div className="muted" style={{ fontSize: 13 }}>Add funds below to start applying.</div>
             </div>
 
-            <form className="card billing-pack" action={createCheckoutSession.bind(null, "interview_1")}>
+            <form className="card billing-pack" action={createCheckoutSession.bind(null, "live_single")}>
               <div>
                 <div className="muted" style={{ fontSize: 13 }}>Odesseus Live</div>
-                <div className="billing-pack-number">$24.99</div>
+                <div className="billing-pack-number">
+                  {formatUsd(billingCatalog.live_single.amountCents)}
+                </div>
                 <p className="muted" style={{ lineHeight: 1.55 }}>
                   Your AI interview companion—from preparation through follow-up.
                 </p>
@@ -208,21 +231,36 @@ export default async function BillingPage({
         <section style={{ marginTop: 34 }}>
           <h2 style={{ fontSize: 24, margin: "0 0 18px" }}>Interview passes</h2>
           <div className="card bundle-band">
-            <p className="muted" style={{ margin: "0 0 4px" }}>1 interview pass = 1 successfully activated Odesseus Live interview round.</p>
+            <p className="muted" style={{ margin: "0 0 4px" }}>
+              1 interview pass = 1 successfully activated Odesseus Live interview round. A pass is only ever
+              spent when a session actually starts, and reconnecting to it is free.
+            </p>
             <div className="bundle-row bundle-row-2">
-              <form className="bundle-option" action={createCheckoutSession.bind(null, "interview_3")}>
-                <div className="bundle-option-quantity">3 passes</div>
-                <div className="bundle-option-price">$59.99</div>
-                <button className="btn btn-secondary" type="submit">Buy</button>
-              </form>
-              <form className="bundle-option is-featured" action={createCheckoutSession.bind(null, "interview_annual")}>
-                <div className="bundle-option-quantity">Odesseus Live Annual</div>
-                <div className="bundle-option-price">$499</div>
-                <div className="bundle-option-unit">per year</div>
-                <button className="btn btn-primary" type="submit">Buy</button>
-              </form>
+              {LIVE_PLANS.map((sku) => {
+                const item = billingCatalog[sku];
+                const isShare = "planType" in item && item.planType === "share_annual";
+                return (
+                  <form
+                    className={isShare ? "bundle-option is-featured" : "bundle-option"}
+                    key={sku}
+                    action={createCheckoutSession.bind(null, sku)}
+                  >
+                    <div className="bundle-option-quantity">{item.label}</div>
+                    <div className="bundle-option-price">{formatUsd(item.amountCents)}</div>
+                    <div className="bundle-option-unit">{liveCadence(sku)}</div>
+                    <button className={isShare ? "btn btn-primary" : "btn btn-secondary"} type="submit">
+                      Buy
+                    </button>
+                  </form>
+                );
+              })}
             </div>
-            <p className="bundle-fine-print">Odesseus Live Annual is subject to fair use.</p>
+            <p className="bundle-fine-print">
+              Each plan covers up to {LIVE_FAIR_USE.sessions} Live sessions in a rolling{" "}
+              {LIVE_FAIR_USE.windowDays}-day window. Live Share Annual includes {LIVE_SHARE_GUEST_LIMIT} guest
+              places for the membership year. Cancelling keeps your access until the period you have already paid
+              for ends.
+            </p>
           </div>
         </section>
 

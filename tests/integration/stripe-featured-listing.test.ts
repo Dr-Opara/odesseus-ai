@@ -162,7 +162,7 @@ describe("Stripe webhook featured listing creation", () => {
     expect(rpcMock).not.toHaveBeenCalled();
   });
 
-  it("returns 500 when the listing RPC fails", async () => {
+  it("returns 500 when the listing RPC fails, and durably records the failure for the retry worker", async () => {
     constructEventMock.mockReturnValue(featuredCheckoutEvent({}));
     rpcMock.mockResolvedValue({ data: null, error: { message: "boom" } });
 
@@ -170,5 +170,12 @@ describe("Stripe webhook featured listing creation", () => {
     const response = await POST(webhookRequest("{}"));
 
     expect(response.status).toBe(500);
+    expect(rpcMock).toHaveBeenCalledWith(
+      "odesseus_enqueue_retry_job",
+      expect.objectContaining({
+        p_job_type: "featured_job_activation",
+        p_idempotency_key: "featured_job_activation:org-f1:job-f1:featured_7d",
+      })
+    );
   });
 });

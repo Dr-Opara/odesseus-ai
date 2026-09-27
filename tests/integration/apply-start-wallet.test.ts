@@ -196,8 +196,8 @@ describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
     expect(runInserts).toHaveLength(0);
   });
 
-  it("rejects Standard Apply when the wallet holds less than $0.49 — before any run is created", async () => {
-    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 40 }));
+  it("rejects Standard Apply when the wallet holds less than $0.39 — before any run is created", async () => {
+    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 38 }));
     createServiceClientMock.mockReturnValue(makeServiceClientMock());
 
     const { POST } = await import("@/app/api/apply/start/route");
@@ -205,13 +205,13 @@ describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
 
     expect(response.status).toBe(402);
     const body = await response.json();
-    expect(body.error).toMatch(/\$0\.49/);
+    expect(body.error).toMatch(/\$0\.39/);
     expect(body.error).toMatch(/Standard Apply/);
     expect(createServiceClientMock).not.toHaveBeenCalled();
   });
 
-  it("rejects Smart Apply when the wallet holds less than $1.99", async () => {
-    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 100 }));
+  it("rejects Smart Apply when the wallet holds less than $0.99", async () => {
+    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 98 }));
     createServiceClientMock.mockReturnValue(makeServiceClientMock());
 
     const { POST } = await import("@/app/api/apply/start/route");
@@ -221,17 +221,17 @@ describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
 
     expect(response.status).toBe(402);
     const body = await response.json();
-    expect(body.error).toMatch(/\$1\.99/);
+    expect(body.error).toMatch(/\$0\.99/);
     expect(body.error).toMatch(/Smart Apply/);
   });
 
   it("honours `applyTier`, the field the shipped client actually sends", async () => {
     // ApplyStartForm posts `applyTier`, not `mode`. If the route reads only
     // `mode`, the selected tier silently falls back to "standard" and a Smart
-    // Apply run is both gated and settled at the 49c Standard rate. 100c is
+    // Apply run is both gated and settled at the 39c Standard rate. 50c is
     // above the Standard floor and below the Smart rate, so this only passes
     // when the request's real field is read.
-    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 100 }));
+    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 50 }));
     createServiceClientMock.mockReturnValue(makeServiceClientMock());
 
     const { POST } = await import("@/app/api/apply/start/route");
@@ -241,7 +241,7 @@ describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
 
     expect(response.status).toBe(402);
     const body = await response.json();
-    expect(body.error).toMatch(/\$1\.99/);
+    expect(body.error).toMatch(/\$0\.99/);
     expect(body.error).toMatch(/Smart Apply/);
     expect(createServiceClientMock).not.toHaveBeenCalled();
   });
@@ -255,7 +255,7 @@ describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
       jsonRequest({ jobId: JOB_ID, targetUrl: "https://employer.example.com/apply", applyTier: "smart" })
     );
 
-    // execution_mode is what the finalization RPC reads to pick 49c vs 199c,
+    // execution_mode is what the finalization RPC reads to pick 39c vs 99c,
     // so a mislabelled run debits the wrong amount on verified success.
     expect(runInserts[0].execution_mode).toBe("smart");
   });
@@ -273,8 +273,8 @@ describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
     expect(runInserts).toHaveLength(0);
   });
 
-  it("accepts a wallet that holds exactly the mode rate (49¢ for standard)", async () => {
-    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 49 }));
+  it("accepts a wallet that holds exactly the mode rate (39¢ for standard)", async () => {
+    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 39 }));
     createServiceClientMock.mockReturnValue(makeServiceClientMock());
 
     const { POST } = await import("@/app/api/apply/start/route");

@@ -1,6 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { sendEmail } from "@/lib/email/send";
 
+const enqueueRetryJobMock = vi.fn(
+  async (_jobType: string, _idempotencyKey: string, _payload: Record<string, unknown>) => "job-1"
+);
+vi.mock("@/lib/retry/service", () => ({
+  enqueueRetryJob: (...args: [string, string, Record<string, unknown>]) =>
+    enqueueRetryJobMock(...args),
+  emailDeliveryIdempotencyKey: (template: string, recipient: string, triggerId: string) =>
+    `email_delivery:${template}:${recipient}:${triggerId}`,
+}));
+
 const ORIGINAL_KEY = process.env.RESEND_API_KEY;
 const ORIGINAL_FROM = process.env.ODESSEUS_PARTNER_FROM_EMAIL;
 const ORIGINAL_SITE = process.env.NEXT_PUBLIC_SITE_URL;
@@ -31,6 +41,7 @@ afterEach(() => {
   else process.env.NEXT_PUBLIC_SITE_URL = ORIGINAL_SITE;
 
   vi.unstubAllGlobals();
+  enqueueRetryJobMock.mockClear();
 });
 
 describe("shared email transport", () => {
@@ -139,5 +150,46 @@ describe("shared email transport", () => {
 
     const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(request.cache).toBe("no-store");
+  });
+
+  it("records a retryable delivery failure when the provider returns an error status", async () => {
+    configured();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 502 })));
+
+    await sendEmail({ to: "a@example.com", subject: "s", heading: "h", body: "b" }, "[ODESSEUS_TEST]");
+
+    expect(enqueueRetryJobMock).toHaveBeenCalledTimes(1);
+    const [jobType, idempotencyKey, payload] = enqueueRetryJobMock.mock.calls[0];
+    expect(jobType).toBe("email_delivery");
+    expect(idempotencyKey).toBe("email_delivery:[ODESSEUS_TEST]:a@example.com:s");
+    expect(payload).toMatchObject({ to: "a@example.com", subject: "s", logPrefix: "[ODESSEUS_TEST]" });
+  });
+
+  it("records a retryable delivery failure on a network error", async () => {
+    configured();
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("connection reset")));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await sendEmail({ to: "a@example.com", subject: "s", heading: "h", body: "b" });
+
+    expect(enqueueRetryJobMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("never records a retry when the transport is not configured (retrying can never fix it)", async () => {
+    delete process.env.RESEND_API_KEY;
+    delete process.env.ODESSEUS_PARTNER_FROM_EMAIL;
+
+    await sendEmail({ to: "a@example.com", subject: "s", heading: "h", body: "b" });
+
+    expect(enqueueRetryJobMock).not.toHaveBeenCalled();
+  });
+
+  it("never records a retry on a successful delivery", async () => {
+    configured();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 200 })));
+
+    await sendEmail({ to: "a@example.com", subject: "s", heading: "h", body: "b" });
+
+    expect(enqueueRetryJobMock).not.toHaveBeenCalled();
   });
 });

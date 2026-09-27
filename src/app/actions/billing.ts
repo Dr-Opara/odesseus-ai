@@ -5,6 +5,20 @@ import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import { billingCatalog, type BillingSku } from "@/lib/billing/catalog";
 
+type CatalogEntry = (typeof billingCatalog)[BillingSku];
+
+/**
+ * Stripe checkout interval for a recurring Live SKU.
+ *
+ * A recurring SKU must be sold in `subscription` mode or Stripe will treat it
+ * as a one-off charge and never emit the subscription lifecycle events the
+ * membership depends on.
+ */
+function recurringIntervalFor(item: CatalogEntry): "month" | "year" | null {
+  if (!("billing" in item) || item.billing !== "recurring") return null;
+  return item.planType === "monthly" ? "month" : "year";
+}
+
 // Accepts a plain string on purpose: pre-migration UI may still submit legacy
 // application-credit SKUs ("app_*"). Any SKU absent from the sellable catalog
 // fails closed with an "Invalid product" redirect — nothing can be charged for
@@ -23,14 +37,19 @@ export async function createCheckoutSession(sku: string) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   if (!siteUrl) redirect("/billing?error=Billing%20is%20not%20configured");
 
+  const interval = recurringIntervalFor(item);
+
   const session = await getStripe().checkout.sessions.create({
-    mode: "payment",
+    mode: interval ? "subscription" : "payment",
     customer_email: email,
     line_items: [{
       price_data: {
         currency: "usd",
         unit_amount: item.amountCents,
         product_data: { name: item.label, description: item.description },
+        // Stripe rejects price_data without a recurring block in
+        // subscription mode, so the interval is attached per-SKU.
+        ...(interval ? { recurring: { interval } } : {}),
       },
       quantity: 1,
     }],
@@ -41,6 +60,10 @@ export async function createCheckoutSession(sku: string) {
       sku,
       credit_type: item.creditType,
       credit_delta: String(item.creditDelta),
+      // plan_type is what the fulfillment trigger reads the Live membership
+      // configuration from; a subscription carries it on the session too so a
+      // replayed webhook resolves the same plan.
+      ...("planType" in item ? { plan_type: item.planType } : {}),
     },
   });
 

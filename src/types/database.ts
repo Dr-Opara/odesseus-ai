@@ -1440,6 +1440,197 @@ export type Database = {
         }
         Relationships: []
       }
+      live_guest_entitlements: {
+        Row: {
+          activated_at: string
+          created_at: string
+          guest_user_id: string
+          id: string
+          invite_id: string | null
+          membership_id: string
+          membership_period_end: string
+          membership_period_start: string
+          owner_user_id: string
+          sessions_used: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string
+          created_at?: string
+          guest_user_id: string
+          id?: string
+          invite_id?: string | null
+          membership_id: string
+          membership_period_end: string
+          membership_period_start: string
+          owner_user_id: string
+          sessions_used?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string
+          created_at?: string
+          guest_user_id?: string
+          id?: string
+          invite_id?: string | null
+          membership_id?: string
+          membership_period_end?: string
+          membership_period_start?: string
+          owner_user_id?: string
+          sessions_used?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_guest_entitlements_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "live_guest_invites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_guest_entitlements_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "live_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_guest_invites: {
+        Row: {
+          accepted_at: string | null
+          activated_at: string | null
+          created_at: string
+          expires_at: string
+          guest_email: string
+          guest_email_normalized: string
+          guest_user_id: string | null
+          id: string
+          invite_token_hash: string
+          invited_at: string
+          membership_id: string
+          membership_period_end: string
+          membership_period_start: string
+          owner_user_id: string
+          revoked_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          activated_at?: string | null
+          created_at?: string
+          expires_at: string
+          guest_email: string
+          guest_email_normalized: string
+          guest_user_id?: string | null
+          id?: string
+          invite_token_hash: string
+          invited_at?: string
+          membership_id: string
+          membership_period_end: string
+          membership_period_start: string
+          owner_user_id: string
+          revoked_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          activated_at?: string | null
+          created_at?: string
+          expires_at?: string
+          guest_email?: string
+          guest_email_normalized?: string
+          guest_user_id?: string | null
+          id?: string
+          invite_token_hash?: string
+          invited_at?: string
+          membership_id?: string
+          membership_period_end?: string
+          membership_period_start?: string
+          owner_user_id?: string
+          revoked_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_guest_invites_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "live_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_guest_transactions: {
+        Row: {
+          created_at: string
+          currency: string
+          gross_amount_cents: number
+          guest_entitlement_id: string | null
+          guest_user_id: string
+          id: string
+          membership_id: string
+          owner_earnings_cents: number | null
+          owner_user_id: string
+          platform_fee_cents: number | null
+          status: string
+          stripe_payment_intent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          gross_amount_cents: number
+          guest_entitlement_id?: string | null
+          guest_user_id: string
+          id?: string
+          membership_id: string
+          owner_earnings_cents?: number | null
+          owner_user_id: string
+          platform_fee_cents?: number | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          gross_amount_cents?: number
+          guest_entitlement_id?: string | null
+          guest_user_id?: string
+          id?: string
+          membership_id?: string
+          owner_earnings_cents?: number | null
+          owner_user_id?: string
+          platform_fee_cents?: number | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_guest_transactions_guest_entitlement_id_fkey"
+            columns: ["guest_entitlement_id"]
+            isOneToOne: false
+            referencedRelation: "live_guest_entitlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_guest_transactions_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "live_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_guidance: {
         Row: {
           caution: string | null
@@ -1571,6 +1762,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      live_memberships: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          fair_use_sessions: number
+          fair_use_window_days: number
+          guest_count: number
+          guest_limit: number
+          id: string
+          plan_type: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          fair_use_sessions?: number
+          fair_use_window_days?: number
+          guest_count?: number
+          guest_limit?: number
+          id?: string
+          plan_type: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          fair_use_sessions?: number
+          fair_use_window_days?: number
+          guest_count?: number
+          guest_limit?: number
+          id?: string
+          plan_type?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       live_transcript_items: {
         Row: {
@@ -2295,8 +2537,32 @@ export type Database = {
           reversal_reference: string
         }[]
       }
+      odesseus_live_guest_invite_status: {
+        Args: { p_token: string }
+        Returns: {
+          guest_email: string
+          owner_label: string
+          period_end: string
+          result: string
+        }[]
+      }
+      odesseus_revoke_live_guest_invite: {
+        Args: { p_invite_id: string; p_membership_id: string; p_owner_user_id: string }
+        Returns: boolean
+      }
       odesseus_store_integration_secret: {
         Args: { p_name: string; p_secret: string; p_user_id: string }
+        Returns: string
+      }
+      odesseus_sync_live_membership: {
+        Args: {
+          p_period_end?: string
+          p_period_start?: string
+          p_status: string
+          p_stripe_customer_id?: string
+          p_stripe_subscription_id: string
+          p_user_id: string
+        }
         Returns: string
       }
       odesseus_sync_employer_subscription: {
@@ -2395,12 +2661,40 @@ export type Database = {
       odesseus_get_live_entitlement: {
         Args: { p_user_id: string }
         Returns: {
-          entitlement_type: string
-          fair_use_count: number
-          fair_use_reset: string
-          has_entitlement: boolean
-          passes_remaining: number
-          unlimited_until: string | null
+          activated_guest_count: number
+          guest_limit: number
+          has_access: boolean
+          is_guest: boolean
+          is_owner: boolean
+          membership_id: string
+          period_end: string
+          plan: string
+          sessions_remaining: number
+          source: string
+        }[]
+      }
+      odesseus_accept_live_guest_invite: {
+        Args: { p_guest_user_id: string; p_token: string }
+        Returns: {
+          guest_remaining: number
+          membership_id: string
+          message: string
+          period_end: string
+          result: string
+        }[]
+      }
+      odesseus_create_live_guest_invite: {
+        Args: {
+          p_expires_at?: string
+          p_guest_email: string
+          p_invite_token: string
+          p_membership_id: string
+          p_owner_user_id: string
+        }
+        Returns: {
+          expires_at: string
+          invite_id: string
+          status: string
         }[]
       }
       odesseus_create_live_session: {

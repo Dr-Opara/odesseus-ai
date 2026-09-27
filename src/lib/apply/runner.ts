@@ -7,6 +7,7 @@ import {
 import { createServiceClient } from "@/lib/supabase/service";
 import { decideField, type ApplyContext } from "@/lib/apply/field-rules";
 import { applyRates, type ApplyMode } from "@/lib/billing/catalog";
+import { enqueueRetryJob, applicationSubmissionIdempotencyKey } from "@/lib/retry/service";
 import type { Json } from "@/types/database";
 
 type ApplyCommand = "continue" | "submit" | "cancel";
@@ -36,7 +37,7 @@ async function logEvent(
     user_id: userId,
     event_type: eventType,
     summary,
-    metadata: metadata as Json,
+    metadata: metadata as NonNullable<Json>,
   });
 }
 
@@ -348,6 +349,27 @@ export async function finalizeConfirmedExistingSubmission(input: {
 
       return { terminal: false, status: "needs_user" as const, reason };
     }
+
+    // The employer already has this application (confirmation was already
+    // detected on the page) — only our own accounting failed. Vercel
+    // Workflow will retry this step up to 3x on its own, and each retry
+    // re-enters this same idempotent RPC safely, but if all of those also
+    // fail this durably records the attempt so a worker can keep retrying
+    // past the workflow's own limit instead of the run silently going
+    // 'failed' with an unresolved confirmed-but-unfinalized wallet debit.
+    await enqueueRetryJob(
+      "application_finalization",
+      applicationSubmissionIdempotencyKey(input.run.id),
+      {
+        runId: input.run.id,
+        userId: input.run.user_id,
+        mode,
+        confirmationText: input.confirmation,
+        pageUrl: input.pageUrl,
+      }
+    ).catch((enqueueErr) => {
+      console.error("[ODESSEUS_RETRY] failed to enqueue application_finalization", enqueueErr);
+    });
 
     throw new Error("Application confirmed, but Odesseus could not finalize it: " + error.message);
   }

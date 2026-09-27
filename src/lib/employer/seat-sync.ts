@@ -162,7 +162,7 @@ export async function syncSeatsAfterMemberChange(
       p_idempotency_key: key,
       p_org_id: orgId,
       p_new_quantity: requiredCount,
-      p_removed_user_id: removedUserId,
+      p_removed_user_id: removedUserId as string | undefined,
       p_stripe_subscription_id: subscriptionId,
       p_previous_quantity: currentQuantity,
     }
@@ -273,7 +273,7 @@ async function finish(
   const { error: finishError } = await client.rpc("odesseus_finish_seat_adjustment", {
     p_idempotency_key: key,
     p_outcome: outcome,
-    p_error: error ?? null,
+    p_error: (error ?? null) as string | undefined,
   });
   if (finishError) {
     // The Stripe call already happened, so the outcome is real even if we could

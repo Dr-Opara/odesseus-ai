@@ -208,7 +208,7 @@ describe("Stripe webhook employer subscription sync", () => {
     expect(args.p_grant_credits).toBe(false);
   });
 
-  it("returns 500 when the sync RPC fails", async () => {
+  it("returns 500 when the sync RPC fails, and durably records the failure for the retry worker", async () => {
     constructEventMock.mockReturnValue(invoicePaidEvent({}));
     rpcMock.mockResolvedValue({ data: null, error: { message: "boom" } });
 
@@ -216,6 +216,15 @@ describe("Stripe webhook employer subscription sync", () => {
     const response = await POST(webhookRequest("{}"));
 
     expect(response.status).toBe(500);
+    // Stripe's own redelivery window is finite; this is the second,
+    // independent recovery path /api/cron/process-retry-jobs drains.
+    expect(rpcMock).toHaveBeenCalledWith(
+      "odesseus_enqueue_retry_job",
+      expect.objectContaining({
+        p_job_type: "employer_subscription_sync",
+        p_idempotency_key: "employer_subscription_sync:org-1:sub_1:invoice.paid",
+      })
+    );
   });
 
   it("ignores unknown lifecycle statuses without calling the RPC", async () => {
@@ -390,7 +399,7 @@ describe("Stripe webhook recruiter seat sync", () => {
     expect(args.p_count).toBe(3);
   });
 
-  it("returns 500 when the seat sync RPC fails", async () => {
+  it("returns 500 when the seat sync RPC fails, and durably records the failure for the retry worker", async () => {
     constructEventMock.mockReturnValue(recruiterSeatInvoicePaidEvent({}));
     rpcMock.mockResolvedValue({ data: null, error: { message: "boom" } });
 
@@ -398,5 +407,12 @@ describe("Stripe webhook recruiter seat sync", () => {
     const response = await POST(webhookRequest("{}"));
 
     expect(response.status).toBe(500);
+    expect(rpcMock).toHaveBeenCalledWith(
+      "odesseus_enqueue_retry_job",
+      expect.objectContaining({
+        p_job_type: "recruiter_seat_sync",
+        p_idempotency_key: "recruiter_seat_sync:org-2:sub_seats_1:invoice.paid",
+      })
+    );
   });
 });

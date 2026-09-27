@@ -31,7 +31,7 @@ export async function adjustWallet(
     p_reason: input.reason,
     p_actor_user_id: input.actor.userId,
     p_actor_role: input.actor.role,
-    p_actor_email: input.actor.email,
+    p_actor_email: input.actor.email as string | undefined,
   });
 
   if (error) {

@@ -285,9 +285,13 @@ export async function setJobReportStatus(
   const { error } = await client.rpc("odesseus_update_job_report_status", {
     p_report_id: input.reportId,
     p_status: input.status,
-    p_note: input.note,
+    // p_note has no SQL DEFAULT, so the generated Args type requires a bare
+    // `string` even though the column (and this input) is genuinely
+    // nullable — a moderation note is optional. Postgres accepts the
+    // explicit NULL fine; this bridges the codegen gap.
+    p_note: input.note as string,
     p_actor_user_id: input.actor.userId,
-    p_actor_email: input.actor.email,
+    p_actor_email: input.actor.email as string | undefined,
     p_actor_role: input.actor.role,
   });
 

@@ -79,8 +79,8 @@ describe("wallet API routes (balance + paginated ledger)", () => {
       wallet_balance_cents: 5000,
       standard_apply_affordable: true,
       smart_apply_affordable: true,
-      standard_apply_rate_cents: 49,
-      smart_apply_rate_cents: 199,
+      standard_apply_rate_cents: 39,
+      smart_apply_rate_cents: 99,
     });
   });
 
