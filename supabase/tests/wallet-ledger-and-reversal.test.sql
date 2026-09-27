@@ -7,7 +7,7 @@
 --     path credits exactly credit_delta and stamps balance_cents_after,
 --   * duplicate webhook events are rejected by the unique stripe_event_id
 --     (no double credit),
---   * Standard (49¢) and Smart (199¢) Apply debits leave exact balances and
+--   * Standard (39¢) and Smart (99¢) Apply debits leave exact balances and
 --     exactly one debit per run (replays never re-charge),
 --   * odesseus_reverse_credit_transaction() posts an opposite-delta ledger
 --     row exactly once (replays are no-ops), restoring the prior balance,
@@ -86,12 +86,12 @@ SELECT is(
   (SELECT amount_debited_cents FROM public.odesseus_finalize_application(
      '55555555-5555-4555-8555-000000000001', '22222222-2222-4222-8222-000000000001',
      'standard', 'submitted successfully — you are in the running', 'https://acme.example.com/thanks')),
-  49, 'standard apply debits exactly 49¢ on verified success');
+  39, 'standard apply debits exactly 39¢ on verified success');
 
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '22222222-2222-4222-8222-000000000001'),
-  951, 'wallet is exactly 951¢ after a standard apply debit');
+  961, 'wallet is exactly 961¢ after a standard apply debit');
 
 SELECT is(
   (SELECT count(*)::int FROM public.applications
@@ -112,7 +112,7 @@ SELECT is(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '22222222-2222-4222-8222-000000000001'),
-  951, 'replayed finalization never re-charges the wallet');
+  961, 'replayed finalization never re-charges the wallet');
 
 SELECT is(
   (SELECT count(*)::int FROM public.credit_transactions
@@ -124,7 +124,7 @@ SELECT is(
 SELECT is(
   (SELECT reversal_delta FROM public.odesseus_reverse_credit_transaction(
      'application:55555555-5555-4555-8555-000000000001', 'test reversal')),
-  49, 'reversing the standard debit posts an opposite delta of +49');
+  39, 'reversing the standard debit posts an opposite delta of +39');
 
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
@@ -191,12 +191,12 @@ SELECT is(
   (SELECT amount_debited_cents FROM public.odesseus_finalize_application(
      '55555555-5555-4555-8555-000000000002', '22222222-2222-4222-8222-000000000002',
      'smart', 'submitted — confirmation captured', 'https://beta.example.com/applied')),
-  199, 'smart apply debits exactly 199¢ on verified success');
+  99, 'smart apply debits exactly 99¢ on verified success');
 
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '22222222-2222-4222-8222-000000000002'),
-  1801, 'wallet is exactly 1801¢ after a smart apply debit');
+  1901, 'wallet is exactly 1901¢ after a smart apply debit');
 
 SELECT throws_ok(
   $$SELECT public.odesseus_reverse_credit_transaction('evt_w2_topup', 'refund')$$,
@@ -205,7 +205,7 @@ SELECT throws_ok(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '22222222-2222-4222-8222-000000000002'),
-  1801, 'blocked top-up reversal rolls back completely');
+  1901, 'blocked top-up reversal rolls back completely');
 
 SELECT is(
   (SELECT count(*)::int FROM public.credit_transactions
@@ -215,7 +215,7 @@ SELECT is(
 SELECT is(
   (SELECT reversal_delta FROM public.odesseus_reverse_credit_transaction(
      'application:55555555-5555-4555-8555-000000000002', 'invalid submission')),
-  199, 'reversing the smart debit posts an opposite delta of +199');
+  99, 'reversing the smart debit posts an opposite delta of +99');
 
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
@@ -260,24 +260,24 @@ SELECT lives_ok($$INSERT INTO public.application_runs
 SELECT lives_ok($$INSERT INTO public.credit_transactions
   (user_id, credit_type, delta, reason, external_reference, amount_cents)
   VALUES ('22222222-2222-4222-8222-000000000003',
-    'wallet_topup', 100, 'fixture', 'fixture:w3', 100)$$,
-  'seed a 100¢ wallet for w3');
+    'wallet_topup', 50, 'fixture', 'fixture:w3', 50)$$,
+  'seed a 50¢ wallet for w3');
 
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '22222222-2222-4222-8222-000000000003'),
-  100, 'wallet holds exactly 100¢ for the insufficient scenario');
+  50, 'wallet holds exactly 50¢ for the insufficient scenario');
 
 SELECT throws_ok(
   $$SELECT public.odesseus_finalize_application(
      '55555555-5555-4555-8555-000000000003', '22222222-2222-4222-8222-000000000003',
      'smart', 'submitted — confirmation captured', 'https://gamma.example.com/applied')$$,
-  'P0001', NULL, 'smart finalization with 100¢ raises insufficient wallet balance');
+  'P0001', NULL, 'smart finalization with 50¢ raises insufficient wallet balance');
 
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '22222222-2222-4222-8222-000000000003'),
-  100, 'insufficient finalization rolls the wallet back (unchanged)');
+  50, 'insufficient finalization rolls the wallet back (unchanged)');
 
 SELECT is(
   (SELECT count(*)::int FROM public.applications
@@ -292,8 +292,8 @@ SELECT is(
 SELECT is(
   (SELECT count(*)::int FROM public.credit_transactions
    WHERE user_id = '22222222-2222-4222-8222-000000000003'
-     AND external_reference = 'fixture:w3' AND balance_cents_after = 100),
-  1, 'the fixture top-up carries balance_cents_after 100');
+     AND external_reference = 'fixture:w3' AND balance_cents_after = 50),
+  1, 'the fixture top-up carries balance_cents_after 50');
 
 -- ---------------------------------------------------------------------------
 -- Reversal RPC privileges

@@ -3,9 +3,9 @@
 --
 -- Proves the M3 hardening against the real database:
 --   * odesseus_finalize_application() refuses a requested mode that
---     contradicts the run's committed execution_mode — a standard (49¢) run
---     cannot be charged at the smart (199¢) rate, and vice versa — while
---     correct-mode finalization still settles exactly 49¢ / 199¢,
+--     contradicts the run's committed execution_mode — a standard (39¢) run
+--     cannot be charged at the smart (99¢) rate, and vice versa — while
+--     correct-mode finalization still settles exactly 39¢ / 99¢,
 --   * replays of an already-submitted run remain idempotent no-ops even when
 --     replayed with a differing mode argument (the mode that mattered was
 --     the one used for the original charge),
@@ -82,12 +82,12 @@ SELECT is(
   (SELECT amount_debited_cents FROM public.odesseus_finalize_application(
      'aaaaaaaa-aaaa-4aaa-8aaa-000000000001', '77777777-7777-4777-8777-000000000001',
      'standard', 'confirmed — thank you', 'https://m1.example.com/thanks')),
-  49, 'standard finalize debits exactly 49¢');
+  39, 'standard finalize debits exactly 39¢');
 
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '77777777-7777-4777-8777-000000000001'),
-  951, 'wallet is 951¢ after the standard debit');
+  961, 'wallet is 961¢ after the standard debit');
 
 SELECT is(
   (SELECT status FROM public.application_runs
@@ -114,7 +114,7 @@ SELECT is(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '77777777-7777-4777-8777-000000000001'),
-  951, 'replay charges nothing (wallet stays 951¢)');
+  961, 'replay charges nothing (wallet stays 961¢)');
 
 -- ---------------------------------------------------------------------------
 -- Fixtures: m2 with a smart run (mirror asserts the other direction)
@@ -169,12 +169,12 @@ SELECT is(
   (SELECT amount_debited_cents FROM public.odesseus_finalize_application(
      'aaaaaaaa-aaaa-4aaa-8aaa-000000000002', '77777777-7777-4777-8777-000000000002',
      'smart', 'confirmed — thank you', 'https://m2.example.com/thanks')),
-  199, 'smart finalize debits exactly 199¢');
+  99, 'smart finalize debits exactly 99¢');
 
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '77777777-7777-4777-8777-000000000002'),
-  1801, 'wallet is 1801¢ after the smart debit');
+  1901, 'wallet is 1901¢ after the smart debit');
 
 -- ---------------------------------------------------------------------------
 -- Storage invariant: 'submitted' requires captured verification evidence

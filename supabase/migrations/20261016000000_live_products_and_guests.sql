@@ -185,6 +185,7 @@ CREATE POLICY live_memberships_owner_read ON public.live_memberships
   FOR SELECT TO authenticated
   USING (user_id = auth.uid());
 
+REVOKE ALL ON TABLE public.live_memberships FROM anon, authenticated;
 GRANT SELECT ON TABLE public.live_memberships TO authenticated;
 GRANT ALL ON TABLE public.live_memberships TO postgres, service_role;
 
@@ -244,6 +245,7 @@ CREATE POLICY live_guest_invites_guest_read ON public.live_guest_invites
   FOR SELECT TO authenticated
   USING (guest_user_id = auth.uid() AND status IN ('accepted','activated'));
 
+REVOKE ALL ON TABLE public.live_guest_invites FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.live_guest_invites TO authenticated;
 GRANT ALL ON TABLE public.live_guest_invites TO postgres, service_role;
 
@@ -308,6 +310,7 @@ CREATE POLICY live_guest_entitlements_guest_read ON public.live_guest_entitlemen
   FOR SELECT TO authenticated
   USING (guest_user_id = auth.uid());
 
+REVOKE ALL ON TABLE public.live_guest_entitlements FROM anon, authenticated;
 GRANT SELECT ON TABLE public.live_guest_entitlements TO authenticated;
 GRANT ALL ON TABLE public.live_guest_entitlements TO postgres, service_role;
 
@@ -431,6 +434,7 @@ CREATE POLICY live_guest_transactions_guest_read ON public.live_guest_transactio
   FOR SELECT TO authenticated
   USING (guest_user_id = auth.uid());
 
+REVOKE ALL ON TABLE public.live_guest_transactions FROM anon, authenticated;
 GRANT SELECT ON TABLE public.live_guest_transactions TO authenticated;
 GRANT ALL ON TABLE public.live_guest_transactions TO postgres, service_role;
 

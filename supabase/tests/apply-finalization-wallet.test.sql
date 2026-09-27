@@ -3,7 +3,7 @@
 --
 -- Proves the Phase 3 backend slice end to end against the real database:
 --   * application_runs.execution_mode is the {standard, smart} domain,
---   * the new atomic finalization RPC debits 49¢ (standard) / 199¢ (smart)
+--   * the new atomic finalization RPC debits 39¢ (standard) / 99¢ (smart)
 --     from the wallet only after verified success, atomically with the
 --     application upsert, with correct ledger rows and balance_cents_after,
 --   * replays are idempotent and never re-charge,
@@ -216,7 +216,7 @@ SELECT is(
   false, 'authenticated browsers may not execute the finalize RPC');
 
 -- ---------------------------------------------------------------------------
--- Standard Apply finalization (49¢)
+-- Standard Apply finalization (39¢)
 -- ---------------------------------------------------------------------------
 SELECT lives_ok(
   $$INSERT INTO public.credit_transactions
@@ -243,7 +243,7 @@ SELECT lives_ok(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1'),
-  951, 'standard apply debits exactly 49¢');
+  961, 'standard apply debits exactly 39¢');
 
 SELECT is(
   (SELECT count(*)::int FROM public.credit_transactions
@@ -258,17 +258,17 @@ SELECT is(
 SELECT is(
   (SELECT delta FROM public.credit_transactions
    WHERE external_reference = 'application:dddddddd-dddd-4ddd-8ddd-ddddddddddd1'),
-  -49, 'debit delta is the signed −49¢');
+  -39, 'debit delta is the signed −39¢');
 
 SELECT is(
   (SELECT amount_cents FROM public.credit_transactions
    WHERE external_reference = 'application:dddddddd-dddd-4ddd-8ddd-ddddddddddd1'),
-  49, 'amount_cents = abs(delta) for the wallet row');
+  39, 'amount_cents = abs(delta) for the wallet row');
 
 SELECT is(
   (SELECT balance_cents_after FROM public.credit_transactions
    WHERE external_reference = 'application:dddddddd-dddd-4ddd-8ddd-ddddddddddd1'),
-  951, 'trigger records balance_cents_after');
+  961, 'trigger records balance_cents_after');
 
 SELECT is(
   (SELECT metadata->>'execution_mode' FROM public.credit_transactions
@@ -278,7 +278,7 @@ SELECT is(
 SELECT is(
   (SELECT metadata->>'rate_cents' FROM public.credit_transactions
    WHERE external_reference = 'application:dddddddd-dddd-4ddd-8ddd-ddddddddddd1'),
-  '49', 'debit metadata records the applied rate');
+  '39', 'debit metadata records the applied rate');
 
 SELECT is(
   (SELECT status FROM public.application_runs WHERE id = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd1'),
@@ -331,7 +331,7 @@ SELECT is(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1'),
-  951, 'wallet unchanged after replay');
+  961, 'wallet unchanged after replay');
 
 SELECT is(
   (SELECT count(*)::int FROM public.credit_transactions
@@ -339,7 +339,7 @@ SELECT is(
   1, 'still exactly one debit row after replay');
 
 -- ---------------------------------------------------------------------------
--- Smart Apply finalization (199¢)
+-- Smart Apply finalization (99¢)
 -- ---------------------------------------------------------------------------
 SELECT lives_ok(
   $$INSERT INTO public.credit_transactions
@@ -366,7 +366,7 @@ SELECT lives_ok(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3'),
-  801, 'smart apply debits exactly 199¢');
+  901, 'smart apply debits exactly 99¢');
 
 SELECT is(
   (SELECT credit_type FROM public.credit_transactions
@@ -376,12 +376,12 @@ SELECT is(
 SELECT is(
   (SELECT delta FROM public.credit_transactions
    WHERE external_reference = 'application:dddddddd-dddd-4ddd-8ddd-ddddddddddd2'),
-  -199, 'debit delta is the signed −199¢');
+  -99, 'debit delta is the signed −99¢');
 
 SELECT is(
   (SELECT amount_cents FROM public.credit_transactions
    WHERE external_reference = 'application:dddddddd-dddd-4ddd-8ddd-ddddddddddd2'),
-  199, 'smart amount_cents = abs(delta)');
+  99, 'smart amount_cents = abs(delta)');
 
 SELECT is(
   (SELECT metadata->>'execution_mode' FROM public.credit_transactions
@@ -400,13 +400,13 @@ SELECT lives_ok(
     (user_id, credit_type, delta, reason, amount_cents, external_reference)
   VALUES (
     'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',
-    'wallet_topup', 100, 'test topup', 100, 'afw-topup-u2-1')$$,
-  'fund u2 wallet with $1 (below the smart rate)');
+    'wallet_topup', 50, 'test topup', 50, 'afw-topup-u2-1')$$,
+  'fund u2 wallet with 50¢ (below the smart rate)');
 
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'),
-  100, 'u2 wallet at 100¢');
+  50, 'u2 wallet at 50¢');
 
 SELECT throws_ok(
   $$SELECT * FROM public.odesseus_finalize_application(
@@ -417,7 +417,7 @@ SELECT throws_ok(
     'https://beta.example.com/thanks')$$,
   NULL,
   'insufficient wallet balance',
-  'smart finalize with 100¢ raises');
+  'smart finalize with 50¢ raises');
 
 SELECT is(
   (SELECT status FROM public.application_runs WHERE id = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd3'),
@@ -432,7 +432,7 @@ SELECT is(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'),
-  100, 'wallet unchanged after the rollback');
+  50, 'wallet unchanged after the rollback');
 
 SELECT is(
   (SELECT count(*)::int FROM public.credit_transactions
@@ -456,7 +456,7 @@ SELECT throws_ok(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'),
-  100, 'wallet unchanged after the empty-confirmation rejection');
+  50, 'wallet unchanged after the empty-confirmation rejection');
 
 SELECT throws_ok(
   $$SELECT * FROM public.odesseus_finalize_application(
@@ -472,7 +472,7 @@ SELECT throws_ok(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'),
-  100, 'wallet unchanged after the mode rejection');
+  50, 'wallet unchanged after the mode rejection');
 
 SELECT throws_ok(
   $$SELECT * FROM public.odesseus_finalize_application(

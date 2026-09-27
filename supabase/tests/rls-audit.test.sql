@@ -13,13 +13,14 @@
 --     org-helper scoping, anon-readable reference data, or an all-denied
 --     browser surface (server-only),
 --   * the resumes bucket stays private: storage.objects only ever carries
---     resume_files_* own-scoped policies,
+--     resume_files_* own-scoped policies, and the careers bucket is private
+--     and policy-free because only the service role ever signs its objects,
 --   * the odesseus_private schema is unreachable by anon/authenticated.
 
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(19);
+SELECT plan(23);
 
 -- ---------------------------------------------------------------------------
 -- 1. Baseline inventory
@@ -197,6 +198,35 @@ SELECT is(
    WHERE schemaname = 'storage' AND tablename = 'objects'
      AND policyname NOT LIKE 'resume\_files\_%'),
   0, 'no storage.objects policy besides resume_files_* exists');
+
+-- Careers resumes live in their own bucket and are read by exactly one path: an
+-- admin capability check followed by a service-role signed URL. The bucket is
+-- therefore private AND policy-free. A bucket with a public flag is a resume
+-- readable by anyone with the object key; a bucket with a policy would be a
+-- second, unrelated answer to "who may read this" and would also break the
+-- four-policy assertion above.
+SELECT is(
+  (SELECT public::int FROM storage.buckets WHERE id = 'career-resumes'),
+  0, 'the career-resumes bucket is private');
+
+SELECT is(
+  (SELECT count(*)::int FROM pg_policies
+   WHERE schemaname = 'storage' AND tablename = 'objects'
+     AND policyname LIKE 'career\_%'),
+  0, 'no storage.objects policy grants access to a careers resume');
+
+-- The bucket still constrains what may be stored, even when the only writer is
+-- the server: an unbounded bucket is a place to put a large file of anything.
+-- Explicit int casts: `file_size_limit` is bigint and `is()` has no
+-- bigint/integer overload, so an uncast comparison is a parse error rather than
+-- a failing assertion.
+SELECT is(
+  (SELECT file_size_limit::int FROM storage.buckets WHERE id = 'career-resumes'),
+  5242880::int, 'the career-resumes bucket caps uploads at 5 MB');
+
+SELECT is(
+  (SELECT array_length(allowed_mime_types, 1)::int FROM storage.buckets WHERE id = 'career-resumes'),
+  3, 'the career-resumes bucket accepts three document types and nothing else');
 
 -- ---------------------------------------------------------------------------
 -- 7. Private schema is unreachable by browser roles

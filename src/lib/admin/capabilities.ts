@@ -50,6 +50,9 @@ export const ADMIN_CAPABILITIES = [
   // Moderation
   "job_reports:read",
   "job_reports:moderate",
+  // Careers / hiring pipeline
+  "careers:read",
+  "careers:manage",
   // Platform operations
   "billing_failures:read",
   "notifications:read",
@@ -84,7 +87,9 @@ const FINANCE: readonly AdminCapability[] = [
 ];
 
 /**
- * Marketing owns the public surface. The moderation queue and job visibility.
+ * Marketing owns the public surface. The moderation queue, job visibility, and
+ * the hiring pipeline, because publishing a role and reading who applied are
+ * both public-surface work.
  * Note what is absent: `wallet:*`, because a campaign budget conversation is not
  * a reason to read an individual's balance, and `featured_listings:manage`
  * grants no money.
@@ -96,6 +101,8 @@ const MARKETING: readonly AdminCapability[] = [
   "job_reports:read",
   "job_reports:moderate",
   "notifications:read",
+  "careers:read",
+  "careers:manage",
 ];
 
 export const ROLE_CAPABILITIES: Record<AdminRole, readonly AdminCapability[]> = {
