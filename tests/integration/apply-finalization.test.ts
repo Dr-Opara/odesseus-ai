@@ -140,7 +140,7 @@ describe("finalizeConfirmedExistingSubmission (atomic Apply wallet finalization)
 
     expect(result.terminal).toBe(false);
     expect(result.status).toBe("needs_user");
-    expect(result.reason).toMatch(/\$0\.49/);
+    expect(result.reason).toMatch(/\$0\.39/);
 
     // The run is paused (not failed) so the user can top up and continue.
     expect(updateFn).toHaveBeenCalledTimes(1);

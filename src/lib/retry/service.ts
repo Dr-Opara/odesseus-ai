@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Json } from "@/types/database";
+import type { RetryJobType } from "@/lib/retry/job-types";
 
 /**
  * Minimal Supabase RPC client type for retry service.
@@ -32,7 +33,7 @@ export type RetryJobOptions = {
  * @returns The retry job ID
  */
 export async function enqueueRetryJob(
-  jobType: string,
+  jobType: RetryJobType,
   idempotencyKey: string,
   payload: Record<string, unknown>,
   options: RetryJobOptions = {}
@@ -170,7 +171,7 @@ export async function completeRetryJob(
  * @param options - Retry configuration (max attempts, initial backoff)
  */
 export async function withRetry<T>(
-  jobType: string,
+  jobType: RetryJobType,
   idempotencyKey: string,
   payload: Record<string, unknown>,
   executor: () => Promise<T>,

@@ -59,6 +59,16 @@ const featuredJobActivationSchema = z.object({
   stripePaymentIntent: z.string(),
 });
 
+const liveMembershipSyncSchema = z.object({
+  userId: z.string(),
+  planType: z.enum(["monthly", "personal_annual", "share_annual"]),
+  status: z.string(),
+  stripeSubscriptionId: z.string(),
+  stripeCustomerId: z.string().nullable(),
+  periodStart: z.string().nullable(),
+  periodEnd: z.string().nullable(),
+});
+
 const emailDeliverySchema = z.object({
   to: z.string(),
   subject: z.string(),
@@ -141,6 +151,21 @@ async function retryFeaturedJobActivation(rawPayload: unknown) {
   if (error) throw new Error(error.message);
 }
 
+/** Re-runs the sync RPC (idempotent by stripe_subscription_id; rolls the paid period forward). */
+async function retryLiveMembershipSync(rawPayload: unknown) {
+  const payload = liveMembershipSyncSchema.parse(rawPayload);
+  const supabase = createServiceClient();
+  const { error } = await supabase.rpc("odesseus_sync_live_membership", {
+    p_stripe_subscription_id: payload.stripeSubscriptionId,
+    p_user_id: payload.userId,
+    p_status: payload.status,
+    p_period_start: payload.periodStart ?? undefined,
+    p_period_end: payload.periodEnd ?? undefined,
+    p_stripe_customer_id: payload.stripeCustomerId ?? undefined,
+  });
+  if (error) throw new Error(error.message);
+}
+
 /** Re-sends through the shared transport. A duplicate email is an acceptable retry cost. */
 async function retryEmailDelivery(rawPayload: unknown) {
   const { logPrefix, ...input } = emailDeliverySchema.parse(rawPayload);
@@ -159,6 +184,7 @@ const handlers: Record<RetryJobType, (payload: unknown) => Promise<void>> = {
   recruiter_seat_sync: retryRecruiterSeatSync,
   featured_job_activation: retryFeaturedJobActivation,
   email_delivery: retryEmailDelivery,
+  live_membership_sync: retryLiveMembershipSync,
 };
 
 /** Dispatches a claimed retry job to its handler. Throws on unknown job types. */

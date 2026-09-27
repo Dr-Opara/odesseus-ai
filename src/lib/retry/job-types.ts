@@ -13,6 +13,7 @@ export const RETRY_JOB_TYPES = [
   "recruiter_seat_sync",
   "featured_job_activation",
   "email_delivery",
+  "live_membership_sync",
 ] as const;
 
 export type RetryJobType = (typeof RETRY_JOB_TYPES)[number];

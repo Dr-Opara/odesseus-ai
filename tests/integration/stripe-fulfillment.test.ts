@@ -202,15 +202,19 @@ describe("Stripe webhook fulfillment", () => {
     expect(response.status).toBe(500);
   });
 
-  it("routes the annual plan through the interview credit_type with its dedicated sku, per the entitlement migration's design", async () => {
-    constructEventMock.mockReturnValue(checkoutCompletedEvent({ sku: "interview_annual" }));
+  it("routes the personal annual plan's first billing_events row through the interview credit_type, distinguished by its dedicated sku", async () => {
+    constructEventMock.mockReturnValue(checkoutCompletedEvent({ sku: "live_personal_annual" }));
 
     const { POST } = await import("@/app/api/webhooks/stripe/route");
     await POST(webhookRequest("{}"));
 
     const inserted = insertMock.mock.calls[0][0];
-    expect(inserted.sku).toBe("interview_annual");
+    expect(inserted.sku).toBe("live_personal_annual");
+    // billing_events_credit_type_check admits only application/interview/
+    // wallet_topup; odesseus_private.fulfill_billing_event branches on `sku`
+    // (not credit_type) to grant a live_memberships row for this plan
+    // instead of a discrete interview_passes credit.
     expect(inserted.credit_type).toBe("interview");
-    expect(inserted.amount_cents).toBe(49900);
+    expect(inserted.amount_cents).toBe(9900);
   });
 });
