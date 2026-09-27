@@ -2,183 +2,82 @@ import Link from "next/link";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 
-const workflow = [
-  ["01", "Find", "Discover roles that match your experience, preferences, and goals."],
-  ["02", "Match", "See how well your current resume fits before you spend time applying."],
-  ["03", "Optimize", "Adapt the resume you already have to the role — without inventing experience."],
-  ["04", "Apply", "Choose Apply or Smart Apply and let Odesseus complete the application."],
-  ["05", "Track", "Keep every application, response, and next step in one place."],
-  ["06", "Prepare", "When an interview arrives, your interview workspace is ready."],
+const steps = [
+  ["01","Find","AI-powered job matching"],
+  ["02","Optimize","Optimize your existing resume"],
+  ["03","Apply","Choose Apply or Smart Apply"],
+  ["04","Prepare","Free Prep Agent"],
+  ["05","Interview","Walk in fully prepared"],
+];
+
+const products = [
+  ["Match Agent","Understand fit before you apply.","lavender"],
+  ["Resume Optimizer","Optimize your existing resume for the role without inventing experience.","green"],
+  ["Application Agent","Apply for $0.39 or choose Smart Apply for $0.99 with job-specific optimization.","orange"],
+  ["Prep Agent","Practice for the exact role — free.","cyan"],
 ];
 
 export default function Home() {
   return (
-    <main className="odesseus-marketing">
-      <section className="od-home">
-        <MarketingNav />
-
-        <section className="od-hero">
-          <div className="od-hero-copy">
-            <span className="od-kicker">YOUR AI AGENT FOR GETTING HIRED</span>
-            <h1>Stop applying manually.</h1>
-            <p className="od-hero-lead">
-              Odesseus finds better-fit jobs, optimizes the resume you already have,
-              completes applications, tracks responses, and helps you prepare when interviews arrive.
-            </p>
-            <div className="od-hero-actions">
-              <Link className="od-primary-btn" href="/signup">Start for free</Link>
-              <Link className="od-secondary-link" href="/how-it-works">See how it works →</Link>
+    <main className="figma-site">
+      <section className="figma-home-shell odesseus-desktop-only">
+        <div className="figma-home-hero">
+          <MarketingNav inverse />
+          <div className="figma-hero-grid">
+            <div className="figma-hero-copy">
+              <span className="figma-eyebrow">YOUR AI AGENT FOR GETTING HIRED</span>
+              <h1>Stop applying manually.</h1>
+              <p>Find better-fit roles, optimize the resume you already have, apply with Odesseus, track every application, and prepare when interviews arrive.</p>
+              <div className="figma-actions"><Link className="figma-btn figma-btn-orange" href="/signup">Start Finding Jobs</Link><Link className="figma-link-light" href="/employers">For Employers →</Link></div>
             </div>
-            <div className="od-price-strip">
-              <span><strong>Apply</strong> $0.39</span>
-              <span><strong>Smart Apply</strong> $0.99</span>
-              <span><strong>Interview Prep</strong> Free</span>
+            <div className="figma-job-stack" aria-label="Live job match examples">
+              <article className="figma-job-card card-orange"><small>Microsoft</small><h3>GenAI Security Engineer</h3><strong>92% Match</strong><span>Full time • Remote</span></article>
+              <article className="figma-job-card card-purple"><small>OpenAI</small><h3>AI Security Engineer</h3><strong>89% Match</strong><span>Full time • Hybrid</span></article>
+              <article className="figma-job-card card-cyan"><small>Stripe</small><h3>Senior AI Engineer</h3><strong>86% Match</strong><span>Full time • Remote</span></article>
+              <div className="figma-live-label">JOB MATCHES • PERSONALIZED FOR YOU</div>
             </div>
           </div>
+        </div>
 
-          <div className="od-product-preview" aria-label="Odesseus application workflow preview">
-            <div className="od-preview-top">
-              <div>
-                <span className="od-preview-company">Cloud Security Engineer</span>
-                <strong>92% Match</strong>
-              </div>
-              <span className="od-match-pill">Strong match</span>
-            </div>
-            <div className="od-preview-rows">
-              <div><span>Current resume</span><strong>Ready</strong></div>
-              <div><span>Resume optimization</span><strong>8 improvements</strong></div>
-              <div><span>Application answers</span><strong>Prepared</strong></div>
-              <div><span>Tracking</span><strong>Included</strong></div>
-            </div>
-            <div className="od-preview-actions">
-              <div><span>Apply</span><strong>$0.39</strong><small>Existing resume</small></div>
-              <div className="featured"><span>Smart Apply</span><strong>$0.99</strong><small>Optimize + submit</small></div>
-            </div>
-            <div className="od-preview-success">✓ Charged only after a successful submission</div>
-          </div>
+        <section className="figma-section figma-workflow">
+          <span className="figma-eyebrow purple">ONE CAREER WORKFLOW</span>
+          <h2>From job discovery to interview day.</h2>
+          <div className="figma-step-grid">{steps.map(([n,title,copy])=><article key={n}><span>{n}</span><h3>{title}</h3><p>{copy}</p></article>)}</div>
         </section>
 
-        <section className="od-proof-strip">
-          <div><strong>No application subscription</strong><span>Pay only when Odesseus successfully submits.</span></div>
-          <div><strong>Your resume stays factual</strong><span>Optimize what you already have. No invented experience.</span></div>
-          <div><strong>One workflow</strong><span>Find → Match → Optimize → Apply → Track → Prepare.</span></div>
+        <section className="figma-section figma-product-section">
+          <span className="figma-eyebrow">BUILT AROUND YOUR ENTIRE SEARCH</span>
+          <h2>One AI career platform. Four powerful agents.</h2>
+          <div className="figma-product-grid">{products.map(([title,copy,tone])=><article className={`figma-product-card ${tone}`} key={title}><h3>{title}</h3><p>{copy}</p></article>)}</div>
+          <article className="figma-product-card lavender" style={{ marginTop: 18 }}>
+            <h3>Earn with Odesseus</h3>
+            <p>Your job search can pay you back. Eligible annual members can share premium interview access with up to 10 unique friends.</p>
+            <Link className="figma-text-cta" href="/earn">See earning options →</Link>
+          </article>
         </section>
 
-        <section className="od-section">
-          <div className="od-section-heading">
-            <span className="od-kicker">ONE JOB-SEARCH WORKFLOW</span>
-            <h2>Odesseus handles the busywork between finding a job and getting the interview.</h2>
-          </div>
-          <div className="od-workflow-grid">
-            {workflow.map(([number, title, copy]) => (
-              <article key={number}>
-                <span>{number}</span>
-                <h3>{title}</h3>
-                <p>{copy}</p>
-              </article>
-            ))}
-          </div>
+        <section className="figma-section figma-global">
+          <div><span className="figma-eyebrow cyan">GLOBAL BY DESIGN</span><h2>Your career search doesn&apos;t stop at borders.</h2><p>Choose where you want to work, plus your language, currency and time zone. Odesseus supports a global job search.</p></div>
+          <div className="figma-location-grid">{["Lagos, Nigeria","London, UK","Toronto, Canada","Austin, USA","Dubai, UAE","Istanbul, Türkiye"].map(x=><span key={x}>{x}</span>)}</div>
         </section>
 
-        <section className="od-section od-demo-section">
-          <div className="od-section-heading">
-            <span className="od-kicker">NOT JUST ANOTHER JOB BOARD</span>
-            <h2>See what Odesseus does after you find the job.</h2>
-          </div>
-          <div className="od-demo-grid">
-            <article className="od-demo-card">
-              <span className="od-card-label">MATCH</span>
-              <strong>87%</strong>
-              <h3>Know your fit before you apply.</h3>
-              <p>See aligned skills, missing requirements, and where your current resume can be stronger.</p>
-            </article>
-            <article className="od-demo-card">
-              <span className="od-card-label">OPTIMIZE</span>
-              <strong>+12</strong>
-              <h3>Improve the resume you already have.</h3>
-              <p>Odesseus tailors emphasis and wording to the role while preserving your actual experience.</p>
-            </article>
-            <article className="od-demo-card">
-              <span className="od-card-label">TRACK</span>
-              <div className="od-tracker-mini">
-                <span><b>Microsoft</b><em>Interview</em></span>
-                <span><b>AWS</b><em>Applied</em></span>
-                <span><b>Centene</b><em>Reviewing</em></span>
-              </div>
-              <h3>Keep the search organized.</h3>
-              <p>Applications, submitted resumes, responses, interviews, and follow-ups stay connected.</p>
-            </article>
-          </div>
+        <section className="figma-section figma-employer-band">
+          <div><span className="figma-eyebrow">FOR EMPLOYERS</span><h2>Find stronger candidates with less busywork.</h2><p>Post roles, review applicants, manage your pipeline and use AI-assisted matching with company verification.</p><Link href="/employers">Explore Odesseus for Employers →</Link></div>
+          <div className="figma-hiring-preview"><h3>Hiring overview</h3><div><strong>12</strong><span>New applicants</span></div><div><strong>8</strong><span>Strong matches</span></div><div><strong>3</strong><span>Interviews</span></div></div>
         </section>
 
-        <section className="od-section od-price-attack">
-          <div>
-            <span className="od-kicker">PAY FOR RESULTS, NOT ACCESS</span>
-            <h2>Why pay a big monthly fee just to apply for jobs?</h2>
-            <p>Fund your Odesseus Wallet once. Pay only when an application is successfully submitted.</p>
+        <section className="figma-section figma-price-preview">
+          <span className="figma-eyebrow">PAY FOR WHAT YOU USE</span><h2>Simple candidate pricing.</h2>
+          <div className="figma-price-grid">
+            <article><span>Apply</span><strong>$0.39</strong><p>Use your existing approved resume. Charged only after a successful submission.</p></article>
+            <article><span>Smart Apply</span><strong>$0.99</strong><p>JD analysis, best-resume selection, optimization, answers, and submission.</p></article>
+            <article><span>Interview Prep</span><strong>Free</strong><p>Role-specific preparation using the exact job and resume you applied with.</p></article>
           </div>
-          <div className="od-price-cards">
-            <article>
-              <span>Apply</span>
-              <strong>$0.39</strong>
-              <p>Use your approved existing resume and verified profile.</p>
-            </article>
-            <article className="featured">
-              <span>Smart Apply</span>
-              <strong>$0.99</strong>
-              <p>Analyze the JD, optimize your resume, generate answers, and submit.</p>
-            </article>
-          </div>
-          <Link className="od-primary-btn" href="/pricing">See candidate pricing</Link>
-        </section>
-
-        <section className="od-section od-earn-section">
-          <div>
-            <span className="od-kicker">EARN WITH ODESSEUS</span>
-            <h2>Your job search can pay you back.</h2>
-            <p>
-              Eligible annual members can share premium interview access with up to
-              10 unique friends and earn from guest sessions while they continue their own job search.
-            </p>
-            <div className="od-earn-steps">
-              <span><b>1</b> Join</span>
-              <span><b>2</b> Invite</span>
-              <span><b>3</b> Earn</span>
-            </div>
-            <Link className="od-secondary-link" href="/earn">See earning options →</Link>
-          </div>
-          <div className="od-earn-card">
-            <small>ANNUAL MEMBER EXAMPLE</small>
-            <strong>10</strong>
-            <span>guest opportunities</span>
-            <p>Each guest uses their own account and private interview workspace.</p>
-          </div>
-        </section>
-
-        <section className="od-section od-employer-section">
-          <div>
-            <span className="od-kicker">FOR EMPLOYERS</span>
-            <h2>Post once. Let AI surface the candidates worth reviewing.</h2>
-            <p>Post roles, review matched applicants, manage your hiring pipeline, and add featured reach when you need it.</p>
-            <Link className="od-secondary-link" href="/employers">Explore Odesseus for Employers →</Link>
-          </div>
-          <div className="od-employer-prices">
-            <span><strong>$79</strong><small>3 active jobs</small></span>
-            <span><strong>$149</strong><small>10 active jobs</small></span>
-            <span><strong>$299</strong><small>25 active jobs</small></span>
-          </div>
-        </section>
-
-        <section className="od-section od-final-cta">
-          <span className="od-kicker">START WITH THE NEXT JOB</span>
-          <h2>Upload the resume you already have. Odesseus handles the rest of the workflow.</h2>
-          <div>
-            <Link className="od-primary-btn" href="/signup">Create free account</Link>
-            <Link className="od-secondary-link" href="/careers">See Odesseus careers →</Link>
-          </div>
+          <p className="figma-price-note" style={{ marginLeft: 0 }}>Applications are paid from a prepaid Odesseus Wallet, so you do not get a separate card charge for every submission.</p>
+          <Link className="figma-text-cta" href="/pricing">See full pricing →</Link>
         </section>
       </section>
-      <MarketingFooter />
+      <div className="odesseus-desktop-only"><MarketingFooter /></div>
     </main>
   );
 }
