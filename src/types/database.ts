@@ -2319,6 +2319,37 @@ export type Database = {
         }
         Returns: string
       }
+      odesseus_admin_adjust_wallet: {
+        Args: {
+          p_actor_email?: string | null
+          p_actor_role: string
+          p_actor_user_id: string
+          p_amount_cents: number
+          p_reason: string
+          p_reference: string
+          p_user_id: string
+        }
+        Returns: {
+          applied: boolean
+          balance_cents_after: number
+        }[]
+      }
+      odesseus_admin_audit_trail: {
+        Args: {
+          p_limit?: number
+          p_subject_id: string
+          p_subject_type: string
+        }
+        Returns: {
+          action: string
+          actor_email: string | null
+          actor_role: string
+          actor_user_id: string
+          created_at: string
+          details: Json
+          id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
