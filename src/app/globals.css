@@ -2433,7 +2433,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .partner-terms h1,
 .partner-dashboard-heading h1,
 .admin-partners-heading h1,
-.admin-partner-detail-heading h1 {
+.admin-partner-detail-heading h1,
+.admin-page-heading h1 {
   font-family: var(--font-display);
   letter-spacing: -0.05em;
 }
@@ -2485,17 +2486,17 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .partner-term-section h2 { margin: 0 0 8px; }
 .partner-term-section p { max-width: 760px; line-height: 1.7; }
 
-.partner-dashboard-shell, .admin-partners-shell, .admin-partner-detail { padding: 54px 0 100px; }
-.partner-dashboard-heading, .admin-partners-heading, .admin-partner-detail-heading {
+.partner-dashboard-shell, .admin-partners-shell, .admin-partner-detail, .admin-shell { padding: 54px 0 100px; }
+.partner-dashboard-heading, .admin-partners-heading, .admin-partner-detail-heading, .admin-page-heading {
   display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-bottom: 24px;
 }
-.partner-dashboard-heading h1, .admin-partners-heading h1, .admin-partner-detail-heading h1 {
+.partner-dashboard-heading h1, .admin-partners-heading h1, .admin-partner-detail-heading h1, .admin-page-heading h1 {
   font-size: clamp(38px,5vw,54px); margin: 12px 0 7px;
 }
 .partner-referral-card, .admin-partner-code { min-width: 290px; padding: 20px; display: grid; gap: 7px; }
 .partner-referral-card strong, .admin-partner-code strong { font-size: 24px; }
 .partner-referral-card code { white-space: normal; overflow-wrap: anywhere; font-size: 12px; color: var(--muted); }
-.partner-dashboard-grid, .admin-partner-detail-grid, .admin-partner-ops-grid {
+.partner-dashboard-grid, .admin-partner-detail-grid, .admin-partner-ops-grid, .admin-detail-grid {
   margin-top: 18px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px;
 }
 .partner-campaign-item, .partner-content-row, .admin-review-item {
@@ -2527,14 +2528,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 
 @media (max-width: 900px) {
   .partner-steps, .partner-types { grid-template-columns: repeat(2,minmax(0,1fr)); }
-  .partner-dashboard-grid, .admin-partner-detail-grid, .admin-partner-ops-grid { grid-template-columns: 1fr; }
+  .partner-dashboard-grid, .admin-partner-detail-grid, .admin-partner-ops-grid, .admin-detail-grid { grid-template-columns: 1fr; }
   .admin-partner-row { grid-template-columns: 1.4fr 1fr .8fr; }
   .admin-partner-row > span:nth-child(3), .admin-partner-row > span:nth-child(5) { display: none; }
 }
 @media (max-width: 680px) {
   .partner-hero { padding-top: 58px; }
   .partner-steps, .partner-types, .partner-form-grid { grid-template-columns: 1fr; }
-  .partner-cta, .partner-dashboard-heading, .admin-partners-heading, .admin-partner-detail-heading { flex-direction: column; }
+  .partner-cta, .partner-dashboard-heading, .admin-partners-heading, .admin-partner-detail-heading, .admin-page-heading { flex-direction: column; }
   .partner-referral-card, .admin-partner-code { width: 100%; min-width: 0; }
   .admin-partner-row { grid-template-columns: 1.5fr .9fr; }
   .admin-partner-row > span:nth-child(2) { display: none; }
@@ -2616,6 +2617,56 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   .system-readiness-test { align-items: flex-start; flex-direction: column; }
   .system-readiness-test-actions { justify-content: flex-start; }
 }
+
+/* Admin console shell (Phase 9B) */
+.admin-nav { border-bottom: 1px solid var(--line); background: var(--surface); }
+.admin-nav-inner {
+  display: flex; align-items: center; gap: 24px; padding: 14px 0; flex-wrap: wrap;
+}
+.admin-nav-links { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; flex: 1; }
+.admin-nav-links a {
+  padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; color: var(--muted);
+}
+.admin-nav-links a.is-active { background: var(--surface-subtle); color: var(--text); }
+.admin-nav-actions { display: flex; align-items: center; gap: 10px; }
+@media (max-width: 900px) {
+  .admin-nav-links { order: 3; width: 100%; gap: 2px; }
+}
+
+.admin-stat-grid { margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 16px; }
+.admin-stat-card { padding: 20px 22px; display: grid; gap: 4px; }
+.admin-stat-card strong { font-size: 28px; letter-spacing: -.04em; }
+
+.admin-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+.admin-toolbar .input { max-width: 320px; }
+.admin-inline-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.admin-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.admin-row {
+  display: grid; grid-template-columns: var(--admin-row-cols, 1.4fr 1fr 1fr .8fr); gap: 14px; align-items: center;
+  padding: 15px 18px; border-top: 1px solid var(--line); font-size: 13px; min-width: 640px;
+}
+.admin-row:first-child { border-top: 0; }
+.admin-row.header { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 800; }
+.admin-row > span:first-child { display: grid; gap: 3px; }
+.admin-row small { color: var(--muted); }
+@media (max-width: 680px) {
+  .admin-toolbar .input { max-width: none; width: 100%; }
+}
+
+.admin-section-card { padding: 24px; margin-top: 18px; }
+.admin-section-card h2 { margin: 0 0 14px; font-size: 20px; }
+.admin-quick-actions, .admin-detail-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 14px; }
+.admin-action-link { display: block; }
+.admin-action-item {
+  display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 14px;
+  border: 1px solid var(--line); height: 100%;
+}
+.admin-action-item strong { display: block; margin-bottom: 4px; }
+.admin-action-item span.muted { font-size: 13px; line-height: 1.5; }
+.admin-action-icon { font-size: 20px; line-height: 1; }
+.admin-empty { padding: 26px; text-align: center; color: var(--muted); }
+.admin-badge-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 /* Job Discovery Showcase (preview-only, not wired into the homepage) */
 .jds-stage {
