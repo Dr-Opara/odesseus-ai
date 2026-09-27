@@ -32,7 +32,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
       deltaText: `${t.delta > 0 ? "+" : ""}${t.delta}`,
     })),
     ...(annualPurchases ?? []).map((purchase) => ({
-      id: `annual:${purchase.id}`, createdAt: purchase.created_at, label: "Purchased Odesseus Live Annual",
+      id: `annual:${purchase.id}`, createdAt: purchase.created_at, label: "Purchased legacy annual interview access",
       amountText: `$${(purchase.amount_cents / 100).toFixed(2)}`, deltaText: "12 mo",
     })),
   ].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -49,7 +49,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
           <div className="card billing-balance-card"><div className="muted" style={{fontSize:13}}>Odesseus wallet</div><strong>{`$${((wallet?.balance_cents ?? 0)/100).toFixed(2)}`}</strong><span className="muted">Apply $0.39 · Smart Apply $0.99 after successful submission.</span></div>
           <div className="card billing-balance-card"><div className="muted" style={{fontSize:13}}>Interview passes</div><strong>{credits?.interview_passes ?? 0}</strong><span className="muted">One pass is used when Odesseus Live starts.</span></div>
         </div>
-        {credits?.live_unlimited_until && new Date(credits.live_unlimited_until) > new Date() ? <div className="billing-success" style={{marginTop:18}}>Odesseus Live Annual is active through {new Date(credits.live_unlimited_until).toLocaleDateString()}.</div> : null}
+        {credits?.live_unlimited_until && new Date(credits.live_unlimited_until) > new Date() ? <div className="billing-success" style={{marginTop:18}}>Premium interview access is active through {new Date(credits.live_unlimited_until).toLocaleDateString()}.</div> : null}
 
         <section style={{marginTop:34}}><div className="muted" style={{fontSize:13}}>Prepaid wallet</div><h2 style={{fontSize:24,margin:"7px 0 8px"}}>Add application funds</h2><p className="muted">Avoid a separate card charge for every 39¢ or 99¢ submission.</p>
           <div className="billing-pack-grid">
