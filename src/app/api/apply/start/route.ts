@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
   if (!job) return NextResponse.json({ error: "Job not found." }, { status: 404 });
 
-  const priceCents = input.mode === "smart_apply" ? 199 : 49;
+  const priceCents = input.mode === "smart_apply" ? 99 : 39;
   const resumeId = input.mode === "smart_apply" ? tailoring?.approved_resume_id : masterResume?.id;
   if (!resumeId) {
     return NextResponse.json({
