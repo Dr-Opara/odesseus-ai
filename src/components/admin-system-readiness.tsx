@@ -11,10 +11,8 @@ type Provider =
   | "job_discovery"
   | "cron"
   | "google"
-  | "microsoft"
   | "yahoo"
   | "google_send"
-  | "microsoft_send"
   | "resend";
 
 type ConfigItem = {
@@ -39,10 +37,8 @@ const testable: Array<{ provider: Provider; label: string }> = [
   { provider: "job_discovery", label: "Job Discovery" },
   { provider: "cron", label: "Scheduled Jobs" },
   { provider: "google", label: "Google Connector" },
-  { provider: "microsoft", label: "Microsoft Connector" },
   { provider: "yahoo", label: "Yahoo Connector" },
   { provider: "google_send", label: "Google Send Connector" },
-  { provider: "microsoft_send", label: "Microsoft Send Connector" },
   { provider: "resend", label: "Resend" },
 ];
 

@@ -270,6 +270,7 @@ SELECT is(
   (SELECT array_agg(product_key ORDER BY product_key) FROM public.pricing_products
    WHERE active),
   ARRAY[
+    'ai_30d',
     'candidate_live_annual',
     'candidate_live_pack_3',
     'candidate_live_single',
@@ -279,7 +280,6 @@ SELECT is(
     'employer_growth',
     'employer_starter',
     'featured_14d',
-    'featured_30d_ai',
     'featured_7d',
     'recruiter_seat_month',
     'wallet_topup_10',
@@ -353,7 +353,7 @@ SELECT ok(EXISTS (
     AND metadata->>'featured_days' = '7' AND metadata->>'ai' = 'false')
   AND EXISTS (
   SELECT 1 FROM public.pricing_products
-  WHERE product_key = 'featured_30d_ai'
+  WHERE product_key = 'ai_30d'
     AND metadata->>'featured_days' = '30' AND metadata->>'ai' = 'true'),
   'featured listings carry day counts and the AI flag');
 
@@ -420,7 +420,7 @@ SELECT is(
      ('employer_business', 29900),
      ('featured_7d', 2900),
      ('featured_14d', 4900),
-     ('featured_30d_ai', 12900),
+     ('ai_30d', 12900),
      ('recruiter_seat_month', 2000)
    ) AS e(product_key, amount_minor) USING (product_key, amount_minor)
    WHERE p.active),

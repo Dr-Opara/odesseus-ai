@@ -129,7 +129,7 @@ export async function completeRetryJob(
     {
       p_job_id: jobId,
       p_outcome: outcome,
-      p_error: errorMessage ?? null,
+      p_error: errorMessage,
     }
   );
 
@@ -139,47 +139,54 @@ export async function completeRetryJob(
 }
 
 /**
- * Execute a critical operation with automatic retry/recovery.
+ * Execute a critical operation inline, with durable failure recovery.
  *
- * This is a convenience wrapper that:
- * 1. Enqueues the job with idempotency
- * 2. Claims and executes the job
- * 3. On success, marks as succeeded
- * 4. On failure, marks as failed (triggers retry logic)
+ * This runs `executor` immediately (the caller's own request/webhook/step
+ * already has its own timeout and, in most cases, its own outer retry —
+ * Stripe redelivers failed webhooks, Vercel Workflow retries a failed step
+ * 3x). What this adds is a *second*, independent recovery path: on failure,
+ * the attempt is recorded in `retry_jobs` (deduplicated by `idempotencyKey`,
+ * so calling this repeatedly for the same logical operation — e.g. once per
+ * webhook redelivery — enqueues at most one row). A worker
+ * (`/api/cron/process-retry-jobs`) later claims and re-executes it via
+ * `processRetryJobs`, and a terminal failure becomes a queryable
+ * `dead_letter` row instead of a silent, one-off error log.
  *
- * This should be used for all critical background operations that
- * must be retried safely.
+ * `executor` must be idempotent — the worker may call it again later,
+ * exactly like this function calling it again on a caller's own retry must
+ * be safe. Every current caller wraps an already-idempotent DB RPC
+ * (unique-constrained, upsert-keyed, or payment-intent/period-keyed), so
+ * that requirement already holds.
  *
- * @param jobType - Type of job
- * @param idempotencyKey - Unique key for this operation
- * @param payload - Job payload
- * @param executor - Async function that performs the actual work
- * @param options - Retry configuration
- * @returns The result of the executor function
+ * The original error is always rethrown so existing caller behavior
+ * (HTTP 500 -> Stripe redelivery, Workflow step retry, etc.) is unchanged.
+ * A failure to enqueue the recovery record is logged, never thrown — a
+ * broken safety net must not turn into a second outage.
+ *
+ * @param jobType - Job type the worker dispatches on (see `job-types.ts`)
+ * @param idempotencyKey - Unique key for this logical operation
+ * @param payload - Enough data for the worker to redo the operation later
+ * @param executor - The critical operation itself
+ * @param options - Retry configuration (max attempts, initial backoff)
  */
 export async function withRetry<T>(
   jobType: string,
   idempotencyKey: string,
   payload: Record<string, unknown>,
-  executor: () => Promise<unknown>,
+  executor: () => Promise<T>,
   options: RetryJobOptions = {}
-): Promise<unknown> {
-  // Enqueue the job (idempotent)
-  await enqueueRetryJob(jobType, idempotencyKey, payload);
-
-  // Claim and execute
-  const job = await claimRetryJob("critical_operation");
-  if (!job) {
-    throw new Error("No job claimed - this should not happen after enqueue");
-  }
-
+): Promise<T> {
   try {
-    const result = await executor();
-    await completeRetryJob(job.id, "succeeded");
-    return result;
+    return await executor();
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    await completeRetryJob(job.id, "failed", message);
+    try {
+      await enqueueRetryJob(jobType, idempotencyKey, payload, options);
+    } catch (enqueueErr) {
+      console.error(
+        `[ODESSEUS_RETRY] failed to enqueue ${jobType} (${idempotencyKey}) after execution failure`,
+        enqueueErr
+      );
+    }
     throw err;
   }
 }

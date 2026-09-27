@@ -36,7 +36,6 @@ export default async function DocumentsPage({
   return (
     <AppShell
       fullName={profile?.full_name}
-      applicationCredits={credits.application_credits}
       interviewPasses={credits.interview_passes}
     >
       <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 100px" }}>

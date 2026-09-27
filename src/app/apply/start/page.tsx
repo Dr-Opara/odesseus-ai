@@ -27,7 +27,7 @@ export default async function ApplyStartPage({
       .maybeSingle(),
     supabase
       .from("credit_balances")
-      .select("wallet_balance_cents,application_credits")
+      .select("wallet_balance_cents")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -102,7 +102,7 @@ export default async function ApplyStartPage({
       job={job}
       matchScore={job.match_score}
       approvedVersion={tailoring?.approved_resume_id ? tailoring.version_number : null}
-      applicationCredits={credits?.application_credits ?? 0}
+      walletBalanceCents={credits?.wallet_balance_cents ?? 0}
     />
     </>
   );

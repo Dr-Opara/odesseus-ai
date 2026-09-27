@@ -19,14 +19,14 @@ export default function MobileApplyStart({
   job,
   matchScore,
   approvedVersion,
-  applicationCredits,
+  walletBalanceCents,
 }: {
   job: Job;
   matchScore: number | null;
   approvedVersion: number | null;
-  applicationCredits: number;
+  walletBalanceCents: number;
 }) {
-  const canApply = approvedVersion !== null && applicationCredits >= 1;
+  const canApply = approvedVersion !== null && walletBalanceCents > 0;
 
   return (
     <main className="odesseus-mobile-only m-screen m-screen-09">
@@ -70,10 +70,10 @@ export default function MobileApplyStart({
         <div className="m-warning" style={{ marginTop: 14 }}>
           <strong>Approve a tailored resume before starting the application.</strong>
         </div>
-      ) : applicationCredits < 1 ? (
+      ) : walletBalanceCents <= 0 ? (
         <div className="m-warning" style={{ marginTop: 14 }}>
           <strong>
-            You need one application credit. <Link href="/billing">Buy credits</Link>
+            Your wallet needs funds to start Apply. <Link href="/billing">Top up</Link>
           </strong>
         </div>
       ) : (
@@ -83,7 +83,7 @@ export default function MobileApplyStart({
       )}
 
       <div className="m-note" style={{ opacity: canApply ? 1 : 0.7 }}>
-        Charged only after a successful submission — $0.99.
+        No charge when you start. Standard Apply $0.49 and Smart Apply $1.99 are charged only after a verified successful submission.
       </div>
     </main>
   );

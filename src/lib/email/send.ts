@@ -10,6 +10,8 @@
  * and the module is only ever imported from route handlers and server actions.
  */
 
+import { enqueueRetryJob, emailDeliveryIdempotencyKey } from "@/lib/retry/service";
+
 export type EmailInput = {
   to: string;
   subject: string;
@@ -93,12 +95,33 @@ export async function sendEmail(
 
     if (!response.ok) {
       console.error(`${logPrefix} email provider returned`, response.status);
+      await enqueueEmailRetry(input, logPrefix);
       return { sent: false, reason: "provider_error" };
     }
 
     return { sent: true };
   } catch (error) {
     console.error(`${logPrefix} email delivery failed`, error);
+    await enqueueEmailRetry(input, logPrefix);
     return { sent: false, reason: "network_error" };
+  }
+}
+
+/**
+ * Records a retryable delivery failure for `/api/cron/process-retry-jobs`
+ * to redeliver later. Deduplicated by recipient+subject, so a caller
+ * re-sending the identical message (e.g. a webhook redelivery) does not
+ * queue a second row. Never thrown — a broken retry queue must not turn an
+ * already-failed send into a second failure the caller has to handle too.
+ */
+async function enqueueEmailRetry(input: EmailInput, logPrefix: string) {
+  try {
+    await enqueueRetryJob(
+      "email_delivery",
+      emailDeliveryIdempotencyKey(logPrefix, input.to, input.subject),
+      { ...input, logPrefix }
+    );
+  } catch (enqueueErr) {
+    console.error(`${logPrefix} failed to enqueue email retry`, enqueueErr);
   }
 }

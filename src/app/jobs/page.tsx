@@ -43,7 +43,6 @@ export default async function JobsPage() {
   return (
     <AppShell
       fullName={profile.full_name}
-      applicationCredits={credits.application_credits}
       interviewPasses={credits.interview_passes}
       active="jobs"
     >

@@ -41,11 +41,16 @@ export async function recordAdminAction(
 ): Promise<{ ok: boolean; id: string | null }> {
   const { data, error } = await client.rpc("odesseus_record_admin_action", {
     p_actor_user_id: entry.actorUserId,
-    p_actor_email: entry.actorEmail,
+    // Cast, not `?? undefined`: these fields are genuinely nullable and the
+    // RPC accepts an explicit NULL fine (only DEFAULT NULL params get
+    // `| undefined` in the generated Args type) — a test pins the exact
+    // `null` value being sent for a session/action with none, so this must
+    // not silently become `undefined`.
+    p_actor_email: entry.actorEmail as string | undefined,
     p_actor_role: entry.actorRole,
     p_action: entry.action,
     p_subject_type: entry.subjectType,
-    p_subject_id: entry.subjectId,
+    p_subject_id: entry.subjectId as string | undefined,
     p_details: (entry.details ?? {}) as Database["public"]["Functions"]["odesseus_record_admin_action"]["Args"]["p_details"],
   });
 

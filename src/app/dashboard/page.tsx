@@ -51,7 +51,7 @@ export default async function DashboardPage() {
 
   if (!profile?.onboarding_completed) redirect("/onboarding");
 
-  const appCredits = credits.application_credits;
+  const walletBalanceCents = credits.wallet_balance_cents;
   const interviewPasses = credits.interview_passes;
   const matchThreshold = jobPreferences?.min_match_score ?? 85;
   const strongMatches = jobs.filter((job) => (job.match_score ?? 0) >= matchThreshold);
@@ -96,7 +96,6 @@ export default async function DashboardPage() {
   return (
     <AppShell
       fullName={profile.full_name}
-      applicationCredits={appCredits}
       interviewPasses={interviewPasses}
       active="home"
     >
@@ -193,7 +192,7 @@ export default async function DashboardPage() {
                 <Link href="/billing" className="muted">Manage</Link>
               </div>
               <div className="dashboard-balance-grid">
-                <div><strong>{appCredits}</strong><span className="muted">Application credits</span></div>
+                <div><strong>${(walletBalanceCents / 100).toFixed(2)}</strong><span className="muted">Wallet</span></div>
                 <div><strong>{interviewPasses}</strong><span className="muted">Interview passes</span></div>
               </div>
               {credits.live_unlimited_until &&

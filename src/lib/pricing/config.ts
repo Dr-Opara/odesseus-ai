@@ -83,7 +83,7 @@ export const PRODUCT_KEYS = [
   // Featured listings (one-time).
   "featured_7d",
   "featured_14d",
-  "featured_30d_ai",
+  "ai_30d",
   // Recruiter seat (recurring per seat).
   "recruiter_seat_month",
 ] as const;

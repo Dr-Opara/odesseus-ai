@@ -1,6 +1,6 @@
 # Odesseus Pricing Contract (current source of truth)
 
-Status: **Approved product contract — not yet activated in code, Stripe, or production data.**
+Status: **Approved product contract — active in code and Stripe checkout/webhook fulfillment as of Phase 14B (commit b46528c). Not yet reconciled against live production data; see the legacy application-credits reconciliation note below before any production cutover.**
 
 This file is the single source of truth for Odesseus pricing until it is superseded by an explicit
 revision here. The previous contract (one "$0.99 application credit" per submission) is **legacy**

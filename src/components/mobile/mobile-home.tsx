@@ -94,8 +94,8 @@ export default function MobileHome({
 
       <div className="m-balance-strip">
         <div>
-          <strong>{credits.application_credits}</strong>
-          <span>app credits</span>
+          <strong>${(credits.wallet_balance_cents / 100).toFixed(2)}</strong>
+          <span>wallet</span>
         </div>
         <div>
           <strong>{credits.interview_passes}</strong>

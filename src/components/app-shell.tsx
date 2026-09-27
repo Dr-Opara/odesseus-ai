@@ -12,13 +12,11 @@ function firstName(name?: string | null) {
 
 export default function AppShell({
   fullName,
-  applicationCredits,
   interviewPasses,
   active,
   children,
 }: {
   fullName?: string | null;
-  applicationCredits: number;
   interviewPasses: number;
   active?: "home" | "jobs" | "applications" | "interviews" | "profile";
   children: React.ReactNode;
@@ -60,7 +58,6 @@ export default function AppShell({
 
           <div className="app-account">
             <Link href="/billing" className="app-balance-link">
-              <span>{applicationCredits} app credits</span>
               <span>{interviewPasses} live passes</span>
             </Link>
             <details className="account-menu">

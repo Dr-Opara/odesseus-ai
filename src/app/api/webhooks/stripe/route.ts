@@ -5,6 +5,12 @@ import { billingCatalog, type BillingSku, employerPlans, type EmployerPlanSku, e
 import { createClient } from "@supabase/supabase-js";
 import { partnerService } from "@/lib/partners/service";
 import { logWebhookEvent } from "@/lib/observability/events";
+import {
+  enqueueRetryJob,
+  employerSubscriptionSyncIdempotencyKey,
+  recruiterSeatSyncIdempotencyKey,
+  featuredJobActivationIdempotencyKey,
+} from "@/lib/retry/service";
 
 export const runtime = "nodejs";
 
@@ -255,6 +261,28 @@ async function handleInvoicePaid(invoice: Stripe.Invoice, event: Stripe.Event) {
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] subscription sync failed", error);
+    // Stripe will also redeliver this webhook on the 500 below, but that
+    // window is finite. This durably records the attempt so
+    // /api/cron/process-retry-jobs keeps retrying (and eventually
+    // dead-letters, visibly) past whatever Stripe gives up.
+    if (subscriptionId) {
+      await enqueueRetryJob(
+        "employer_subscription_sync",
+        employerSubscriptionSyncIdempotencyKey(sync.orgId, subscriptionId, event.type),
+        {
+          orgId: sync.orgId,
+          tier: sync.tier,
+          status: "active",
+          stripeSubscriptionId: subscriptionId,
+          stripeCustomerId: typeof invoice.customer === "string" ? invoice.customer : null,
+          periodStart: periodStart?.toISOString() ?? null,
+          periodEnd: periodEnd?.toISOString() ?? null,
+          grantCredits: true,
+        }
+      ).catch((enqueueErr) => {
+        console.error("[ODESSEUS_RETRY] failed to enqueue employer_subscription_sync", enqueueErr);
+      });
+    }
     await logWebhookEvent({
       stripeEventId: event.id,
       eventType: event.type,
@@ -341,6 +369,23 @@ async function handleRecruiterSeatInvoicePaid(
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] recruiter seat sync failed", error);
+    if (subscriptionId) {
+      await enqueueRetryJob(
+        "recruiter_seat_sync",
+        recruiterSeatSyncIdempotencyKey(target.orgId, subscriptionId, event.type),
+        {
+          orgId: target.orgId,
+          seatCount: target.seatCount,
+          status: "active",
+          stripeSubscriptionId: subscriptionId,
+          stripeCustomerId: typeof invoice.customer === "string" ? invoice.customer : null,
+          periodStart: periodStart?.toISOString() ?? null,
+          periodEnd: periodEnd?.toISOString() ?? null,
+        }
+      ).catch((enqueueErr) => {
+        console.error("[ODESSEUS_RETRY] failed to enqueue recruiter_seat_sync", enqueueErr);
+      });
+    }
     await logWebhookEvent({
       stripeEventId: event.id,
       eventType: event.type,
@@ -432,6 +477,40 @@ async function handleSubscriptionLifecycle(
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] subscription lifecycle sync failed", error);
+    if (seatTarget) {
+      await enqueueRetryJob(
+        "recruiter_seat_sync",
+        recruiterSeatSyncIdempotencyKey(seatTarget.orgId, subscription.id, event.type),
+        {
+          orgId: seatTarget.orgId,
+          seatCount: seatTarget.seatCount,
+          status,
+          stripeSubscriptionId: subscription.id,
+          stripeCustomerId: typeof subscription.customer === "string" ? subscription.customer : null,
+          periodStart: null,
+          periodEnd: null,
+        }
+      ).catch((enqueueErr) => {
+        console.error("[ODESSEUS_RETRY] failed to enqueue recruiter_seat_sync", enqueueErr);
+      });
+    } else if (planTarget) {
+      await enqueueRetryJob(
+        "employer_subscription_sync",
+        employerSubscriptionSyncIdempotencyKey(planTarget.orgId, subscription.id, event.type),
+        {
+          orgId: planTarget.orgId,
+          tier: planTarget.tier,
+          status,
+          stripeSubscriptionId: subscription.id,
+          stripeCustomerId: typeof subscription.customer === "string" ? subscription.customer : null,
+          periodStart: null,
+          periodEnd: null,
+          grantCredits: false,
+        }
+      ).catch((enqueueErr) => {
+        console.error("[ODESSEUS_RETRY] failed to enqueue employer_subscription_sync", enqueueErr);
+      });
+    }
     await logWebhookEvent({
       stripeEventId: event.id,
       eventType: event.type,
@@ -518,6 +597,15 @@ async function handleFeaturedListingCheckout(session: Stripe.Checkout.Session, e
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_EMPLOYER] featured listing creation failed", error);
+    // orgId/jobId/tier are guaranteed defined here — the `!orgId || !jobId || !item` guard
+    // above already returned 400 otherwise.
+    await enqueueRetryJob(
+      "featured_job_activation",
+      featuredJobActivationIdempotencyKey(orgId!, jobId!, tier!),
+      { orgId: orgId!, jobId: jobId!, tier: tier!, stripePaymentIntent: paymentIntent }
+    ).catch((enqueueErr) => {
+      console.error("[ODESSEUS_RETRY] failed to enqueue featured_job_activation", enqueueErr);
+    });
     await logWebhookEvent({
       stripeEventId: event.id,
       eventType: event.type,
