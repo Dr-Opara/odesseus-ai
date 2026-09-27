@@ -87,6 +87,28 @@ export default async function SettingsPage({
             <JobPreferencesForm userId={userId} initial={jobPreferences} />
           </div>
 
+          <div className="card" style={{ padding: 26, marginBottom: 18 }}>
+            <div className="muted" style={{ fontSize: 13 }}>Application Agent</div>
+            <h2 style={{ fontSize: 22, margin: "7px 0 8px" }}>Control how Odesseus applies.</h2>
+            <p className="muted" style={{ margin: "0 0 18px", lineHeight: 1.55 }}>
+              Choose Review, Hybrid, or Auto and set the limits Odesseus must respect before an application can proceed.
+            </p>
+            <div className="figma-three-grid compact">
+              <div className="card" style={{ padding: 18 }}><strong>Review</strong><div className="muted" style={{ fontSize: 13, marginTop: 6 }}>Approve every application.</div></div>
+              <div className="card" style={{ padding: 18, borderColor: "var(--brand-blue)" }}><strong>Hybrid</strong><div className="muted" style={{ fontSize: 13, marginTop: 6 }}>Auto-apply only when your rules and match threshold are met.</div></div>
+              <div className="card" style={{ padding: 18 }}><strong>Auto</strong><div className="muted" style={{ fontSize: 13, marginTop: 6 }}>Apply automatically only when every rule is satisfied.</div></div>
+            </div>
+            <div className="match-meta-grid" style={{ marginTop: 16 }}>
+              <div className="card" style={{ padding: 18 }}><span className="muted" style={{ fontSize: 13 }}>Minimum Match Score</span><strong style={{ display: "block", marginTop: 6 }}>85%</strong></div>
+              <div className="card" style={{ padding: 18 }}><span className="muted" style={{ fontSize: 13 }}>Daily Application Limit</span><strong style={{ display: "block", marginTop: 6 }}>10</strong></div>
+              <div className="card" style={{ padding: 18 }}><span className="muted" style={{ fontSize: 13 }}>Default Apply Type</span><strong style={{ display: "block", marginTop: 6 }}>Smart Apply · $0.99</strong></div>
+              <div className="card" style={{ padding: 18 }}><span className="muted" style={{ fontSize: 13 }}>Status</span><strong style={{ display: "block", marginTop: 6 }}>Active</strong></div>
+            </div>
+            <p className="muted" style={{ fontSize: 12, margin: "14px 0 0" }}>
+              These controls are shown now so the UI matches the approved product model. Backend persistence and enforcement are connected in the next phase.
+            </p>
+          </div>
+
           <div style={{ marginBottom: 18 }}>
             <LocalizationForm
               countries={countries}
