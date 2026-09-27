@@ -2350,6 +2350,39 @@ export type Database = {
           id: string
         }[]
       }
+      odesseus_enqueue_retry_job: {
+        Args: {
+          p_delay_seconds?: number
+          p_idempotency_key: string
+          p_job_type: string
+          p_max_attempts?: number
+          p_payload: Json
+        }
+        Returns: string
+      }
+      odesseus_claim_retry_job: {
+        Args: { p_job_type: string }
+        Returns: {
+          attempts: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          job_type: string
+          max_attempts: number
+          next_retry_at: string | null
+          payload: Json
+          status: string
+          updated_at: string
+        }[]
+      }
+      odesseus_complete_retry_job: {
+        Args: {
+          p_error?: string | null
+          p_job_id: string
+          p_outcome: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
