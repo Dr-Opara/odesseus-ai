@@ -45,7 +45,7 @@ SELECT is(
 SELECT columns_are('public', 'webhook_events', ARRAY[
   'id', 'stripe_event_id', 'event_type', 'outcome', 'http_status',
   'user_id', 'org_id', 'sku', 'checkout_session_id', 'reason',
-  'details', 'created_at']);
+  'details', 'created_at', 'idempotency_key']);
 
 SELECT is(
   (SELECT count(*)::int FROM pg_policies

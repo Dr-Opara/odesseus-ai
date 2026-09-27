@@ -29,7 +29,7 @@ SELECT is(
    JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public' AND c.relkind = 'r'
      AND c.relname <> 'schema_migrations'),
-  55, 'public schema holds exactly 55 tables (audit inventory is current)');
+  56, 'public schema holds exactly 56 tables (audit inventory is current)');
 
 SELECT is(
   (SELECT count(*)::int FROM pg_class c
