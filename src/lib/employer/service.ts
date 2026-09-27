@@ -967,6 +967,10 @@ export async function createInvitation(
     .single();
 
   if (error) {
+    // A unique violation is a duplicate, not a fault. Two admins inviting the
+    // same address at once both pass the read above, and the loser must be told
+    // "already invited" (409) rather than being handed a generic failure.
+    if (error.code === "23505") return { ok: false, code: "duplicate" };
     return { ok: false, code: "unknown" };
   }
   return { ok: true, token, invitation: data as OrgInvitation };
@@ -977,11 +981,15 @@ export async function revokeInvitation(
   orgId: string,
   invitationId: string
 ): Promise<{ ok: true; revoked: boolean }> {
+  // Scoped to pending rows on purpose. An invitation that has already been
+  // accepted is the record of a person who joined the team; rewriting it to
+  // "revoked" would erase that fact and re-open a seat they are occupying.
   const { data, error } = await client
     .from("employer_member_invitations")
     .update({ status: "revoked" })
     .eq("id", invitationId)
     .eq("org_id", orgId)
+    .eq("status", "pending")
     .select("id")
     .maybeSingle();
 
@@ -989,7 +997,10 @@ export async function revokeInvitation(
     throw new Error(`Could not revoke invitation: ${error.message}`);
   }
 
-  return { ok: true, revoked: data !== null };
+  // maybeSingle resolves to the row or null; a plain select would resolve to an
+  // array, so both shapes are read rather than assuming one.
+  const revoked = Array.isArray(data) ? data.length > 0 : data !== null;
+  return { ok: true, revoked };
 }
 
 export type AcceptInvitationResult =
@@ -1075,6 +1086,8 @@ export type OrgFeaturedView = {
 export type FeaturedTierOffer = {
   tier: EmployerFeaturedTier;
   label: string;
+  /** Authoritative price in integer minor units. Never a float. */
+  amountCents: number;
   priceLabel: string;
   durationDays: number;
 };
@@ -1087,6 +1100,10 @@ export function getFeaturedTierOffers(): FeaturedTierOffer[] {
   return Object.entries(employerFeaturedTiers).map(([tier, t]) => ({
     tier: tier as EmployerFeaturedTier,
     label: t.label,
+    // The catalog's integer cents travel with the payload so the amount the
+    // page shows is provably the amount checkout charges. priceLabel is derived
+    // from it here purely for display.
+    amountCents: t.amountCents,
     priceLabel: `$${(t.amountCents / 100).toFixed(2)}`,
     durationDays: t.days,
   }));

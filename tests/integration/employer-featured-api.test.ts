@@ -41,6 +41,9 @@ function sessionClient(opts: {
       "id,name": opts.orgError
         ? { error: opts.orgError }
         : { data: "org" in opts ? opts.org : orgRow },
+      // getOrgFeaturedView projects the owner alongside the name so it can tell
+      // an owner from a member without a second round trip.
+      "id,name,owner_user_id": { data: "org" in opts ? opts.org : orgRow },
       "id,owner_user_id": { data: orgRow },
     },
     employer_members: {

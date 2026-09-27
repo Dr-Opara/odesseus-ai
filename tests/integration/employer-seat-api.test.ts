@@ -72,6 +72,8 @@ function sessionClient(opts: {
     },
     employer_members: {
       role: { data: opts.role ?? null },
+      // getSeatSummary projects only what it counts.
+      "user_id,role": { data: opts.members ?? [] },
       "user_id,role,created_at": { data: opts.members ?? [] },
       count: { count: Array.isArray(opts.members) ? opts.members.length : 0 },
     },

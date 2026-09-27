@@ -21,13 +21,6 @@ export default defineConfig({
       include: ["src/**/*.ts"],
       exclude: ["src/**/*.d.ts", "src/types/**"],
     },
-    isolate: false,
-    testTimeout: 15000,
-    poolOptions: {
-      threads: {
-        fsModuleCache: true,
-      },
-    },
   },
   resolve: {
     alias: {

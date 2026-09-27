@@ -85,16 +85,18 @@ describe("wallet API routes (balance + paginated ledger)", () => {
   });
 
   it("GET /api/wallet correctly marks the modes a low balance cannot afford", async () => {
+    // 50c sits above the 39c Standard rate and below the 99c Smart rate, so it
+    // is the one balance that separates the two.
     createClientMock.mockResolvedValue(
       authedClient(fromRouter({
-        credit_balances: { wallet_balance_cents: 100 },
+        credit_balances: { wallet_balance_cents: 50 },
       }))
     );
 
     const { GET } = await import("@/app/api/wallet/route");
     const body = await (await GET()).json();
 
-    expect(body.wallet_balance_cents).toBe(100);
+    expect(body.wallet_balance_cents).toBe(50);
     expect(body.standard_apply_affordable).toBe(true);
     expect(body.smart_apply_affordable).toBe(false);
   });

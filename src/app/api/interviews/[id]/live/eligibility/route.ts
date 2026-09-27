@@ -50,7 +50,24 @@ export async function GET(
     p_user_id: userId,
   });
 
-  const e = entitlement?.[0];
+  // Cast rather than trust the generated RPC type: a Postgres OUT-parameter
+  // function's composite return does not codegen as a usable row shape, the
+  // same reason /api/live/entitlement and the guest routes all cast this
+  // call explicitly.
+  const e = (Array.isArray(entitlement) ? entitlement[0] : entitlement) as
+    | {
+        has_entitlement: boolean;
+        entitlement_type: string;
+        passes_remaining: number;
+        unlimited_until: string | null;
+        is_owner: boolean;
+        is_guest: boolean;
+        membership_id: string | null;
+        guest_limit: number;
+        activated_guest_count: number;
+        plan: string | null;
+      }
+    | undefined;
 
   // Determine eligibility state
   let eligibilityState: "eligible" | "payment_required" | "has_session" | "completed" = "eligible";
@@ -60,7 +77,7 @@ export async function GET(
     } else {
       eligibilityState = "has_session";
     }
-  } else if (!e?.has_access) {
+  } else if (!e?.has_entitlement) {
     eligibilityState = "payment_required";
   }
 
@@ -68,14 +85,14 @@ export async function GET(
     interviewId: id,
     eligibility: eligibilityState,
     entitlement: {
-      hasEntitlement: e?.has_access ?? false,
-      source: e?.source ?? "none",
+      hasEntitlement: e?.has_entitlement ?? false,
+      source: e?.entitlement_type ?? "none",
       plan: e?.plan ?? null,
       // Uniformly meaningful across every entitlement kind, including the
       // legacy annual window: the headroom left in the current fair-use
       // window, or the unspent passes when a discrete pass was bought.
-      passesRemaining: e?.sessions_remaining ?? 0,
-      unlimitedUntil: e?.period_end ?? null,
+      passesRemaining: e?.passes_remaining ?? 0,
+      unlimitedUntil: e?.unlimited_until ?? null,
       isOwner: e?.is_owner ?? false,
       isGuest: e?.is_guest ?? false,
       membershipId: e?.membership_id ?? null,

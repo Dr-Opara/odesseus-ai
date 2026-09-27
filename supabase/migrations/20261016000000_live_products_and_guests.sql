@@ -592,7 +592,12 @@ CREATE FUNCTION public.odesseus_get_live_entitlement (
   OUT is_guest boolean,
   OUT membership_id uuid,
   OUT guest_limit integer,
-  OUT activated_guest_count integer
+  OUT activated_guest_count integer,
+  -- The specific plan behind entitlement_type = 'membership'
+  -- ('monthly' | 'personal_annual' | 'share_annual') or 'guest' when the
+  -- caller is an activated guest; null for passes/annual/none, where there
+  -- is no plan to name.
+  OUT plan text
 )
   LANGUAGE plpgsql
   SECURITY DEFINER
@@ -613,6 +618,7 @@ begin
   membership_id := null;
   guest_limit := 0;
   activated_guest_count := 0;
+  plan := null;
 
   -- 1. Owner membership (monthly / personal annual / share annual). A
   -- cancelled-at-period-end subscription keeps access until its paid period
@@ -645,6 +651,7 @@ begin
     membership_id := v_membership.id;
     guest_limit := v_membership.guest_limit;
     activated_guest_count := v_membership.guest_count;
+    plan := v_membership.plan_type;
     return;
   end if;
 
@@ -681,6 +688,7 @@ begin
       fair_use_reset := v_now + make_interval(days => coalesce(v_owner_membership.fair_use_window_days, 30));
       is_guest := true;
       membership_id := v_guest.membership_id;
+      plan := 'guest';
       return;
     end if;
   end if;

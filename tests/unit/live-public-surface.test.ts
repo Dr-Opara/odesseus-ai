@@ -58,10 +58,22 @@ const APP_DIR = join(process.cwd(), "src", "app");
 const COMPONENTS_DIR = join(process.cwd(), "src", "components");
 
 /**
- * Tokens that must never appear in public source. "$24.99" / "$59.99" /
- * "$499" are the Live session, 3-pass and annual prices.
+ * Tokens that must never appear in public source.
+ *
+ * "$14.99" / "$19.99" / "$99" / "$499" are the current Live prices (single
+ * session, monthly, personal annual, share annual). "$24.99" / "$59.99" are
+ * the retired single and 3-pass prices, kept banned so a later pass cannot
+ * quietly reintroduce them.
  */
-const BANNED = ["odesseus live", "$24.99", "$59.99", "$499"] as const;
+const BANNED = [
+  "odesseus live",
+  "$14.99",
+  "$19.99",
+  "$99",
+  "$499",
+  "$24.99",
+  "$59.99",
+] as const;
 
 /** Live workflow vocabulary, to catch copy that renames the feature. */
 const BANNED_LIVE_COPY = [
@@ -185,9 +197,37 @@ describe("the applicant-only Live surface is preserved", () => {
     },
   );
 
-  it("keeps the Live session/pass prices in the backend billing catalogue", () => {
+  it("keeps the Live session/plan prices in the backend billing catalogue", () => {
     const catalog = readFileSync(join(process.cwd(), "src", "lib", "billing", "catalog.ts"), "utf8");
-    expect(catalog).toContain("interview_1");
-    expect(catalog).toContain("2499");
+    expect(catalog).toContain("live_single");
+    expect(catalog).toContain("1499");
+  });
+
+  it("carries the locked Live prices, and no retired Live SKU, in the billing catalogue", async () => {
+    const { billingCatalog, LIVE_SHARE_GUEST_LIMIT } = await import("@/lib/billing/catalog");
+
+    // Integer minor units, exactly as locked. A float here would be a billing bug.
+    expect(billingCatalog.live_single.amountCents).toBe(1499);
+    expect(billingCatalog.live_monthly.amountCents).toBe(1999);
+    expect(billingCatalog.live_personal_annual.amountCents).toBe(9900);
+    expect(billingCatalog.live_share_annual.amountCents).toBe(49900);
+
+    // Retired SKUs are deactivated in the catalog, never deleted from history.
+    expect(billingCatalog).not.toHaveProperty("interview_1");
+    expect(billingCatalog).not.toHaveProperty("interview_3");
+    expect(billingCatalog).not.toHaveProperty("interview_annual");
+
+    // The guest cap is a hard ceiling, not marketing copy.
+    expect(LIVE_SHARE_GUEST_LIMIT).toBe(10);
+  });
+
+  it("keeps the wallet and apply rates on the locked contract", async () => {
+    const { applyRates, billingCatalog } = await import("@/lib/billing/catalog");
+    expect(applyRates.standard.amountCents).toBe(39);
+    expect(applyRates.smart.amountCents).toBe(99);
+    // Prepaid top-ups are unchanged by the apply-rate change.
+    expect(billingCatalog.wallet_10.amountCents).toBe(1000);
+    expect(billingCatalog.wallet_20.amountCents).toBe(2000);
+    expect(billingCatalog.wallet_50.amountCents).toBe(5000);
   });
 });

@@ -131,9 +131,9 @@ async function retryRecruiterSeatSync(rawPayload: unknown) {
     p_count: payload.seatCount,
     p_status: payload.status,
     p_stripe_subscription_id: payload.stripeSubscriptionId,
-    p_stripe_customer_id: payload.stripeCustomerId ?? null,
-    p_period_start: payload.periodStart ?? null,
-    p_period_end: payload.periodEnd ?? null,
+    p_stripe_customer_id: payload.stripeCustomerId ?? undefined,
+    p_period_start: payload.periodStart ?? undefined,
+    p_period_end: payload.periodEnd ?? undefined,
   });
   if (error) throw new Error(error.message);
 }
