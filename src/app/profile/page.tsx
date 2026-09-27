@@ -52,8 +52,8 @@ export default async function ProfilePage({
         <ProfileForm userId={userId} initial={profile} />
 
         <div className="card" style={{ padding: 26, marginTop: 24 }}>
-          <div className="muted" style={{ fontSize: 13 }}>Resumes</div>
-          <h2 style={{ fontSize: 22, margin: "7px 0 16px" }}>Uploaded resumes</h2>
+          <div className="muted" style={{ fontSize: 13 }}>Resume Hub</div>
+          <h2 style={{ fontSize: 22, margin: "7px 0 16px" }}>Your existing resumes</h2>
           {resumes?.length ? (
             <div style={{ display: "grid", gap: 10 }}>
               {resumes.map((resume) => (
@@ -79,7 +79,7 @@ export default async function ProfilePage({
               ))}
             </div>
           ) : (
-            <p className="muted" style={{ margin: 0 }}>No resumes uploaded yet.</p>
+            <p className="muted" style={{ margin: 0 }}>No existing resumes uploaded yet.</p>
           )}
         </div>
 
