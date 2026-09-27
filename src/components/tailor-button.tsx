@@ -20,7 +20,7 @@ export default function TailorButton({ jobId }: { jobId: string }) {
       });
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.error || "Odesseus could not tailor your resume.");
+      if (!response.ok) throw new Error(data.error || "Odesseus could not optimize your resume.");
 
       router.push(`/resume-tailoring/${data.id}`);
     } catch (err) {
@@ -32,7 +32,7 @@ export default function TailorButton({ jobId }: { jobId: string }) {
   return (
     <div>
       <button className="btn btn-primary" onClick={tailor} disabled={busy}>
-        {busy ? "Tailoring resume…" : "Tailor my resume"}
+        {busy ? "Optimizing resume…" : "Optimize my resume"}
       </button>
       {error ? <div style={{ marginTop: 10, fontSize: 13, color: "#a33a2b" }}>{error}</div> : null}
     </div>
