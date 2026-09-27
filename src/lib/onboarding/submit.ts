@@ -23,7 +23,7 @@ export function validateResumeFile(file: File | null): string | null {
   return null;
 }
 
-/** Uploads the candidate's master resume and records it. Caller validates the file first.
+/** Uploads the candidate'"'"'s master resume and records it. Caller validates the file first.
  * Any previously-master resume is demoted to a regular document so exactly one master
  * exists (tailoring resolves the master with `.maybeSingle()`). */
 export async function uploadMasterResume(
@@ -74,7 +74,7 @@ export type OnboardingPreferences = {
   minimumSalary: string;
 };
 
-/** Marks onboarding complete and saves the candidate's initial job preferences. */
+/** Marks onboarding complete and saves the candidate'"'"'s initial job preferences. */
 export async function saveProfileAndPreferences(
   supabase: Client,
   userId: string,
@@ -100,5 +100,19 @@ export async function saveProfileAndPreferences(
   });
 
   const error = profileResult.error?.message || preferenceResult.error?.message;
+
+  if (!error) {
+    // Track onboarding completion
+    try {
+      const { trackEventServer } = await import("@/lib/analytics/tracking");
+      await trackEventServer({
+        event: "onboarding_completed",
+        userId,
+      });
+    } catch {
+      // Analytics failure should not block the response
+    }
+  }
+
   return error ? { error } : {};
 }

@@ -8,12 +8,13 @@ const links = [
   { href: "/how-it-works", label: "Job Seekers" },
   { href: "/employers", label: "Employers" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/careers", label: "Careers" },
   { href: "/about", label: "About" },
 ];
 
 // Signed-out mobile public navigation is intentionally minimal.
 //
-// On a phone the splash (screen 00) owns the public calls to action —
+// On a phone the splash (screen 00) owns the public calls to action \u2014
 // Get Started -> /signup, Business Login -> /employers/login, and
 // See Pricing -> /pricing. Repeating Sign In and Get Started inside a
 // collapsible phone menu was duplicating those exact actions, so the header

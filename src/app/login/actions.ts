@@ -92,6 +92,18 @@ export async function signup(formData: FormData) {
         .eq("visitor_id", visitorId)
         .is("signup_user_id", null);
       cookieStore.delete("odesseus_ref");
+
+      // Track partner referral signup
+      try {
+        const { trackEventServer } = await import("@/lib/analytics/tracking");
+        await trackEventServer({
+          event: "partner_referral_signup",
+          properties: { code: visitorId },
+          userId: data.user.id,
+        });
+      } catch {
+        // Analytics failure should not block the response
+      }
     }
   }
 
@@ -100,6 +112,19 @@ export async function signup(formData: FormData) {
       id: data.user!.id,
       full_name: fullName,
     });
+
+    // Track signup completion
+    try {
+      const { trackEventServer } = await import("@/lib/analytics/tracking");
+      await trackEventServer({
+        event: "signup_completed",
+        properties: { method: "email" },
+        userId: data.user!.id,
+      });
+    } catch {
+      // Analytics failure should not block the response
+    }
+
     redirect("/onboarding");
   }
 
