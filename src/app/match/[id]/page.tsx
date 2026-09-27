@@ -174,10 +174,13 @@ export default async function MatchResultPage({
               {score >= 85 ? "This role cleared your match target." : "You decide whether this role is worth pursuing."}
             </h2>
             <p className="muted" style={{ margin: 0 }}>
-              Odesseus can tailor your resume to this role using only the experience and qualifications already verified in your profile.
+              Choose Apply to use your approved existing resume, or optimize that resume first for Smart Apply. Odesseus never invents experience or qualifications.
             </p>
           </div>
-          <TailorButton jobId={job.id} />
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link className="btn btn-secondary" href={`/apply/start?job=${job.id}`}>Apply · $0.39</Link>
+            <div><TailorButton jobId={job.id} /><div className="muted" style={{ fontSize: 12, marginTop: 6 }}>Optimize for Smart Apply · $0.99</div></div>
+          </div>
         </div>
       </div>
       </section>
