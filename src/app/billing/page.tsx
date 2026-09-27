@@ -91,11 +91,7 @@ export default async function BillingPage({
   return (
     <AppShell
       fullName={profile?.full_name}
-      // The legacy application_credits column is retired (Gate 0 confirmed zero
-      // rows) and is no longer read here; the wallet is the candidate's money.
-      // The AppShell sidebar badge itself is frontend-owned and is handed off
-      // for removal.
-      applicationCredits={0}
+      walletBalanceCents={credits?.wallet_balance_cents ?? 0}
       interviewPasses={credits?.interview_passes ?? 0}
     >
       <section className="shell" style={{ padding: "54px 0 100px" }}>

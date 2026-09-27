@@ -3129,7 +3129,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   body{background:var(--m-bg)}
   .odesseus-mobile-only{display:block}
   .odesseus-desktop-only{display:none!important}
-  .m-screen,.m-splash{width:100%;max-width:430px;margin:0 auto;background:var(--m-bg);color:var(--m-ink);position:relative;padding:34px 20px 104px;font-family:Inter,Arial,Helvetica,sans-serif}
+  .m-screen,.m-splash{width:100%;max-width:430px;margin:0 auto;background:var(--m-bg);color:var(--m-ink);position:relative;padding:34px 20px 104px;font-family:var(--font-sans),Inter,Arial,Helvetica,sans-serif}
   .m-screen-header{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:start;gap:8px;margin-bottom:10px}
   .m-screen-header button{width:32px;height:32px;border:0;border-radius:50%;background:#f3f3f8;color:var(--m-ink);font-size:17px;cursor:pointer}
   .m-screen-header h1{grid-column:2;font-size:24px;line-height:1.08;letter-spacing:-.04em;margin:7px 0 0;font-weight:800}
@@ -3478,9 +3478,90 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
  * independent viewport for media-query purposes, so Figma Mobile v1's
  * existing mobile-breakpoint rules apply inside it exactly as on a real
  * phone, with no separate mobile implementation and no forced CSS overrides. */
-.qa-mobile-page{min-height:100vh;background:#e7e7ef;display:flex;flex-direction:column;align-items:center;padding:20px 16px 48px;font-family:Inter,Arial,Helvetica,sans-serif}
+.qa-mobile-page{min-height:100vh;background:#e7e7ef;display:flex;flex-direction:column;align-items:center;padding:20px 16px 48px;font-family:var(--font-sans),Inter,Arial,Helvetica,sans-serif}
 .qa-mobile-bar{width:100%;max-width:430px;display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px;font-size:12px;font-weight:700;color:#44445c}
 .qa-mobile-bar-label{overflow-wrap:anywhere}
 .qa-mobile-bar-link{color:#7847e9;text-decoration:underline;white-space:nowrap}
 .qa-mobile-frame{width:100%;max-width:390px;height:844px;background:#0e0e1f;border-radius:44px;padding:10px;box-shadow:0 24px 60px rgba(20,20,40,.28)}
 .qa-mobile-frame-iframe{width:100%;height:100%;border:0;border-radius:34px;background:#fff;display:block}
+
+/* Employer portal (Phase 5).
+ *
+ * The authenticated employer surfaces: a desktop portal (overview / jobs /
+ * team / billing) and a read-only phone portal reached from Business Login.
+ *
+ * Two deliberate rules:
+ *  - The public employer marketing header (`employer-nav.tsx`) stays
+ *    desktop-only with no hamburger, and the portal's phone screens carry
+ *    their own bottom navigation instead. There is no collapsed employer menu
+ *    at any width, so nothing can hide inside one.
+ *  - Everything here is presentation only. No number in the employer portal is
+ *    hardcoded; each one is rendered from the records read in
+ *    `src/lib/employer/service`. */
+.employer-portal-identity{display:grid;justify-items:end;line-height:1.2;font-size:14px;font-weight:650}
+.employer-portal-identity small{font-size:11px;font-weight:600;opacity:.7;text-transform:capitalize}
+.employer-signout{border:0;background:none;cursor:pointer;font:inherit;padding:0}
+.employer-card h2 small{font-size:15px;font-weight:600;color:var(--muted,#73819a);letter-spacing:0}
+.employer-plan-price{white-space:nowrap}
+.employer-plan-status{margin:6px 0 0;font-size:13px;color:#53627b}
+.employer-quota-line{margin:10px 0 0;font-size:15px}
+.employer-job-list{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:10px}
+.employer-job-row{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:14px;border:1px solid var(--line,#e7e5f0);border-radius:14px}
+.employer-job-row>div:first-child{display:grid;gap:3px;min-width:0}
+.employer-job-row-meta{display:grid;justify-items:end;gap:4px}
+.employer-featured-pill{font-size:11px;font-weight:700;border-radius:999px;background:#efe7ff;color:#5b21b6;padding:5px 10px;white-space:nowrap}
+.employer-notices{margin:20px 0 0;padding:12px 16px;border:1px solid #f2d4cc;border-radius:14px;background:#fff6f3}
+.employer-notices p{margin:0;font-size:13px;color:#8d1d12}
+.employer-notices p+p{margin-top:6px}
+.employer-member-list{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:10px}
+.employer-member-list li{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line,#e7e5f0);border-radius:14px}
+.employer-member-list li>div{display:grid;gap:3px;min-width:0}
+.employer-member-list span{font-size:12.5px}
+.employer-member-note{margin:12px 0 0;font-size:12.5px}
+.employer-you-pill{justify-self:start;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;border-radius:999px;background:#ffe9df;color:#c03a08;padding:3px 8px}
+.employer-role-pill{font-size:12px;font-weight:700;border-radius:999px;background:#f1f0f7;color:#4a5670;padding:5px 11px;white-space:nowrap}
+.employer-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:16px 0 0}
+.employer-facts>div{display:grid;gap:3px}
+.employer-facts dt{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#73819a}
+.employer-facts dd{margin:0;font-size:15px;font-weight:650}
+.employer-billing-note{margin:16px 0;font-size:12.5px;max-width:62ch}
+.employer-promotion-list{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:10px}
+.employer-promotion-list li{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line,#e7e5f0);border-radius:14px}
+.employer-promotion-list li>div{display:grid;gap:3px}
+.employer-promotion-list li>div:last-child{justify-items:end}
+.employer-promotion-list span{font-size:12.5px}
+.employer-promotion-price{font-size:16px!important;font-weight:750}
+.employer-portal-foot{display:flex;gap:20px;flex-wrap:wrap;margin-top:26px}
+.employer-empty{max-width:62ch}
+.employer-empty .figma-btn{margin-top:18px}
+@media (max-width:760px){.employer-facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Employer phone portal. The `m-*` primitives come from the Figma Mobile v1
+ * system; only the employer-specific pieces are declared here. */
+@media (max-width:767px){
+  .employer-portal.figma-soft-page{background:var(--m-bg)}
+  .employer-portal-mobile-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:#fff;border-bottom:1px solid var(--m-line);position:sticky;top:0;z-index:210}
+  .employer-portal-mobile-bar-right{display:grid;justify-items:end;gap:4px}
+  .employer-portal-mobile-org{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;font-weight:700;color:var(--m-muted)}
+  .employer-portal-mobile-bar button{border:1px solid var(--m-line);background:#f7f7fb;border-radius:999px;padding:6px 12px;font:800 11px inherit;color:var(--m-ink);cursor:pointer}
+  .employer-m-screen{padding-bottom:32px}
+  .employer-m-header h1{grid-column:1/-1}
+  .employer-m-back{width:32px;height:32px;border-radius:50%;background:#f3f3f8;color:var(--m-ink);display:grid;place-items:center;font-size:17px;text-decoration:none}
+  .employer-m-org{margin:2px 4px 0;font-size:10.5px;font-weight:700;color:var(--m-muted)}
+  .employer-m-plan{gap:12px}
+  .employer-m-job{grid-template-columns:1fr}
+  .employer-m-section{margin:20px 4px 8px;font-size:15px;letter-spacing:-.02em}
+  .employer-m-empty{margin:12px 4px 0}
+  .employer-m-action{display:flex;align-items:center;justify-content:center;text-decoration:none;font-weight:800;font-size:14px}
+  .employer-m-desktop-note{margin:16px 4px 0}
+  .employer-m-desktop-note strong{display:block;font-size:12px;color:var(--m-ink)}
+  .employer-m-desktop-note p{font-size:10.5px;line-height:1.55}
+  .employer-m-bottom-nav{grid-template-columns:repeat(4,1fr)}
+  .employer-m-bottom-nav a{font-size:14px}
+  .employer-portal .employer-notices{margin:12px 4px 0;border-radius:14px}
+  .employer-portal .employer-notices p{font-size:10.5px;line-height:1.5}
+  .employer-portal .employer-card{padding:18px;border-radius:18px}
+}.employer-publish-blocked{margin:20px 0 0;padding:18px 20px;border:1px solid #f2d4cc;border-radius:16px;background:#fff6f3}
+.employer-publish-blocked strong{display:block;font-size:15px;color:#8d1d12}
+.employer-publish-blocked p{margin:6px 0 0;font-size:13.5px;color:#8d1d12;max-width:60ch;line-height:1.6}
+.employer-publish-blocked .figma-btn{margin-top:16px}

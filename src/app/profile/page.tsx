@@ -31,7 +31,7 @@ export default async function ProfilePage({
       .select("full_name,headline,location,work_preference")
       .eq("id", userId)
       .maybeSingle(),
-    supabase.from("credit_balances").select("application_credits,interview_passes").eq("user_id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("wallet_balance_cents,interview_passes").eq("user_id", userId).maybeSingle(),
     supabase
       .from("resumes")
       .select("id,file_name,is_master,is_approved,created_at")
@@ -45,7 +45,7 @@ export default async function ProfilePage({
   return (
     <AppShell
       fullName={profile?.full_name}
-      applicationCredits={credits?.application_credits ?? 0}
+      walletBalanceCents={credits?.wallet_balance_cents ?? 0}
       interviewPasses={credits?.interview_passes ?? 0}
       active="profile"
     >

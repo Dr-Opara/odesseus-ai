@@ -71,8 +71,13 @@ export const PROMOTION_PLANS = [
 export const RECRUITER_SEAT_PRICE_LABEL = "$20";
 export const RECRUITER_SEAT_UNIT = "/month per additional seat";
 
-export const LIVE_PLANS = [
-  { name: "Single session", priceLabel: "$24.99", unit: "/ session" },
-  { name: "3 passes", priceLabel: "$59.99", unit: "" },
-  { name: "Annual", priceLabel: "$499", unit: "/ year" },
-] as const;
+// Odesseus Live pricing is intentionally NOT part of this module.
+//
+// Odesseus Live is private to signed-in applicants and must never appear on a
+// public surface (see tests/e2e/live-visibility.spec.ts and
+// tests/unit/live-public-surface.test.ts). This file is the display-only
+// pricing catalogue that every public and candidate pricing page imports, so
+// keeping the Live session/pass/annual figures here made it a one-import leak
+// away from a public page. The live prices remain in the billing catalogue
+// (`src/lib/billing/catalog.ts`), which is backend-owned, auth-gated, and not
+// reachable from any public route.

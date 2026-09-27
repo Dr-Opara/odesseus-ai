@@ -1,964 +1,599 @@
-import { describe, expect, it, vi } from "vitest";
-
-const ORG_ID = "52222222-2222-4222-8222-222222222222";
-const OWNER_ID = "51111111-1111-4111-8111-111111111111";
-
+import { describe, expect, it } from "vitest";
 import {
-  INVITABLE_ROLES,
-  INVITATION_TTL_DAYS,
-  METERED_ROLES,
-  OrgAccessError,
-  acceptInvitation,
-  authorizeOrgAdmin,
-  createInvitation,
-  getFeatureableJob,
-  getFeaturedTierOffers,
-  getOrgFeaturedView,
-  getOrgRole,
-  getOrgTeamView,
-  isFeaturedTier,
-  isPlausibleEmail,
-  isValidSeatCount,
-  listOrgInvitations,
-  listOrgMembers,
-  normalizeInviteEmail,
-  revokeInvitation,
+  countJobsByStatus,
+  getActiveSeatCount,
+  getEmployerAccount,
+  getEmployerInvitations,
+  getEmployerJobs,
+  getEmployerMembers,
+  getEmployerOrganization,
+  getEmployerOverview,
+  getEmployerRole,
+  getEmployerSeats,
+  getEmployerSubscription,
+  getEmployerUserId,
+  getJobPostAllowance,
+  getUnrecognisedFeaturedTiers,
+  resolveJobQuota,
 } from "@/lib/employer/service";
+import type { EmployerJob } from "@/lib/employer/types";
 
-type Canned = Record<string, { data?: unknown; error?: unknown; count?: number | null }>;
-
-type Query = {
-  table: string;
-  columns: string;
-  head: boolean;
-  filters: Array<[string, unknown]>;
-  inserted: unknown[] | null;
-  updated: unknown[] | null;
-  mode: "select" | "insert" | "update";
-};
+type Row = Record<string, unknown>;
 
 /**
- * Builds a client whose `.from()` returns a FRESH chainable builder per call and
- * records each query, keyed on the projected column list.
+ * A filter-aware fake Supabase client for the employer service layer.
  *
- * Two behaviours matter and neither is served by a single shared stub:
- *   * real PostgREST builds one query per `.from()` call, so the roster, the
- *     authorization probe, and the head-count on employer_members are three
- *     independent queries. A shared stub would let the last `.select()` decide
- *     what all three answer, quietly passing a broken authorization check.
- *   * resolving on the projected columns is what lets a test prove the service
- *     asks for `role` alone when probing a single membership row.
+ * It applies the real `.eq()/.limit()` filters to per-table rows and resolves
+ * like the real postgrest-js thenable, so the service reads behave the same way
+ * they do against Postgres. `rpc` results are supplied per function name so the
+ * seat tests can model both the entitled and the unavailable case.
  */
-function employerDb(
-  tables: Record<string, Canned>,
-  rpcResult: { data?: unknown; error?: unknown } | Record<string, { data?: unknown; error?: unknown }> = {}
-) {
-  const queries: Query[] = [];
+function employerFake(options: {
+  routes?: Record<string, Row[]>;
+  userId?: string | null;
+  authUser?: { email?: string; user_metadata?: Record<string, unknown> } | null;
+  rpcs?: Record<string, unknown>;
+}) {
+  const { routes = {}, userId = "user-1", authUser, rpcs = {} } = options;
 
-  const from = vi.fn((table: string) => {
-    const canned = tables[table];
-    if (!canned) throw new Error(`unexpected table ${table}`);
+  const from = (table: string) => {
+    const rows = (routes[table] ?? []) as Row[];
+    const filters: Array<(row: Row) => boolean> = [];
+    const builder: Record<string, unknown> = {};
 
-    const query: Query = {
-      table,
-      columns: "",
-      head: false,
-      filters: [],
-      inserted: null,
-      updated: null,
-      mode: "select",
+    const matches = () => rows.filter((row) => filters.every((filter) => filter(row)));
+
+    builder.select = () => builder;
+    builder.eq = (column: string, value: unknown) => {
+      filters.push((row) => row[column] === value);
+      return builder;
     };
-    queries.push(query);
-
-    const b: Record<string, unknown> = {};
-    const record = (column: string, value: unknown) => {
-      query.filters.push([column, value]);
-      return b;
+    builder.order = () => builder;
+    builder.limit = () => builder;
+    builder.maybeSingle = async () => {
+      const [first] = matches();
+      return { data: first ?? null, error: null };
     };
-    for (const m of ["neq", "order", "limit", "range", "delete"]) {
-      b[m] = vi.fn(() => b);
-    }
-    b.eq = vi.fn(record);
-    b.neq = vi.fn(() => b);
-    b.in = vi.fn(record);
-    b.select = vi.fn((columns?: string, options?: { count?: string; head?: boolean }) => {
-      query.columns = String(columns ?? "*");
-      if (options?.head) query.head = true;
-      return b;
-    });
-    b.insert = vi.fn((payload: unknown) => {
-      query.mode = "insert";
-      query.inserted = Array.isArray(payload) ? payload : [payload];
-      return b;
-    });
-    b.update = vi.fn((payload: Record<string, unknown>) => {
-      query.mode = "update";
-      query.updated = [payload];
-      return b;
-    });
+    builder.then = (
+      resolve: (value: { data: Row[]; error: null }) => unknown,
+      reject?: (reason: unknown) => unknown
+    ) => Promise.resolve({ data: matches(), error: null }).then(resolve, reject);
+    return builder;
+  };
 
-    const resolve = () => {
-      const key = query.head ? "count" : query.columns || "*";
-      const row = canned[key] ?? canned["*"] ?? {};
-      // An UPDATE that matched nothing returns an empty array, which is how
-      // PostgREST reports "there was nothing to do".
-      const data =
-        query.mode === "update" && row.data == null ? [] : (row.data ?? null);
-      return Promise.resolve({ data, error: row.error ?? null, count: row.count ?? null });
-    };
-
-    b.maybeSingle = vi.fn(resolve);
-    b.single = vi.fn(resolve);
-    b.then = (r: (v: unknown) => unknown, j?: (e: unknown) => unknown) => resolve().then(r, j);
-    return b;
-  });
-
-  // Per-RPC results, keyed by function name. Seat arithmetic calls two different
-  // SECURITY DEFINER functions (paid capacity, required capacity) and a single
-  // shared stub would make both answer the same number, hiding a swap.
-  const perRpc = rpcResult as Record<string, { data?: unknown; error?: unknown }>;
-  const shared = "data" in perRpc || "error" in perRpc ? perRpc : {};
-
-  const rpc = vi.fn(async (name: string) => {
-    const result = name in perRpc ? perRpc[name] : shared;
-    return { data: result?.data ?? null, error: result?.error ?? null };
-  });
-
-  /** All recorded queries against a table, optionally filtered by projection. */
-  const select = (table: string, columns?: string) =>
-    queries.filter(
-      (q) => q.table === table && (columns === undefined || q.columns === columns)
-    );
-
-  return { client: { from, rpc } as never, from, rpc, queries, select };
+  return {
+    auth: {
+      getClaims: async () => ({
+        data: userId ? { claims: { sub: userId } } : { claims: null },
+      }),
+      getUser: async () => {
+        if (authUser === null) return { data: { user: null }, error: null };
+        return {
+          data: {
+            user: {
+              id: userId,
+              email: "owner@acme.test",
+              user_metadata: {},
+              ...authUser,
+            },
+          },
+          error: null,
+        };
+      },
+    },
+    from,
+    rpc: async (name: string, args: unknown) => ({
+      data: name in rpcs ? rpcs[name] : null,
+      error: name in rpcs ? null : { message: "function not found" },
+      args,
+    }),
+  };
 }
 
-// The org row carries every column both getOrgRole and getOrgTeamView project.
-const orgRow = { id: ORG_ID, name: "Seats Inc.", owner_user_id: OWNER_ID };
-const INVITE_COLUMNS =
-  "id,org_id,email,role,status,invited_by,expires_at,created_at";
+const ORG_ROW = {
+  id: "org-1",
+  name: "Acme Corp",
+  owner_user_id: "user-1",
+  created_at: "2026-01-04T10:00:00Z",
+};
 
-describe("normalizeInviteEmail", () => {
-  it("lowercases and trims so the stored form matches lower(email)", () => {
-    expect(normalizeInviteEmail("  Ada@Example.COM ")).toBe("ada@example.com");
+const SUBSCRIPTION_ROW = {
+  org_id: "org-1",
+  tier: "growth",
+  status: "active",
+  job_posts_included: 10,
+  period_start: "2026-09-01T00:00:00Z",
+  period_end: "2026-10-01T00:00:00Z",
+};
+
+function jobRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: "job-1",
+    org_id: "org-1",
+    title: "GenAI Security Engineer",
+    location: "Lagos, Nigeria",
+    status: "published",
+    posted_at: "2026-09-10T09:00:00Z",
+    created_at: "2026-09-09T09:00:00Z",
+    ...overrides,
+  };
+}
+
+function featuredRow(overrides: Partial<Row> = {}): Row {
+  return {
+    org_id: "org-1",
+    job_id: "job-1",
+    tier: "ai_30d",
+    is_active: true,
+    starts_at: "2026-09-10T00:00:00Z",
+    expires_at: "2026-10-10T00:00:00Z",
+    ...overrides,
+  };
+}
+
+describe("employer identity resolution", () => {
+  it("resolves the signed-in user id from auth claims", async () => {
+    await expect(getEmployerUserId(employerFake({}) as never)).resolves.toBe("user-1");
+  });
+
+  it("returns null when there is no signed-in user", async () => {
+    await expect(
+      getEmployerUserId(employerFake({ userId: null }) as never)
+    ).resolves.toBeNull();
+  });
+
+  it("reads the account email and the signup company name from the auth record", async () => {
+    const client = employerFake({
+      authUser: {
+        email: "owner@acme.test",
+        user_metadata: { account_type: "employer", company_name: "Acme Corp" },
+      },
+    });
+    await expect(getEmployerAccount(client as never)).resolves.toEqual({
+      userId: "user-1",
+      email: "owner@acme.test",
+      companyName: "Acme Corp",
+      isEmployerAccount: true,
+    });
+  });
+
+  /**
+   * A candidate account is detectable, which is what lets the portal guard send
+   * it back to the candidate app instead of showing an empty company.
+   */
+  it("marks a non-employer account as not an employer account", async () => {
+    const client = employerFake({ authUser: { email: "cand@mail.test", user_metadata: {} } });
+    const account = await getEmployerAccount(client as never);
+    expect(account?.isEmployerAccount).toBe(false);
+  });
+
+  it("never invents a company name when the auth record has none", async () => {
+    const client = employerFake({ authUser: { email: "a@b.test", user_metadata: {} } });
+    const account = await getEmployerAccount(client as never);
+    expect(account?.companyName).toBeNull();
   });
 });
 
-describe("isPlausibleEmail", () => {
-  it.each([
-    ["ada@example.com", true],
-    ["ada.lovelace+work@sub.example.co.uk", true],
-    ["ada@example", false],
-    ["ada@@example.com", false],
-    ["ada example.com", false],
-    ["ada@", false],
-    ["a@b", false],
-    ["", false],
-  ])("classifies %s as %s", (value, expected) => {
-    expect(isPlausibleEmail(value)).toBe(expected);
+describe("employer organization resolution", () => {
+  it("resolves the org through employer_members and maps it to camelCase", async () => {
+    const client = employerFake({
+      routes: {
+        employer_members: [{ org_id: "org-1", user_id: "user-1", role: "owner" }],
+        employer_organizations: [ORG_ROW],
+      },
+    });
+    await expect(getEmployerOrganization(client as never, "user-1")).resolves.toEqual({
+      id: "org-1",
+      name: "Acme Corp",
+      ownerUserId: "user-1",
+      createdAt: "2026-01-04T10:00:00Z",
+    });
+  });
+
+  it("returns null when the user is not a member of any organization", async () => {
+    const client = employerFake({ routes: { employer_organizations: [ORG_ROW] } });
+    await expect(getEmployerOrganization(client as never, "user-1")).resolves.toBeNull();
+  });
+
+  it("returns null when the membership row exists but the org row does not", async () => {
+    const client = employerFake({
+      routes: { employer_members: [{ org_id: "org-1", user_id: "user-1", role: "owner" }] },
+    });
+    await expect(getEmployerOrganization(client as never, "user-1")).resolves.toBeNull();
+  });
+
+  it("reads the signed-in user's own role", async () => {
+    const client = employerFake({
+      routes: { employer_members: [{ org_id: "org-1", user_id: "user-1", role: "recruiter" }] },
+    });
+    await expect(getEmployerRole(client as never, "user-1")).resolves.toBe("recruiter");
+    await expect(
+      getEmployerRole(employerFake({}) as never, "user-1")
+    ).resolves.toBeNull();
   });
 });
 
-describe("getOrgRole", () => {
-  it("returns owner from the organization row without a membership read", async () => {
-    const { client, from } = employerDb({
-      employer_organizations: { "*": { data: orgRow } },
+describe("employer members and invitations", () => {
+  it("lists members and flags which one is the viewer", async () => {
+    const client = employerFake({
+      routes: {
+        employer_members: [
+          { org_id: "org-1", user_id: "user-1", role: "owner", created_at: "2026-01-04T10:00:00Z" },
+          { org_id: "org-1", user_id: "user-2", role: "recruiter", created_at: "2026-02-01T10:00:00Z" },
+        ],
+      },
     });
-    expect(await getOrgRole(client, ORG_ID, OWNER_ID)).toBe("owner");
-    // Ownership is answered from the org row alone; no membership row is needed.
-    expect(from).toHaveBeenCalledTimes(1);
-    expect(from).toHaveBeenCalledWith("employer_organizations");
-  });
-
-  it("returns the membership role for a non-owner member", async () => {
-    const { client, select } = employerDb({
-      employer_organizations: { "*": { data: orgRow } },
-      employer_members: { role: { data: { role: "recruiter" } } },
-    });
-    expect(await getOrgRole(client, ORG_ID, "other-user")).toBe("recruiter");
-    // The probe projects `role` alone and is scoped to the org and the caller.
-    const probes = select("employer_members", "role");
-    expect(probes).toHaveLength(1);
-    expect(probes[0].filters).toEqual([
-      ["org_id", ORG_ID],
-      ["user_id", "other-user"],
+    await expect(getEmployerMembers(client as never, "org-1", "user-2")).resolves.toEqual([
+      { userId: "user-1", role: "owner", joinedAt: "2026-01-04T10:00:00Z", isYou: false },
+      { userId: "user-2", role: "recruiter", joinedAt: "2026-02-01T10:00:00Z", isYou: true },
     ]);
   });
 
-  it("returns null for a signed-in non-member", async () => {
-    const { client } = employerDb({
-      employer_organizations: { "*": { data: orgRow } },
-      employer_members: { role: { data: null } },
+  /**
+   * The org id is the authorisation boundary, so it is also the filter. A read
+   * for one organization must not surface another organization's members even
+   * if the client returns them.
+   */
+  it("scopes members to the requested organization", async () => {
+    const client = employerFake({
+      routes: {
+        employer_members: [
+          { org_id: "org-1", user_id: "user-1", role: "owner", created_at: null },
+          { org_id: "org-2", user_id: "user-9", role: "owner", created_at: null },
+        ],
+      },
     });
-    expect(await getOrgRole(client, ORG_ID, "stranger")).toBeNull();
+    const members = await getEmployerMembers(client as never, "org-1", "user-1");
+    expect(members.map((member) => member.userId)).toEqual(["user-1"]);
   });
 
-  it("returns null when the org is not visible to this caller", async () => {
-    const { client } = employerDb({ employer_organizations: { "*": { data: null } } });
-    expect(await getOrgRole(client, ORG_ID, OWNER_ID)).toBeNull();
+  it("returns an empty list rather than throwing when a read is refused", async () => {
+    await expect(getEmployerMembers(employerFake({}) as never, "org-1", "user-1")).resolves.toEqual([]);
+    await expect(
+      getEmployerInvitations(employerFake({}) as never, "org-1")
+    ).resolves.toEqual([]);
   });
 
-  it("throws rather than treating a read failure as no access", async () => {
-    const { client } = employerDb({
-      employer_organizations: { "*": { error: { message: "db down" } } },
-    });
-    await expect(getOrgRole(client, ORG_ID, OWNER_ID)).rejects.toThrow(
-      /Could not load the organization/
-    );
-  });
-});
-
-describe("authorizeOrgAdmin", () => {
-  it("admits the owner", async () => {
-    const { client } = employerDb({ employer_organizations: { "*": { data: orgRow } } });
-    expect(await authorizeOrgAdmin(client, ORG_ID, OWNER_ID)).toEqual({
-      ok: true,
-      role: "owner",
-    });
-  });
-
-  it("admits an admin", async () => {
-    const { client } = employerDb({
-      employer_organizations: { "*": { data: orgRow } },
-      employer_members: { role: { data: { role: "admin" } } },
-    });
-    expect(await authorizeOrgAdmin(client, ORG_ID, "u")).toEqual({ ok: true, role: "admin" });
-  });
-
-  it("refuses a recruiter: a paid seat is not admin rights", async () => {
-    const { client } = employerDb({
-      employer_organizations: { "*": { data: orgRow } },
-      employer_members: { role: { data: { role: "recruiter" } } },
-    });
-    expect(await authorizeOrgAdmin(client, ORG_ID, "u")).toEqual({
-      ok: false,
-      reason: "not_an_admin",
-    });
-  });
-
-  it("refuses a viewer", async () => {
-    const { client } = employerDb({
-      employer_organizations: { "*": { data: orgRow } },
-      employer_members: { role: { data: { role: "viewer" } } },
-    });
-    expect(await authorizeOrgAdmin(client, ORG_ID, "u")).toEqual({
-      ok: false,
-      reason: "not_an_admin",
-    });
-  });
-
-  it("distinguishes a non-member so the route can answer 404 rather than 403", async () => {
-    const { client } = employerDb({ employer_organizations: { "*": { data: null } } });
-    expect(await authorizeOrgAdmin(client, ORG_ID, "u")).toEqual({
-      ok: false,
-      reason: "not_a_member",
-    });
-  });
-});
-
-describe("getOrgTeamView", () => {
-  it("assembles seats, roster, and invitations for an admin", async () => {
-    const { client, rpc, from, select } = employerDb(
-      {
-        employer_organizations: { "*": { data: orgRow } },
-        employer_members: {
-          // The authorization probe and the roster are different projections.
-          role: { data: { role: "admin" } },
-          "user_id,role,created_at": {
-            data: [{ user_id: "u1", role: "recruiter", created_at: "2026-01-01T00:00:00Z" }],
+  it("maps invitation rows", async () => {
+    const client = employerFake({
+      routes: {
+        employer_member_invitations: [
+          {
+            org_id: "org-1",
+            id: "inv-1",
+            email: "new@acme.test",
+            role: "recruiter",
+            status: "pending",
+            expires_at: "2026-10-01T00:00:00Z",
+            created_at: "2026-09-20T00:00:00Z",
           },
-        },
-        employer_member_invitations: { [INVITE_COLUMNS]: { data: [] } },
+        ],
       },
-      { odesseus_org_live_seat_count: { data: 3 }, odesseus_org_required_seat_count: { data: 1 } }
-    );
-
-    const view = await getOrgTeamView(client, ORG_ID, "admin-user");
-
-    expect(view.orgName).toBe("Seats Inc.");
-    expect(view.callerRole).toBe("admin");
-    expect(view.isCallerAdmin).toBe(true);
-    expect(view.members).toHaveLength(1);
-    // Both numbers come from SECURITY DEFINER RPCs, never re-derived here, so
-    // neither "what counts as live" nor "who counts as metered" can drift
-    // between this read and the accept-path meter that enforces it.
-    expect(rpc).toHaveBeenCalledWith("odesseus_org_live_seat_count", { p_org_id: ORG_ID });
-    expect(rpc).toHaveBeenCalledWith("odesseus_org_required_seat_count", { p_org_id: ORG_ID });
-    expect(view.seats).toEqual({
-      seatsPaid: 3,
-      seatsUsed: 1,
-      seatsAvailable: 2,
-      seatsRequired: 1,
     });
-    // Usage is not a client-side head-count: only the required-seat RPC knows
-    // which member is the organization owner, and the owner is not metered.
-    expect(select("employer_members", "user_id")).toHaveLength(0);
-    expect(from).toHaveBeenCalledWith("employer_member_invitations");
-  });
-
-  it("never lets the seat arithmetic go negative", async () => {
-    const { client } = employerDb(
+    await expect(getEmployerInvitations(client as never, "org-1")).resolves.toEqual([
       {
-        employer_organizations: { "*": { data: orgRow } },
-        employer_members: { role: { data: null } },
-        employer_member_invitations: { [INVITE_COLUMNS]: { data: [] } },
-      },
-      { odesseus_org_live_seat_count: { data: 2 }, odesseus_org_required_seat_count: { data: 5 } }
-    );
-    const view = await getOrgTeamView(client, ORG_ID, OWNER_ID);
-    expect(view.seats).toEqual({
-      seatsPaid: 2,
-      seatsUsed: 5,
-      seatsAvailable: 0,
-      seatsRequired: 5,
-    });
-  });
-
-  it("fails loudly rather than reporting zero seats when the required-count RPC fails", async () => {
-    const { client } = employerDb(
-      {
-        employer_organizations: { "*": { data: orgRow } },
-        employer_members: { role: { data: null } },
-        employer_member_invitations: { [INVITE_COLUMNS]: { data: [] } },
-      },
-      {
-        odesseus_org_live_seat_count: { data: 5 },
-        odesseus_org_required_seat_count: { error: { message: "db down" } },
-      }
-    );
-    await expect(getOrgTeamView(client, ORG_ID, OWNER_ID)).rejects.toThrow(/db down/);
-  });
-
-  it("does not even ask for invitations when the caller is not an admin", async () => {
-    const { client, from } = employerDb(
-      {
-        employer_organizations: {
-          "*": { data: { ...orgRow, owner_user_id: "someone-else" } },
-        },
-        employer_members: {
-          role: { data: { role: "recruiter" } },
-          "user_id,role,created_at": { data: [] },
-        },
-        employer_member_invitations: { [INVITE_COLUMNS]: { data: [] } },
-      },
-      { odesseus_org_live_seat_count: { data: 1 }, odesseus_org_required_seat_count: { data: 1 } }
-    );
-
-    const view = await getOrgTeamView(client, ORG_ID, "recruiter-user");
-
-    expect(view.isCallerAdmin).toBe(false);
-    expect(view.callerRole).toBe("recruiter");
-    expect(view.invitations).toEqual([]);
-    // A recruiter still sees the seat numbers; they just never see the queue.
-    expect(view.seats.seatsPaid).toBe(1);
-    expect(from).not.toHaveBeenCalledWith("employer_member_invitations");
-  });
-
-  it("raises OrgAccessError for a non-member", async () => {
-    const { client } = employerDb({ employer_organizations: { "*": { data: null } } });
-    await expect(getOrgTeamView(client, ORG_ID, "stranger")).rejects.toBeInstanceOf(
-      OrgAccessError
-    );
-  });
-
-  it("throws when the seat capacity read fails", async () => {
-    const { client } = employerDb(
-      {
-        employer_organizations: { "*": { data: orgRow } },
-        employer_members: { role: { data: null }, count: { count: 0 } },
-        employer_member_invitations: { [INVITE_COLUMNS]: { data: [] } },
-      },
-      { error: { message: "boom" } }
-    );
-    await expect(getOrgTeamView(client, ORG_ID, OWNER_ID)).rejects.toThrow(
-      /Could not load seat capacity/
-    );
-  });
-});
-
-describe("listOrgMembers / listOrgInvitations", () => {
-  it("returns the roster", async () => {
-    const { client } = employerDb({
-      employer_members: {
-        "user_id,role,created_at": {
-          data: [{ user_id: "u1", role: "viewer", created_at: "x" }],
-        },
-      },
-    });
-    expect(await listOrgMembers(client, ORG_ID)).toHaveLength(1);
-  });
-
-  it("throws on a roster read failure rather than showing an empty team", async () => {
-    const { client } = employerDb({
-      employer_members: { "user_id,role,created_at": { error: { message: "boom" } } },
-    });
-    await expect(listOrgMembers(client, ORG_ID)).rejects.toThrow(/Could not load the team/);
-  });
-
-  it("throws on an invitation read failure", async () => {
-    const { client } = employerDb({
-      employer_member_invitations: { [INVITE_COLUMNS]: { error: { message: "boom" } } },
-    });
-    await expect(listOrgInvitations(client, ORG_ID)).rejects.toThrow(
-      /Could not load invitations/
-    );
-  });
-});
-
-describe("createInvitation", () => {
-  const now = new Date("2026-03-01T12:00:00.000Z");
-
-  it("writes a normalised, expiring, pending invitation", async () => {
-    const { client, select } = employerDb({
-      employer_member_invitations: {
-        [INVITE_COLUMNS]: { data: { id: "inv-1", status: "pending" } },
-      },
-    });
-
-    const result = await createInvitation(client, {
-      orgId: ORG_ID,
-      invitedBy: OWNER_ID,
-      email: "  Recruiter@Example.com ",
-      role: "recruiter",
-      now,
-      token: "fixed-token-for-test-01",
-    });
-
-    expect(result.ok).toBe(true);
-    expect(select("employer_member_invitations")[0].inserted).toEqual([
-      {
-        org_id: ORG_ID,
-        email: "recruiter@example.com",
+        id: "inv-1",
+        email: "new@acme.test",
         role: "recruiter",
-        token: "fixed-token-for-test-01",
         status: "pending",
-        invited_by: OWNER_ID,
-        expires_at: new Date(now.getTime() + INVITATION_TTL_DAYS * 86400000).toISOString(),
-      },
-    ]);
-  });
-
-  it("generates a distinct unguessable token per invitation", async () => {
-    const { client } = employerDb({
-      employer_member_invitations: { [INVITE_COLUMNS]: { data: { id: "inv-1" } } },
-    });
-    const first = await createInvitation(client, {
-      orgId: ORG_ID, invitedBy: OWNER_ID, email: "a@example.com", role: "recruiter", now,
-    });
-    const second = await createInvitation(client, {
-      orgId: ORG_ID, invitedBy: OWNER_ID, email: "b@example.com", role: "recruiter", now,
-    });
-    expect(first.ok && first.token).toMatch(/^[0-9a-f]{48}$/);
-    expect(second.ok && second.token).toMatch(/^[0-9a-f]{48}$/);
-    expect(first.ok && second.ok && first.token === second.token).toBe(false);
-  });
-
-  it("rejects a malformed address before touching the database", async () => {
-    const { client, from } = employerDb({ employer_member_invitations: { [INVITE_COLUMNS]: {} } });
-    const result = await createInvitation(client, {
-      orgId: ORG_ID, invitedBy: OWNER_ID, email: "not-an-email", role: "recruiter", now,
-    });
-    expect(result).toEqual({ ok: false, code: "invalid" });
-    expect(from).not.toHaveBeenCalled();
-  });
-
-  it("rejects a role that cannot be invited", async () => {
-    const { client, from } = employerDb({ employer_member_invitations: { [INVITE_COLUMNS]: {} } });
-    const result = await createInvitation(client, {
-      orgId: ORG_ID, invitedBy: OWNER_ID, email: "a@example.com",
-      role: "owner" as never, now,
-    });
-    expect(result).toEqual({ ok: false, code: "invalid" });
-    expect(from).not.toHaveBeenCalled();
-  });
-
-  it("maps the partial unique index violation to a duplicate", async () => {
-    const { client } = employerDb({
-      employer_member_invitations: {
-        [INVITE_COLUMNS]: { error: { code: "23505", message: "duplicate key" } },
-      },
-    });
-    const result = await createInvitation(client, {
-      orgId: ORG_ID, invitedBy: OWNER_ID, email: "a@example.com", role: "recruiter", now,
-    });
-    expect(result).toEqual({ ok: false, code: "duplicate" });
-  });
-
-  it("fails closed on any other database error", async () => {
-    const { client } = employerDb({
-      employer_member_invitations: {
-        [INVITE_COLUMNS]: { error: { code: "42501", message: "rls" } },
-      },
-    });
-    const result = await createInvitation(client, {
-      orgId: ORG_ID, invitedBy: OWNER_ID, email: "a@example.com", role: "recruiter", now,
-    });
-    expect(result).toEqual({ ok: false, code: "error" });
-  });
-
-  it("fails closed when the insert returns no row", async () => {
-    const { client } = employerDb({
-      employer_member_invitations: { [INVITE_COLUMNS]: { data: null } },
-    });
-    const result = await createInvitation(client, {
-      orgId: ORG_ID, invitedBy: OWNER_ID, email: "a@example.com", role: "recruiter", now,
-    });
-    expect(result).toEqual({ ok: false, code: "error" });
-  });
-});
-
-describe("revokeInvitation", () => {
-  it("marks a pending invitation revoked, scoped to the org", async () => {
-    const { client, select } = employerDb({
-      employer_member_invitations: { id: { data: [{ id: "inv-1" }] } },
-    });
-    expect(await revokeInvitation(client, ORG_ID, "inv-1")).toEqual({
-      ok: true,
-      revoked: true,
-    });
-    const query = select("employer_member_invitations", "id")[0];
-    expect(query.updated).toEqual([{ status: "revoked" }]);
-    // Scoped to the org and to pending rows, so an accepted invitation's audit
-    // trail cannot be rewritten.
-    expect(query.filters).toEqual([
-      ["id", "inv-1"],
-      ["org_id", ORG_ID],
-      ["status", "pending"],
-    ]);
-  });
-
-  it("reports revoked:false when nothing matched", async () => {
-    const { client } = employerDb({
-      employer_member_invitations: { id: { data: [] } },
-    });
-    expect(await revokeInvitation(client, ORG_ID, "inv-1")).toEqual({
-      ok: true,
-      revoked: false,
-    });
-  });
-
-  it("throws on a write failure", async () => {
-    const { client } = employerDb({
-      employer_member_invitations: { id: { error: { message: "boom" } } },
-    });
-    await expect(revokeInvitation(client, ORG_ID, "inv-1")).rejects.toThrow(
-      /Could not revoke that invitation/
-    );
-  });
-});
-
-describe("acceptInvitation", () => {
-  it("returns the joined org on success", async () => {
-    const { client, rpc } = employerDb({}, {
-      data: [
-        {
-          joined_org_id: ORG_ID,
-          org_name: "Seats Inc.",
-          joined_role: "recruiter",
-          invitation_id: "inv-1",
-        },
-      ],
-    });
-    expect(await acceptInvitation(client, "a".repeat(48))).toEqual({
-      ok: true,
-      orgId: ORG_ID,
-      orgName: "Seats Inc.",
-      role: "recruiter",
-    });
-    // Redemption always goes through the RPC, which owns the email match, the
-    // org lock, and the seat meter.
-    expect(rpc).toHaveBeenCalledWith("odesseus_accept_employer_invitation", {
-      p_token: "a".repeat(48),
-    });
-  });
-
-  it("trims the token before redeeming", async () => {
-    const { client, rpc } = employerDb({}, { error: { message: "invalid invitation link" } });
-    await acceptInvitation(client, "  " + "a".repeat(48) + "  ");
-    expect(rpc).toHaveBeenCalledWith("odesseus_accept_employer_invitation", {
-      p_token: "a".repeat(48),
-    });
-  });
-
-  it.each([
-    ["invalid invitation link"],
-    ["this invitation has expired"],
-    ["this invitation has already been accepted"],
-    ["this invitation has already been revoked"],
-    ["this invitation was sent to a different email address"],
-  ])("maps %s to an invalid result", async (message) => {
-    const { client } = employerDb({}, { error: { message } });
-    expect(await acceptInvitation(client, "a".repeat(48))).toEqual({
-      ok: false,
-      code: "invalid",
-    });
-  });
-
-  it("maps the seat-cap error so the route can explain it", async () => {
-    const { client } = employerDb(
-      {},
-      { error: { message: "this team has no paid seats left; add a seat to invite another member" } }
-    );
-    expect(await acceptInvitation(client, "a".repeat(48))).toEqual({
-      ok: false,
-      code: "no_seats",
-    });
-  });
-
-  it("still maps the cap error if the message names a role rather than 'paid seats'", async () => {
-    // The matcher must not silently start reporting a seat-cap refusal as a
-    // generic 500 the moment the RPC wording changes. Both wordings map.
-    const { client } = employerDb(
-      {},
-      { error: { message: "this team has no recruiter seats left; add a seat to invite another member" } }
-    );
-    expect(await acceptInvitation(client, "a".repeat(48))).toEqual({
-      ok: false,
-      code: "no_seats",
-    });
-  });
-
-  it("rejects a short token without calling the database", async () => {
-    const { client, rpc } = employerDb({});
-    expect(await acceptInvitation(client, "tooshort")).toEqual({ ok: false, code: "invalid" });
-    expect(rpc).not.toHaveBeenCalled();
-  });
-
-  it("fails closed when the RPC returns no row", async () => {
-    const { client } = employerDb({}, { data: [] });
-    expect(await acceptInvitation(client, "a".repeat(48))).toEqual({
-      ok: false,
-      code: "invalid",
-    });
-  });
-
-  it("fails closed on an unrecognised database error", async () => {
-    const { client } = employerDb({}, { error: { message: "connection reset" } });
-    expect(await acceptInvitation(client, "a".repeat(48))).toEqual({
-      ok: false,
-      code: "error",
-    });
-  });
-});
-
-describe("seat contract constants", () => {
-  it("meters every invitable role, so no role is a way to take a seat for free", () => {
-    expect([...METERED_ROLES]).toEqual(["admin", "recruiter", "viewer"]);
-    // The set must stay equal to the invitable set. A new invitable role that is
-    // not metered would be a free team member.
-    expect([...METERED_ROLES].sort()).toEqual([...INVITABLE_ROLES].sort());
-    // The owner is excluded by identity (employer_organizations.owner_user_id),
-    // so it must not appear here.
-    expect(METERED_ROLES).not.toContain("owner");
-  });
-
-  it("bounds a seat checkout quantity to whole seats in range", () => {
-    expect(isValidSeatCount(1)).toBe(true);
-    expect(isValidSeatCount(100)).toBe(true);
-    expect(isValidSeatCount(0)).toBe(false);
-    expect(isValidSeatCount(-3)).toBe(false);
-    expect(isValidSeatCount(1.5)).toBe(false);
-    expect(isValidSeatCount(Number.NaN)).toBe(false);
-    expect(isValidSeatCount(101)).toBe(false);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Featured listings
-// ---------------------------------------------------------------------------
-
-const JOB_ID = "5ddddddd-dddd-4ddd-8ddd-dddddddddddd";
-const OTHER_JOB_ID = "5eeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
-const LISTING_COLUMNS = "id,job_id,tier,starts_at,expires_at,is_active";
-const JOB_COLUMNS = "id,title,location,status";
-
-const daysFromNow = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
-
-describe("isFeaturedTier", () => {
-  it("accepts only catalog tiers", () => {
-    expect(isFeaturedTier("featured_7d")).toBe(true);
-    expect(isFeaturedTier("featured_14d")).toBe(true);
-    expect(isFeaturedTier("ai_30d")).toBe(true);
-  });
-
-  it("rejects anything that is not a paid tier, including legacy keys", () => {
-    expect(isFeaturedTier("featured")).toBe(false);
-    expect(isFeaturedTier("FEATURED_7D")).toBe(false);
-    expect(isFeaturedTier("app_credit")).toBe(false);
-    expect(isFeaturedTier(undefined)).toBe(false);
-    expect(isFeaturedTier(7)).toBe(false);
-  });
-});
-
-describe("getFeaturedTierOffers", () => {
-  it("mirrors the catalog prices so the page cannot advertise a stale amount", () => {
-    expect(getFeaturedTierOffers()).toEqual([
-      {
-        tier: "featured_7d",
-        label: "Featured — 7 days",
-        description: "Boosted visibility for 7 days",
-        amountCents: 2900,
-        days: 7,
-      },
-      {
-        tier: "featured_14d",
-        label: "Featured — 14 days",
-        description: "Boosted visibility for 14 days",
-        amountCents: 4900,
-        days: 14,
-      },
-      {
-        tier: "ai_30d",
-        label: "AI Featured — 30 days",
-        description: "AI-assisted boosted visibility for 30 days",
-        amountCents: 12900,
-        days: 30,
+        expiresAt: "2026-10-01T00:00:00Z",
+        createdAt: "2026-09-20T00:00:00Z",
       },
     ]);
   });
 });
 
-describe("getFeatureableJob", () => {
-  it("returns the job when it belongs to the org and is open", async () => {
-    const { client, select } = employerDb({
-      employer_jobs: {
-        [JOB_COLUMNS]: {
-          data: { id: JOB_ID, title: "Staff Nurse", location: "Austin, TX", status: "published" },
-        },
-      },
-    });
-
-    expect(await getFeatureableJob(client, ORG_ID, JOB_ID)).toEqual({
-      job: {
-        id: JOB_ID,
-        title: "Staff Nurse",
-        location: "Austin, TX",
-        status: "published",
-        isBoosted: false,
-      },
-    });
-    // Scoped by org as well as id: ownership is the whole point of this check.
-    expect(select("employer_jobs", JOB_COLUMNS)[0].filters).toEqual([
-      ["id", JOB_ID],
-      ["org_id", ORG_ID],
-    ]);
+describe("employer jobs and promotions", () => {
+  it("reads the organization's own jobs", async () => {
+    const client = employerFake({ routes: { employer_jobs: [jobRow()] } });
+    const jobs = await getEmployerJobs(client as never, "org-1");
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({ title: "GenAI Security Engineer", status: "published" });
+    expect(jobs[0].featured).toBeNull();
   });
 
-  it("reports a job the org does not own as not found, never as another org's job", async () => {
-    const { client } = employerDb({ employer_jobs: { [JOB_COLUMNS]: { data: null } } });
-    expect(await getFeatureableJob(client, ORG_ID, OTHER_JOB_ID)).toEqual({
-      reason: "not_found",
+  it("annotates a job with its active promotion", async () => {
+    const client = employerFake({
+      routes: {
+        employer_jobs: [jobRow()],
+        featured_listings: [featuredRow()],
+      },
+    });
+    const jobs = await getEmployerJobs(client as never, "org-1");
+    expect(jobs[0].featured).toEqual({
+      tier: "ai_30d",
+      isActive: true,
+      startsAt: "2026-09-10T00:00:00Z",
+      expiresAt: "2026-10-10T00:00:00Z",
     });
   });
 
-  it("refuses a closed job: paying to boost a posting nobody can apply to is a refund request", async () => {
-    const { client } = employerDb({
-      employer_jobs: {
-        [JOB_COLUMNS]: { data: { id: JOB_ID, title: "Staff Nurse", location: null, status: "closed" } },
-      },
+  it("reports a promotion tier this build does not recognise instead of guessing", async () => {
+    const client = employerFake({
+      routes: { featured_listings: [featuredRow({ tier: "ai_7d" })] },
     });
-    expect(await getFeatureableJob(client, ORG_ID, JOB_ID)).toEqual({ reason: "closed" });
+    await expect(getUnrecognisedFeaturedTiers(client as never, "org-1")).resolves.toEqual(["ai_7d"]);
   });
 
-  it("allows a draft job so a posting can be featured before it goes live", async () => {
-    const { client } = employerDb({
-      employer_jobs: {
-        [JOB_COLUMNS]: { data: { id: JOB_ID, title: "Draft role", location: null, status: "draft" } },
+  /**
+   * A promotion belongs to a job in the same organization. Joining on job id
+   * alone would let a listing for another org's job be attached to this
+   * organization's row.
+   */
+  it("only attaches a promotion that belongs to the same organization", async () => {
+    const client = employerFake({
+      routes: {
+        employer_jobs: [jobRow()],
+        featured_listings: [featuredRow({ org_id: "org-2" })],
       },
     });
-    expect(await getFeatureableJob(client, ORG_ID, JOB_ID)).toMatchObject({
-      job: { status: "draft" },
-    });
+    const jobs = await getEmployerJobs(client as never, "org-1");
+    expect(jobs[0].featured).toBeNull();
   });
 
-  it("throws rather than returning a reason when the read fails", async () => {
-    const { client } = employerDb({
-      employer_jobs: { [JOB_COLUMNS]: { error: { message: "db down" } } },
+  it("counts jobs by their stored status rather than a hardcoded total", () => {
+    const make = (status: string): EmployerJob => ({
+      id: status,
+      title: status,
+      location: null,
+      status,
+      postedAt: null,
+      createdAt: null,
+      featured: null,
     });
-    await expect(getFeatureableJob(client, ORG_ID, JOB_ID)).rejects.toThrow(/db down/);
+    expect(countJobsByStatus([make("published"), make("published"), make("draft"), make("closed")])).toEqual({
+      total: 4,
+      published: 2,
+      draft: 1,
+      closed: 1,
+    });
+    expect(countJobsByStatus([])).toEqual({ total: 0, published: 0, draft: 0, closed: 0 });
   });
 });
 
-describe("getOrgFeaturedView", () => {
-  function featuredDb(overrides: Record<string, Canned> = {}) {
-    return employerDb({
-      // Both projections are needed: the view reads id,name and the role probe
-      // reads id,owner_user_id. OWNER_ID is the org owner, so authorization
-      // passes without a membership row.
-      employer_organizations: {
-        "id,name": { data: orgRow },
-        "id,owner_user_id": { data: { id: ORG_ID, owner_user_id: OWNER_ID } },
-      },
-      featured_listings: { [LISTING_COLUMNS]: { data: [] } },
-      employer_jobs: { [JOB_COLUMNS]: { data: [] } },
-      ...overrides,
+describe("employer subscription, allowance and seats", () => {
+  it("maps the stored subscription row to camelCase", async () => {
+    const client = employerFake({ routes: { employer_subscriptions: [SUBSCRIPTION_ROW] } });
+    await expect(getEmployerSubscription(client as never, "org-1")).resolves.toEqual({
+      tier: "growth",
+      status: "active",
+      jobPostsIncluded: 10,
+      periodStart: "2026-09-01T00:00:00Z",
+      periodEnd: "2026-10-01T00:00:00Z",
     });
-  }
+  });
 
-  it("raises OrgAccessError for a non-member so the route can answer 404", async () => {
-    const { client } = featuredDb({
-      employer_members: { role: { data: null } },
+  it("returns null when there is no subscription on file", async () => {
+    await expect(
+      getEmployerSubscription(employerFake({}) as never, "org-1")
+    ).resolves.toBeNull();
+  });
+
+  it("derives remaining job posts and clamps an overspent allowance at zero", async () => {
+    const client = employerFake({
+      routes: {
+        employer_job_post_credits: [
+          { org_id: "org-1", total: 10, used: 4, granted_at: null, expires_at: null },
+        ],
+      },
     });
-    await expect(getOrgFeaturedView(client, ORG_ID, "stranger")).rejects.toBeInstanceOf(
-      OrgAccessError
+    await expect(getJobPostAllowance(client as never, "org-1")).resolves.toEqual({
+      total: 10,
+      used: 4,
+      remaining: 6,
+      grantedAt: null,
+      expiresAt: null,
+    });
+
+    const overspent = employerFake({
+      routes: {
+        employer_job_post_credits: [
+          { org_id: "org-1", total: 3, used: 5, granted_at: null, expires_at: null },
+        ],
+      },
+    });
+    const allowance = await getJobPostAllowance(overspent as never, "org-1");
+    expect(allowance?.remaining).toBe(0);
+  });
+
+  it("merges the paid seat row with the entitled seat count from the RPC", async () => {
+    const client = employerFake({
+      routes: {
+        recruiter_seats: [{ org_id: "org-1", count: 5, active_until: "2026-12-01T00:00:00Z" }],
+      },
+      rpcs: { odesseus_org_required_seat_count: 3 },
+    });
+    await expect(getEmployerSeats(client as never, "org-1")).resolves.toEqual({
+      required: 3,
+      active: 5,
+      activeUntil: "2026-12-01T00:00:00Z",
+      extraSeats: 2,
+      isOverEntitled: false,
+    });
+  });
+
+  it("flags an organization whose team exceeds its paid seats", async () => {
+    const client = employerFake({
+      routes: { recruiter_seats: [{ org_id: "org-1", count: 1, active_until: null }] },
+      rpcs: { odesseus_org_required_seat_count: 4 },
+    });
+    const seats = await getEmployerSeats(client as never, "org-1");
+    expect(seats).toMatchObject({ required: 4, active: 1, extraSeats: 0, isOverEntitled: true });
+  });
+
+  /**
+   * The important negative case. When the entitlement RPC is unavailable the
+   * service must not substitute a number — a fabricated 1 would either hide an
+   * over-entitled team or invent a chargeable extra seat.
+   */
+  it("returns null when neither the paid seat row nor the entitlement RPC answers", async () => {
+    await expect(getEmployerSeats(employerFake({}) as never, "org-1")).resolves.toBeNull();
+  });
+
+  it("still reports paid seats when the entitlement RPC is unavailable", async () => {
+    const client = employerFake({
+      routes: { recruiter_seats: [{ org_id: "org-1", count: 2, active_until: null }] },
+    });
+    const seats = await getEmployerSeats(client as never, "org-1");
+    // Falls back to the single included seat rather than to a stale count.
+    expect(seats).toMatchObject({ required: 1, active: 2, extraSeats: 1 });
+  });
+
+  it("returns null from the live seat RPC when it cannot answer", async () => {
+    await expect(getActiveSeatCount(employerFake({}) as never, "org-1")).resolves.toBeNull();
+    const ok = employerFake({ rpcs: { odesseus_org_live_seat_count: 3 } });
+    await expect(getActiveSeatCount(ok as never, "org-1")).resolves.toBe(3);
+  });
+});
+
+describe("employer job quota", () => {
+  it("uses the granted allowance while the subscription is live", () => {
+    const quota = resolveJobQuota(
+      { tier: "growth", status: "active", jobPostsIncluded: 10, periodStart: null, periodEnd: null },
+      { total: 10, used: 4, remaining: 6, grantedAt: null, expiresAt: null }
     );
+    expect(quota).toEqual({ included: 10, used: 4, remaining: 6, canPublishJob: true });
   });
 
-  it("treats a listing as boosted only while the paid window is genuinely running", async () => {
-    const { client } = featuredDb({
-      featured_listings: {
-        [LISTING_COLUMNS]: {
-          data: [
-            {
-              id: "7aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-              job_id: JOB_ID,
-              tier: "featured_7d",
-              starts_at: daysFromNow(-1),
-              expires_at: daysFromNow(6),
-              is_active: true,
-            },
-            {
-              id: "7bbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-              job_id: OTHER_JOB_ID,
-              tier: "featured_14d",
-              starts_at: daysFromNow(-20),
-              expires_at: daysFromNow(-6),
-              is_active: true,
-            },
-          ],
-        },
-      },
-      employer_jobs: {
-        [JOB_COLUMNS]: {
-          data: [
-            { id: JOB_ID, title: "Staff Nurse", location: "Austin, TX", status: "published" },
-            { id: OTHER_JOB_ID, title: "Closed role", location: null, status: "closed" },
-          ],
-        },
-      },
-    });
-
-    const view = await getOrgFeaturedView(client, ORG_ID, OWNER_ID);
-    const [live, lapsed] = view.listings;
-
-    expect(live.isBoosted).toBe(true);
-    expect(lapsed.isBoosted).toBe(false);
-    // is_active is still true on the lapsed row: the sweep has not run yet. The
-    // view must not advertise a boost that has already ended.
-    expect(lapsed.isActive).toBe(true);
-    expect(view.jobs.map((job) => job.isBoosted)).toEqual([true, false]);
-  });
-
-  it("joins job titles so a listing is readable after the posting is renamed or gone", async () => {
-    const { client } = featuredDb({
-      featured_listings: {
-        [LISTING_COLUMNS]: {
-          data: [
-            {
-              id: "7aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-              job_id: JOB_ID,
-              tier: "ai_30d",
-              starts_at: daysFromNow(0),
-              expires_at: daysFromNow(30),
-              is_active: true,
-            },
-            {
-              id: "7bbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-              job_id: "5ffffffff-ffff-4fff-8fff-ffffffffffff",
-              tier: "featured_7d",
-              starts_at: daysFromNow(-2),
-              expires_at: daysFromNow(5),
-              is_active: true,
-            },
-          ],
-        },
-      },
-      employer_jobs: {
-        [JOB_COLUMNS]: {
-          data: [{ id: JOB_ID, title: "Staff Nurse", location: null, status: "published" }],
-        },
-      },
-    });
-
-    const view = await getOrgFeaturedView(client, ORG_ID, OWNER_ID);
-    expect(view.listings.map((listing) => listing.jobTitle)).toEqual([
-      "Staff Nurse",
-      // The posting is gone; the purchase history is not.
-      null,
-    ]);
-  });
-
-  it("surfaces a stored tier the catalog no longer sells instead of coercing it", async () => {
-    const { client } = featuredDb({
-      featured_listings: {
-        [LISTING_COLUMNS]: {
-          data: [
-            {
-              id: "7aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-              job_id: JOB_ID,
-              tier: "legacy_boost",
-              starts_at: daysFromNow(-1),
-              expires_at: daysFromNow(6),
-              is_active: true,
-            },
-          ],
-        },
-      },
-    });
-
-    const view = await getOrgFeaturedView(client, ORG_ID, OWNER_ID);
-    expect(view.listings[0].tier).toBe("legacy_boost");
-  });
-
-  it("orders listings newest first, by window start", async () => {
-    const { client } = featuredDb({
-      featured_listings: {
-        [LISTING_COLUMNS]: {
-          data: [
-            {
-              id: "7aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-              job_id: JOB_ID,
-              tier: "featured_7d",
-              starts_at: daysFromNow(-1),
-              expires_at: daysFromNow(6),
-              is_active: true,
-            },
-            {
-              id: "7bbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-              job_id: OTHER_JOB_ID,
-              tier: "ai_30d",
-              starts_at: daysFromNow(-10),
-              expires_at: daysFromNow(20),
-              is_active: true,
-            },
-          ],
-        },
-      },
-    });
-
-    const view = await getOrgFeaturedView(client, ORG_ID, OWNER_ID);
-    expect(view.listings.map((listing) => listing.tier)).toEqual(["featured_7d", "ai_30d"]);
-  });
-
-  it("carries the catalog tiers on the payload", async () => {
-    const { client } = featuredDb();
-    const view = await getOrgFeaturedView(client, ORG_ID, OWNER_ID);
-    expect(view.tiers.map((tier) => tier.amountCents)).toEqual([2900, 4900, 12900]);
-  });
-
-  it("fails loudly when the listings read fails", async () => {
-    const { client } = featuredDb({
-      featured_listings: { [LISTING_COLUMNS]: { error: { message: "permission denied" } } },
-    });
-    await expect(getOrgFeaturedView(client, ORG_ID, OWNER_ID)).rejects.toThrow(
-      /permission denied/
+  it("falls back to the plan's own included count when no allowance row exists", () => {
+    const quota = resolveJobQuota(
+      { tier: "starter", status: "active", jobPostsIncluded: 3, periodStart: null, periodEnd: null },
+      null
     );
+    expect(quota).toEqual({ included: 3, used: 0, remaining: 3, canPublishJob: true });
   });
 
-  it("fails loudly when the jobs read fails", async () => {
-    const { client } = featuredDb({
-      employer_jobs: { [JOB_COLUMNS]: { error: { message: "timeout" } } },
+  /**
+   * A past-due or canceled subscription entitles nothing. Showing the included
+   * quota anyway would promise job posts the company has not paid for.
+   */
+  it("entitles nothing when the subscription is not live", () => {
+    for (const status of ["past_due", "canceled", "incomplete"]) {
+      expect(
+        resolveJobQuota(
+          { tier: "business", status, jobPostsIncluded: 25, periodStart: null, periodEnd: null },
+          { total: 25, used: 2, remaining: 23, grantedAt: null, expiresAt: null }
+        )
+      ).toEqual({ included: 0, used: 2, remaining: 0, canPublishJob: false });
+    }
+  });
+
+  it("refuses to publish once the allowance is spent", () => {
+    const quota = resolveJobQuota(
+      { tier: "starter", status: "active", jobPostsIncluded: 3, periodStart: null, periodEnd: null },
+      { total: 3, used: 3, remaining: 0, grantedAt: null, expiresAt: null }
+    );
+    expect(quota).toMatchObject({ remaining: 0, canPublishJob: false });
+  });
+
+  it("returns null when there is no subscription at all", () => {
+    expect(resolveJobQuota(null, null)).toBeNull();
+  });
+});
+
+describe("employer overview", () => {
+  const fullRoutes = {
+    employer_members: [
+      { org_id: "org-1", user_id: "user-1", role: "owner", created_at: "2026-01-04T10:00:00Z" },
+      { org_id: "org-1", user_id: "user-2", role: "recruiter", created_at: "2026-02-01T10:00:00Z" },
+    ],
+    employer_organizations: [ORG_ROW],
+    employer_subscriptions: [SUBSCRIPTION_ROW],
+    employer_job_post_credits: [
+      { org_id: "org-1", total: 10, used: 4, granted_at: null, expires_at: null },
+    ],
+    recruiter_seats: [{ org_id: "org-1", count: 3, active_until: null }],
+    employer_jobs: [
+      jobRow(),
+      jobRow({ id: "job-2", title: "Staff Engineer", status: "draft" }),
+    ],
+    employer_member_invitations: [],
+    featured_listings: [],
+  };
+
+  it("assembles one overview from every employer record", async () => {
+    const client = employerFake({
+      routes: fullRoutes,
+      rpcs: { odesseus_org_required_seat_count: 3 },
     });
-    await expect(getOrgFeaturedView(client, ORG_ID, OWNER_ID)).rejects.toThrow(/timeout/);
+    const overview = await getEmployerOverview(client as never, "user-1");
+
+    expect(overview.organization?.name).toBe("Acme Corp");
+    expect(overview.needsOrganization).toBe(false);
+    expect(overview.yourRole).toBe("owner");
+    expect(overview.jobCounts).toEqual({ total: 2, published: 1, draft: 1, closed: 0 });
+    expect(overview.quota).toEqual({ included: 10, used: 4, remaining: 6, canPublishJob: true });
+    expect(overview.seats).toMatchObject({ required: 3, active: 3, extraSeats: 0 });
+    expect(overview.members).toHaveLength(2);
+    expect(overview.notices).toEqual([]);
+  });
+
+  it("reads the account once, from the auth record", async () => {
+    const client = employerFake({
+      routes: fullRoutes,
+      rpcs: { odesseus_org_required_seat_count: 3 },
+      authUser: {
+        email: "owner@acme.test",
+        user_metadata: { account_type: "employer", company_name: "Acme Corp" },
+      },
+    });
+    const overview = await getEmployerOverview(client as never, "user-1");
+    expect(overview.account).toEqual({
+      userId: "user-1",
+      email: "owner@acme.test",
+      companyName: "Acme Corp",
+      isEmployerAccount: true,
+    });
+  });
+
+  /**
+   * The state an employer actually lands in today: `employerSignup` creates the
+   * auth user but does not provision an organization. The overview has to say
+   * so rather than rendering an all-zero dashboard.
+   */
+  it("flags a missing organization instead of reporting zeros", async () => {
+    const client = employerFake({
+      routes: {},
+      authUser: {
+        email: "new@acme.test",
+        user_metadata: { account_type: "employer", company_name: "Acme Corp" },
+      },
+    });
+    const overview = await getEmployerOverview(client as never, "user-1");
+
+    expect(overview.needsOrganization).toBe(true);
+    expect(overview.organization).toBeNull();
+    expect(overview.jobs).toEqual([]);
+    expect(overview.jobCounts).toEqual({ total: 0, published: 0, draft: 0, closed: 0 });
+    expect(overview.quota).toBeNull();
+    expect(overview.account.companyName).toBe("Acme Corp");
+  });
+
+  it("raises a notice when the stored plan is not one this build recognises", async () => {
+    const client = employerFake({
+      routes: {
+        ...fullRoutes,
+        employer_subscriptions: [{ ...SUBSCRIPTION_ROW, tier: "enterprise" }],
+      },
+      rpcs: { odesseus_org_required_seat_count: 3 },
+    });
+    const overview = await getEmployerOverview(client as never, "user-1");
+    expect(overview.notices).toContain("Your stored plan is not one this build recognises.");
+    // The quota still reflects the stored record; only the label is withheld.
+    expect(overview.subscription?.tier).toBe("enterprise");
+  });
+
+  it("still renders a working overview when every optional read is unavailable", async () => {
+    const client = employerFake({
+      routes: {
+        employer_organizations: [ORG_ROW],
+        employer_members: [{ org_id: "org-1", user_id: "user-1", role: "owner" }],
+      },
+    });
+    const overview = await getEmployerOverview(client as never, "user-1");
+    expect(overview.needsOrganization).toBe(false);
+    expect(overview.subscription).toBeNull();
+    expect(overview.seats).toBeNull();
+    expect(overview.quota).toBeNull();
   });
 });

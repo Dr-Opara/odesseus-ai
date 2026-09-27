@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   APPLY_TIERS,
   EMPLOYER_PLANS,
-  LIVE_PLANS,
   MIN_APPLY_PRICE_CENTS,
   PROMOTION_PLANS,
   RECRUITER_SEAT_PRICE_LABEL,
@@ -10,6 +9,7 @@ import {
   canAffordTier,
   formatCents,
 } from "@/lib/pricing/candidate-pricing";
+import * as candidatePricing from "@/lib/pricing/candidate-pricing";
 
 describe("candidate apply tiers", () => {
   it("prices Standard Apply at exactly $0.49", () => {
@@ -112,13 +112,23 @@ describe("employer plans", () => {
   });
 });
 
-describe("Odesseus Live plans", () => {
-  it("keeps the $24.99 single session as the first plan", () => {
-    expect(LIVE_PLANS[0].priceLabel).toBe("$24.99");
+describe("Odesseus Live stays out of the public pricing module", () => {
+  it("exports no Live plan list at all", () => {
+    // Odesseus Live is private to signed-in applicants. This module is the
+    // display catalogue every public pricing page imports, so the Live
+    // session/pass/annual figures must not live here (they stay in the
+    // auth-gated billing catalogue).
+    expect("LIVE_PLANS" in candidatePricing).toBe(false);
   });
 
-  it("keeps the 3-pass and annual options", () => {
-    expect(LIVE_PLANS[1].priceLabel).toBe("$59.99");
-    expect(LIVE_PLANS[2].priceLabel).toBe("$499");
+  it("carries none of the banned Live price figures as an export value", () => {
+    const banned = ["$24.99", "$59.99", "$499"];
+    const exported = Object.values(candidatePricing).map((value) => {
+      if (value === null || value === undefined) return "";
+      return typeof value === "function" ? "" : JSON.stringify(value);
+    });
+    for (const token of banned) {
+      expect(exported.some((text) => text.includes(token))).toBe(false);
+    }
   });
 });

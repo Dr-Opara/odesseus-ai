@@ -41,8 +41,8 @@ export default async function ResumeTailoringPage({
   return (
     <AppShell
       fullName={profile?.full_name}
-      applicationCredits={credits.application_credits}
-      interviewPasses={credits.interview_passes}
+      walletBalanceCents={credits.walletBalanceCents}
+      interviewPasses={credits.interviewPasses}
     >
       <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 100px" }}>
       <div style={{ width: "min(1040px,100%)", margin: "20px auto 0" }}>

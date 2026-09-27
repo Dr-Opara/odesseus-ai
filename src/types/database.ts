@@ -1972,6 +1972,48 @@ export type Database = {
         }
         Relationships: []
       }
+      employer_seat_adjustments: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          idempotency_key: string | null
+          new_quantity: number
+          org_id: string
+          outcome: string
+          previous_quantity: number | null
+          removed_user_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          idempotency_key?: string | null
+          new_quantity: number
+          org_id: string
+          outcome?: string
+          previous_quantity?: number | null
+          removed_user_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          idempotency_key?: string | null
+          new_quantity?: number
+          org_id?: string
+          outcome?: string
+          previous_quantity?: number | null
+          removed_user_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      },
       resume_tailorings: {
         Row: {
           approved_at: string | null

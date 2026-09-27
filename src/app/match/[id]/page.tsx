@@ -61,8 +61,8 @@ export default async function MatchResultPage({
   return (
     <AppShell
       fullName={profile?.full_name}
-      applicationCredits={credits.application_credits}
-      interviewPasses={credits.interview_passes}
+      walletBalanceCents={credits.walletBalanceCents}
+      interviewPasses={credits.interviewPasses}
     >
       <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 90px" }}>
       <div style={{ width: "min(900px,100%)", margin: "20px auto 0" }}>

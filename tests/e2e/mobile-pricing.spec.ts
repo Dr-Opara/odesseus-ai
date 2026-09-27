@@ -6,6 +6,7 @@ import { test, expect } from "@playwright/test";
 // surface still renders unchanged (no tabs there).
 
 const mobileViewports = [
+  { name: "375x812", width: 375, height: 812 },
   { name: "390x844", width: 390, height: 844 },
   { name: "393x852", width: 393, height: 852 },
   { name: "430x932", width: 430, height: 932 },
@@ -35,6 +36,9 @@ test.describe("mobile /pricing audience tabs (signed out)", () => {
       for (const figure of ["$0.49", "$1.99", "$10", "$20", "$50"]) {
         await expect(page.getByText(figure).filter({ visible: true }).first()).toBeVisible();
       }
+      // `\u00B7` is the middle dot the pricing rows use as their separator
+      // (see src/components/mobile/mobile-pricing.tsx). Spelled as an escape
+      // so the matcher can never be corrupted by a file-write encoding pass.
       await expect(page.getByText(/Interview preparation \u00B7 Free/i)).toBeVisible();
       // Odesseus Live is private to signed-in applicants. The public mobile
       // pricing surface must not advertise session prices, passes, or annual.

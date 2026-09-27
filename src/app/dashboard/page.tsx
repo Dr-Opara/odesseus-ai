@@ -13,6 +13,7 @@ import {
   getRecentActivity,
   getUpcomingInterviews,
 } from "@/lib/candidate/service";
+import { MIN_APPLY_PRICE_CENTS, formatCents } from "@/lib/pricing/candidate-pricing";
 
 function firstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "there";
@@ -51,8 +52,7 @@ export default async function DashboardPage() {
 
   if (!profile?.onboarding_completed) redirect("/onboarding");
 
-  const appCredits = credits.application_credits;
-  const interviewPasses = credits.interview_passes;
+  const interviewPasses = credits.interviewPasses;
   const matchThreshold = jobPreferences?.min_match_score ?? 85;
   const strongMatches = jobs.filter((job) => (job.match_score ?? 0) >= matchThreshold);
   const bestJob = strongMatches[0] || jobs[0] || null;
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
   return (
     <AppShell
       fullName={profile.full_name}
-      applicationCredits={appCredits}
+      walletBalanceCents={credits.walletBalanceCents}
       interviewPasses={interviewPasses}
       active="home"
     >
@@ -193,14 +193,32 @@ export default async function DashboardPage() {
                 <Link href="/billing" className="muted">Manage</Link>
               </div>
               <div className="dashboard-balance-grid">
-                <div><strong>{appCredits}</strong><span className="muted">Application credits</span></div>
+                <div>
+                  <strong>{formatCents(credits.walletBalanceCents)}</strong>
+                  <span className="muted">Wallet</span>
+                </div>
                 <div><strong>{interviewPasses}</strong><span className="muted">Interview passes</span></div>
               </div>
-              {credits.live_unlimited_until &&
-              new Date(credits.live_unlimited_until) > new Date() ? (
+              {/*
+                The wallet is the only thing that can start an application, so
+                an empty wallet is the one balance state worth an explicit
+                prompt. Interview passes drive Odesseus Live instead, which is
+                a different purchase and has its own call to action.
+              */}
+              {credits.walletBalanceCents < MIN_APPLY_PRICE_CENTS ? (
+                <Link
+                  className="btn btn-primary"
+                  href="/billing"
+                  style={{ marginTop: 14 }}
+                >
+                  Add {formatCents(MIN_APPLY_PRICE_CENTS)} to your wallet
+                </Link>
+              ) : null}
+              {credits.liveUnlimitedUntil &&
+              new Date(credits.liveUnlimitedUntil) > new Date() ? (
                 <div className="badge" style={{ marginTop: 14 }}>
                   Odesseus Live Annual active through{" "}
-                  {new Date(credits.live_unlimited_until).toLocaleDateString()}
+                  {new Date(credits.liveUnlimitedUntil).toLocaleDateString()}
                 </div>
               ) : null}
             </section>

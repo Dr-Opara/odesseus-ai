@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { trackEventClient, conversions } from "@/lib/analytics/tracking";
 
 export default function ReferralCapture() {
   useEffect(() => {
@@ -8,6 +9,10 @@ export default function ReferralCapture() {
     const code = url.searchParams.get("ref");
     if (!code) return;
 
+    // Track the referral click
+    conversions.partnerReferralClick(code, url.pathname);
+
+    // Capture the referral for attribution
     fetch("/api/referrals/capture", {
       method: "POST",
       headers: { "content-type": "application/json" },

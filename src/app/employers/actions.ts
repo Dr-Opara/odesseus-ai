@@ -88,3 +88,16 @@ export async function employerLogin(formData: FormData) {
 
   redirect("/employers/dashboard");
 }
+
+/**
+ * Sign out of the employer portal.
+ *
+ * Employer sessions end at the employer sign-in page rather than the candidate
+ * `/login`, so a shared device is never left on a candidate login form after
+ * an employer signs out. The candidate `logout` action is left untouched.
+ */
+export async function employerLogout() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/employers/login");
+}

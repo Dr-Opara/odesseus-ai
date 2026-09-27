@@ -36,9 +36,10 @@ test.describe("marketing page titles and headings", () => {
 });
 
 test.describe("shared marketing navigation", () => {
-  // The desktop nav links are hidden below 680px (replaced by the mobile
-  // menu, covered separately below) — force a desktop viewport here so
-  // this block behaves the same under both Playwright projects.
+  // The desktop nav is the full navigation. Below 900px it collapses (the
+  // header renders as a wordmark with no menu — see "signed-out mobile public
+  // navigation" below), so force a desktop viewport here to keep this block
+  // behaving the same under both Playwright projects.
   test.use({ viewport: { width: 1280, height: 800 } });
 
   const navLinks = [
@@ -68,29 +69,47 @@ test.describe("shared marketing navigation", () => {
   });
 });
 
-test.describe("mobile navigation menu", () => {
+test.describe("signed-out mobile public navigation", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test("opens and contains every nav link plus account actions", async ({ page }) => {
-    // /apply keeps the shared marketing nav visible at phone width (the
-    // homepage becomes the Screen 00 splash), so it is used to drive the menu.
+  test("collapses to the wordmark with no hamburger and no duplicated splash actions", async ({ page }) => {
+    // The splash owns the public calls to action on a phone: Get Started,
+    // Business Login and See Pricing. The shared header therefore has no
+    // collapsible menu and does not repeat Sign In / Get Started.
     await page.goto("/apply");
-    await page.locator(".figma-nav-toggle").click();
+    await expect(page.locator(".figma-nav-toggle")).toHaveCount(0);
+    await expect(page.locator(".figma-nav-mobile")).toHaveCount(0);
+    await expect(page.locator(".figma-nav-links")).toBeHidden();
+    await expect(page.locator(".figma-nav-actions")).toBeHidden();
 
-    const panel = page.locator(".figma-nav-mobile");
-    await expect(panel).toBeVisible();
-    for (const label of ["Job Seekers", "Employers", "Pricing", "About", "FAQ"]) {
-      await expect(panel.getByRole("link", { name: label })).toBeVisible();
-    }
-    await expect(panel.getByRole("link", { name: "Sign In" })).toBeVisible();
-    await expect(panel.getByRole("link", { name: "Get Started" })).toBeVisible();
+    // The wordmark stays as a way back to the splash.
+    const wordmark = page.locator(".figma-nav a").first();
+    await expect(wordmark).toBeVisible();
+    await expect(wordmark).toHaveAttribute("href", "/");
   });
 
-  test("navigates to a dedicated page and closes the menu", async ({ page }) => {
+  test("keeps every public route reachable from the mobile footer", async ({ page }) => {
+    // Navigation is not lost with the hamburger: the shared footer already
+    // lists the public routes and renders at phone width.
     await page.goto("/apply");
-    await page.locator(".figma-nav-toggle").click();
-    await page.locator(".figma-nav-mobile").getByRole("link", { name: "Pricing" }).click();
-    await expect(page).toHaveURL(/\/pricing$/);
+    const footer = page.locator(".figma-footer");
+    await expect(footer).toBeVisible();
+    for (const [label, href] of [
+      ["How it works", "/how-it-works"],
+      ["Pricing", "/pricing"],
+      ["Agents", "/agents"],
+      ["About", "/about"],
+      ["Partner Program", "/partners"],
+      ["For Employers", "/employers"],
+    ] as const) {
+      await expect(footer.getByRole("link", { name: label }).first()).toHaveAttribute("href", href);
+    }
+  });
+
+  test("the employer site has no mobile menu either", async ({ page }) => {
+    await page.goto("/employers");
+    await expect(page.locator(".figma-nav")).toBeHidden();
+    await expect(page.locator(".figma-nav-toggle")).toHaveCount(0);
     await expect(page.locator(".figma-nav-mobile")).toHaveCount(0);
   });
 });

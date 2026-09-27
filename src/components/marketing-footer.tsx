@@ -9,13 +9,13 @@ export default function MarketingFooter() {
           <OdesseusWordmark size="md" inverse />
           <p>AI-powered career support from discovery to interview.</p>
         </div>
-        <div><strong>Job Seekers</strong><Link href="/how-it-works">How it works</Link><Link href="/pricing">Pricing</Link><Link href="/agents">Agents</Link></div>
+        <div><strong>Job Seekers</strong><Link href="/how-it-works">How it works</Link><Link href="/pricing">Pricing</Link><Link href="/agents">Agents</Link><Link href="/first-100">First 100</Link></div>
         <div><strong>Employers</strong><Link href="/employers">For Employers</Link><Link href="/employers#pricing">Employer Pricing</Link></div>
-        <div><strong>Company</strong><Link href="/about">About</Link><Link href="/partners">Partner Program</Link><Link href="/about#faq">FAQ</Link></div>
+        <div><strong>Company</strong><Link href="/about">About</Link><Link href="/careers">Careers</Link><Link href="/partners">Partner Program</Link><Link href="/about#faq">FAQ</Link></div>
       </div>
       <div className="figma-footer-bottom">
         <span>Developed by ProcessPilot Technologies LLC</span>
-        <span>© 2026 Odesseus.ai</span>
+        <span>\u00A9 2026 Odesseus.ai</span>
       </div>
     </footer>
   );

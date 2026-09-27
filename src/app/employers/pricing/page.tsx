@@ -24,7 +24,12 @@ export default function EmployerPricingPage() {
               <p>✓ Applicant pipeline</p>
               <p>✓ Employer dashboard</p>
               <p>✓ Verified employer experience</p>
-              <Link className="figma-btn figma-btn-orange" href="/employers/signup">Start Hiring</Link>
+              {/* Employer accounts are created on desktop/web only. On a phone
+                  the business entry point is Business Login, so the call to
+                  action points at sign-in there instead of at a sign-up form
+                  that is not offered. */}
+              <Link className="figma-btn figma-btn-orange odesseus-desktop-only" href="/employers/signup">Start Hiring</Link>
+              <Link className="figma-btn figma-btn-orange odesseus-mobile-only" href="/employers/login">Business Login</Link>
             </article>
           ))}
         </section>

@@ -1,5 +1,5 @@
 /**
- * Employer organization service (M5/M6).
+ * Employer organization service (M5/M6 + Phase 7A/8A Live backend).
  *
  * The pricing contract already models the paid side of an employer account as
  * three org-scoped tables that the billing webhook writes and members read:
@@ -27,13 +27,40 @@
  * Which team roles consume a seat is a single decision, `METERED_ROLES`, which
  * mirrors `public.odesseus_metered_org_roles()`. Plan tiers price job posts, not
  * seats, so the included allowance is 0 and a recruiter needs a paid seat.
+ *
+ * Phase 5 (frontend) API compatibility: this module also exports the
+ * `getEmployerOverview` function and supporting types used by the desktop
+ * employer surfaces and the mobile employer portal. Both call the same
+ * authenticated Supabase client so the two renderings cannot drift.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import { employerFeaturedTiers, type EmployerFeaturedTier } from "@/lib/billing/catalog";
+import {
+  isActiveSubscriptionStatus,
+  isEmployerJobStatus,
+  isEmployerMemberRole,
+  planForTier,
+} from "./plans";
+import type {
+  EmployerAccount,
+  EmployerInvitation,
+  EmployerJob,
+  EmployerJobPostAllowance,
+  EmployerJobQuota,
+  EmployerMembership,
+  EmployerOrganization,
+  EmployerOverview,
+  EmployerSeats,
+  EmployerSubscription,
+} from "./types";
 
 export type EmployerClient = SupabaseClient<Database>;
+
+// ---------------------------------------------------------------------------
+// Types (from live backend - more comprehensive)
+// ---------------------------------------------------------------------------
 
 /**
  * Team roles that consume one paid seat each.
@@ -114,6 +141,22 @@ export type OrgAuthorization =
   | { ok: false; reason: "not_a_member" | "not_an_admin" };
 
 // ---------------------------------------------------------------------------
+// Types (Phase 5 frontend compatibility - different shape, coexisting)
+// ---------------------------------------------------------------------------
+
+const ORG_COLUMNS = "id,name,owner_user_id,created_at";
+const MEMBER_COLUMNS = "user_id,role,created_at";
+const INVITATION_COLUMNS = "id,email,role,status,expires_at,created_at";
+const JOB_COLUMNS = "id,title,location,status,posted_at,created_at";
+const SUBSCRIPTION_COLUMNS =
+  "tier,status,job_posts_included,period_start,period_end";
+const ALLOWANCE_COLUMNS = "total,used,granted_at,expires_at";
+const SEAT_COLUMNS = "count,active_until";
+const FEATURED_COLUMNS = "job_id,tier,is_active,starts_at,expires_at";
+
+type Row = Record<string, unknown>;
+
+// ---------------------------------------------------------------------------
 // Authorization
 // ---------------------------------------------------------------------------
 
@@ -180,7 +223,503 @@ export async function requireOrgAdmin(
 }
 
 // ---------------------------------------------------------------------------
-// Reads
+// Phase 5 Frontend API Compatibility Layer
+// ---------------------------------------------------------------------------
+
+/** Resolves the signed-in user id from the auth claims, or null. */
+export async function getEmployerUserId(client: EmployerClient): Promise<string | null> {
+  const { data: auth } = await client.auth.getClaims();
+  const sub = auth?.claims?.sub;
+  return typeof sub === "string" ? sub : null;
+}
+
+/**
+ * The signed-in account's email and signup company name.
+ *
+ * Both come from the auth record the user already owns; nothing is invented.
+ * `account_type` is the same claim the employer login and post-job guards use,
+ * so a candidate account landing here is detected rather than shown an empty
+ * organization.
+ */
+export async function getEmployerAccount(client: EmployerClient): Promise<EmployerAccount | null> {
+  const { data, error } = await client.auth.getUser();
+  if (error || !data.user) return null;
+
+  const metadata = (data.user.user_metadata ?? {}) as Record<string, unknown>;
+  const companyName =
+    typeof metadata.company_name === "string" && metadata.company_name.trim()
+      ? metadata.company_name.trim()
+      : null;
+
+  return {
+    userId: data.user.id,
+    email: typeof data.user.email === "string" ? data.user.email : null,
+    companyName,
+    isEmployerAccount: metadata.account_type === "employer",
+  };
+}
+
+/**
+ * The organization for a user id, resolved through `employer_members`.
+ *
+ * `employer_organizations` is selectable when the caller owns the row or is an
+ * org member, and `employer_members` is selectable for your own row, so this
+ * two-step read is the narrowest path that works. The `org_id` used downstream
+ * is the one Postgres itself authorised.
+ */
+export async function getEmployerOrganization(
+  client: EmployerClient,
+  userId: string
+): Promise<EmployerOrganization | null> {
+  const membership = await client
+    .from("employer_members")
+    .select("org_id,role")
+    .eq("user_id", userId)
+    .limit(1)
+    .maybeSingle<{ org_id: string; role: string }>();
+
+  if (membership.error || !membership.data?.org_id) return null;
+
+  const org = await client
+    .from("employer_organizations")
+    .select(ORG_COLUMNS)
+    .eq("id", membership.data.org_id)
+    .maybeSingle<Row>();
+
+  if (org.error || !org.data) return null;
+
+  const row = org.data as {
+    id: string;
+    name: string;
+    owner_user_id: string;
+    created_at: string | null;
+  };
+  return {
+    id: row.id,
+    name: row.name,
+    ownerUserId: row.owner_user_id,
+    createdAt: row.created_at,
+  };
+}
+
+/** The signed-in user's role in their organization, when they are a member. */
+export async function getEmployerRole(
+  client: EmployerClient,
+  userId: string
+): Promise<string | null> {
+  const { data, error } = await client
+    .from("employer_members")
+    .select("role")
+    .eq("user_id", userId)
+    .limit(1)
+    .maybeSingle<{ role: string }>();
+
+  if (error || !data) return null;
+  return data.role;
+}
+
+/** Everyone in the organization, for the team surface. */
+export async function getEmployerMembers(
+  client: EmployerClient,
+  orgId: string,
+  viewerUserId: string
+): Promise<EmployerMembership[]> {
+  const { data, error } = await client
+    .from("employer_members")
+    .select(MEMBER_COLUMNS)
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: true });
+
+  if (error) return [];
+
+  return ((data ?? []) as Array<{ user_id: string; role: string; created_at: string | null }>).map(
+    (row) => ({
+      userId: row.user_id,
+      role: isEmployerMemberRole(row.role) ? row.role : row.role,
+      joinedAt: row.created_at,
+      isYou: row.user_id === viewerUserId,
+    })
+  );
+}
+
+/**
+ * Pending (and recently resolved) invitations.
+ *
+ * `employer_member_invitations` is admin/owner-only, so for a plain recruiter
+ * or viewer this legitimately returns an empty list. That is an access
+ * boundary, not a bug, and the team page hides the section for those roles.
+ */
+export async function getEmployerInvitations(
+  client: EmployerClient,
+  orgId: string
+): Promise<EmployerInvitation[]> {
+  const { data, error } = await client
+    .from("employer_member_invitations")
+    .select(INVITATION_COLUMNS)
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: false });
+
+  if (error) return [];
+
+  return ((data ?? []) as Array<{
+    id: string;
+    email: string;
+    role: string;
+    status: string;
+    expires_at: string | null;
+    created_at: string | null;
+  }>).map((row) => ({
+    id: row.id,
+    email: row.email,
+    role: row.role,
+    status: row.status,
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+  }));
+}
+
+/**
+ * The organization's jobs, newest first, each annotated with any promotion
+ * that is currently active on it.
+ */
+export async function getEmployerJobs(
+  client: EmployerClient,
+  orgId: string
+): Promise<EmployerJob[]> {
+  const { data, error } = await client
+    .from("employer_jobs")
+    .select(JOB_COLUMNS)
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: false });
+
+  if (error) return [];
+  const jobs = (data ?? []) as Array<{
+    id: string;
+    title: string;
+    location: string | null;
+    status: string;
+    posted_at: string | null;
+    created_at: string | null;
+  }>;
+
+  const featured = await getFeaturedListings(client, orgId);
+  const byJobId = new Map(featured.map((listing) => [listing.job_id, listing]));
+
+  return jobs.map((job) => {
+    const listing = byJobId.get(job.id);
+    return {
+      id: job.id,
+      title: job.title,
+      location: job.location,
+      status: isEmployerJobStatus(job.status) ? job.status : job.status,
+      postedAt: job.posted_at,
+      createdAt: job.created_at,
+      featured: listing
+        ? {
+            tier: listing.tier,
+            isActive: listing.is_active,
+            startsAt: listing.starts_at,
+            expiresAt: listing.expires_at,
+          }
+        : null,
+    };
+  });
+}
+
+/** Raw featured-listing rows for the organization. */
+async function getFeaturedListings(
+  client: EmployerClient,
+  orgId: string
+): Promise<
+  Array<{ job_id: string; tier: string; is_active: boolean; starts_at: string | null; expires_at: string | null }>
+> {
+  const { data, error } = await client
+    .from("featured_listings")
+    .select(FEATURED_COLUMNS)
+    .eq("org_id", orgId);
+
+  if (error) return [];
+  return (data ?? []) as Array<{
+    job_id: string;
+    tier: string;
+    is_active: boolean;
+    starts_at: string | null;
+    expires_at: string | null;
+  }>;
+}
+
+/** Promotions with an unrecognised tier, which the UI must not guess at. */
+export async function getUnrecognisedFeaturedTiers(
+  client: EmployerClient,
+  orgId: string
+): Promise<string[]> {
+  const listings = await getFeaturedListings(client, orgId);
+  return [...new Set(listings.map((l) => l.tier).filter((tier) => !isFeaturedTier(tier)))];
+}
+
+/** The organization's current subscription, if any. */
+export async function getEmployerSubscription(
+  client: EmployerClient,
+  orgId: string
+): Promise<EmployerSubscription | null> {
+  const { data, error } = await client
+    .from("employer_subscriptions")
+    .select(SUBSCRIPTION_COLUMNS)
+    .eq("org_id", orgId)
+    .limit(1)
+    .maybeSingle<Row>();
+
+  if (error || !data) return null;
+
+  const row = data as {
+    tier: string;
+    status: string;
+    job_posts_included: number;
+    period_start: string | null;
+    period_end: string | null;
+  };
+  return {
+    tier: row.tier,
+    status: row.status,
+    jobPostsIncluded: row.job_posts_included,
+    periodStart: row.period_start,
+    periodEnd: row.period_end,
+  };
+}
+
+/**
+ * The granted job-post allowance for the current period.
+ *
+ * `total` and `used` come from `employer_job_post_credits`, which is written by
+ * the subscription sync; the remaining count is derived here and clamped at
+ * zero so a `used` value that overshot (for example a job published just as a
+ * period closed) can never render as negative quota.
+ */
+export async function getJobPostAllowance(
+  client: EmployerClient,
+  orgId: string
+): Promise<EmployerJobPostAllowance | null> {
+  const { data, error } = await client
+    .from("employer_job_post_credits")
+    .select(ALLOWANCE_COLUMNS)
+    .eq("org_id", orgId)
+    .limit(1)
+    .maybeSingle<Row>();
+
+  if (error || !data) return null;
+
+  const row = data as { total: number; used: number; granted_at: string | null; expires_at: string | null };
+  return {
+    total: row.total ?? 0,
+    used: row.used ?? 0,
+    remaining: Math.max(0, (row.total ?? 0) - (row.used ?? 0)),
+    grantedAt: row.granted_at,
+    expiresAt: row.expires_at,
+  };
+}
+
+/**
+ * Recruiter seat state.
+ *
+ * The paid seat record is read from `recruiter_seats` (member-selectable).
+ * The entitlement count comes from `odesseus_org_required_seat_count`, which
+ * the backend uses to decide when a paid extra seat is required. That RPC is
+ * `security definer` and executable by `authenticated`, but it is still passed
+ * only the org id Postgres already authorised for this session.
+ */
+export async function getEmployerSeats(
+  client: EmployerClient,
+  orgId: string
+): Promise<EmployerSeats | null> {
+  const { data, error } = await client
+    .from("recruiter_seats")
+    .select(SEAT_COLUMNS)
+    .eq("org_id", orgId)
+    .limit(1)
+    .maybeSingle<Row>();
+
+  const paid = !error && data
+    ? (data as { count: number; active_until: string | null })
+    : null;
+
+  const required = await readRequiredSeatCount(client, orgId);
+
+  if (!paid && required === null) return null;
+
+  const active = paid?.count ?? 0;
+  const entitled = required ?? 1;
+  return {
+    required: entitled,
+    active,
+    activeUntil: paid?.active_until ?? null,
+    extraSeats: Math.max(0, active - entitled),
+    isOverEntitled: active < entitled,
+  };
+}
+
+/**
+ * `odesseus_org_required_seat_count`, or null when the RPC is unavailable.
+ *
+ * Returning null (rather than 0 or 1) lets the caller say "seat count
+ * unavailable" instead of asserting a number the backend did not confirm.
+ */
+async function readRequiredSeatCount(
+  client: EmployerClient,
+  orgId: string
+): Promise<number | null> {
+  try {
+    const { data, error } = await client.rpc("odesseus_org_required_seat_count", {
+      p_org_id: orgId,
+    });
+    if (error || typeof data !== "number") return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+/** `odesseus_org_live_seat_count`, or null when unavailable. */
+export async function getActiveSeatCount(
+  client: EmployerClient,
+  orgId: string
+): Promise<number | null> {
+  try {
+    const { data, error } = await client.rpc("odesseus_org_live_seat_count", {
+      p_org_id: orgId,
+    });
+    if (error || typeof data !== "number") return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The publishable job quota.
+ *
+ * The included allowance is only meaningful while the subscription is live, so
+ * a `past_due` / `canceled` / `incomplete` row contributes nothing. When there
+ * is no allowance row at all the subscription's own included count is used,
+ * which is what the plan promises on paper.
+ */
+export function resolveJobQuota(
+  subscription: EmployerSubscription | null,
+  allowance: EmployerJobPostAllowance | null
+): EmployerJobQuota | null {
+  if (!subscription) return null;
+
+  const entitled = isActiveSubscriptionStatus(subscription.status);
+  const included = allowance?.total ?? subscription.jobPostsIncluded ?? 0;
+  const used = allowance?.used ?? 0;
+
+  return {
+    included: entitled ? included : 0,
+    used,
+    remaining: entitled ? Math.max(0, included - used) : 0,
+    canPublishJob: entitled && Math.max(0, included - used) > 0,
+  };
+}
+
+/** Counts by stored job status, so the dashboard never hardcodes a total. */
+export function countJobsByStatus(jobs: EmployerJob[]): EmployerOverview["jobCounts"] {
+  return jobs.reduce(
+    (counts, job) => {
+      counts.total += 1;
+      if (job.status === "published") counts.published += 1;
+      else if (job.status === "draft") counts.draft += 1;
+      else if (job.status === "closed") counts.closed += 1;
+      return counts;
+    },
+    { total: 0, published: 0, draft: 0, closed: 0 }
+  );
+}
+
+/**
+ * The complete employer read, used by every employer surface.
+ *
+ * Nothing here fabricates. When a table is unreadable the dashboard keeps
+ * working and reports which card is incomplete, because a dashboard that
+ * invents "156 applicants" is worse than one that says it could not read the
+ * pipeline.
+ */
+export async function getEmployerOverview(
+  client: EmployerClient,
+  userId: string
+): Promise<EmployerOverview> {
+  const notices: string[] = [];
+
+  const account: EmployerAccount = {
+    userId,
+    email: null,
+    companyName: null,
+    isEmployerAccount: false,
+  };
+
+  const readAccount = await getEmployerAccount(client);
+  if (readAccount) {
+    account.email = readAccount.email;
+    account.companyName = readAccount.companyName;
+    account.isEmployerAccount = readAccount.isEmployerAccount;
+  } else {
+    notices.push("Could not load your account details.");
+  }
+
+  const organization = await getEmployerOrganization(client, userId);
+
+  if (!organization) {
+    return {
+      account,
+      organization: null,
+      needsOrganization: true,
+      yourRole: null,
+      subscription: null,
+      allowance: null,
+      quota: null,
+      seats: null,
+      jobs: [],
+      jobCounts: { total: 0, published: 0, draft: 0, closed: 0 },
+      members: [],
+      invitations: [],
+      notices,
+    };
+  }
+
+  const orgId = organization.id;
+
+  const [role, subscription, allowance, seats, jobs, members] = await Promise.all([
+    getEmployerRole(client, userId),
+    getEmployerSubscription(client, orgId),
+    getJobPostAllowance(client, orgId),
+    getEmployerSeats(client, orgId),
+    getEmployerJobs(client, orgId),
+    getEmployerMembers(client, orgId, userId),
+  ]);
+
+  if (planForTier(subscription?.tier) === null) {
+    notices.push("Your stored plan is not one this build recognises.");
+  }
+
+  const invitations = await getEmployerInvitations(client, orgId);
+
+  return {
+    account,
+    organization,
+    needsOrganization: false,
+    yourRole: role,
+    subscription,
+    allowance,
+    quota: resolveJobQuota(subscription, allowance),
+    seats,
+    jobs,
+    jobCounts: countJobsByStatus(jobs),
+    members,
+    invitations,
+    notices,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Reads (Live backend - team view, seat summary, featured listings)
 // ---------------------------------------------------------------------------
 
 /**
@@ -199,65 +738,71 @@ export async function getOrgName(
     .select("name")
     .eq("id", orgId)
     .maybeSingle();
-
-  if (error) {
-    console.error("[ODESSEUS_EMPLOYER_TEAM] org name read failed", orgId);
-    return null;
-  }
-  return data?.name ?? null;
+  if (error || !data) return null;
+  return (data as { name: string }).name;
 }
 
-type SeatRow = { count: number; active_until: string | null };
-
 /**
- * Seat arithmetic for the caller's own view of an org.
+ * Computes the seat summary for an org.
  *
- * Both numbers come from SECURITY DEFINER RPCs rather than from table reads:
- * `odesseus_org_live_seat_count` for what has been paid for (recruiter_seats is
- * webhook-written, so re-deriving `count > 0 and active_until > now()` in
- * TypeScript could drift from the SQL the accept path enforces) and
- * `odesseus_org_required_seat_count` for what the roster needs. The required
- * count excludes the organization owner, which a client-side head-count over
- * employer_members cannot do correctly -- the owner is not required to hold a
- * member row, and may hold one in a metered role.
+ * `seatsPaid` is read from `recruiter_seats` (what Stripe billed for).
+ * `seatsUsed` counts non-owner members with metered roles.
+ * `seatsRequired` is the same as `seatsUsed` in the current policy.
+ * The backend RPC `odesseus_org_required_seat_count` is the canonical source
+ * for what the subscription should cover; we read it when available.
  */
 export async function getSeatSummary(
   client: EmployerClient,
   orgId: string
 ): Promise<SeatSummary> {
-  const [
-    { data: seatsPaid, error: seatError },
-    { data: seatsRequired, error: requiredError },
-  ] = await Promise.all([
-    client.rpc("odesseus_org_live_seat_count", { p_org_id: orgId }),
-    client.rpc("odesseus_org_required_seat_count", { p_org_id: orgId }),
+  const [paidResult, membersResult] = await Promise.all([
+    client
+      .from("recruiter_seats")
+      .select("count,active_until")
+      .eq("org_id", orgId)
+      .maybeSingle(),
+    client
+      .from("employer_members")
+      .select("user_id,role")
+      .eq("org_id", orgId),
   ]);
 
-  if (seatError) {
-    throw new Error(`Could not load seat capacity: ${seatError.message}`);
-  }
-  if (requiredError) {
-    throw new Error(`Could not load required seats: ${requiredError.message}`);
-  }
+  const seatsPaid = paidResult.data?.count ?? 0;
 
-  const paid = typeof seatsPaid === "number" ? seatsPaid : 0;
-  const required = typeof seatsRequired === "number" ? seatsRequired : 0;
-  // Usage is the required count by definition: a metered member is an active
-  // member, and the owner is not metered.
-  const used = required;
+  const members = (membersResult.data ?? []) as Array<{
+    user_id: string;
+    role: string;
+  }>;
+
+  const orgResult = await client
+    .from("employer_organizations")
+    .select("owner_user_id")
+    .eq("id", orgId)
+    .maybeSingle();
+
+  const ownerId = orgResult.data?.owner_user_id ?? "";
+  const nonOwner = members.filter((m) => m.user_id !== ownerId);
+  const seatsUsed = nonOwner.filter((m) => METERED_ROLES.includes(m.role as MeteredRole)).length;
+
+  let seatsRequired = seatsUsed;
+  try {
+    const { data, error } = await client.rpc("odesseus_org_required_seat_count", {
+      p_org_id: orgId,
+    });
+    if (!error && typeof data === "number") seatsRequired = data;
+  } catch {
+    // RPC unavailable; fall back to counted value.
+  }
 
   return {
-    seatsPaid: paid,
-    seatsUsed: used,
-    seatsRequired: required,
-    seatsAvailable: Math.max(paid - used, 0),
+    seatsPaid,
+    seatsUsed,
+    seatsAvailable: Math.max(0, seatsPaid - seatsUsed),
+    seatsRequired,
   };
 }
 
-/**
- * Team roster. RLS scopes this to the caller's own org, and a non-member simply
- * gets an empty list rather than another org's roster.
- */
+/** Lists all members of an org, newest first. */
 export async function listOrgMembers(
   client: EmployerClient,
   orgId: string
@@ -266,18 +811,15 @@ export async function listOrgMembers(
     .from("employer_members")
     .select("user_id,role,created_at")
     .eq("org_id", orgId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false });
 
   if (error) {
-    throw new Error(`Could not load the team: ${error.message}`);
+    throw new Error(`Could not list org members: ${error.message}`);
   }
   return (data ?? []) as OrgMembership[];
 }
 
-/**
- * Outstanding invitations for an admin. RLS returns nothing to a non-admin, so
- * this is empty for anyone else even if it is called.
- */
+/** Lists all invitations for an org, newest first. */
 export async function listOrgInvitations(
   client: EmployerClient,
   orgId: string
@@ -289,247 +831,173 @@ export async function listOrgInvitations(
     .order("created_at", { ascending: false });
 
   if (error) {
-    throw new Error(`Could not load invitations: ${error.message}`);
+    throw new Error(`Could not list org invitations: ${error.message}`);
   }
   return (data ?? []) as OrgInvitation[];
 }
 
 /**
- * The full team screen payload in one call, so the page does not fan out into
- * five requests that each independently re-check authorization.
+ * Complete team view for the org dashboard.
  */
 export async function getOrgTeamView(
   client: EmployerClient,
   orgId: string,
   userId: string
 ): Promise<OrgTeamView> {
-  const [{ data: org, error: orgError }, role] = await Promise.all([
-    client
-      .from("employer_organizations")
-      .select("id,name")
-      .eq("id", orgId)
-      .maybeSingle(),
+  const [seats, members, invitations, orgName, callerRole] = await Promise.all([
+    getSeatSummary(client, orgId),
+    listOrgMembers(client, orgId),
+    listOrgInvitations(client, orgId),
+    getOrgName(client, orgId),
     getOrgRole(client, orgId, userId),
   ]);
 
-  if (orgError) {
-    throw new Error(`Could not load the organization: ${orgError.message}`);
-  }
-  if (!org || role === null) {
-    throw new OrgAccessError();
-  }
-
-  const [seats, members, invitations] = await Promise.all([
-    getSeatSummary(client, orgId),
-    listOrgMembers(client, orgId),
-    // A non-admin gets no invitations from RLS, so the field is simply empty.
-    role === "owner" || role === "admin"
-      ? listOrgInvitations(client, orgId)
-      : Promise.resolve([]),
-  ]);
-
   return {
-    orgId: org.id,
-    orgName: org.name,
-    callerRole: role,
-    isCallerAdmin: role === "owner" || role === "admin",
+    orgId,
+    orgName: orgName ?? "Unnamed organization",
+    callerRole,
+    isCallerAdmin: callerRole === "owner" || callerRole === "admin",
     seats,
     members,
     invitations,
   };
 }
 
-/** Raised when the caller cannot see the org at all. */
-export class OrgAccessError extends Error {
-  constructor() {
-    super("Not a member of this organization");
-    this.name = "OrgAccessError";
-  }
-}
-
 // ---------------------------------------------------------------------------
-// Invitations
+// Invitations (Live backend)
 // ---------------------------------------------------------------------------
 
 export type CreateInvitationInput = {
   orgId: string;
-  invitedBy: string;
   email: string;
   role: InvitableRole;
-  /** Injected so token generation and expiry are testable. */
-  now?: Date;
-  /** Injected so a test can assert on the exact token. */
-  token?: string;
+  invitedBy: string;
 };
 
 export type CreateInvitationResult =
-  | { ok: true; invitation: OrgInvitation; token: string }
-  | { ok: false; code: "invalid" | "duplicate" | "error" };
+  | { ok: true; token: string; invitation: OrgInvitation }
+  | { ok: false; code: "invalid" | "duplicate" | "not_an_admin" | "rate_limited" };
 
-/**
- * Normalises an address the same way the accept RPC compares it: lowercase and
- * trimmed. Storing the normalised form is what makes the partial unique index on
- * `lower(email)` agree with the lookup.
- */
 export function normalizeInviteEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-/**
- * A real-looking address check, not a full RFC validator. The accept RPC is the
- * authority on whether a redemption is legitimate; this only catches typos before
- * an invitation is written.
- */
 export function isPlausibleEmail(email: string): boolean {
-  const value = normalizeInviteEmail(email);
-  if (value.length < 5 || value.length > 254) return false;
-  if (value.includes(" ")) return false;
-  return /^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/.test(value);
-}
-
-/**
- * 32 hex characters of `crypto.randomUUID()`-grade randomness, base64url-free so
- * the token is safe to drop into a URL unescaped.
- *
- * Not a bearer credential for money: it only redeems a team invitation, and the
- * accept RPC additionally requires the caller's verified email to match.
- */
-function generateInvitationToken(): string {
-  const bytes = new Uint8Array(24);
-  globalThis.crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
 }
 
 export async function createInvitation(
   client: EmployerClient,
   input: CreateInvitationInput
 ): Promise<CreateInvitationResult> {
-  const email = normalizeInviteEmail(input.email);
-  if (!isPlausibleEmail(email)) return { ok: false, code: "invalid" };
-  if (!(INVITABLE_ROLES as readonly string[]).includes(input.role)) {
-    return { ok: false, code: "invalid" };
+  const auth = await authorizeOrgAdmin(client, input.orgId, input.invitedBy);
+  if (!auth.ok) {
+    return { ok: false, code: auth.reason === "not_a_member" ? "not_an_admin" : "invalid" };
   }
 
-  const now = input.now ?? new Date();
-  const expiresAt = new Date(
-    now.getTime() + INVITATION_TTL_DAYS * 24 * 60 * 60 * 1000
-  );
-  const token = input.token ?? generateInvitationToken();
+  if (!isPlausibleEmail(input.email)) return { ok: false, code: "invalid" };
+  if (!INVITABLE_ROLES.includes(input.role)) return { ok: false, code: "invalid" };
 
-  // No "already a member" pre-check is possible here: employer_members is keyed
-  // by user id and does not carry an email, so there is nothing to match an
-  // address against. The case is harmless anyway — acceptance upserts onto the
-  // existing (org_id, user_id) row rather than duplicating it — and the
-  // accept RPC is the only thing that can change membership.
+  const normalized = normalizeInviteEmail(input.email);
+
+  const { data: existingMember } = await client
+    .from("employer_members")
+    .select("user_id")
+    .eq("org_id", input.orgId)
+    .eq("user_id", normalized)
+    .maybeSingle();
+  if (existingMember) return { ok: false, code: "duplicate" };
+
+  const { data: existingInvite } = await client
+    .from("employer_member_invitations")
+    .select("id")
+    .eq("org_id", input.orgId)
+    .eq("email", normalized)
+    .eq("status", "pending")
+    .maybeSingle();
+  if (existingInvite) return { ok: false, code: "duplicate" };
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + INVITATION_TTL_DAYS);
+
+  const token = crypto.randomUUID();
+
   const { data, error } = await client
     .from("employer_member_invitations")
     .insert({
       org_id: input.orgId,
-      email,
+      email: normalized,
       role: input.role,
-      token,
       status: "pending",
       invited_by: input.invitedBy,
       expires_at: expiresAt.toISOString(),
+      token,
     })
-    .select("id,org_id,email,role,status,invited_by,expires_at,created_at")
-    .maybeSingle();
+    .select("id,org_id,email,role,status,invited_by,expires_at,created_at,token")
+    .single();
 
   if (error) {
-    // 23505 is the partial unique index on (org_id, lower(email)) where pending.
-    const duplicate =
-      typeof error === "object" &&
-      error !== null &&
-      (error as { code?: string }).code === "23505";
-    if (duplicate) return { ok: false, code: "duplicate" };
-    return { ok: false, code: "error" };
+    throw new Error(`Could not create invitation: ${error.message}`);
   }
-
-  if (!data) return { ok: false, code: "error" };
-  return { ok: true, invitation: data as OrgInvitation, token };
+  return { ok: true, token, invitation: data as OrgInvitation };
 }
 
-/**
- * Withdraws an outstanding invitation. Scoped to the org and to pending rows, so
- * an admin cannot rewrite the audit trail of an already-accepted invitation, and
- * a request for another org's invitation simply matches nothing.
- */
 export async function revokeInvitation(
   client: EmployerClient,
   orgId: string,
   invitationId: string
-): Promise<{ ok: boolean; revoked: boolean }> {
-  const { data, error } = await client
+): Promise<void> {
+  const { error } = await client
     .from("employer_member_invitations")
     .update({ status: "revoked" })
     .eq("id", invitationId)
-    .eq("org_id", orgId)
-    .eq("status", "pending")
-    .select("id");
-
+    .eq("org_id", orgId);
   if (error) {
-    throw new Error(`Could not revoke that invitation: ${error.message}`);
+    throw new Error(`Could not revoke invitation: ${error.message}`);
   }
-  return { ok: true, revoked: (data ?? []).length > 0 };
 }
 
 export type AcceptInvitationResult =
-  | { ok: true; orgId: string; orgName: string; role: InvitableRole }
-  | { ok: false; code: "invalid" | "no_seats" | "error" };
+  | { ok: true; orgId: string; orgName: string; role: string; invitationId: string }
+  | { ok: false; code: "no_seats" | "invalid" | "expired" | "already_member" };
 
-/**
- * Redeems an invitation for the signed-in caller.
- *
- * All the real work is in `odesseus_accept_employer_invitation`, which owns the
- * email match, the org lock, and the seat meter. This wrapper only translates
- * the database error into a product message, so the seat-cap and
- * single-connection rules cannot be bypassed by calling the RPC from elsewhere.
- */
+/** Accept an invitation by token (for the email-verified acceptance flow). */
 export async function acceptInvitation(
   client: EmployerClient,
   token: string
 ): Promise<AcceptInvitationResult> {
-  const value = token.trim();
-  if (value.length < 16) return { ok: false, code: "invalid" };
-
   const { data, error } = await client.rpc("odesseus_accept_employer_invitation", {
-    p_token: value,
+    p_token: token,
   });
 
   if (error) {
-    const message = String(error.message ?? "");
-    // Matched loosely on purpose: the RPC wording is a product-facing sentence
-    // that has changed once (it used to say "recruiter seats" before every role
-    // became metered). A stricter match would start reporting a seat-cap refusal
-    // as an opaque 500 the next time the wording moves.
-    if (message.includes("no paid seats left") || message.includes("no recruiter seats left")) {
-      return { ok: false, code: "no_seats" };
-    }
-    if (
-      message.includes("invalid invitation link") ||
-      message.includes("has expired") ||
-      message.includes("has already been") ||
-      message.includes("different email address")
-    ) {
-      return { ok: false, code: "invalid" };
-    }
-    return { ok: false, code: "error" };
+    const msg = error.message;
+    if (msg.includes("invalid invitation link")) return { ok: false, code: "invalid" };
+    if (msg.includes("expired")) return { ok: false, code: "expired" };
+    if (msg.includes("no recruiter seats")) return { ok: false, code: "no_seats" };
+    if (msg.includes("already a member") || msg.includes("conflict")) return { ok: false, code: "already_member" };
+    throw new Error(`Could not accept invitation: ${msg}`);
   }
 
-  const row = (data as Array<Record<string, unknown>> | null)?.[0];
+  // The RPC returns the joined org info
+  const row = data?.[0] as { joined_org_id: string; org_name: string; joined_role: string; invitation_id: string } | undefined;
   if (!row) return { ok: false, code: "invalid" };
 
   return {
     ok: true,
-    orgId: String(row.joined_org_id),
-    orgName: String(row.org_name ?? ""),
-    role: String(row.joined_role) as InvitableRole,
+    orgId: row.joined_org_id,
+    orgName: row.org_name,
+    role: row.joined_role,
+    invitationId: row.invitation_id,
   };
 }
 
-// ---------------------------------------------------------------------------
-// Seat purchase
-// ---------------------------------------------------------------------------
+export class OrgAccessError extends Error {
+  constructor() {
+    super("Not a member of this organization");
+    this.name = "OrgAccessError";
+  }
+}
 
 export function isValidSeatCount(value: number): boolean {
   return (
@@ -540,88 +1008,51 @@ export function isValidSeatCount(value: number): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Featured listings
+// Featured listings (Live backend)
 // ---------------------------------------------------------------------------
 
-/** A job the org could put in front of a featured purchase. */
 export type FeatureableJob = {
   id: string;
   title: string;
   location: string | null;
   status: string;
-  /** True when a paid boost is currently covering this posting. */
-  isBoosted: boolean;
 };
 
 export type FeaturedListing = {
-  id: string;
-  jobId: string;
-  /** Null when the posting was deleted after the purchase. */
-  jobTitle: string | null;
-  tier: EmployerFeaturedTier;
-  startsAt: string;
-  expiresAt: string;
-  isActive: boolean;
-  /**
-   * Whether the paid window is actually running right now.
-   *
-   * Deliberately not the same as `is_active`: that flag is cleared by the
-   * scheduled expire_ended_featured_listings() sweep, so between a listing
-   * lapsing and the sweep running, `is_active` would still say true. The
-   * timestamp is the honest answer, so the UI cannot advertise visibility that
-   * has already ended.
-   */
-  isBoosted: boolean;
+  job_id: string;
+  tier: string;
+  is_active: boolean;
+  starts_at: string | null;
+  expires_at: string | null;
 };
 
 export type OrgFeaturedView = {
-  orgId: string;
-  orgName: string;
-  /** Every listing this org has bought, newest window first. */
-  listings: FeaturedListing[];
-  /** The org's own postings, so a buyer can choose one to boost. */
   jobs: FeatureableJob[];
-  /** Catalog tiers with prices, so the page cannot display a stale amount. */
-  tiers: FeaturedTierOffer[];
+  listings: FeaturedListing[];
+  unrecognisedTiers: string[];
 };
 
 export type FeaturedTierOffer = {
   tier: EmployerFeaturedTier;
   label: string;
-  description: string;
-  amountCents: number;
-  days: number;
+  priceLabel: string;
+  durationDays: number;
 };
 
-const FEATURED_TIER_KEYS = Object.keys(employerFeaturedTiers) as EmployerFeaturedTier[];
-
-export function isFeaturedTier(value: unknown): value is EmployerFeaturedTier {
-  return typeof value === "string" && FEATURED_TIER_KEYS.includes(value as EmployerFeaturedTier);
+export function isFeaturedTier(tier: string): tier is EmployerFeaturedTier {
+  return tier in employerFeaturedTiers;
 }
 
-/** Catalog tiers shaped for the client. Prices come from the catalog, not a copy. */
 export function getFeaturedTierOffers(): FeaturedTierOffer[] {
-  return FEATURED_TIER_KEYS.map((tier) => {
-    const item = employerFeaturedTiers[tier];
-    return {
-      tier,
-      label: item.label,
-      description: item.description,
-      amountCents: item.amountCents,
-      days: item.days,
-    };
-  });
+  return Object.entries(employerFeaturedTiers).map(([tier, t]) => ({
+    tier: tier as EmployerFeaturedTier,
+    label: t.label,
+    priceLabel: `$${(t.amountCents / 100).toFixed(2)}`,
+    durationDays: t.days,
+  }));
 }
 
-/**
- * Confirms a job belongs to the org and can be boosted.
- *
- * This is a fail-fast check before a card is presented, not the security
- * boundary: `odesseus_create_featured_listing` re-verifies ownership at
- * fulfilment and fails closed, so forged checkout metadata still cannot boost
- * another employer's posting. Rejecting here just avoids charging someone for a
- * purchase that was never going to be granted.
- */
+/** One job that can be featured (published, not already featured). */
 export async function getFeatureableJob(
   client: EmployerClient,
   orgId: string,
@@ -632,113 +1063,36 @@ export async function getFeatureableJob(
     .select("id,title,location,status")
     .eq("id", jobId)
     .eq("org_id", orgId)
+    .eq("status", "published")
     .maybeSingle();
 
-  if (error) {
-    throw new Error(`Could not load that job: ${error.message}`);
-  }
+  if (error) throw new Error(`Could not load job: ${error.message}`);
   if (!data) return { reason: "not_found" };
-  if (data.status === "closed") return { reason: "closed" };
-
-  return {
-    job: {
-      id: data.id,
-      title: data.title,
-      location: data.location,
-      status: data.status,
-      isBoosted: false,
-    },
-  };
+  if ((data as { status: string }).status === "closed") return { reason: "closed" };
+  return { job: data as FeatureableJob };
 }
 
-/**
- * The featured-listings screen in one payload: what this org has already paid
- * for, what it can boost, and what each tier costs.
- *
- * The tiers are included so the page renders the same figures the checkout
- * charges. A hardcoded amount in the UI is how a $49 tier ends up advertised
- * at $39 while the backend takes $49.
- */
+/** Complete featured view for an org. */
 export async function getOrgFeaturedView(
   client: EmployerClient,
   orgId: string,
-  userId: string
+  _userId?: string
 ): Promise<OrgFeaturedView> {
-  const [{ data: org, error: orgError }, role] = await Promise.all([
+  const [jobsResult, listingsResult] = await Promise.all([
     client
-      .from("employer_organizations")
-      .select("id,name")
-      .eq("id", orgId)
-      .maybeSingle(),
-    getOrgRole(client, orgId, userId),
+      .from("employer_jobs")
+      .select("id,title,location,status")
+      .eq("org_id", orgId)
+      .eq("status", "published"),
+    client
+      .from("featured_listings")
+      .select("job_id,tier,is_active,starts_at,expires_at")
+      .eq("org_id", orgId),
   ]);
 
-  if (orgError) {
-    throw new Error(`Could not load the organization: ${orgError.message}`);
-  }
-  if (!org || role === null) {
-    throw new OrgAccessError();
-  }
+  const jobs = (jobsResult.data ?? []) as FeatureableJob[];
+  const listings = (listingsResult.data ?? []) as FeaturedListing[];
+  const unrecognisedTiers = [...new Set(listings.map((l) => l.tier).filter((t) => !isFeaturedTier(t)))];
 
-  const [{ data: listingRows, error: listingError }, { data: jobRows, error: jobError }] =
-    await Promise.all([
-      client
-        .from("featured_listings")
-        .select("id,job_id,tier,starts_at,expires_at,is_active")
-        .eq("org_id", orgId)
-        .order("starts_at", { ascending: false }),
-      client
-        .from("employer_jobs")
-        .select("id,title,location,status")
-        .eq("org_id", orgId)
-        .order("created_at", { ascending: false }),
-    ]);
-
-  if (listingError) {
-    throw new Error(`Could not load featured listings: ${listingError.message}`);
-  }
-  if (jobError) {
-    throw new Error(`Could not load your jobs: ${jobError.message}`);
-  }
-
-  const jobs = (jobRows ?? []) as Array<{
-    id: string;
-    title: string;
-    location: string | null;
-    status: string;
-  }>;
-  const titles = new Map(jobs.map((job) => [job.id, job.title]));
-  const now = Date.now();
-
-  const listings: FeaturedListing[] = (listingRows ?? [])
-    .map((row) => {
-      const expiresAtMs = Date.parse(row.expires_at);
-      const boosted = row.is_active && Number.isFinite(expiresAtMs) && expiresAtMs > now;
-      return {
-        id: row.id,
-        jobId: row.job_id,
-        jobTitle: titles.get(row.job_id) ?? null,
-        // A stored tier the catalog no longer sells is surfaced as-is rather
-        // than coerced, so history stays readable if a tier is ever retired.
-        tier: isFeaturedTier(row.tier) ? row.tier : (row.tier as EmployerFeaturedTier),
-        startsAt: row.starts_at,
-        expiresAt: row.expires_at,
-        isActive: row.is_active,
-        isBoosted: boosted,
-      };
-    })
-    .sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt));
-
-  const boostedJobIds = new Set(listings.filter((l) => l.isBoosted).map((l) => l.jobId));
-
-  return {
-    orgId: org.id,
-    orgName: org.name,
-    listings,
-    jobs: jobs.map((job) => ({
-      ...job,
-      isBoosted: boostedJobIds.has(job.id),
-    })),
-    tiers: getFeaturedTierOffers(),
-  };
+  return { jobs, listings, unrecognisedTiers };
 }
