@@ -25,9 +25,9 @@ export default function Home() {
           <MarketingNav inverse />
           <div className="figma-hero-grid">
             <div className="figma-hero-copy">
-              <span className="figma-eyebrow">YOUR AI AGENT FOR GETTING HIRED</span>
-              <h1>Stop applying manually.</h1>
-              <p>Find better-fit roles, optimize the resume you already have, apply with Odesseus, track every application, and prepare when interviews arrive.</p>
+              <span className="figma-eyebrow">YOUR AI CAREER AGENT</span>
+              <h1>Discover Your Dream Job with Odesseus.ai</h1>
+              <p>Find matched roles, optimize the resume you already have, choose Apply or Smart Apply, track every application, and prepare for interviews.</p>
               <div className="figma-actions"><Link className="figma-btn figma-btn-orange" href="/signup">Start Finding Jobs</Link><Link className="figma-link-light" href="/employers">For Employers →</Link></div>
             </div>
             <div className="figma-job-stack" aria-label="Live job match examples">
