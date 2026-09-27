@@ -99,6 +99,73 @@ CREATE INDEX IF NOT EXISTS webhook_events_org_created_idx
   ON public.webhook_events (org_id, created_at DESC);
 
 -- ---------------------------------------------------------------------------
+-- 7. Additional query performance indexes (identified from code review)
+-- ---------------------------------------------------------------------------
+
+-- Application run events: run_id + event_type (for event sourcing queries)
+CREATE INDEX IF NOT EXISTS application_run_events_run_type_idx
+  ON public.application_run_events (run_id, event_type);
+
+-- Application run questions: run_id + status (for fetching pending questions)
+CREATE INDEX IF NOT EXISTS application_run_questions_run_status_idx
+  ON public.application_run_questions (run_id, status);
+
+-- Application answer vault: user_id + answer_key (for auto-fill lookups)
+CREATE INDEX IF NOT EXISTS application_answer_vault_user_key_idx
+  ON public.application_answer_vault (user_id, answer_key);
+
+-- Interviews: user_id + status + created_at (for dashboard queries)
+CREATE INDEX IF NOT EXISTS interviews_user_status_created_idx
+  ON public.interviews (user_id, status, created_at DESC);
+
+-- Interview readiness: interview_id + version_number (for latest briefing)
+CREATE INDEX IF NOT EXISTS interview_readiness_interview_version_idx
+  ON public.interview_readiness (interview_id, version_number DESC);
+
+-- Interview round memory: application_id + round_number (for multi-round history)
+CREATE INDEX IF NOT EXISTS interview_round_memory_app_round_idx
+  ON public.interview_round_memory (application_id, round_number);
+
+-- Post-interview analyses: interview_id + version_number (for versioning)
+CREATE INDEX IF NOT EXISTS post_interview_analyses_interview_version_idx
+  ON public.post_interview_analyses (interview_id, version_number);
+
+-- Follow-up drafts: user_id + status + created_at (for draft management)
+CREATE INDEX IF NOT EXISTS follow_up_drafts_user_status_created_idx
+  ON public.follow_up_drafts (user_id, status, created_at DESC);
+
+-- Notification preferences: user_id (for user preference lookups)
+-- Already has primary key on user_id
+
+-- Application status events: application_id + event_type (for status history)
+CREATE INDEX IF NOT EXISTS application_status_events_app_type_idx
+  ON public.application_status_events (application_id, event_type);
+
+-- Billing events: user_id + sku + created_at (for purchase history)
+CREATE INDEX IF NOT EXISTS billing_events_user_sku_created_idx
+  ON public.billing_events (user_id, sku, created_at DESC);
+
+-- Candidate job opportunities: status + created_at (for job discovery)
+CREATE INDEX IF NOT EXISTS job_opportunities_status_created_idx
+  ON public.job_opportunities (status, created_at DESC);
+
+-- Partner campaigns: status + starts_at (for active campaign queries)
+CREATE INDEX IF NOT EXISTS partner_campaigns_status_starts_idx
+  ON public.partner_campaigns (status, starts_at);
+
+-- Partner content: campaign_id + partner_id + status (for campaign management)
+CREATE INDEX IF NOT EXISTS partner_content_campaign_partner_status_idx
+  ON public.partner_content (campaign_id, partner_id, status);
+
+-- Resume tailorings: user_id + job_id (for candidate history)
+CREATE INDEX IF NOT EXISTS resume_tailorings_user_job_idx
+  ON public.resume_tailorings (user_id, job_id);
+
+-- Resumes: user_id + is_approved + created_at (for approved resume lookup)
+CREATE INDEX IF NOT EXISTS resumes_user_approved_created_idx
+  ON public.resumes (user_id, is_approved, created_at DESC);
+
+-- ---------------------------------------------------------------------------
 -- 7. Retry/recovery: explicit idempotency keys for webhook processing
 -- ---------------------------------------------------------------------------
 

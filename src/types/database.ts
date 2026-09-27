@@ -2126,7 +2126,38 @@ export type Database = {
         }
         Relationships: []
       }
-    }
+
+      analytics_events: {
+        Row: { campaign: string | null, event_category: string, event_name: string, id: string, occurred_at: string, org_id: string | null, anonymous_id: string | null, properties: Json, referral_code: string | null, received_at: string, session_id: string | null, source: string | null, user_id: string | null },
+        Insert: { campaign?: string | null, event_category: string, event_name: string, id?: string, occurred_at?: string, org_id?: string | null, anonymous_id?: string | null, properties?: Json, referral_code?: string | null, received_at?: string, session_id?: string | null, source?: string | null, user_id?: string | null },
+        Update: { campaign?: string | null, event_category?: string, event_name?: string, id?: string, occurred_at?: string, org_id?: string | null, anonymous_id?: string | null, properties?: Json, referral_code?: string | null, received_at?: string, session_id?: string | null, source?: string | null, user_id?: string | null },
+        Relationships: [] }
+      career_applications: {
+        Row: { applied_at: string, cover_letter: string | null, created_at: string, email: string, full_name: string, github_url: string | null, id: string, job_opening_id: string, linkedin_url: string | null, location: string | null, phone: string | null, portfolio_url: string | null, resume_url: string, reviewed_at: string | null, reviewed_by: string | null, status: string, updated_at: string, work_authorization: string | null },
+        Insert: { applied_at?: string, cover_letter?: string | null, created_at?: string, email: string, full_name: string, github_url?: string | null, job_opening_id: string, linkedin_url?: string | null, location?: string | null, phone?: string | null, portfolio_url?: string | null, resume_url: string, status?: string, updated_at?: string, work_authorization?: string | null },
+        Update: { applied_at?: string, cover_letter?: string | null, created_at?: string, email?: string, full_name?: string, github_url?: string | null, job_opening_id?: string, linkedin_url?: string | null, location?: string | null, phone?: string | null, portfolio_url?: string | null, resume_url?: string, status?: string, updated_at?: string, work_authorization?: string | null },
+        Relationships: [{ foreignKeyName: "career_applications_job_opening_id_fkey", columns: ["job_opening_id"], isOneToOne: false, referencedRelation: "career_job_openings", referencedColumns: ["id"] }] }
+      career_job_openings: {
+        Row: { closed_at: string | null, created_at: string, created_by: string, currency: string, department: string, description_md: string, id: string, location: string, posted_at: string | null, requirements_md: string | null, salary_max_cents: number | null, salary_min_cents: number | null, status: string, title: string, updated_at: string, work_type: string },
+        Insert: { closed_at?: string | null, created_at?: string, created_by: string, currency?: string, department: string, description_md: string, id?: string, location: string, posted_at?: string | null, requirements_md?: string | null, salary_max_cents?: number | null, salary_min_cents?: number | null, status?: string, title: string, updated_at?: string, work_type?: string },
+        Update: { closed_at?: string | null, created_at?: string, created_by?: string, currency?: string, department?: string, description_md?: string | null, id?: string, location?: string, posted_at?: string | null, requirements_md?: string | null, salary_max_cents?: number | null, salary_min_cents?: number | null, status?: string, title?: string, updated_at?: string, work_type?: string },
+        Relationships: [{ foreignKeyName: "career_job_openings_created_by_fkey", columns: ["created_by"], isOneToOne: false, referencedRelation: "profiles", referencedColumns: ["id"] }] }
+      first100_campaign: {
+        Row: { benefit_description: string | null, created_at: string, current_enrollment: number, description: string | null, ends_at: string | null, id: string, is_active: boolean, max_enrollment: number, name: string, starts_at: string, updated_at: string },
+        Insert: { benefit_description?: string | null, created_at?: string, current_enrollment?: number, description?: string | null, ends_at?: string | null, id?: string, is_active?: boolean, max_enrollment?: number, name: string, starts_at?: string, updated_at?: string },
+        Update: { benefit_description?: string | null, created_at?: string, current_enrollment?: number, description?: string | null, ends_at?: string | null, id?: string, is_active?: boolean, max_enrollment?: number, name?: string, starts_at?: string, updated_at?: string },
+        Relationships: [] }
+      first100_enrollments: {
+        Row: { campaign_id: string, enrolled_at: string, id: string, referral_code: string | null, status: string, user_id: string },
+        Insert: { campaign_id: string, enrolled_at?: string, id?: string, referral_code?: string | null, status?: string, user_id: string },
+        Update: { campaign_id?: string, enrolled_at?: string, id?: string, referral_code?: string | null, status?: string, user_id?: string },
+        Relationships: [{ foreignKeyName: "first100_enrollments_campaign_id_fkey", columns: ["campaign_id"], isOneToOne: false, referencedRelation: "first100_campaign", referencedColumns: ["id"] }, { foreignKeyName: "first100_enrollments_user_id_fkey", columns: ["user_id"], isOneToOne: false, referencedRelation: "profiles", referencedColumns: ["id"] }] }
+      retry_jobs: {
+        Row: { attempts: number, completed_at: string | null, created_at: string, error_message: string | null, id: string, idempotency_key: string, job_type: string, last_error: string | null, max_attempts: number, next_retry_at: string | null, payload: Json, status: string, updated_at: string },
+        Insert: { attempts?: number, completed_at?: string | null, created_at?: string, error_message?: string | null, id?: string, idempotency_key: string, job_type: string, last_error?: string | null, max_attempts?: number, next_retry_at?: string | null, payload: Json, status?: string, updated_at?: string },
+        Update: { attempts?: number, completed_at?: string | null, created_at?: string, error_message?: string | null, id?: string, idempotency_key?: string, job_type?: string, last_error?: string | null, max_attempts?: number, next_retry_at?: string | null, payload?: Json, status?: string, updated_at?: string },
+        Relationships: [] }
+          }
     Views: {
       [_ in never]: never
     }
@@ -2543,6 +2574,21 @@ export type Database = {
         Args: { p_max_age_hours?: number }
         Returns: number
       }
+      odesseus_admin_adjust_wallet: {
+        Args: {
+          p_actor_email?: string | null
+          p_actor_role: string
+          p_actor_user_id: string
+          p_amount_cents: number
+          p_reason: string
+          p_reference: string
+          p_user_id: string
+        }
+        Returns: {
+          applied: boolean
+          balance_cents_after: number
+        }[]
+      }
       odesseus_admin_audit_trail: {
         Args: {
           p_limit?: number
@@ -2558,6 +2604,39 @@ export type Database = {
           details: Json
           id: string
         }[]
+      }
+      odesseus_enqueue_retry_job: {
+        Args: {
+          p_delay_seconds?: number
+          p_idempotency_key: string
+          p_job_type: string
+          p_max_attempts?: number
+          p_payload: Json
+        }
+        Returns: string
+      }
+      odesseus_claim_retry_job: {
+        Args: { p_job_type: string }
+        Returns: {
+          attempts: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          job_type: string
+          max_attempts: number
+          next_retry_at: string | null
+          payload: Json
+          status: string
+          updated_at: string
+        }[]
+      }
+      odesseus_complete_retry_job: {
+        Args: {
+          p_error?: string | null
+          p_job_id: string
+          p_outcome: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

@@ -57,6 +57,8 @@ export async function POST(request: Request) {
         { status: 409 }
       );
     case "invalid":
+    case "expired":
+    case "already_member":
       return NextResponse.json(
         { error: "That invitation link is no longer valid." },
         { status: 400 }

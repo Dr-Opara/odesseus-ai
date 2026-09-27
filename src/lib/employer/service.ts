@@ -906,7 +906,7 @@ export type CreateInvitationInput = {
 
 export type CreateInvitationResult =
   | { ok: true; token: string; invitation: OrgInvitation }
-  | { ok: false; code: "invalid" | "duplicate" | "not_an_admin" | "rate_limited" };
+  | { ok: false; code: "invalid" | "duplicate" | "not_an_admin" | "rate_limited" | "unknown" };
 
 export function normalizeInviteEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -967,7 +967,7 @@ export async function createInvitation(
     .single();
 
   if (error) {
-    throw new Error(`Could not create invitation: ${error.message}`);
+    return { ok: false, code: "unknown" };
   }
   return { ok: true, token, invitation: data as OrgInvitation };
 }
@@ -976,20 +976,25 @@ export async function revokeInvitation(
   client: EmployerClient,
   orgId: string,
   invitationId: string
-): Promise<void> {
-  const { error } = await client
+): Promise<{ ok: true; revoked: boolean }> {
+  const { data, error } = await client
     .from("employer_member_invitations")
     .update({ status: "revoked" })
     .eq("id", invitationId)
-    .eq("org_id", orgId);
+    .eq("org_id", orgId)
+    .select("id")
+    .maybeSingle();
+
   if (error) {
     throw new Error(`Could not revoke invitation: ${error.message}`);
   }
+
+  return { ok: true, revoked: data !== null };
 }
 
 export type AcceptInvitationResult =
   | { ok: true; orgId: string; orgName: string; role: string; invitationId: string }
-  | { ok: false; code: "no_seats" | "invalid" | "expired" | "already_member" };
+  | { ok: false; code: "no_seats" | "invalid" | "expired" | "already_member" | "unknown" };
 
 /** Accept an invitation by token (for the email-verified acceptance flow). */
 export async function acceptInvitation(
@@ -1003,10 +1008,10 @@ export async function acceptInvitation(
   if (error) {
     const msg = error.message;
     if (msg.includes("invalid invitation link")) return { ok: false, code: "invalid" };
-    if (msg.includes("expired")) return { ok: false, code: "expired" };
+    if (msg.includes("expired") || msg.includes("revoked")) return { ok: false, code: "expired" };
     if (msg.includes("no recruiter seats")) return { ok: false, code: "no_seats" };
-    if (msg.includes("already a member") || msg.includes("conflict")) return { ok: false, code: "already_member" };
-    throw new Error(`Could not accept invitation: ${msg}`);
+    if (msg.includes("already a member") || msg.includes("conflict") || msg.includes("different email")) return { ok: false, code: "already_member" };
+    return { ok: false, code: "unknown" };
   }
 
   // The RPC returns the joined org info

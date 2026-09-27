@@ -48,7 +48,7 @@ const CHECKOUT_ROUTE = "@/app/api/employer/orgs/[orgId]/seats/checkout/route";
 
 const orgRow = { id: ORG_ID, name: "Seats Inc.", owner_user_id: OWNER_ID };
 const INVITE_COLUMNS =
-  "id,org_id,email,role,status,invited_by,expires_at,created_at";
+  "id,org_id,email,role,status,invited_by,expires_at,created_at,token";
 
 /** A session client whose table results are keyed on the projected columns. */
 function sessionClient(opts: {
@@ -78,6 +78,12 @@ function sessionClient(opts: {
     employer_member_invitations: {
       [INVITE_COLUMNS]: opts.inviteInsert ?? {},
       id: opts.inviteUpdate ?? {},
+    },
+    recruiter_seats: {
+      "count,active_until": { data: { count: opts.seatCount ?? 0, active_until: null } },
+    },
+    employer_seat_adjustments: {
+      "*": { data: null, error: null },
     },
   };
 
@@ -445,7 +451,7 @@ describe("POST /api/employer/orgs/[orgId]/invitations", () => {
     expect(body.invitation.id).toBe(INVITATION_ID);
     // The token is still returned so the admin can pass the link on, even if the
     // email never arrives.
-    expect(body.token).toMatch(/^[0-9a-f]{48}$/);
+    expect(body.token).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(body.emailed).toBe(true);
     expect(sendEmailMock).toHaveBeenCalledTimes(1);
   });
@@ -523,7 +529,7 @@ describe("POST /api/employer/orgs/[orgId]/invitations", () => {
     // the link on themselves.
     expect(response.status).toBe(201);
     expect(body.invitation.id).toBe(INVITATION_ID);
-    expect(body.token).toMatch(/^[0-9a-f]{48}$/);
+    expect(body.token).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(body.emailed).toBe(false);
     expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
@@ -591,7 +597,7 @@ describe("POST /api/employer/orgs/[orgId]/invitations", () => {
 
   it("500s when the insert fails for any other reason", async () => {
     createClientMock.mockResolvedValue(
-      sessionClient({ userId: OWNER_ID, inviteInsert: { error: { code: "42501" } } })
+      sessionClient({ userId: OWNER_ID, inviteInsert: { error: { code: "42501", message: "permission denied" } } })
     );
     const { POST } = await freshRoute(INVITE_ROUTE);
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://odesseus.ai");
