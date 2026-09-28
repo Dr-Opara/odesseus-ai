@@ -125,6 +125,81 @@ export type Database = {
         };
         Relationships: [];
       };
+      application_agent_decisions: {
+        Row: {
+          apply_method: string | null;
+          created_at: string;
+          decision: string;
+          id: string;
+          job_id: string | null;
+          match_score: number | null;
+          mode: string;
+          reasons: string[];
+          resume_id: string | null;
+          rules_evaluated: NonNullable<Json>;
+          user_id: string;
+        };
+        Insert: {
+          apply_method?: string | null;
+          created_at?: string;
+          decision: string;
+          id?: string;
+          job_id?: string | null;
+          match_score?: number | null;
+          mode: string;
+          reasons?: string[];
+          resume_id?: string | null;
+          rules_evaluated?: NonNullable<Json>;
+          user_id: string;
+        };
+        Update: {
+          apply_method?: string | null;
+          created_at?: string;
+          decision?: string;
+          id?: string;
+          job_id?: string | null;
+          match_score?: number | null;
+          mode?: string;
+          reasons?: string[];
+          resume_id?: string | null;
+          rules_evaluated?: NonNullable<Json>;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      application_agent_settings: {
+        Row: {
+          created_at: string;
+          daily_application_limit: number;
+          default_apply_method: string;
+          minimum_match_score: number;
+          mode: string;
+          paused: boolean;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          daily_application_limit?: number;
+          default_apply_method?: string;
+          minimum_match_score?: number;
+          mode?: string;
+          paused?: boolean;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          daily_application_limit?: number;
+          default_apply_method?: string;
+          minimum_match_score?: number;
+          mode?: string;
+          paused?: boolean;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       application_answer_vault: {
         Row: {
           answer_key: string;
