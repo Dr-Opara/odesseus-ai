@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { readLiveEntitlement } from "@/lib/billing/live-entitlement";
 
 export const runtime = "nodejs";
 
@@ -44,30 +45,17 @@ export async function GET(
     .maybeSingle();
 
   // One authoritative access decision. This RPC is service-role only and is
-  // the same function behind /api/live/entitlement, so an interview screen can
-  // never disagree with billing about whether a session may start.
-  const { data: entitlement } = await service.rpc("odesseus_get_live_entitlement", {
-    p_user_id: userId,
-  });
-
-  // Cast rather than trust the generated RPC type: a Postgres OUT-parameter
-  // function's composite return does not codegen as a usable row shape, the
-  // same reason /api/live/entitlement and the guest routes all cast this
-  // call explicitly.
-  const e = (Array.isArray(entitlement) ? entitlement[0] : entitlement) as
-    | {
-        has_entitlement: boolean;
-        entitlement_type: string;
-        passes_remaining: number;
-        unlimited_until: string | null;
-        is_owner: boolean;
-        is_guest: boolean;
-        membership_id: string | null;
-        guest_limit: number;
-        activated_guest_count: number;
-        plan: string | null;
-      }
-    | undefined;
+  // the same function behind /api/live/entitlement, read through the same
+  // shared reader, so an interview screen can never disagree with billing about
+  // whether a session may start.
+  //
+  // A failed check fails closed to "payment required" rather than erroring the
+  // whole screen. That is the right trade for this surface: the interview page
+  // is the one place a candidate is trying to use the product, and turning a
+  // transient database error into a dead page is worse than showing them the
+  // paywall. The activation call is the thing that must not be waved through,
+  // and it does its own check.
+  const { row: e } = await readLiveEntitlement(userId);
 
   // Determine eligibility state
   let eligibilityState: "eligible" | "payment_required" | "has_session" | "completed" = "eligible";
@@ -77,7 +65,7 @@ export async function GET(
     } else {
       eligibilityState = "has_session";
     }
-  } else if (!e?.has_entitlement) {
+  } else if (!e.has_access) {
     eligibilityState = "payment_required";
   }
 
@@ -85,19 +73,19 @@ export async function GET(
     interviewId: id,
     eligibility: eligibilityState,
     entitlement: {
-      hasEntitlement: e?.has_entitlement ?? false,
-      source: e?.entitlement_type ?? "none",
-      plan: e?.plan ?? null,
+      hasEntitlement: e.has_access,
+      source: e.source,
+      plan: e.plan,
       // Uniformly meaningful across every entitlement kind, including the
       // legacy annual window: the headroom left in the current fair-use
       // window, or the unspent passes when a discrete pass was bought.
-      passesRemaining: e?.passes_remaining ?? 0,
-      unlimitedUntil: e?.unlimited_until ?? null,
-      isOwner: e?.is_owner ?? false,
-      isGuest: e?.is_guest ?? false,
-      membershipId: e?.membership_id ?? null,
-      guestLimit: e?.guest_limit ?? 0,
-      activatedGuestCount: e?.activated_guest_count ?? 0,
+      passesRemaining: e.sessions_remaining,
+      unlimitedUntil: e.period_end,
+      isOwner: e.is_owner,
+      isGuest: e.is_guest,
+      membershipId: e.membership_id,
+      guestLimit: e.guest_limit,
+      activatedGuestCount: e.activated_guest_count,
     },
     existingSession: existing
       ? {

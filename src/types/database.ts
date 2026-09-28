@@ -3717,7 +3717,25 @@ export type Database = {
       odesseus_get_integration_secret: { Args: { p_secret_id: string }; Returns: string };
       odesseus_get_live_entitlement: {
         Args: { p_user_id: string };
-        Returns: Record<string, unknown>;
+        // Stated rather than `Record<string, unknown>`. The CLI cannot infer a
+        // row shape for a function with named OUT parameters, and leaving it
+        // untyped meant every caller re-declared the contract locally, so the
+        // three copies could drift apart silently. See
+        // src/lib/billing/live-entitlement.ts for the app-side reader and
+        // supabase/migrations/20261018000000_live_entitlement_contract.sql for
+        // the definition these columns mirror.
+        Returns: {
+          activated_guest_count: number;
+          guest_limit: number;
+          has_access: boolean;
+          is_guest: boolean;
+          is_owner: boolean;
+          membership_id: string | null;
+          period_end: string | null;
+          plan: string | null;
+          sessions_remaining: number;
+          source: string;
+        };
       };
       odesseus_live_guest_invite_status: {
         Args: { p_token: string };
