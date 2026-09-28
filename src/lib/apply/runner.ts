@@ -12,6 +12,101 @@ import type { Json } from "@/types/database";
 
 type ApplyCommand = "continue" | "submit" | "cancel";
 
+/**
+ * Why a run is waiting on a person.
+ *
+ * This is the single classification domain for application_runs.hold_category.
+ * Every value is something a run can actually observe about the employer's page
+ * or about our own wallet — none of it is a judgement about the candidate, and
+ * "captcha_required"/"mfa_required" mean Odesseus stopped and asked, never that
+ * it tried to get past one.
+ *
+ * The database enforces the invariant that this is non-null exactly when the
+ * run is in `needs_user` (see migration 20261023000000), so callers only need
+ * to set it when they pause a run.
+ */
+export const APPLICATION_HOLD_CATEGORIES = [
+  "captcha_required",
+  "mfa_required",
+  "sensitive_question",
+  "insufficient_funds",
+  "unsupported_flow",
+  "unverified_submission",
+  "needs_review",
+] as const;
+
+export type ApplicationHoldCategory = (typeof APPLICATION_HOLD_CATEGORIES)[number];
+
+/** True when `value` is a category the database will actually accept. */
+export function isApplicationHoldCategory(
+  value: unknown
+): value is ApplicationHoldCategory {
+  return (
+    typeof value === "string" &&
+    (APPLICATION_HOLD_CATEGORIES as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * Fallback classification for a pause whose structured category is not already
+ * known at the call site.
+ *
+ * The runner prefers to carry the category alongside the reason (see
+ * `pageHasHumanGate`), but several pauses are only ever described by their
+ * user-facing sentence, and `stop_reason` is the same sentence the candidate
+ * reads. This maps that sentence onto the same domain. Order matters: the
+ * specific signals are checked before the broad ones, because two of the
+ * sentences overlap —
+ *
+ *   - "Sensitive or unverified application questions need your input" contains
+ *     "unverified", but it is a sensitive-question hold, not an unconfirmed
+ *     submission. So `sensitive` is tested first.
+ *   - "Review the page in the live browser before any credit is charged" and
+ *     "Odesseus needs your input" are both ordinary manual input.
+ *   - "Login, MFA, or verification step detected" is an authentication hold,
+ *     which is why the auth patterns are last: they are the broadest.
+ */
+export function classifyHoldReason(reason: string): ApplicationHoldCategory {
+  const text = reason.toLowerCase();
+
+  // A page that says "verify you are human" is a CAPTCHA, not a login step.
+  if (/captcha|human verification|verify you are human/.test(text)) {
+    return "captcha_required";
+  }
+
+  if (text.includes("sensitive")) return "sensitive_question";
+
+  if (text.includes("wallet")) return "insufficient_funds";
+
+  if (
+    text.includes("identify the next or final application control") ||
+    text.includes("could not identify")
+  ) {
+    return "unsupported_flow";
+  }
+
+  if (/could not (?:verify|confirm)|no success confirmation|unconfirmed/.test(text)) {
+    return "unverified_submission";
+  }
+
+  if (
+    text.includes("mfa") ||
+    text.includes("multi-factor") ||
+    text.includes("multi factor") ||
+    text.includes("two-factor") ||
+    text.includes("two factor") ||
+    text.includes("one-time code") ||
+    text.includes("one time code") ||
+    text.includes("verification code") ||
+    text.includes("authentication") ||
+    text.includes("login")
+  ) {
+    return "mfa_required";
+  }
+
+  return "needs_review";
+}
+
 type FieldDescriptor = {
   index: number;
   tag: string;
@@ -45,7 +140,7 @@ function cleanLabel(value: string) {
   return value.replace(/\s+/g, " ").trim().slice(0, 600);
 }
 
-async function pageHasHumanGate(page: Page) {
+async function pageHasHumanGate(page: Page): Promise<{ reason: string; category: ApplicationHoldCategory } | null> {
   const captcha = await page
     .locator(
       'iframe[src*="captcha" i], iframe[src*="recaptcha" i], iframe[src*="hcaptcha" i], iframe[src*="turnstile" i], [class*="captcha" i], [id*="captcha" i]'
@@ -53,7 +148,10 @@ async function pageHasHumanGate(page: Page) {
     .count();
 
   if (captcha > 0) {
-    return "CAPTCHA or human-verification step detected.";
+    return {
+      reason: "CAPTCHA or human-verification step detected.",
+      category: "captcha_required",
+    };
   }
 
   const authField = page.locator(
@@ -61,12 +159,20 @@ async function pageHasHumanGate(page: Page) {
   );
 
   if ((await authField.count()) > 0) {
-    return "Login, MFA, or verification step detected.";
+    return {
+      reason: "Login, MFA, or verification step detected.",
+      category: "mfa_required",
+    };
   }
 
   const text = (await page.locator("body").innerText().catch(() => "")).slice(0, 5000);
   if (/verify you are human|security verification|enter verification code|two[- ]factor|multi[- ]factor/i.test(text)) {
-    return "Authentication or human-verification step detected.";
+    // "Verify you are human" is a CAPTCHA, not a second factor; the rest of the
+    // pattern is authentication. The category is decided here, at the point
+    // the evidence exists, rather than by re-reading the sentence afterwards.
+    return /verify you are human/i.test(text)
+      ? { reason: "CAPTCHA or human-verification step detected.", category: "captcha_required" }
+      : { reason: "Authentication or human-verification step detected.", category: "mfa_required" };
   }
 
   return null;
@@ -334,6 +440,7 @@ export async function finalizeConfirmedExistingSubmission(input: {
         .update({
           status: "needs_user",
           stop_reason: reason,
+          hold_category: classifyHoldReason(reason),
           current_url: input.pageUrl,
           submission_evidence: {
             after_url: input.pageUrl,
@@ -409,6 +516,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
       .update({
         status: "cancelled",
         stop_reason: "Cancelled by user.",
+        hold_category: null,
         finished_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         resume_token: null,
@@ -482,6 +590,10 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
         browser_session_id: browserSession.id,
         live_view_url: browserSession.liveViewUrl,
         status: "running",
+        // A fresh browser session is not on hold for anything, even if the run
+        // was previously paused; the pause reason, if it still applies, is
+        // re-derived below on this pass.
+        hold_category: null,
         started_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -511,6 +623,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
         live_view_url: browserSession.liveViewUrl,
         status: "running",
         stop_reason: null,
+        hold_category: null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", runId);
@@ -535,14 +648,15 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
         .from("application_runs")
         .update({
           status: "needs_user",
-          stop_reason: gate,
+          stop_reason: gate.reason,
+          hold_category: gate.category,
           current_url: page.url(),
           updated_at: new Date().toISOString(),
         })
         .eq("id", runId);
 
-      await logEvent(runId, run.user_id, "paused", gate, { url: page.url() });
-      return { terminal: false, status: "needs_user" as const, reason: gate };
+      await logEvent(runId, run.user_id, "paused", gate.reason, { url: page.url() });
+      return { terminal: false, status: "needs_user" as const, reason: gate.reason };
     }
 
     const fileInputs = page.locator('input[type="file"]');
@@ -621,6 +735,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
         .update({
           status: "needs_user",
           stop_reason: reason,
+          hold_category: classifyHoldReason(reason),
           current_url: page.url(),
           updated_at: new Date().toISOString(),
         })
@@ -643,6 +758,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
           status: "running",
           current_url: page.url(),
           stop_reason: null,
+          hold_category: null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", runId);
@@ -661,6 +777,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
         .update({
           status: "needs_user",
           stop_reason: reason,
+          hold_category: classifyHoldReason(reason),
           current_url: page.url(),
           updated_at: new Date().toISOString(),
         })
@@ -678,6 +795,10 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
         .update({
           status: "ready_to_submit",
           stop_reason: "Review complete. Waiting for your approval to submit.",
+          // Waiting for approval is not waiting on a hold: the candidate
+          // already approved the tailoring, this state needs their submit
+          // command. Clearing it keeps "needs attention" honest.
+          hold_category: null,
           current_url: page.url(),
           updated_at: new Date().toISOString(),
         })
@@ -692,6 +813,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
       .update({
         status: "submitting",
         stop_reason: null,
+        hold_category: null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", runId);
@@ -716,6 +838,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
         .update({
           status: "needs_user",
           stop_reason: reason,
+          hold_category: classifyHoldReason(reason),
           current_url: afterUrl,
           submission_evidence: {
             before_url: beforeUrl,

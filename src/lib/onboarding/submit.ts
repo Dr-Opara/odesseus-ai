@@ -7,6 +7,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import { hashResumeFile } from "@/lib/candidate/resume-hash";
 
 type Client = SupabaseClient<Database>;
 
@@ -53,6 +54,7 @@ export async function uploadMasterResume(
       storage_path: path,
       mime_type: file.type,
       size_bytes: file.size,
+      content_hash: await hashResumeFile(file),
       is_master: true,
       is_approved: true,
     })

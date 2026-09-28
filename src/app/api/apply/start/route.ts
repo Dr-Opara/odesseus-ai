@@ -18,7 +18,7 @@ const schema = z.object({
   // it must be honoured. `mode` is accepted as an alias because the server
   // contract was specified against it. Reading only one of the two silently
   // falls back to "standard", which would gate and settle a Smart Apply run at
-  // the 49c Standard rate. Both are strict enums, so an unknown tier is still
+  // the Standard rate. Both are strict enums, so an unknown tier is still
   // rejected with 400 before any run is created.
   applyTier: z.enum(["standard", "smart"]).optional(),
   mode: z.enum(["standard", "smart"]).optional(),
@@ -100,11 +100,11 @@ export async function POST(request: Request) {
   }
 
   // Wallet eligibility gate — the selected tier's price is the requirement
-  // (Standard Apply >= 49c, Smart Apply >= 199c). The legacy application-credit
-  // balance never decides whether an application can start; it is preserved
-  // only as historical data. Amounts come from the billing catalog, which is
-  // the pricing source of truth, so the gate and the settlement RPC cannot
-  // drift apart.
+  // (the tier's own rate, read from the billing catalog). The legacy
+  // application-credit balance never decides whether an application can start;
+  // it is preserved only as historical data. Amounts come from the billing
+  // catalog, which is the pricing source of truth the settlement RPC also
+  // reads, so the gate and the settlement cannot drift apart.
   const tier = (input.applyTier ?? input.mode ?? "standard") as ApplyMode;
   const applyRate = applyRates[tier];
   const walletBalanceCents = balance?.wallet_balance_cents ?? 0;
@@ -173,6 +173,7 @@ export async function POST(request: Request) {
       .update({
         status: "failed",
         stop_reason: "Odesseus could not start the application workflow.",
+        hold_category: null,
         finished_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })

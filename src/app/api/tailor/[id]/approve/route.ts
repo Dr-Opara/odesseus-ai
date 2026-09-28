@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { tailoredResumeSchema } from "@/lib/ai/schemas";
 import { renderTailoredResumePdf } from "@/lib/apply/resume-pdf";
+import { hashResumeBytes } from "@/lib/candidate/resume-hash";
 
 function slug(value: string) {
   return value
@@ -70,6 +71,7 @@ export async function POST(
         storage_path: storagePath,
         mime_type: "application/pdf",
         size_bytes: pdfBytes.byteLength,
+        content_hash: hashResumeBytes(pdfBytes),
         is_master: false,
         is_approved: true,
         parsed_data: {

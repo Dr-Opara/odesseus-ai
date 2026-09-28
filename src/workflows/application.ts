@@ -34,6 +34,8 @@ async function markFailed(runId: string, message: string) {
     .update({
       status: "failed",
       stop_reason: message,
+      // A terminal run is not waiting on anyone, so it carries no hold.
+      hold_category: null,
       finished_at: new Date().toISOString(),
       resume_token: null,
       updated_at: new Date().toISOString(),

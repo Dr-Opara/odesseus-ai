@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
+import { APPLY_TIERS } from "@/lib/pricing/candidate-pricing";
+
+const standardLabel = APPLY_TIERS.standard.priceLabel;
+const smartLabel = APPLY_TIERS.smart.priceLabel;
 
 export const metadata: Metadata = {
-  title: "Apply with Odesseus — from $0.49 per successful application",
-  description: "Odesseus matches the role, tailors your resume, completes the application, and tracks it — Standard Apply from $0.49, Smart Apply from $1.99, only after a successful submission.",
+  title: `Apply with Odesseus — from ${standardLabel} per successful application`,
+  description: `Odesseus matches the role, tailors your resume, completes the application, and tracks it — Standard Apply from ${standardLabel}, Smart Apply from ${smartLabel}, only after a successful submission.`,
 };
 
 const platforms = [
@@ -54,8 +58,8 @@ const stages = [
 ];
 
 const billingRules = [
-  { label: "Standard Apply — successful submission", amount: "$0.49", charge: true },
-  { label: "Smart Apply — successful submission", amount: "$1.99", charge: true },
+  { label: `Standard Apply — successful submission`, amount: standardLabel, charge: true },
+  { label: `Smart Apply — successful submission`, amount: smartLabel, charge: true },
   { label: "Unsupported", amount: "$0", charge: false },
   { label: "Failed", amount: "$0", charge: false },
   { label: "Cancelled", amount: "$0", charge: false },
@@ -71,11 +75,12 @@ export default function ApplyPage() {
       </div>
 
       <section className="shell page-hero">
-        <div className="badge">From $0.49 · Apply with Odesseus</div>
+        <div className="badge">From {standardLabel} · Apply with Odesseus</div>
         <h1 className="font-display page-hero-headline">Apply anywhere your next opportunity lives.</h1>
         <p className="muted page-hero-copy">
           Odesseus matches the role, tailors your resume, completes the application, and tracks it —
-          Standard Apply from $0.49, Smart Apply from $1.99, only after a successful submission.
+          Standard Apply from {standardLabel}, Smart Apply from {smartLabel}, only after a successful
+          submission.
         </p>
         <div className="hero-ctas" style={{ marginTop: 26 }}>
 

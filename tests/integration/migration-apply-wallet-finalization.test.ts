@@ -74,15 +74,35 @@ describe("apply wallet finalization migration (Phase 3 backend slice)", () => {
       "utf8"
     );
 
-    // App catalog: 49¢ standard / 199¢ smart.
-    expect(catalog).toMatch(/standard: \{[\s\S]*?amountCents: 49/);
-    expect(catalog).toMatch(/smart: \{[\s\S]*?amountCents: 199/);
-    // DB reference prices: contract migration seeds the same cents.
+    // App catalog: the live rate for each mode. Anchored on the property name
+    // and a digit boundary so `amountCents: 3900` or the featured tier's
+    // `amountCents: 4900` cannot satisfy the assertion vacuously.
+    expect(catalog).toMatch(/standard:\s*\{[^}]*?amountCents:\s*39\s*[,}]/);
+    expect(catalog).toMatch(/smart:\s*\{[^}]*?amountCents:\s*99\s*[,}]/);
+    // The contract migration seeded the original 49/199 before the rate moved
+    // to 39/99; the *current* rate is whatever the last migration to touch
+    // those rows set, so assert the move is recorded rather than the seed.
     expect(contract).toMatch(/'candidate_standard_apply'.*?49/);
     expect(contract).toMatch(/'candidate_smart_apply'.*?199/);
-    // The finalization RPC documents/derives the same rates from those rows.
-    expect(sql).toMatch(/49/);
-    expect(sql).toMatch(/199/);
+    const current = readFileSync(
+      path.join(
+        repoRoot,
+        "supabase/migrations/20261016000000_live_products_and_guests.sql"
+      ),
+      "utf8"
+    );
+    // The move to 39/99 is an UPDATE ... SET amount_minor = <rate> WHERE
+    // product_key = ... , so the rate precedes the key in the statement.
+    expect(current).toMatch(
+      /amount_minor = 39,[\s\S]{0,120}?product_key = 'candidate_standard_apply' AND market_key = 'USD_US';/
+    );
+    expect(current).toMatch(
+      /amount_minor = 99,[\s\S]{0,120}?product_key = 'candidate_smart_apply' AND market_key = 'USD_US';/
+    );
+    // The finalization RPC never hardcodes a money literal: it resolves the
+    // rate from the reference price row, so it follows the migration above.
+    expect(sql).not.toMatch(/v_rate_cents\s*:=\s*\d/);
+    expect(sql).toMatch(/pr\.amount_minor/);
   });
 
   it("exposes the new RPC only to postgres and service_role, never to browser roles", () => {
@@ -107,5 +127,62 @@ describe("apply wallet finalization migration (Phase 3 backend slice)", () => {
   it("leaves Live products and any employer-product work untouched", () => {
     expect(sql).not.toMatch(/candidate_live|interview_passes|live_unlimited/i);
     expect(sql).not.toMatch(/employer_|featured_|recruiter_/i);
+  });
+});
+
+describe("apply finalization RPC as last redefined (Phase 2I)", () => {
+  const latest = readFileSync(
+    path.join(
+      repoRoot,
+      "supabase/migrations/20261024000000_application_snapshot_completeness.sql"
+    ),
+    "utf8"
+  ).replace(/\r\n/g, "\n");
+
+  it("keeps the same signature and the same idempotent charge path", () => {
+    expect(latest).toMatch(
+      /CREATE OR REPLACE FUNCTION public\.odesseus_finalize_application \(\n\s*p_run_id\s+uuid,/
+    );
+    expect(latest).toMatch(/'application:' \|\| p_run_id::text/);
+    expect(latest).toMatch(/on conflict \(external_reference\) do nothing/i);
+    // The replay short-circuit must still precede the mode guard, so a retry of
+    // a settled run can never re-charge whatever mode it is passed.
+    expect(latest.indexOf("if v_run.status = 'submitted' then")).toBeLessThan(
+      latest.indexOf("execution mode mismatch")
+    );
+  });
+
+  it("still resolves the rate from the reference price, never a literal", () => {
+    expect(latest).toMatch(/pr\.amount_minor/);
+    expect(latest).toMatch(/pr\.market_key = 'USD_US'/);
+    expect(latest).not.toMatch(/v_rate_cents\s*:=\s*\d+/);
+  });
+
+  it("refuses to charge a run that ended without a verified submission", () => {
+    expect(latest).toMatch(
+      /if v_run\.status in \('failed', 'cancelled'\) then[\s\S]{0,200}?raise exception/
+    );
+    // Every remaining status is one a live run can legitimately pause in; a
+    // status outside that set is refused rather than charged.
+    expect(latest).toMatch(
+      /if v_run\.status not in \(\s*'queued', 'preflight', 'running', 'needs_user', 'ready_to_submit', 'submitting'\s*\) then/
+    );
+  });
+
+  it("still requires a real confirmation message", () => {
+    expect(latest).toMatch(
+      /if p_confirmation_text is null or length\(trim\(p_confirmation_text\)\) = 0 then/
+    );
+  });
+
+  it("keeps the RPC off every browser role", () => {
+    for (const role of ["PUBLIC", "anon", "authenticated"]) {
+      expect(latest).toContain(
+        `REVOKE ALL ON FUNCTION public.odesseus_finalize_application(uuid, uuid, text, text, text) FROM ${role};`
+      );
+    }
+    expect(latest).toContain(
+      "GRANT EXECUTE ON FUNCTION public.odesseus_finalize_application(uuid, uuid, text, text, text) TO postgres, service_role;"
+    );
   });
 });

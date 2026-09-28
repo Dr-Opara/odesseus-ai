@@ -1,11 +1,19 @@
 /**
- * Display-only candidate pricing constants for the new wallet/pay-per-apply
- * contract (frontend/pricing-wallet-ui phase). This is presentation data for
- * UI copy — it is NOT the billing engine. The Stripe/checkout catalog that
- * actually charges cards (`src/lib/billing/catalog.ts`) is owned by the
- * backend/pricing-wallet workstream and is intentionally left untouched here;
- * it will be replaced when OpenCode's wallet ledger migration ships.
+ * Display-only candidate pricing for the wallet/pay-per-apply contract.
+ *
+ * These are presentation constants for UI copy. They are NOT the billing
+ * engine — the wallet debit is performed server-side by
+ * `odesseus_finalize_application`, which reads the rate from `pricing_prices`.
+ *
+ * What matters is that the advertised rate and the charged rate cannot drift
+ * apart, so the numbers here are *derived* from the backend-owned catalog
+ * (`src/lib/billing/catalog.ts`, itself pinned to the USD_US reference prices
+ * by a test) rather than written out again. This module used to hardcode
+ * 49c/199c while the catalog and the database had already moved to 39c/99c,
+ * which meant the site quoted a price the candidate was never charged.
  */
+
+import { applyRates } from "@/lib/billing/catalog";
 
 export type ApplyTier = "standard" | "smart";
 
@@ -14,16 +22,16 @@ export const APPLY_TIERS: Record<
   { label: string; priceCents: number; priceLabel: string; description: string }
 > = {
   standard: {
-    label: "Standard Apply",
-    priceCents: 49,
-    priceLabel: "$0.49",
+    label: applyRates.standard.label,
+    priceCents: applyRates.standard.amountCents,
+    priceLabel: `$${(applyRates.standard.amountCents / 100).toFixed(2)}`,
     description:
       "Odesseus tailors your resume and submits the application. Charged only after a verified successful submission.",
   },
   smart: {
-    label: "Smart Apply",
-    priceCents: 199,
-    priceLabel: "$1.99",
+    label: applyRates.smart.label,
+    priceCents: applyRates.smart.amountCents,
+    priceLabel: `$${(applyRates.smart.amountCents / 100).toFixed(2)}`,
     description:
       "Everything in Standard Apply, plus deeper role-specific tailoring and a closer pass on hard requirements before submission.",
   },
@@ -46,9 +54,8 @@ export function formatCents(cents: number): string {
 export const MIN_APPLY_PRICE_CENTS = APPLY_TIERS.standard.priceCents;
 
 /**
- * Wallet-based eligibility for a single apply tier. Standard Apply needs at
- * least 49 cents; Smart Apply needs at least 199 cents. Application-credit
- * balances never participate in apply eligibility.
+ * Wallet-based eligibility for a single apply tier, at the tier's real rate.
+ * Application-credit balances never participate in apply eligibility.
  */
 export function canAffordTier(tier: ApplyTier, walletBalanceCents: number): boolean {
   return walletBalanceCents >= APPLY_TIERS[tier].priceCents;

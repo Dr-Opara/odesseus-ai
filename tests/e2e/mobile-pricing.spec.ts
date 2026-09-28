@@ -33,7 +33,7 @@ test.describe("mobile /pricing audience tabs (signed out)", () => {
       await expect(business).toHaveAttribute("aria-selected", "false");
 
       // Standard/Smart applies, wallet top-ups, free prep.
-      for (const figure of ["$0.49", "$1.99", "$10", "$20", "$50"]) {
+      for (const figure of ["$0.39", "$0.99", "$10", "$20", "$50"]) {
         await expect(page.getByText(figure).filter({ visible: true }).first()).toBeVisible();
       }
       // `\u00B7` is the middle dot the pricing rows use as their separator
@@ -69,11 +69,11 @@ test.describe("mobile /pricing audience tabs (signed out)", () => {
       await expect(page.getByText(/Recruiter seat \u00B7 \$20\/month/i)).toBeVisible();
 
       // Applicant figures leave the visible tab.
-      await expect(page.getByText("$0.49").filter({ visible: true })).toHaveCount(0);
+      await expect(page.getByText("$0.39").filter({ visible: true })).toHaveCount(0);
 
       // Switching back restores the applicants list.
       await page.getByRole("tab", { name: "Applicants" }).click();
-      await expect(page.getByText("$0.49").filter({ visible: true }).first()).toBeVisible();
+      await expect(page.getByText("$0.39").filter({ visible: true }).first()).toBeVisible();
     });
   }
 });
@@ -87,7 +87,7 @@ test.describe("desktop /pricing unchanged", () => {
     ).toBeVisible();
     // The tab strip is mobile-only and invisible at desktop width.
     await expect(page.getByRole("tablist")).toHaveCount(0);
-    for (const figure of ["$0.49", "$1.99", "$10", "$20", "$50", "$79", "$149", "$299", "$29", "$49", "$129"]) {
+    for (const figure of ["$0.39", "$0.99", "$10", "$20", "$50", "$79", "$149", "$299", "$29", "$49", "$129"]) {
       await expect(page.getByText(figure).filter({ visible: true }).first()).toBeVisible();
     }
     // Odesseus Live is private to signed-in applicants: the public desktop

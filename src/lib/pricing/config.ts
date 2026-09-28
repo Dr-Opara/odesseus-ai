@@ -57,7 +57,7 @@ export type UnavailableReason =
  * `current_pricing_contract` migration flips their rows to `active = false`
  * rather than deleting them, so they stay resolvable by key for rollback and
  * history while never being offered for sale. Apply is now billed as a
- * wallet debit (`candidate_standard_apply` 49 / `candidate_smart_apply` 199),
+ * wallet debit (`candidate_standard_apply` 39 / `candidate_smart_apply` 99),
  * funded by the `wallet_topup_*` products.
  *
  * This list is a typing/ownership reference only — runtime resolution is

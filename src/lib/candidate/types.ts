@@ -39,10 +39,11 @@ export type CandidateWorkAuthorization = {
  * The candidate's spendable and Live balances.
  *
  * `walletBalanceCents` is the active currency for applications: Standard Apply
- * costs 49c and Smart Apply 199c, both drawn from this balance (see
+ * and Smart Apply are both drawn from this balance (see
  * `src/lib/pricing/candidate-pricing.ts` and the eligibility gate in
- * `src/app/api/apply/start/route.ts`). It is the same column the apply gate
- * reads, so the number a candidate sees is the number that decides whether an
+ * `src/app/api/apply/start/route.ts`, both of which derive their figures from
+ * `src/lib/billing/catalog.ts`). It is the same column the apply gate reads,
+ * so the number a candidate sees is the number that decides whether an
  * application can start.
  *
  * `interviewPasses` / `liveUnlimitedUntil` remain because Odesseus Live is a

@@ -136,17 +136,28 @@ test.describe("shared marketing footer", () => {
 });
 
 test.describe("pricing figures", () => {
-  test("/apply prominently shows Standard $0.49 and Smart $1.99 with the wallet success rule", async ({ page }) => {
+  test("/apply prominently shows Standard $0.39 and Smart $0.99 with the wallet success rule", async ({ page }) => {
     await page.goto("/apply");
-    await expect(page.getByText("$0.49").filter({ visible: true }).first()).toBeVisible();
-    await expect(page.getByText("$1.99").filter({ visible: true }).first()).toBeVisible();
+    await expect(page.getByText("$0.39").filter({ visible: true }).first()).toBeVisible();
+    await expect(page.getByText("$0.99").filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByText("Charged from your wallet only after successful submission")).toBeVisible();
   });
 
   test("/pricing shows the apply tiers and wallet top-ups", async ({ page }) => {
     await page.goto("/pricing");
-    for (const figure of ["$0.49", "$1.99", "$10", "$20", "$50"]) {
+    for (const figure of ["$0.39", "$0.99", "$10", "$20", "$50"]) {
       await expect(page.getByText(figure).filter({ visible: true }).first()).toBeVisible();
+    }
+  });
+
+  test("no public pricing page quotes a pre-contract per-application price", async ({ page }) => {
+    // 49c/199c was the old per-application rate. The charged rate is 39c/99c,
+    // so a surviving quote would be a price Odesseus never bills.
+    for (const route of ["/apply", "/pricing", "/faq", "/about", "/agents"]) {
+      await page.goto(route);
+      const body = await page.locator("body").innerText();
+      expect(body, `${route} must not quote $0.49 per application`).not.toContain("$0.49");
+      expect(body, `${route} must not quote $1.99 per application`).not.toContain("$1.99");
     }
   });
 

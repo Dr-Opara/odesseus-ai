@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signup } from "@/app/login/actions";
 import GoogleSignupButton from "@/components/google-signup-button";
 import MobileOnboardingProgress from "@/components/mobile/mobile-onboarding-progress";
+import { APPLY_TIERS } from "@/lib/pricing/candidate-pricing";
 
 /**
  * Mobile Sign Up (screen 01) + Your Name (screen 02).
@@ -94,7 +95,7 @@ export default function MobileSignupWizard({ error }: { error?: string }) {
       <div className="m-trust-row">
         <span>10K+ resumes optimized</span>
         <span>3.4× more interviews</span>
-        <span>From $0.49 per application</span>
+        <span>From {APPLY_TIERS.standard.priceLabel} per application</span>
       </div>
 
       <div className="m-match-preview-card">

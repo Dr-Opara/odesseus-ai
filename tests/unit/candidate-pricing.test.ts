@@ -9,26 +9,42 @@ import {
   canAffordTier,
   formatCents,
 } from "@/lib/pricing/candidate-pricing";
+import { applyRates } from "@/lib/billing/catalog";
 import * as candidatePricing from "@/lib/pricing/candidate-pricing";
 
 describe("candidate apply tiers", () => {
-  it("prices Standard Apply at exactly $0.49", () => {
-    expect(APPLY_TIERS.standard.priceCents).toBe(49);
-    expect(APPLY_TIERS.standard.priceLabel).toBe("$0.49");
+  it("prices Standard Apply at exactly $0.39", () => {
+    expect(APPLY_TIERS.standard.priceCents).toBe(39);
+    expect(APPLY_TIERS.standard.priceLabel).toBe("$0.39");
     expect(APPLY_TIERS.standard.label).toBe("Standard Apply");
   });
 
-  it("prices Smart Apply at exactly $1.99", () => {
-    expect(APPLY_TIERS.smart.priceCents).toBe(199);
-    expect(APPLY_TIERS.smart.priceLabel).toBe("$1.99");
+  it("prices Smart Apply at exactly $0.99", () => {
+    expect(APPLY_TIERS.smart.priceCents).toBe(99);
+    expect(APPLY_TIERS.smart.priceLabel).toBe("$0.99");
     expect(APPLY_TIERS.smart.label).toBe("Smart Apply");
   });
 
-  it("has no stale $0.99 per-application figure anywhere in the candidate tiers", () => {
+  it("has no stale $0.49 / $1.99 per-application figure anywhere in the candidate tiers", () => {
+    // These two prices were the pre-contract figures. The charged rate moved to
+    // 39c / 99c and any residue here would quote a price the candidate is
+    // never billed.
     for (const info of Object.values(APPLY_TIERS)) {
-      expect(info.priceLabel).not.toBe("$0.99");
-      expect(info.priceCents).not.toBe(99);
+      expect(info.priceLabel).not.toBe("$0.49");
+      expect(info.priceCents).not.toBe(49);
+      expect(info.priceLabel).not.toBe("$1.99");
+      expect(info.priceCents).not.toBe(199);
     }
+  });
+
+  it("derives every advertised figure from the backend billing catalog", () => {
+    // The point of deriving rather than re-typing: a candidate can never be
+    // quoted a rate the settlement RPC does not charge. If the catalog moves,
+    // these move with it, and the test below fails if anyone re-hardcodes.
+    expect(APPLY_TIERS.standard.priceCents).toBe(applyRates.standard.amountCents);
+    expect(APPLY_TIERS.smart.priceCents).toBe(applyRates.smart.amountCents);
+    expect(APPLY_TIERS.standard.label).toBe(applyRates.standard.label);
+    expect(APPLY_TIERS.smart.label).toBe(applyRates.smart.label);
   });
 
   it("keeps the charged-after-successful-submission rule on the standard tier and the pre-submission check framing on smart", () => {
@@ -38,28 +54,28 @@ describe("candidate apply tiers", () => {
 });
 
 describe("wallet-based apply eligibility", () => {
-  it("derives the minimum start balance from the cheapest tier (49 cents)", () => {
-    expect(MIN_APPLY_PRICE_CENTS).toBe(49);
+  it("derives the minimum start balance from the cheapest tier (39 cents)", () => {
+    expect(MIN_APPLY_PRICE_CENTS).toBe(39);
     expect(MIN_APPLY_PRICE_CENTS).toBe(APPLY_TIERS.standard.priceCents);
   });
 
-  it("requires at least 49 cents for Standard Apply", () => {
+  it("requires at least 39 cents for Standard Apply", () => {
     expect(canAffordTier("standard", 0)).toBe(false);
-    expect(canAffordTier("standard", 48)).toBe(false);
-    expect(canAffordTier("standard", 49)).toBe(true);
+    expect(canAffordTier("standard", 38)).toBe(false);
+    expect(canAffordTier("standard", 39)).toBe(true);
     expect(canAffordTier("standard", 120)).toBe(true);
   });
 
-  it("requires at least 199 cents for Smart Apply", () => {
-    expect(canAffordTier("smart", 198)).toBe(false);
-    expect(canAffordTier("smart", 199)).toBe(true);
+  it("requires at least 99 cents for Smart Apply", () => {
+    expect(canAffordTier("smart", 98)).toBe(false);
+    expect(canAffordTier("smart", 99)).toBe(true);
     expect(canAffordTier("smart", 1000)).toBe(true);
   });
 
   it("gates Smart Apply above the Standard floor but below the Smart price", () => {
     // A wallet that can start Standard Apply must not unlock Smart Apply.
-    expect(canAffordTier("standard", 100)).toBe(true);
-    expect(canAffordTier("smart", 100)).toBe(false);
+    expect(canAffordTier("standard", 50)).toBe(true);
+    expect(canAffordTier("smart", 50)).toBe(false);
   });
 
   it("never consults a legacy application-credit balance", () => {
@@ -85,9 +101,9 @@ describe("formatCents", () => {
   });
 
   it("keeps two decimals below a dollar", () => {
-    expect(formatCents(49)).toBe("$0.49");
-    expect(formatCents(199)).toBe("$1.99");
+    expect(formatCents(39)).toBe("$0.39");
     expect(formatCents(99)).toBe("$0.99");
+    expect(formatCents(49)).toBe("$0.49");
   });
 });
 

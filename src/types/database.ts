@@ -345,6 +345,7 @@ export type Database = {
           current_url: string | null;
           execution_mode: string;
           finished_at: string | null;
+          hold_category: string | null;
           id: string;
           job_id: string;
           live_view_url: string | null;
@@ -368,6 +369,7 @@ export type Database = {
           current_url?: string | null;
           execution_mode?: string;
           finished_at?: string | null;
+          hold_category?: string | null;
           id?: string;
           job_id: string;
           live_view_url?: string | null;
@@ -391,6 +393,7 @@ export type Database = {
           current_url?: string | null;
           execution_mode?: string;
           finished_at?: string | null;
+          hold_category?: string | null;
           id?: string;
           job_id?: string;
           live_view_url?: string | null;
@@ -475,9 +478,11 @@ export type Database = {
       };
       applications: {
         Row: {
+          answers_snapshot: NonNullable<Json>;
           application_url: string | null;
           company_name: string;
           created_at: string;
+          execution_mode: string | null;
           id: string;
           job_id: string | null;
           job_snapshot: NonNullable<Json>;
@@ -485,17 +490,21 @@ export type Database = {
           match_score_snapshot: number | null;
           resume_snapshot: NonNullable<Json>;
           role_title: string;
+          run_id: string | null;
           status: string;
           submission_confirmation: string | null;
           submitted_at: string | null;
           tailored_resume_id: string | null;
           updated_at: string;
           user_id: string;
+          verification_evidence: NonNullable<Json>;
         };
         Insert: {
+          answers_snapshot?: NonNullable<Json>;
           application_url?: string | null;
           company_name: string;
           created_at?: string;
+          execution_mode?: string | null;
           id?: string;
           job_id?: string | null;
           job_snapshot?: NonNullable<Json>;
@@ -503,17 +512,21 @@ export type Database = {
           match_score_snapshot?: number | null;
           resume_snapshot?: NonNullable<Json>;
           role_title: string;
+          run_id?: string | null;
           status?: string;
           submission_confirmation?: string | null;
           submitted_at?: string | null;
           tailored_resume_id?: string | null;
           updated_at?: string;
           user_id: string;
+          verification_evidence?: NonNullable<Json>;
         };
         Update: {
+          answers_snapshot?: NonNullable<Json>;
           application_url?: string | null;
           company_name?: string;
           created_at?: string;
+          execution_mode?: string | null;
           id?: string;
           job_id?: string | null;
           job_snapshot?: NonNullable<Json>;
@@ -521,12 +534,14 @@ export type Database = {
           match_score_snapshot?: number | null;
           resume_snapshot?: NonNullable<Json>;
           role_title?: string;
+          run_id?: string | null;
           status?: string;
           submission_confirmation?: string | null;
           submitted_at?: string | null;
           tailored_resume_id?: string | null;
           updated_at?: string;
           user_id?: string;
+          verification_evidence?: NonNullable<Json>;
         };
         Relationships: [
           {
@@ -534,6 +549,13 @@ export type Database = {
             columns: ["job_id"];
             isOneToOne: false;
             referencedRelation: "job_opportunities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "applications_run_id_fkey";
+            columns: ["run_id"];
+            isOneToOne: false;
+            referencedRelation: "application_runs";
             referencedColumns: ["id"];
           },
           {
@@ -3317,6 +3339,7 @@ export type Database = {
       };
       resumes: {
         Row: {
+          content_hash: string | null;
           created_at: string;
           file_name: string;
           id: string;
@@ -3330,6 +3353,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          content_hash?: string | null;
           created_at?: string;
           file_name: string;
           id?: string;
@@ -3343,6 +3367,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          content_hash?: string | null;
           created_at?: string;
           file_name?: string;
           id?: string;
