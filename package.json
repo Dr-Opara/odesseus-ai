@@ -24,8 +24,6 @@
     "@supabase/supabase-js": "2.116.0",
     "@vercel/connect": "2.3.0",
     "ai": "7.0.105",
-    "imapflow": "2.0.5",
-    "mailparser": "3.9.28",
     "mammoth": "1.12.3",
     "next": "16.3.5",
     "pdf-lib": "1.17.1",

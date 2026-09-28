@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { sendFollowUp } from "@/lib/follow-up/send";
 
 function mailtoUrl(recipient: string, subject: string, body: string) {
   const params = new URLSearchParams({ subject, body });
@@ -46,79 +45,13 @@ export async function POST(
     return NextResponse.json({ ok: true, sent: true, provider: draft.send_provider });
   }
 
-  const { data: accounts } = await service
-    .from("integration_accounts")
-    .select("provider,status")
-    .eq("user_id", userId)
-    .eq("service_type", "email")
-    .eq("status", "connected");
-
-  const providers = (accounts || []).map((item) => item.provider);
-  const canGoogle =
-    providers.includes("google") &&
-    Boolean(process.env.ODESSEUS_CONNECT_GOOGLE_SEND_CONNECTOR);
-
-  const provider = canGoogle ? "google" : null;
-
-  if (!provider) {
-    return NextResponse.json({
-      ok: true,
-      sent: false,
-      provider: "mailto",
-      mailto: mailtoUrl(
-        draft.recipient_email,
-        draft.subject,
-        draft.body
-      ),
-    });
-  }
-
-  try {
-    await sendFollowUp({
-      userId,
-      provider,
-      recipient: draft.recipient_email,
-      subject: draft.subject,
-      body: draft.body,
-    });
-
-    await service
-      .from("follow_up_drafts")
-      .update({
-        status: "sent",
-        send_provider: provider,
-        sent_at: new Date().toISOString(),
-        last_error: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .eq("user_id", userId);
-
-    return NextResponse.json({ ok: true, sent: true, provider });
-  } catch (error) {
-    console.error("Odesseus follow-up send failed:", error);
-    const message = "Odesseus could not send this follow-up.";
-
-    await service
-      .from("follow_up_drafts")
-      .update({
-        status: "approved",
-        last_error: message,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .eq("user_id", userId);
-
-    return NextResponse.json(
-      {
-        error: message,
-        fallback: mailtoUrl(
-          draft.recipient_email,
-          draft.subject,
-          draft.body
-        ),
-      },
-      { status: 502 }
-    );
-  }
+  // Odesseus never sends mail on the candidate's behalf: it hands back a
+  // mailto: link so the candidate sends the approved draft from their own
+  // mail client.
+  return NextResponse.json({
+    ok: true,
+    sent: false,
+    provider: "mailto",
+    mailto: mailtoUrl(draft.recipient_email, draft.subject, draft.body),
+  });
 }

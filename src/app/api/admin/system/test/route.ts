@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { startAuthorization } from "@vercel/connect";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isAdmin } from "@/lib/partners/service";
@@ -14,7 +13,6 @@ import {
 import { getStripe } from "@/lib/stripe";
 import { configuredJobSources } from "@/lib/jobs/sources";
 import { fetchSourceJobs } from "@/lib/jobs/providers";
-import { connectorFor } from "@/lib/integrations/providers";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -28,48 +26,14 @@ const schema = z.object({
     "stripe_webhook",
     "job_discovery",
     "cron",
-    "google",
-    "yahoo",
-    "google_send",
     "resend",
   ]),
 });
-
-type ConnectorProvider =
-  | "google"
-  | "yahoo"
-  | "google_send";
 
 function siteUrl() {
   const value = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (!value) throw new Error("NEXT_PUBLIC_SITE_URL is not configured.");
   return value.replace(/\/$/, "");
-}
-
-function connectorId(provider: ConnectorProvider) {
-  if (provider === "google") return connectorFor("google", "email");
-  if (provider === "yahoo") return connectorFor("yahoo", "email");
-
-  const value = process.env.ODESSEUS_CONNECT_GOOGLE_SEND_CONNECTOR?.trim();
-  if (!value) throw new Error("Google outbound connector is not configured.");
-  return value;
-}
-
-async function testConnector(userId: string, provider: ConnectorProvider) {
-  const connector = connectorId(provider);
-  const authorization = await startAuthorization(
-    connector,
-    { subject: { type: "user", id: userId } },
-    {
-      callbackUrl: `${siteUrl()}/integrations?readiness=${provider}`,
-    }
-  );
-
-  if (!authorization?.url) {
-    throw new Error("Connector did not return an authorization URL.");
-  }
-
-  return connector;
 }
 
 export async function POST(request: Request) {
@@ -216,18 +180,6 @@ export async function POST(request: Request) {
           provider: input.provider,
           latencyMs: Date.now() - started,
           detail: `Cron authentication is configured · ${sources.length} job source(s) ready for scheduled discovery.`,
-        });
-      }
-
-      case "google":
-      case "yahoo":
-      case "google_send": {
-        const connector = await testConnector(userId, input.provider);
-        return NextResponse.json({
-          ok: true,
-          provider: input.provider,
-          latencyMs: Date.now() - started,
-          detail: `Connector ${connector} accepted a new authorization request.`,
         });
       }
 
