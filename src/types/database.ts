@@ -1,3 +1,5 @@
+import type { LiveSessionStatus } from "@/lib/live/session-status";
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
@@ -1715,6 +1717,7 @@ export type Database = {
           description: string | null;
           discovered_at: string;
           employment_type: string | null;
+          employer_job_id: string | null;
           external_id: string | null;
           id: string;
           location: string | null;
@@ -1735,6 +1738,7 @@ export type Database = {
           description?: string | null;
           discovered_at?: string;
           employment_type?: string | null;
+          employer_job_id?: string | null;
           external_id?: string | null;
           id?: string;
           location?: string | null;
@@ -1755,6 +1759,7 @@ export type Database = {
           description?: string | null;
           discovered_at?: string;
           employment_type?: string | null;
+          employer_job_id?: string | null;
           external_id?: string | null;
           id?: string;
           location?: string | null;
@@ -1769,7 +1774,15 @@ export type Database = {
           user_id?: string;
           work_arrangement?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "job_opportunities_employer_job_id_fkey";
+            columns: ["employer_job_id"];
+            isOneToOne: false;
+            referencedRelation: "employer_jobs";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       job_post_credit_ledger: {
         Row: {
@@ -2176,7 +2189,7 @@ export type Database = {
           interview_id: string;
           last_transcript_at: string | null;
           openai_session_id: string | null;
-          status: string;
+          status: LiveSessionStatus;
           transcription_model: string;
           updated_at: string;
           user_id: string;
@@ -2195,7 +2208,7 @@ export type Database = {
           interview_id: string;
           last_transcript_at?: string | null;
           openai_session_id?: string | null;
-          status?: string;
+          status?: LiveSessionStatus;
           transcription_model?: string;
           updated_at?: string;
           user_id: string;
@@ -2214,7 +2227,7 @@ export type Database = {
           interview_id?: string;
           last_transcript_at?: string | null;
           openai_session_id?: string | null;
-          status?: string;
+          status?: LiveSessionStatus;
           transcription_model?: string;
           updated_at?: string;
           user_id?: string;
@@ -3519,6 +3532,16 @@ export type Database = {
           jobs_posted: number;
           paid_plan_conversion: number;
           recruiter_seats: number;
+        }[];
+      };
+      odesseus_get_employer_applicant_counts: {
+        Args: { p_org_id: string; p_from?: string | null; p_to?: string | null };
+        Returns: {
+          applicant_count: number;
+          employer_job_id: string;
+          job_opportunity_id: string | null;
+          job_status: string;
+          job_title: string;
         }[];
       };
       get_growth_metrics: {
