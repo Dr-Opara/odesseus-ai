@@ -506,6 +506,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      candidate_work_authorization: {
+        Row: {
+          authorized_without_sponsorship: boolean;
+          country_code: string | null;
+          created_at: string;
+          relocation_allowed: boolean;
+          sponsorship_required: boolean;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          authorized_without_sponsorship?: boolean;
+          country_code?: string | null;
+          created_at?: string;
+          relocation_allowed?: boolean;
+          sponsorship_required?: boolean;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          authorized_without_sponsorship?: boolean;
+          country_code?: string | null;
+          created_at?: string;
+          relocation_allowed?: boolean;
+          sponsorship_required?: boolean;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       career_applications: {
         Row: {
           applied_at: string;
@@ -1674,9 +1704,15 @@ export type Database = {
         Row: {
           created_at: string;
           employment_types: string[];
+          excluded_companies: string[];
+          excluded_titles: string[];
+          hybrid_allowed: boolean;
           industries: string[];
           min_match_score: number;
           minimum_salary: number | null;
+          onsite_allowed: boolean;
+          relocation_preference: string | null;
+          remote_allowed: boolean;
           remote_only: boolean;
           sponsorship_needed: boolean | null;
           target_locations: string[];
@@ -1688,9 +1724,15 @@ export type Database = {
         Insert: {
           created_at?: string;
           employment_types?: string[];
+          excluded_companies?: string[];
+          excluded_titles?: string[];
+          hybrid_allowed?: boolean;
           industries?: string[];
           min_match_score?: number;
           minimum_salary?: number | null;
+          onsite_allowed?: boolean;
+          relocation_preference?: string | null;
+          remote_allowed?: boolean;
           remote_only?: boolean;
           sponsorship_needed?: boolean | null;
           target_locations?: string[];
@@ -1702,9 +1744,15 @@ export type Database = {
         Update: {
           created_at?: string;
           employment_types?: string[];
+          excluded_companies?: string[];
+          excluded_titles?: string[];
+          hybrid_allowed?: boolean;
           industries?: string[];
           min_match_score?: number;
           minimum_salary?: number | null;
+          onsite_allowed?: boolean;
+          relocation_preference?: string | null;
+          remote_allowed?: boolean;
           remote_only?: boolean;
           sponsorship_needed?: boolean | null;
           target_locations?: string[];
@@ -3010,6 +3058,7 @@ export type Database = {
           locale: string | null;
           location: string | null;
           onboarding_completed: boolean;
+          onboarding_completed_at: string | null;
           portfolio_url: string | null;
           preferred_currency: string | null;
           preferred_language: string | null;
@@ -3032,6 +3081,7 @@ export type Database = {
           locale?: string | null;
           location?: string | null;
           onboarding_completed?: boolean;
+          onboarding_completed_at?: string | null;
           portfolio_url?: string | null;
           preferred_currency?: string | null;
           preferred_language?: string | null;
@@ -3054,6 +3104,7 @@ export type Database = {
           locale?: string | null;
           location?: string | null;
           onboarding_completed?: boolean;
+          onboarding_completed_at?: string | null;
           portfolio_url?: string | null;
           preferred_currency?: string | null;
           preferred_language?: string | null;

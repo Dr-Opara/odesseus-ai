@@ -20,6 +20,8 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
+-- NOTE: bump this plan's inventory count in the same commit as any migration
+-- that adds or removes a public table (see assertion 1 below).
 SELECT plan(23);
 
 -- ---------------------------------------------------------------------------
@@ -30,7 +32,7 @@ SELECT is(
    JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public' AND c.relkind = 'r'
      AND c.relname <> 'schema_migrations'),
-  56 + 9, 'public schema holds exactly 65 tables (audit inventory is current)');
+  56 + 9 + 1, 'public schema holds exactly 66 tables (audit inventory is current: +candidate_work_authorization)');
 
 SELECT is(
   (SELECT count(*)::int FROM pg_class c

@@ -4,10 +4,11 @@ import { FormEvent, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import MobileScreen from "@/components/mobile/mobile-screen";
 
+type RelocationPreference = "open" | "not_open" | "case_by_case" | "";
+
 /**
  * Mobile Job Preferences (screen 17). Reads and writes the same
- * `job_preferences` columns (min_match_score, target_titles,
- * target_locations, remote_only) the desktop Job Preferences form uses —
+ * `job_preferences` columns the desktop Job Preferences form uses —
  * self-reported, never inferred.
  */
 export default function MobileJobPreferences({
@@ -20,6 +21,12 @@ export default function MobileJobPreferences({
     target_titles: string[] | null;
     target_locations: string[] | null;
     remote_only: boolean;
+    remote_allowed?: boolean;
+    hybrid_allowed?: boolean;
+    onsite_allowed?: boolean;
+    excluded_companies?: string[] | null;
+    excluded_titles?: string[] | null;
+    relocation_preference?: string | null;
   } | null;
 }) {
   const supabase = createClient();
@@ -27,6 +34,14 @@ export default function MobileJobPreferences({
   const [targetTitles, setTargetTitles] = useState((initial?.target_titles ?? []).join(", "));
   const [targetLocations, setTargetLocations] = useState((initial?.target_locations ?? []).join(", "));
   const [remoteOnly, setRemoteOnly] = useState(initial?.remote_only ?? false);
+  const [remoteAllowed, setRemoteAllowed] = useState(initial?.remote_allowed ?? true);
+  const [hybridAllowed, setHybridAllowed] = useState(initial?.hybrid_allowed ?? true);
+  const [onsiteAllowed, setOnsiteAllowed] = useState(initial?.onsite_allowed ?? true);
+  const [excludedCompanies, setExcludedCompanies] = useState((initial?.excluded_companies ?? []).join(", "));
+  const [excludedTitles, setExcludedTitles] = useState((initial?.excluded_titles ?? []).join(", "));
+  const [relocationPreference, setRelocationPreference] = useState<RelocationPreference>(
+    (initial?.relocation_preference as RelocationPreference) || ""
+  );
   const [status, setStatus] = useState("");
 
   function splitList(value: string) {
@@ -46,6 +61,12 @@ export default function MobileJobPreferences({
       target_titles: splitList(targetTitles),
       target_locations: splitList(targetLocations),
       remote_only: remoteOnly,
+      remote_allowed: remoteAllowed,
+      hybrid_allowed: hybridAllowed,
+      onsite_allowed: onsiteAllowed,
+      excluded_companies: splitList(excludedCompanies),
+      excluded_titles: splitList(excludedTitles),
+      relocation_preference: relocationPreference || null,
     });
 
     setStatus(error ? error.message : "Saved");
@@ -108,6 +129,58 @@ export default function MobileJobPreferences({
           </label>
         </div>
 
+        <label className="m-field">
+          <span>Work arrangement</span>
+          <div style={{ display: "flex", gap: 14, marginTop: 4 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input type="checkbox" checked={remoteAllowed} onChange={(e) => setRemoteAllowed(e.target.checked)} />
+              Remote
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input type="checkbox" checked={hybridAllowed} onChange={(e) => setHybridAllowed(e.target.checked)} />
+              Hybrid
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input type="checkbox" checked={onsiteAllowed} onChange={(e) => setOnsiteAllowed(e.target.checked)} />
+              On-site
+            </label>
+          </div>
+        </label>
+
+        <label className="m-field">
+          <span>Relocation</span>
+          <select
+            className="m-input"
+            value={relocationPreference}
+            onChange={(event) => setRelocationPreference(event.target.value as RelocationPreference)}
+          >
+            <option value="">Not stated</option>
+            <option value="open">Open to relocating</option>
+            <option value="not_open">Not open to relocating</option>
+            <option value="case_by_case">Depends on the role</option>
+          </select>
+        </label>
+
+        <label className="m-field">
+          <span>Companies to exclude</span>
+          <input
+            className="m-input"
+            value={excludedCompanies}
+            onChange={(event) => setExcludedCompanies(event.target.value)}
+            placeholder="Current employer, competitors"
+          />
+        </label>
+
+        <label className="m-field">
+          <span>Titles to exclude</span>
+          <input
+            className="m-input"
+            value={excludedTitles}
+            onChange={(event) => setExcludedTitles(event.target.value)}
+            placeholder="Intern, Contract"
+          />
+        </label>
+
         {status ? <p className="m-note">{status}</p> : null}
         <button className="m-action" type="submit">
           Save
@@ -115,8 +188,8 @@ export default function MobileJobPreferences({
       </form>
 
       <div className="m-note" style={{ marginTop: 16 }}>
-        These preferences steer matching and job discovery. Separate multiple
-        titles or locations with commas.
+        These preferences steer matching, job discovery, and the Application
+        Agent&apos;s auto-apply rules. Separate multiple values with commas.
       </div>
     </MobileScreen>
   );

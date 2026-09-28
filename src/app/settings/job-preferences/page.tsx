@@ -18,7 +18,9 @@ export default async function JobPreferencesSettingsPage() {
 
   const { data: jobPreferences } = await supabase
     .from("job_preferences")
-    .select("min_match_score,target_titles,target_locations,remote_only")
+    .select(
+      "min_match_score,target_titles,target_locations,remote_only,remote_allowed,hybrid_allowed,onsite_allowed,excluded_companies,excluded_titles,relocation_preference"
+    )
     .eq("user_id", userId)
     .maybeSingle();
 

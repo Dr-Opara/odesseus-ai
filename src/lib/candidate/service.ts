@@ -24,13 +24,17 @@ import type {
   CandidateJobPreferences,
   CandidateProfile,
   CandidateResumeTailoring,
+  CandidateWorkAuthorization,
   CreditBalance,
 } from "./types";
 
 export type CandidateClient = SupabaseClient<Database>;
 
 const PROFILE_COLUMNS =
-  "full_name,headline,location,work_preference,country_code,locale,preferred_currency,preferred_language,timezone,application_contact_email,onboarding_completed";
+  "full_name,headline,location,work_preference,country_code,locale,preferred_currency,preferred_language,timezone,application_contact_email,onboarding_completed,onboarding_completed_at";
+
+const JOB_PREFERENCES_COLUMNS =
+  "min_match_score,target_titles,target_locations,employment_types,industries,remote_only,minimum_salary,work_authorization,sponsorship_needed,remote_allowed,hybrid_allowed,onsite_allowed,excluded_companies,excluded_titles,relocation_preference";
 
 const JOB_COLUMNS =
   "id,company_name,role_title,location,work_arrangement,employment_type,salary_text,description,match_score,status,source,source_url,discovered_at";
@@ -320,7 +324,7 @@ export async function getJobPreferences(
 ): Promise<CandidateJobPreferences | null> {
   const { data, error } = await client
     .from("job_preferences")
-    .select("min_match_score,target_titles,target_locations,employment_types,industries,remote_only,minimum_salary,work_authorization,sponsorship_needed")
+    .select(JOB_PREFERENCES_COLUMNS)
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -328,6 +332,27 @@ export async function getJobPreferences(
     throw new Error(`Could not load job preferences: ${error.message}`);
   }
   return (data as CandidateJobPreferences | null) ?? null;
+}
+
+/**
+ * The candidate's declared work authorization facts, or null when unset.
+ * Every field here is applicant-provided (owner-only RLS on
+ * `candidate_work_authorization`) — never inferred by matching or the agent.
+ */
+export async function getCandidateWorkAuthorization(
+  client: CandidateClient,
+  userId: string
+): Promise<CandidateWorkAuthorization | null> {
+  const { data, error } = await client
+    .from("candidate_work_authorization")
+    .select("country_code,authorized_without_sponsorship,sponsorship_required,relocation_allowed")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Could not load work authorization: ${error.message}`);
+  }
+  return (data as CandidateWorkAuthorization | null) ?? null;
 }
 
 /** The candidate's resumes, newest first (documents beyond resumes do not

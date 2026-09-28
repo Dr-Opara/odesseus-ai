@@ -3,6 +3,7 @@ import {
   getApplications,
   getCandidateProfile,
   getCandidateUserId,
+  getCandidateWorkAuthorization,
   getCreditBalance,
   getDocuments,
   getJobMatchWithBreakdown,
@@ -210,6 +211,28 @@ describe("candidate service layer (Phase 5 shared reads)", () => {
     await expect(getDocuments(client as never, "user-1")).resolves.toEqual([
       { id: "r1", user_id: "user-1", file_name: "resume.pdf", is_master: true },
     ]);
+  });
+
+  it("returns declared work authorization facts, or null when unset", async () => {
+    const client = candidateFake({
+      candidate_work_authorization: [
+        {
+          user_id: "user-1",
+          country_code: "US",
+          authorized_without_sponsorship: true,
+          sponsorship_required: false,
+          relocation_allowed: false,
+        },
+      ],
+    });
+    await expect(getCandidateWorkAuthorization(client as never, "user-1")).resolves.toMatchObject({
+      country_code: "US",
+      authorized_without_sponsorship: true,
+    });
+
+    await expect(
+      getCandidateWorkAuthorization(candidateFake({}) as never, "user-1")
+    ).resolves.toBeNull();
   });
 
   it("returns a tailor run with its job and source resume, or null", async () => {

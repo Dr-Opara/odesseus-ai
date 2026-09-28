@@ -8,9 +8,9 @@ export default async function WorkAuthorizationSettingsPage() {
   const userId = auth?.claims?.sub;
   if (!userId) redirect("/login");
 
-  const { data: preferences } = await supabase
-    .from("job_preferences")
-    .select("work_authorization,sponsorship_needed")
+  const { data: authorization } = await supabase
+    .from("candidate_work_authorization")
+    .select("country_code,authorized_without_sponsorship,sponsorship_required,relocation_allowed")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -18,8 +18,10 @@ export default async function WorkAuthorizationSettingsPage() {
     <MobileWorkAuthorization
       userId={userId}
       initial={{
-        work_authorization: preferences?.work_authorization ?? null,
-        sponsorship_needed: preferences?.sponsorship_needed ?? null,
+        country_code: authorization?.country_code ?? null,
+        authorized_without_sponsorship: authorization?.authorized_without_sponsorship ?? false,
+        sponsorship_required: authorization?.sponsorship_required ?? false,
+        relocation_allowed: authorization?.relocation_allowed ?? false,
       }}
     />
   );

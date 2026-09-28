@@ -20,6 +20,19 @@ export type CandidateProfile = {
   timezone: string | null;
   application_contact_email: string | null;
   onboarding_completed: boolean;
+  onboarding_completed_at: string | null;
+};
+
+/**
+ * Applicant-declared work authorization facts (`candidate_work_authorization`).
+ * Every field is self-reported by the applicant — never inferred by the
+ * agent, the optimizer, or a job-match assessment.
+ */
+export type CandidateWorkAuthorization = {
+  country_code: string | null;
+  authorized_without_sponsorship: boolean;
+  sponsorship_required: boolean;
+  relocation_allowed: boolean;
 };
 
 /**
@@ -99,6 +112,14 @@ export type CandidateJobPreferences = {
   minimum_salary: number | null;
   work_authorization: string | null;
   sponsorship_needed: boolean | null;
+  /** Explicit three-way work-arrangement toggle (additive to remote_only). */
+  remote_allowed: boolean;
+  hybrid_allowed: boolean;
+  onsite_allowed: boolean;
+  excluded_companies: string[];
+  excluded_titles: string[];
+  /** open | not_open | case_by_case | null (unstated). */
+  relocation_preference: string | null;
 };
 
 export type CandidateDocument = {

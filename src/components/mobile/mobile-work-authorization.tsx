@@ -3,32 +3,60 @@
 import { FormEvent, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+type AuthorizationStatus = "authorized" | "sponsorship_required" | "unspecified";
+
+function statusFor(initial: {
+  authorized_without_sponsorship: boolean;
+  sponsorship_required: boolean;
+}): AuthorizationStatus {
+  if (initial.authorized_without_sponsorship) return "authorized";
+  if (initial.sponsorship_required) return "sponsorship_required";
+  return "unspecified";
+}
+
 /**
- * Mobile Work Authorization (screen 32). Reads and writes the same
- * `job_preferences.work_authorization` / `.sponsorship_needed` columns the
- * desktop Job Preferences form uses — self-reported, never inferred.
+ * Work Authorization (screen 32). Reads and writes
+ * `candidate_work_authorization` — a dedicated, owner-only-RLS table for
+ * applicant-declared work authorization facts. Every field here is
+ * self-reported; Odesseus never infers a legal work-authorization answer.
  */
 export default function MobileWorkAuthorization({
   userId,
   initial,
 }: {
   userId: string;
-  initial: { work_authorization: string | null; sponsorship_needed: boolean | null };
+  initial: {
+    country_code: string | null;
+    authorized_without_sponsorship: boolean;
+    sponsorship_required: boolean;
+    relocation_allowed: boolean;
+  };
 }) {
   const supabase = createClient();
-  const [authorizedIn, setAuthorizedIn] = useState(initial.work_authorization ?? "");
-  const [sponsorshipNeeded, setSponsorshipNeeded] = useState(initial.sponsorship_needed ?? false);
-  const [status, setStatus] = useState("");
+  const [countryCode, setCountryCode] = useState(initial.country_code ?? "");
+  const [status, setStatusValue] = useState<AuthorizationStatus>(statusFor(initial));
+  const [relocationAllowed, setRelocationAllowed] = useState(initial.relocation_allowed);
+  const [saveStatus, setSaveStatus] = useState("");
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus("Saving…");
-    const { error } = await supabase.from("job_preferences").upsert({
+    setSaveStatus("Saving…");
+
+    const normalizedCountry = countryCode.trim().toUpperCase();
+    if (normalizedCountry && !/^[A-Z]{2}$/.test(normalizedCountry)) {
+      setSaveStatus("Use a 2-letter country code, e.g. US.");
+      return;
+    }
+
+    const { error } = await supabase.from("candidate_work_authorization").upsert({
       user_id: userId,
-      work_authorization: authorizedIn || null,
-      sponsorship_needed: sponsorshipNeeded,
+      country_code: normalizedCountry || null,
+      authorized_without_sponsorship: status === "authorized",
+      sponsorship_required: status === "sponsorship_required",
+      relocation_allowed: relocationAllowed,
     });
-    setStatus(error ? error.message : "Saved");
+
+    setSaveStatus(error ? error.message : "Saved");
   }
 
   return (
@@ -48,30 +76,44 @@ export default function MobileWorkAuthorization({
 
       <form onSubmit={save} className="m-signup-form">
         <label className="m-field">
-          <span>Authorized to work in</span>
+          <span>Country you are authorized to work in</span>
           <input
             className="m-input"
-            value={authorizedIn}
-            onChange={(event) => setAuthorizedIn(event.target.value)}
-            placeholder="United States, United Kingdom"
+            value={countryCode}
+            onChange={(event) => setCountryCode(event.target.value)}
+            placeholder="US"
+            maxLength={2}
           />
+        </label>
+
+        <label className="m-field">
+          <span>Sponsorship</span>
+          <select
+            className="m-input"
+            value={status}
+            onChange={(event) => setStatusValue(event.target.value as AuthorizationStatus)}
+          >
+            <option value="unspecified">Prefer not to say</option>
+            <option value="authorized">Authorized — no sponsorship needed</option>
+            <option value="sponsorship_required">Requires employer sponsorship</option>
+          </select>
         </label>
 
         <div className="m-card m-toggle-row" style={{ margin: "0 4px 16px" }}>
           <span className="m-copy">
-            <strong>Require employer sponsorship?</strong>
+            <strong>Open to relocation?</strong>
           </span>
           <label className="m-switch">
             <input
               type="checkbox"
-              checked={sponsorshipNeeded}
-              onChange={(event) => setSponsorshipNeeded(event.target.checked)}
+              checked={relocationAllowed}
+              onChange={(event) => setRelocationAllowed(event.target.checked)}
             />
             <span />
           </label>
         </div>
 
-        {status ? <p className="m-note">{status}</p> : null}
+        {saveStatus ? <p className="m-note">{saveStatus}</p> : null}
         <button className="m-action" type="submit">
           Save
         </button>
