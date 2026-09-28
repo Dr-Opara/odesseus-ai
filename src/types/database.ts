@@ -129,33 +129,42 @@ export type Database = {
         Row: {
           answer_key: string;
           answer_text: string;
+          approved_at: string | null;
           auto_use_allowed: boolean;
           category: string;
           created_at: string;
           id: string;
           label: string;
+          normalized_intent: string | null;
+          sensitivity_classification: string;
           updated_at: string;
           user_id: string;
         };
         Insert: {
           answer_key: string;
           answer_text: string;
+          approved_at?: string | null;
           auto_use_allowed?: boolean;
           category: string;
           created_at?: string;
           id?: string;
           label: string;
+          normalized_intent?: string | null;
+          sensitivity_classification?: string;
           updated_at?: string;
           user_id: string;
         };
         Update: {
           answer_key?: string;
           answer_text?: string;
+          approved_at?: string | null;
           auto_use_allowed?: boolean;
           category?: string;
           created_at?: string;
           id?: string;
           label?: string;
+          normalized_intent?: string | null;
+          sensitivity_classification?: string;
           updated_at?: string;
           user_id?: string;
         };

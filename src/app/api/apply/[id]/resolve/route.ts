@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resumeHook } from "workflow/api";
 import { createClient } from "@/lib/supabase/server";
+import { classifyQuestionSensitivity, normalizeQuestionIntent } from "@/lib/apply/answer-vault";
 
 const schema = z.object({
   answers: z.array(
@@ -60,6 +61,12 @@ export async function POST(
     const question = questions.find((item) => item.id === answer.questionId);
     if (!question || question.status !== "needs_user") continue;
 
+    // The stored category is a hint, not the source of truth: a question is
+    // never saved to the vault for reuse if it classifies as sensitive right
+    // now, regardless of what it was tagged as when the run created it.
+    const sensitivity = classifyQuestionSensitivity(question.question_text);
+    const reusable = answer.remember && sensitivity.tier !== "sensitive";
+
     await supabase
       .from("application_run_questions")
       .update({
@@ -67,21 +74,25 @@ export async function POST(
         answer_source: "user",
         status: "resolved",
         resolved_at: new Date().toISOString(),
-        auto_reuse_allowed: answer.remember && question.category !== "sensitive",
+        auto_reuse_allowed: reusable,
       })
       .eq("id", question.id)
       .eq("user_id", userId);
 
-    if (answer.remember && question.category !== "sensitive" && question.field_key) {
+    if (reusable && question.field_key) {
+      const now = new Date().toISOString();
       await supabase.from("application_answer_vault").upsert(
         {
           user_id: userId,
           answer_key: question.field_key,
           label: question.question_text,
+          normalized_intent: normalizeQuestionIntent(question.question_text),
           category: question.category === "sensitive" ? "custom" : question.category,
+          sensitivity_classification: sensitivity.tier,
           answer_text: answer.answer,
           auto_use_allowed: true,
-          updated_at: new Date().toISOString(),
+          approved_at: now,
+          updated_at: now,
         },
         { onConflict: "user_id,answer_key" }
       );

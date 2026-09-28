@@ -1,13 +1,9 @@
+import { classifyQuestionSensitivity, findEquivalentVaultEntry, type VaultEntry } from "./answer-vault";
+
 export type ApplyContext = {
   profile: Record<string, any>;
   preferences: Record<string, any> | null;
-  vault: Array<{
-    answer_key: string;
-    label: string;
-    category: string;
-    answer_text: string;
-    auto_use_allowed: boolean;
-  }>;
+  vault: VaultEntry[];
   email: string | null;
 };
 
@@ -15,11 +11,6 @@ export type FieldDecision =
   | { action: "fill"; value: string; source: "profile" | "vault"; key: string }
   | { action: "pause"; category: string; reason: string }
   | { action: "skip"; reason: string };
-
-const sensitivePatterns = [
-  /race|ethnic|gender|sex|pronoun|veteran|disabilit|religion|marital|sexual orientation/i,
-  /social security|ssn|date of birth|birth date|national id|passport/i,
-];
 
 const authPatterns = [
   /password|verification code|one[- ]?time|otp|security code|captcha|human verification/i,
@@ -32,18 +23,20 @@ function normalized(value: string) {
 export function decideField(label: string, type: string, context: ApplyContext): FieldDecision {
   const key = normalized(label);
 
-  if (sensitivePatterns.some((pattern) => pattern.test(label))) {
-    return { action: "pause", category: "sensitive", reason: "Sensitive demographic or identity question requires the user." };
+  const sensitivity = classifyQuestionSensitivity(label);
+  if (sensitivity.tier === "sensitive") {
+    return {
+      action: "pause",
+      category: "sensitive",
+      reason: `Sensitive question (${sensitivity.category}) requires the user.`,
+    };
   }
 
   if (type === "password" || authPatterns.some((pattern) => pattern.test(label))) {
     return { action: "pause", category: "custom", reason: "Authentication or verification requires the user." };
   }
 
-  const vault = context.vault.find((item) => {
-    const itemKey = normalized(item.answer_key + " " + item.label);
-    return item.auto_use_allowed && (key.includes(normalized(item.answer_key)) || itemKey.includes(key));
-  });
+  const vault = findEquivalentVaultEntry(label, context.vault);
 
   if (vault) {
     return { action: "fill", value: vault.answer_text, source: "vault", key: vault.answer_key };

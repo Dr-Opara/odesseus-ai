@@ -431,7 +431,7 @@ export async function runApplicationPass(runId: string, command: ApplyCommand) {
     supabase.from("job_preferences").select("*").eq("user_id", run.user_id).maybeSingle(),
     supabase
       .from("application_answer_vault")
-      .select("answer_key,label,category,answer_text,auto_use_allowed")
+      .select("answer_key,label,category,answer_text,auto_use_allowed,normalized_intent")
       .eq("user_id", run.user_id),
     supabase.from("resumes").select("*").eq("id", run.approved_resume_id).maybeSingle(),
     supabase.auth.admin.getUserById(run.user_id),
