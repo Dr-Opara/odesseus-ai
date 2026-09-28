@@ -239,9 +239,12 @@ describe("generated types", () => {
   });
 });
 
-describe("rls audit inventory is unchanged", () => {
-  it("no public table was added, so the pinned count must still be 68", () => {
+describe("rls audit inventory stays in sync with the schema", () => {
+  it("matches the pinned count, which a table addition must bump in both files", () => {
+    // Phase 2J added candidate_activity_events, taking the public schema from 68
+    // to 69 tables. This pin and the one inside rls-audit.test.sql are the same
+    // number; when a migration adds a table, both must change together.
     const rlsAudit = read("supabase/tests/rls-audit.test.sql");
-    expect(rlsAudit).toMatch(/56 \+ 9 \+ 1 \+ 2, 'public schema holds exactly 68 tables/);
+    expect(rlsAudit).toMatch(/56 \+ 9 \+ 1 \+ 3, 'public schema holds exactly 69 tables/);
   });
 });

@@ -614,6 +614,56 @@ export type Database = {
         };
         Relationships: [];
       };
+      candidate_activity_events: {
+        Row: {
+          created_at: string;
+          dedupe_key: string | null;
+          detail: string | null;
+          entity_id: string;
+          entity_type: string;
+          event_type: string;
+          id: string;
+          metadata: Json;
+          occurred_at: string;
+          title: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          dedupe_key?: string | null;
+          detail?: string | null;
+          entity_id: string;
+          entity_type: string;
+          event_type: string;
+          id?: string;
+          metadata?: Json;
+          occurred_at?: string;
+          title: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          dedupe_key?: string | null;
+          detail?: string | null;
+          entity_id?: string;
+          entity_type?: string;
+          event_type?: string;
+          id?: string;
+          metadata?: Json;
+          occurred_at?: string;
+          title?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "candidate_activity_events_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       candidate_work_authorization: {
         Row: {
           authorized_without_sponsorship: boolean;
@@ -3532,6 +3582,33 @@ export type Database = {
           jobs_posted: number;
           paid_plan_conversion: number;
           recruiter_seats: number;
+        }[];
+      };
+      odesseus_get_candidate_dashboard_counts: {
+        Args: { p_user_id: string; p_strong_match_threshold?: number | null };
+        Returns: {
+          agent_decisions_today: number;
+          applications_submitted: number;
+          applications_total: number;
+          applications_verified: number;
+          has_primary_resume: boolean;
+          interviews_completed: number;
+          interviews_total: number;
+          interviews_upcoming: number;
+          jobs_discovered: number;
+          jobs_reviewing: number;
+          jobs_saved: number;
+          jobs_strong_matches: number;
+          prep_generated: number;
+          prep_last_generated_at: string | null;
+          queue_failed: number;
+          queue_held: number;
+          queue_in_flight: number;
+          queue_needs_input: number;
+          queue_needs_review: number;
+          queue_total: number;
+          resumes_approved: number;
+          resumes_total: number;
         }[];
       };
       odesseus_get_employer_applicant_counts: {

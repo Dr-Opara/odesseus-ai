@@ -22,7 +22,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 
 -- NOTE: bump this plan's inventory count in the same commit as any migration
 -- that adds or removes a public table (see assertion 1 below).
-SELECT plan(23);
+SELECT plan(25);
 
 -- ---------------------------------------------------------------------------
 -- 1. Baseline inventory
@@ -32,7 +32,7 @@ SELECT is(
    JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public' AND c.relkind = 'r'
      AND c.relname <> 'schema_migrations'),
-  56 + 9 + 1 + 2, 'public schema holds exactly 68 tables (audit inventory is current: +candidate_work_authorization, +application_agent_settings, +application_agent_decisions)');
+  56 + 9 + 1 + 3, 'public schema holds exactly 69 tables (audit inventory is current: +candidate_work_authorization, +application_agent_settings, +application_agent_decisions, +candidate_activity_events)');
 
 SELECT is(
   (SELECT count(*)::int FROM pg_class c
@@ -258,6 +258,27 @@ SELECT is(
      AND grantee IN ('anon', 'authenticated')
      AND privilege_type = 'SELECT'),
   0, 'browser roles may not read the admin audit log');
+
+-- ---------------------------------------------------------------------------
+-- 9. The candidate activity stream is append-only and not writable by the
+--    candidate. The feed records what the system did for somebody; if they
+--    could insert a row, "wallet topped up" would be a thing they could write
+--    themselves. The only write path is the SECURITY DEFINER trigger inside the
+--    transaction that caused the event.
+-- ---------------------------------------------------------------------------
+SELECT is(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema = 'public' AND table_name = 'candidate_activity_events'
+     AND grantee IN ('anon', 'authenticated', 'PUBLIC')
+     AND privilege_type IN ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')),
+  0, 'no browser role may write, rewrite or delete an activity event');
+
+SELECT is(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema = 'public' AND table_name = 'candidate_activity_events'
+     AND grantee = 'anon'
+     AND privilege_type = 'SELECT'),
+  0, 'anon may not read any activity history');
 
 SELECT * FROM finish();
 ROLLBACK;

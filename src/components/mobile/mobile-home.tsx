@@ -2,11 +2,10 @@ import Link from "next/link";
 import MobileScreen from "@/components/mobile/mobile-screen";
 import { companyMarkColor, companyMarkInitial } from "@/lib/mobile/company-mark";
 import type {
-  CandidateActivity,
-  CandidateApplication,
-  CandidateJob,
-  CreditBalance,
-} from "@/lib/candidate/types";
+  CandidateDashboardActivityItem,
+  CandidateDashboardApplication,
+} from "@/lib/candidate/dashboard";
+import type { CandidateJob, CreditBalance } from "@/lib/candidate/types";
 import { formatCents } from "@/lib/pricing/candidate-pricing";
 
 function firstName(name?: string | null) {
@@ -19,13 +18,16 @@ function initials(name?: string | null) {
   return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
-/** Both activity sources are real records — the prefix on `key` (set in
- * getRecentActivity) tells us which, so the icon reflects the actual record
- * type rather than a single generic glyph for everything. */
-function activityIcon(key: string): { icon: string; color: "purple" | "green" } {
-  return key.startsWith("signal-")
-    ? { icon: "🔍", color: "purple" }
-    : { icon: "📄", color: "green" };
+/** Every feed item is a real native event. The only distinction worth drawing
+ * is whether it is waiting on the candidate: attention items get the action
+ * mark, recorded milestones get a quiet check. There is no signal/feed split
+ * here because there is no external data — the dashboard is native-only. */
+function activityIcon(
+  item: CandidateDashboardActivityItem
+): { icon: string; color: "purple" | "green" } {
+  return item.needsAttention
+    ? { icon: "▶", color: "purple" }
+    : { icon: "✓", color: "green" };
 }
 
 function when(value: string | null) {
@@ -58,8 +60,8 @@ export default function MobileHome({
   fullName: string | null;
   credits: CreditBalance;
   strongMatches: CandidateJob[];
-  recentApplications: CandidateApplication[];
-  activity: CandidateActivity[];
+  recentApplications: CandidateDashboardApplication[];
+  activity: CandidateDashboardActivityItem[];
 }) {
   const matches = strongMatches.slice(0, 5);
   const applications = recentApplications.slice(0, 5);
@@ -154,11 +156,11 @@ export default function MobileHome({
                 href={`/applications/${application.id}`}
                 key={application.id}
               >
-                <span className="m-icon">{application.role_title.slice(0, 1)}</span>
+                <span className="m-icon">{application.roleTitle.slice(0, 1)}</span>
                 <span className="m-copy">
-                  <strong>{application.role_title}</strong>
+                  <strong>{application.roleTitle}</strong>
                   <small>
-                    {application.company_name} · {when(application.last_event_at)}
+                    {application.companyName} · {when(application.lastEventAt)}
                   </small>
                 </span>
                 <b className="m-tag">{statusLabel(application.status)}</b>
@@ -178,13 +180,13 @@ export default function MobileHome({
         {feed.length ? (
           <div className="m-list">
             {feed.map((item) => {
-              const { icon, color } = activityIcon(item.key);
+              const { icon, color } = activityIcon(item);
               return (
-                <div className="m-card" key={item.key}>
+                <div className="m-card" key={item.id}>
                   <span className={`m-icon m-icon-${color}`} aria-hidden="true">{icon}</span>
                   <span className="m-copy">
                     <strong>{item.title}</strong>
-                    <small>{when(item.at)}</small>
+                    <small>{when(item.occurredAt)}</small>
                   </span>
                   <b className="m-chevron">›</b>
                 </div>
