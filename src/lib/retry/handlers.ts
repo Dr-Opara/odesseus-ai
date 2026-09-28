@@ -77,6 +77,8 @@ const emailDeliverySchema = z.object({
   ctaLabel: z.string().optional(),
   ctaHref: z.string().optional(),
   logPrefix: z.string(),
+  /** When present (notification dispatcher), the notifications row whose email_delivery_status flips to 'sent' after a successful send. */
+  notificationId: z.string().optional(),
 });
 
 export type ApplicationFinalizationPayload = z.infer<typeof applicationFinalizationSchema>;
@@ -168,13 +170,28 @@ async function retryLiveMembershipSync(rawPayload: unknown) {
 
 /** Re-sends through the shared transport. A duplicate email is an acceptable retry cost. */
 async function retryEmailDelivery(rawPayload: unknown) {
-  const { logPrefix, ...input } = emailDeliverySchema.parse(rawPayload);
+  const { logPrefix, notificationId, ...input } = emailDeliverySchema.parse(rawPayload);
   const result = await sendEmail(input, logPrefix);
   if (!result.sent) {
     // `not_configured` is a deployment state, not a transient failure —
     // retrying can never succeed, so it dead-letters like any other
     // terminal failure instead of exhausting attempts pointlessly.
     throw new Error(`email delivery failed: ${result.reason}`);
+  }
+
+  // The email reached the provider; record that on the notification row so the
+  // in-app surface can show delivery state. Best-effort: this run succeeded on
+  // the sending path, and a bookkeeping failure must not turn it into a retry.
+  if (notificationId) {
+    try {
+      const supabase = createServiceClient();
+      await supabase
+        .from("notifications")
+        .update({ email_delivery_status: "sent" })
+        .eq("id", notificationId);
+    } catch (error) {
+      console.error(`${logPrefix} could not mark notification ${notificationId} as sent`, error);
+    }
   }
 }
 

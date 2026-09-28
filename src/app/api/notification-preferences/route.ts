@@ -9,16 +9,17 @@ import {
 
 export const runtime = "nodejs";
 
-// A partial patch: any subset of the channels, each an explicit boolean. An
-// unknown key is rejected rather than silently dropped, so a client typo
-// (e.g. "emails" instead of "applications") fails loudly instead of quietly
-// leaving the user's real preference unchanged.
+// A partial patch: any subset of the channels plus the outbound-email switch,
+// each an explicit boolean. An unknown key is rejected rather than silently
+// dropped, so a client typo (e.g. "emails" instead of "applications") fails
+// loudly instead of quietly leaving the user's real preference unchanged.
 const patchSchema = z
-  .object(
-    Object.fromEntries(
+  .object({
+    ...(Object.fromEntries(
       NOTIFICATION_CHANNELS.map((channel) => [channel, z.boolean()])
-    ) as Record<(typeof NOTIFICATION_CHANNELS)[number], z.ZodBoolean>
-  )
+    ) as Record<(typeof NOTIFICATION_CHANNELS)[number], z.ZodBoolean>),
+    email: z.boolean(),
+  })
   .partial()
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one notification channel is required.",

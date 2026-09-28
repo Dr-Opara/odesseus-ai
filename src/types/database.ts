@@ -1079,6 +1079,56 @@ export type Database = {
           },
         ];
       };
+      employer_notification_preferences: {
+        Row: {
+          billing: boolean;
+          capacity: boolean;
+          created_at: string;
+          email: boolean;
+          featured: boolean;
+          interview_events: boolean;
+          new_applicants: boolean;
+          org_id: string;
+          pipeline: boolean;
+          strong_fit: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          billing?: boolean;
+          capacity?: boolean;
+          created_at?: string;
+          email?: boolean;
+          featured?: boolean;
+          interview_events?: boolean;
+          new_applicants?: boolean;
+          org_id: string;
+          pipeline?: boolean;
+          strong_fit?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          billing?: boolean;
+          capacity?: boolean;
+          created_at?: string;
+          email?: boolean;
+          featured?: boolean;
+          interview_events?: boolean;
+          new_applicants?: boolean;
+          org_id?: string;
+          pipeline?: boolean;
+          strong_fit?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "employer_notification_preferences_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: true;
+            referencedRelation: "employer_organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       employer_organizations: {
         Row: {
           created_at: string;
@@ -2400,32 +2450,177 @@ export type Database = {
           applications: boolean;
           created_at: string;
           documents: boolean;
+          email: boolean;
+          interview_reminders: boolean;
           matches: boolean;
           product: boolean;
           updated_at: string;
           user_id: string;
+          wallet_billing: boolean;
         };
         Insert: {
           activity?: boolean;
           applications?: boolean;
           created_at?: string;
           documents?: boolean;
+          email?: boolean;
+          interview_reminders?: boolean;
           matches?: boolean;
           product?: boolean;
           updated_at?: string;
           user_id: string;
+          wallet_billing?: boolean;
         };
         Update: {
           activity?: boolean;
           applications?: boolean;
           created_at?: string;
           documents?: boolean;
+          email?: boolean;
+          interview_reminders?: boolean;
           matches?: boolean;
           product?: boolean;
           updated_at?: string;
           user_id?: string;
+          wallet_billing?: boolean;
         };
         Relationships: [];
+      };
+      notification_reminders: {
+        Row: {
+          created_at: string;
+          due_at: string;
+          fired_notification_id: string | null;
+          id: string;
+          interview_id: string;
+          reminder_type: string;
+          status: string;
+          timezone: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          due_at: string;
+          fired_notification_id?: string | null;
+          id?: string;
+          interview_id: string;
+          reminder_type: string;
+          status?: string;
+          timezone?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          due_at?: string;
+          fired_notification_id?: string | null;
+          id?: string;
+          interview_id?: string;
+          reminder_type?: string;
+          status?: string;
+          timezone?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notification_reminders_fired_notification_id_fkey";
+            columns: ["fired_notification_id"];
+            isOneToOne: false;
+            referencedRelation: "notifications";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notification_reminders_interview_id_fkey";
+            columns: ["interview_id"];
+            isOneToOne: false;
+            referencedRelation: "interviews";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notification_reminders_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notifications: {
+        Row: {
+          action_url: string | null;
+          created_at: string;
+          dedupe_key: string | null;
+          email_delivery_status: string;
+          entity_id: string;
+          entity_type: string;
+          expires_at: string | null;
+          id: string;
+          message: string | null;
+          metadata: Json;
+          notification_type: string;
+          organization_id: string | null;
+          priority: string;
+          read_at: string | null;
+          recipient_type: string;
+          recipient_user_id: string;
+          title: string;
+        };
+        Insert: {
+          action_url?: string | null;
+          created_at?: string;
+          dedupe_key?: string | null;
+          email_delivery_status?: string;
+          entity_id: string;
+          entity_type: string;
+          expires_at?: string | null;
+          id?: string;
+          message?: string | null;
+          metadata?: Json;
+          notification_type: string;
+          organization_id?: string | null;
+          priority?: string;
+          read_at?: string | null;
+          recipient_type: string;
+          recipient_user_id: string;
+          title: string;
+        };
+        Update: {
+          action_url?: string | null;
+          created_at?: string;
+          dedupe_key?: string | null;
+          email_delivery_status?: string;
+          entity_id?: string;
+          entity_type?: string;
+          expires_at?: string | null;
+          id?: string;
+          message?: string | null;
+          metadata?: Json;
+          notification_type?: string;
+          organization_id?: string | null;
+          priority?: string;
+          read_at?: string | null;
+          recipient_type?: string;
+          recipient_user_id?: string;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "employer_organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_recipient_user_id_fkey";
+            columns: ["recipient_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       partner_applications: {
         Row: {

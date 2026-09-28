@@ -12,6 +12,7 @@ import {
   featuredJobActivationIdempotencyKey,
   stripeWebhookIdempotencyKey,
 } from "@/lib/retry/service";
+import { notifyEmployerSubscriptionStatus } from "@/lib/notifications/employer";
 
 export const runtime = "nodejs";
 
@@ -701,6 +702,18 @@ async function handleSubscriptionLifecycle(
         periodStart: null,
         periodEnd: null,
         grantCredits: false,
+      });
+      // The sync committed; notify the team. Fire-and-forget and internally
+      // guarded: a notification failure must never fail a subscription sync.
+      // Redelivered webhooks are neutralized by the (subscription, status)
+      // dedupe key.
+      await notifyEmployerSubscriptionStatus({
+        orgId: planTarget.orgId,
+        status,
+        stripeSubscriptionId: subscription.id,
+        tier: planTarget.tier,
+      }).catch((notifyErr) => {
+        console.error("[ODESSEUS_EMPLOYER] subscription notification failed", notifyErr);
       });
     }
     await logWebhookEvent({

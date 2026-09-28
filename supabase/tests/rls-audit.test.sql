@@ -22,7 +22,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 
 -- NOTE: bump this plan's inventory count in the same commit as any migration
 -- that adds or removes a public table (see assertion 1 below).
-SELECT plan(25);
+SELECT plan(29);
 
 -- ---------------------------------------------------------------------------
 -- 1. Baseline inventory
@@ -32,7 +32,7 @@ SELECT is(
    JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public' AND c.relkind = 'r'
      AND c.relname <> 'schema_migrations'),
-  56 + 9 + 1 + 3, 'public schema holds exactly 69 tables (audit inventory is current: +candidate_work_authorization, +application_agent_settings, +application_agent_decisions, +candidate_activity_events)');
+  56 + 9 + 1 + 6, 'public schema holds exactly 72 tables (audit inventory is current: +candidate_work_authorization, +application_agent_settings, +application_agent_decisions, +candidate_activity_events, +notifications, +notification_reminders, +employer_notification_preferences)');
 
 SELECT is(
   (SELECT count(*)::int FROM pg_class c
@@ -279,6 +279,51 @@ SELECT is(
      AND grantee = 'anon'
      AND privilege_type = 'SELECT'),
   0, 'anon may not read any activity history');
+
+-- ---------------------------------------------------------------------------
+-- 10. Notification tables: append-only for candidates, org-scoped for
+--     employers, schedule invisible to browsers
+-- ---------------------------------------------------------------------------
+-- notifications: browsers may SELECT their own rows (RLS) and nothing else at
+-- table level. In particular there is no INSERT/UPDATE/DELETE grant, so the
+-- only browser write is the column-level read_at UPDATE verified next.
+SELECT is(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema = 'public' AND table_name = 'notifications'
+     AND grantee IN ('anon', 'authenticated', 'PUBLIC')
+     AND privilege_type IN ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE',
+       'REFERENCES', 'TRIGGER')),
+  0, 'browser roles hold no table-level write grant on notifications');
+
+-- The one browser write on notifications is marking a notification read. The
+-- UPDATE privilege is granted on the read_at column only, so a notification
+-- cannot be retitled, re-routed, or re-typed by its recipient.
+SELECT is(
+  (SELECT count(*)::int FROM information_schema.column_privileges
+   WHERE table_schema = 'public' AND table_name = 'notifications'
+     AND grantee = 'authenticated' AND privilege_type = 'UPDATE'
+     AND column_name <> 'read_at'),
+  0, 'authenticated may UPDATE only the read_at column of notifications');
+
+-- notification_reminders is fully server-side (triggers + cron): schedule
+-- timing is not something any client needs, and no browser role holds any
+-- privilege on it.
+SELECT is(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema = 'public' AND table_name = 'notification_reminders'
+     AND grantee IN ('anon', 'authenticated', 'PUBLIC')),
+  0, 'notification_reminders carries no anon/authenticated/PUBLIC privileges');
+
+-- employer_notification_preferences: browsers may touch only their org row
+-- (RLS: members read, owner/admin write) and only with row-level statements;
+-- DELETE is not granted at all (an org preference is never deleted).
+SELECT is(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema = 'public' AND table_name = 'employer_notification_preferences'
+     AND (grantee IN ('anon', 'PUBLIC')
+          OR (grantee = 'authenticated'
+              AND privilege_type NOT IN ('SELECT', 'INSERT', 'UPDATE')))),
+  0, 'employer notification preferences: browsers only SELECT/INSERT/UPDATE their org row, never delete');
 
 SELECT * FROM finish();
 ROLLBACK;

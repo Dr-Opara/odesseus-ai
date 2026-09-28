@@ -50,6 +50,7 @@ function fakePreferencesStore() {
         for (const channel of NOTIFICATION_CHANNELS) {
           if (typeof payload[channel] === "boolean") next[channel] = payload[channel];
         }
+        if (typeof payload.email === "boolean") next.email = payload.email;
         rows.set(userId, next);
         return Promise.resolve({ data: { ...next }, error: null });
       }
@@ -68,23 +69,28 @@ function fakePreferencesStore() {
 }
 
 describe("notification preference defaults", () => {
-  it("covers exactly the five channels the product offers", () => {
+  it("covers exactly the seven channels the product offers", () => {
     expect([...NOTIFICATION_CHANNELS].sort()).toEqual([
       "activity",
       "applications",
       "documents",
+      "interview_reminders",
       "matches",
       "product",
+      "wallet_billing",
     ]);
   });
 
-  it("leaves candidate-relevant channels on and product updates off", () => {
+  it("leaves candidate-relevant channels on, product updates off, and email on", () => {
     expect(DEFAULT_NOTIFICATION_PREFERENCES).toEqual({
       applications: true,
       documents: true,
       matches: true,
       activity: true,
       product: false,
+      interview_reminders: true,
+      wallet_billing: true,
+      email: true,
     });
   });
 });

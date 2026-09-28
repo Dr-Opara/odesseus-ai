@@ -5,13 +5,19 @@ import { vi } from "vitest";
 // itself is thenable so `await service.from(x).update(y).eq(z)` resolves
 // even when no terminal method like .single()/.maybeSingle() is called,
 // matching real supabase-js query builder behavior.
-export function fakeQueryResult<T = unknown>(data: T, error: unknown = null) {
-  const result = { data, error };
+export function fakeQueryResult<T = unknown>(
+  data: T,
+  error: unknown = null,
+  count?: number
+) {
+  const result: { data: T; error: unknown; count?: number } = { data, error };
+  if (count !== undefined) result.count = count;
   const builder: Record<string, unknown> = {};
   const chainMethods = [
     "select",
     "eq",
     "neq",
+    "is",
     "in",
     "not",
     "gt",

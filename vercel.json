@@ -9,6 +9,14 @@
     {
       "path": "/api/cron/process-retry-jobs",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/process-notification-emails",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/process-interview-reminders",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
