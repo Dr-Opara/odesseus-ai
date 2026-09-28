@@ -61,6 +61,8 @@ Critical rules:
 - Be concise. Evidence should point to actual candidate facts.
 - Candidate preferences affect only candidatePreferences and locationAndWorkArrangement.
 - Do not inflate the overall fit to make the candidate feel good.
+- salaryCompatibility: "compatible" or "incompatible" only when the job states a salary/range AND the candidate stated a minimum salary. Otherwise "unknown" — never guess a favorable outcome from silence on either side.
+- sponsorshipCompatibility: "compatible" or "incompatible" only when the job explicitly states its sponsorship/work-authorization stance AND the candidate has declared their own. Otherwise "unknown".
 `,
     prompt: `
 CANDIDATE RESUME PROFILE:
@@ -94,6 +96,9 @@ Return an evidence-grounded assessment.
     assessment: result.output,
     score: scoring.score,
     criticalMissing: scoring.criticalMissing,
+    missingKeywords: scoring.missingKeywords,
     weights: scoring.weights,
+    modelVersion: MODEL,
+    calculatedAt: new Date().toISOString(),
   };
 }

@@ -32,9 +32,17 @@ export function calculateMatchScore(assessment: MatchAssessment) {
   // similarity elsewhere is high.
   const capped = criticalMissing.length ? Math.min(weighted, 69) : weighted;
 
+  // A flat, deduplicated view across every dimension's gaps — the "what's
+  // missing" list a candidate or the Application Agent can scan without
+  // walking all eight dimensions individually.
+  const missingKeywords = Array.from(
+    new Set(Object.values(dimensions).flatMap((dimension) => dimension.gaps))
+  );
+
   return {
     score: Math.round(capped),
     criticalMissing,
+    missingKeywords,
     weights,
   };
 }

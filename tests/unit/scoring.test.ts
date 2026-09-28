@@ -28,6 +28,8 @@ function baseAssessment(overrides: Partial<MatchAssessment> = {}): MatchAssessme
     strongestMatches: [],
     biggestGaps: [],
     conciseSummary: "",
+    salaryCompatibility: { status: "unknown", explanation: "" },
+    sponsorshipCompatibility: { status: "unknown", explanation: "" },
     ...overrides,
   };
 }
@@ -145,5 +147,27 @@ describe("calculateMatchScore", () => {
     const result = calculateMatchScore(assessment);
     expect(result.score).toBe(20);
     expect(result.criticalMissing).toHaveLength(2);
+  });
+
+  it("flattens and deduplicates gaps across every dimension into missingKeywords", () => {
+    const assessment = baseAssessment({
+      dimensions: {
+        requiredQualifications: { score: 60, evidence: [], gaps: ["Kubernetes", "Terraform"] },
+        professionalExperience: { score: 60, evidence: [], gaps: [] },
+        skillsAndTools: { score: 60, evidence: [], gaps: ["Terraform", "Go"] },
+        roleAndSeniority: dimension(100),
+        industryDomain: dimension(100),
+        educationAndCertifications: dimension(100),
+        locationAndWorkArrangement: dimension(100),
+        candidatePreferences: dimension(100),
+      },
+    });
+
+    const result = calculateMatchScore(assessment);
+    expect(result.missingKeywords.sort()).toEqual(["Go", "Kubernetes", "Terraform"]);
+  });
+
+  it("returns an empty missingKeywords list when no dimension reports a gap", () => {
+    expect(calculateMatchScore(baseAssessment()).missingKeywords).toEqual([]);
   });
 });

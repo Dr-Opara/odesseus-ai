@@ -149,7 +149,10 @@ export async function runAutomaticJobDiscovery(options?: {
               ...match.assessment,
               calculatedScore: match.score,
               criticalMissing: match.criticalMissing,
+              missingKeywords: match.missingKeywords,
               weights: match.weights,
+              modelVersion: match.modelVersion,
+              calculatedAt: match.calculatedAt,
               discovery: {
                 provider: posting.provider,
                 sourceKey: posting.sourceKey,

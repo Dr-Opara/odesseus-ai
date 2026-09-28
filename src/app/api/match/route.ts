@@ -154,7 +154,10 @@ export async function POST(request: Request) {
           ...match.assessment,
           calculatedScore: match.score,
           criticalMissing: match.criticalMissing,
+          missingKeywords: match.missingKeywords,
           weights: match.weights,
+          modelVersion: match.modelVersion,
+          calculatedAt: match.calculatedAt,
         },
         status: "reviewing",
       })

@@ -85,6 +85,26 @@ export const matchAssessmentSchema = z.object({
   strongestMatches: z.array(z.string()).max(5),
   biggestGaps: z.array(z.string()).max(5),
   conciseSummary: z.string(),
+
+  /**
+   * Evaluated only when the job states a salary/range and the candidate has
+   * stated a minimum. "unknown" — never a guessed "compatible" — when either
+   * side is unstated.
+   */
+  salaryCompatibility: z.object({
+    status: z.enum(["compatible", "incompatible", "unknown"]),
+    explanation: z.string(),
+  }),
+
+  /**
+   * Evaluated only when the job explicitly states a sponsorship/work-
+   * authorization stance and the candidate has declared their own. Never
+   * inferred from silence on either side.
+   */
+  sponsorshipCompatibility: z.object({
+    status: z.enum(["compatible", "incompatible", "unknown"]),
+    explanation: z.string(),
+  }),
 });
 
 export type ResumeProfile = z.infer<typeof resumeProfileSchema>;
