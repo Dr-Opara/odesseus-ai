@@ -4,8 +4,29 @@ import {
   resumeTailoringOutputSchema,
   type ResumeProfile,
 } from "./schemas";
+import { verifyResumeGrounding, type GroundingViolation } from "./resume-grounding";
 
 const MODEL = process.env.ODESSEUS_MATCH_MODEL || "gpt-5.6-luna";
+
+/**
+ * Thrown when a generated tailoring cites a skill, employer, certification,
+ * or evidence string the source resume does not actually support. Odesseus
+ * never saves a rejected tailoring as a draft, let alone approves it — see
+ * `verifyResumeGrounding`.
+ */
+export class ResumeGroundingError extends Error {
+  readonly violations: GroundingViolation[];
+
+  constructor(violations: GroundingViolation[]) {
+    super(
+      `Resume tailoring rejected: ${violations.length} unsupported claim(s) — ${violations
+        .map((violation) => violation.detail)
+        .join("; ")}`
+    );
+    this.name = "ResumeGroundingError";
+    this.violations = violations;
+  }
+}
 
 export async function tailorResume(input: {
   resume: ResumeProfile;
@@ -62,6 +83,11 @@ Create a tailored resume and an auditable change list.
       openai: { store: false },
     },
   });
+
+  const grounding = verifyResumeGrounding(input.resume, result.output);
+  if (!grounding.ok) {
+    throw new ResumeGroundingError(grounding.violations);
+  }
 
   return result.output;
 }

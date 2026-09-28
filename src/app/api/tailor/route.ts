@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { tailorResume } from "@/lib/ai/tailor";
+import { tailorResume, ResumeGroundingError } from "@/lib/ai/tailor";
 import { parseResume } from "@/lib/ai/resume";
 import { resumeProfileSchema } from "@/lib/ai/schemas";
 
@@ -121,6 +121,17 @@ export async function POST(request: Request) {
       version: tailoring.version_number,
     });
   } catch (error) {
+    if (error instanceof ResumeGroundingError) {
+      console.error("Odesseus Resume tailoring rejected (unsupported claims):", error.violations);
+      return NextResponse.json(
+        {
+          error:
+            "Odesseus could not verify every claim in this tailored resume against your source resume, so it was not saved. Try again.",
+        },
+        { status: 422 }
+      );
+    }
+
     console.error("Odesseus Resume tailoring failed:", error);
     return NextResponse.json(
       { error: "Odesseus could not tailor this resume." },
