@@ -3571,3 +3571,33 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .m-oh-body .oh-capability-tile{padding:12px}
 .m-oh-body .oh-capability-tile strong{font-size:11px}
 .m-oh-body .oh-capability-tile span{font-size:14px}
+
+/* Shared employer-portal components (F13 checkpoints 3-6). */
+.emp-capacity-badge{background:#fff;border:1px solid rgba(9,9,9,.08);border-radius:14px;padding:14px 18px;font-size:13px;color:#090909}
+.emp-capacity-badge-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.emp-capacity-badge.is-near-limit{border-color:rgba(255,61,5,.4);background:#fff6f2}
+.emp-capacity-badge.is-at-limit{border-color:#ff3d05;background:#fff2ee}
+.emp-capacity-upgrade{color:var(--od-orange);font-weight:650;font-size:12px;text-decoration:none}
+.emp-capacity-message{margin:8px 0 0;font-size:12px;color:rgba(9,9,9,.65)}
+.emp-capacity-message.is-error{color:#c22b0f}
+
+.emp-fit-score{font-size:12px;font-weight:650;color:var(--od-orange);background:rgba(255,61,5,.08);padding:4px 10px;border-radius:999px}
+.emp-fit-score.is-unavailable{color:rgba(9,9,9,.5);background:rgba(9,9,9,.05)}
+.emp-fit-score-panel{background:#fff;border:1px solid rgba(9,9,9,.06);border-radius:16px;padding:20px;display:grid;gap:16px}
+.emp-fit-score-overall{font-size:24px;font-weight:700;color:#090909}
+.emp-fit-score-section strong{display:block;font-size:12px;color:rgba(9,9,9,.55);margin-bottom:6px}
+.emp-fit-score-section ul{margin:0;padding-left:18px;font-size:13px;color:#090909}
+.emp-fit-score-section.is-blocker strong,.emp-fit-score-section.is-blocker li{color:#c22b0f}
+.emp-fit-score-section.is-missing strong,.emp-fit-score-section.is-missing li{color:rgba(9,9,9,.55)}
+
+.emp-stage-badge{display:inline-block;font-size:11px;font-weight:650;padding:4px 10px;border-radius:999px;background:rgba(9,9,9,.06);color:#090909}
+.emp-stage-offer,.emp-stage-hired{background:rgba(29,158,74,.12);color:#1d9e4a}
+.emp-stage-rejected{background:rgba(9,9,9,.08);color:rgba(9,9,9,.5)}
+.emp-stage-interview,.emp-stage-shortlisted{background:rgba(255,61,5,.1);color:var(--od-orange)}
+
+.emp-state-panel{background:#fff;border:1px solid rgba(9,9,9,.06);border-radius:16px;padding:32px;text-align:center;display:grid;gap:10px;justify-items:center}
+.emp-state-panel strong{font-size:15px;color:#090909}
+.emp-state-panel p{margin:0;font-size:13px;color:rgba(9,9,9,.6);max-width:420px}
+.emp-state-panel.is-error strong,.emp-state-panel.is-permission-denied strong{color:#c22b0f}
+.emp-state-retry,.emp-state-action{border:1px solid rgba(9,9,9,.15);background:#fff;border-radius:999px;padding:10px 20px;font-weight:650;font-size:13px;cursor:pointer;color:#090909;text-decoration:none;display:inline-block}
+.emp-state-skeleton{height:56px;border-radius:12px;background:linear-gradient(90deg,rgba(9,9,9,.04),rgba(9,9,9,.08),rgba(9,9,9,.04));background-size:200% 100%;animation:oh-shimmer 1.4s ease-in-out infinite}
