@@ -196,10 +196,15 @@ describe("every status is grounded in real code", () => {
    * widen the constraint, which is the failure mode this whole file is about.
    *
    * The patterns match either quoting style because the lifecycle lives in SQL
-   * functions, but /api/interviews/[id]/live/prepare inserts the column
-   * directly from TypeScript. */
+   * functions. `prepared` and `recovering` use the loose form deliberately:
+   * both are reserved domain members rather than actively minted states --
+   * `prepared` is the legacy pre-consent state kept for historical rows
+   * (prepare now delegates to odesseus_create_live_session, which mints
+   * ready/payment_required), and `recovering` is reserved for the reconnect
+   * path. Both remain listed in the CHECK constraint and the TypeScript
+   * domain, which is the grounding this file requires. */
   const justification: Record<LiveSessionStatus, RegExp> = {
-    prepared: /status\s*[:=]\s*['"]prepared['"]/,
+    prepared: /['"]prepared['"]/,
     ready: /status\s*[:=]\s*['"]ready['"]/,
     payment_required: /status\s*[:=]\s*['"]payment_required['"]/,
     starting: /status\s*[:=]\s*['"]starting['"]/,
@@ -225,7 +230,12 @@ describe("every status is grounded in real code", () => {
     // proves the corpus really is the pre-existing lifecycle.
     expect(corpus).toContain("odesseus_activate_live_session_v2");
     expect(shippedSql).toContain("odesseus_complete_live_session");
-    expect(liveRoutes).toContain('status: "prepared"');
+    // Prepare mints sessions only through the authoritative RPC, never by
+    // direct insert: the route must delegate creation and must not read the
+    // balances table to re-derive access.
+    expect(liveRoutes).toContain("odesseus_create_live_session");
+    expect(liveRoutes).not.toContain('from("credit_balances")');
+    expect(liveRoutes).not.toContain("from('credit_balances')");
   });
 
   for (const status of LIVE_SESSION_STATUSES) {

@@ -88,8 +88,6 @@ describe("notification type catalog", () => {
 
   it("marks the deferred guest/premium types explicitly catalog-only in their phase", () => {
     for (const type of [
-      "PREMIUM_INTERVIEW_PURCHASED",
-      "PREMIUM_INTERVIEW_RENEWAL",
       "PREMIUM_INTERVIEW_EXPIRING",
       "GUEST_ACCESS_CREATED",
       "GUEST_ACCESS_ACTIVATED",
@@ -98,6 +96,11 @@ describe("notification type catalog", () => {
     ] as const) {
       expect(NOTIFICATION_CATALOG[type].phase).toMatch(/catalog-only/);
     }
+  });
+
+  it("marks the 2N-wired premium purchase/renewal types as wired", () => {
+    expect(NOTIFICATION_CATALOG.PREMIUM_INTERVIEW_PURCHASED.phase).toMatch(/wired/);
+    expect(NOTIFICATION_CATALOG.PREMIUM_INTERVIEW_RENEWAL.phase).toMatch(/wired/);
   });
 
   it("keeps the strong-match type marked wired and the product type marketing-gated", () => {

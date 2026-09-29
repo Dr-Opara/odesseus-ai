@@ -2,8 +2,13 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { billingCatalog } from "@/lib/billing/catalog";
 
 const constructEventMock = vi.fn();
-const insertMock = vi.fn();
-const fromMock = vi.fn(() => ({ insert: insertMock }));
+const billingInsertMock = vi.fn();
+const notificationInsertMock = vi.fn();
+const fromMock = vi.fn((table: string) => {
+  if (table === "billing_events") return { insert: billingInsertMock };
+  if (table === "notifications") return { insert: notificationInsertMock };
+  return { insert: vi.fn() };
+});
 const createClientMock = vi.fn(() => ({ from: fromMock }));
 
 vi.mock("@/lib/stripe", () => ({
@@ -67,10 +72,16 @@ function checkoutCompletedEvent(overrides: {
 describe("Stripe webhook fulfillment", () => {
   beforeEach(() => {
     constructEventMock.mockReset();
-    insertMock.mockReset();
+    billingInsertMock.mockReset();
+    notificationInsertMock.mockReset();
     fromMock.mockClear();
     createClientMock.mockClear();
-    insertMock.mockResolvedValue({ error: null });
+    billingInsertMock.mockResolvedValue({ error: null });
+    notificationInsertMock.mockReturnValue({
+      select: () => ({
+        single: async () => ({ data: { id: "notif-1" }, error: null }),
+      }),
+    });
   });
 
   it.each(Object.keys(billingCatalog) as Array<keyof typeof billingCatalog>)(
@@ -83,12 +94,25 @@ describe("Stripe webhook fulfillment", () => {
       const response = await POST(webhookRequest("{}"));
 
       expect(response.status).toBe(200);
-      expect(insertMock).toHaveBeenCalledTimes(1);
-      const inserted = insertMock.mock.calls[0][0];
+      expect(billingInsertMock).toHaveBeenCalledTimes(1);
+      const inserted = billingInsertMock.mock.calls[0][0];
       expect(inserted.sku).toBe(sku);
       expect(inserted.amount_cents).toBe(item.amountCents);
       expect(inserted.credit_delta).toBe(item.creditDelta);
       expect(inserted.credit_type).toBe(item.creditType);
+
+      // 2N premium wire: only Live checkouts earn the purchase notice.
+      if (item.creditType === "interview") {
+        expect(notificationInsertMock).toHaveBeenCalledTimes(1);
+        expect(notificationInsertMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            notification_type: "PREMIUM_INTERVIEW_PURCHASED",
+            recipient_type: "candidate",
+          })
+        );
+      } else {
+        expect(notificationInsertMock).not.toHaveBeenCalled();
+      }
     }
   );
 
@@ -99,7 +123,7 @@ describe("Stripe webhook fulfillment", () => {
     const response = await POST(webhookRequest("{}"));
 
     expect(response.status).toBe(200);
-    expect(insertMock).not.toHaveBeenCalled();
+    expect(billingInsertMock).not.toHaveBeenCalled();
   });
 
   it("does not fulfill an unrecognized sku", async () => {
@@ -109,7 +133,7 @@ describe("Stripe webhook fulfillment", () => {
     const response = await POST(webhookRequest("{}"));
 
     expect(response.status).toBe(400);
-    expect(insertMock).not.toHaveBeenCalled();
+    expect(billingInsertMock).not.toHaveBeenCalled();
   });
 
   it("fails closed when the charged amount does not match the catalog price", async () => {
@@ -123,7 +147,7 @@ describe("Stripe webhook fulfillment", () => {
     const response = await POST(webhookRequest("{}"));
 
     expect(response.status).toBe(400);
-    expect(insertMock).not.toHaveBeenCalled();
+    expect(billingInsertMock).not.toHaveBeenCalled();
   });
 
   it("fails closed when the currency is not USD", async () => {
@@ -135,7 +159,7 @@ describe("Stripe webhook fulfillment", () => {
     const response = await POST(webhookRequest("{}"));
 
     expect(response.status).toBe(400);
-    expect(insertMock).not.toHaveBeenCalled();
+    expect(billingInsertMock).not.toHaveBeenCalled();
   });
 
   it("fails closed when the session carries no amount at all", async () => {
@@ -149,7 +173,7 @@ describe("Stripe webhook fulfillment", () => {
     const response = await POST(webhookRequest("{}"));
 
     expect(response.status).toBe(400);
-    expect(insertMock).not.toHaveBeenCalled();
+    expect(billingInsertMock).not.toHaveBeenCalled();
   });
 
   it("does not fulfill when checkout metadata is missing a user id", async () => {
@@ -161,7 +185,7 @@ describe("Stripe webhook fulfillment", () => {
     const response = await POST(webhookRequest("{}"));
 
     expect(response.status).toBe(400);
-    expect(insertMock).not.toHaveBeenCalled();
+    expect(billingInsertMock).not.toHaveBeenCalled();
   });
 
   it("rejects a request with an invalid Stripe signature and does not fulfill", async () => {
@@ -173,12 +197,12 @@ describe("Stripe webhook fulfillment", () => {
     const response = await POST(webhookRequest("{}"));
 
     expect(response.status).toBe(400);
-    expect(insertMock).not.toHaveBeenCalled();
+    expect(billingInsertMock).not.toHaveBeenCalled();
   });
 
   it("is idempotent: a duplicate stripe_event_id reports success without a second fulfillment side effect", async () => {
     constructEventMock.mockReturnValue(checkoutCompletedEvent({ eventId: "evt_dup_1" }));
-    insertMock.mockResolvedValue({ error: { code: "23505", message: "duplicate key" } });
+    billingInsertMock.mockResolvedValue({ error: { code: "23505", message: "duplicate key" } });
 
     const { POST } = await import("@/app/api/webhooks/stripe/route");
     const response = await POST(webhookRequest("{}"));
@@ -194,7 +218,7 @@ describe("Stripe webhook fulfillment", () => {
 
   it("surfaces a 500 when fulfillment fails for a reason other than a duplicate event", async () => {
     constructEventMock.mockReturnValue(checkoutCompletedEvent({}));
-    insertMock.mockResolvedValue({ error: { code: "23503", message: "fk violation" } });
+    billingInsertMock.mockResolvedValue({ error: { code: "23503", message: "fk violation" } });
 
     const { POST } = await import("@/app/api/webhooks/stripe/route");
     const response = await POST(webhookRequest("{}"));
@@ -208,7 +232,7 @@ describe("Stripe webhook fulfillment", () => {
     const { POST } = await import("@/app/api/webhooks/stripe/route");
     await POST(webhookRequest("{}"));
 
-    const inserted = insertMock.mock.calls[0][0];
+    const inserted = billingInsertMock.mock.calls[0][0];
     expect(inserted.sku).toBe("live_personal_annual");
     // billing_events_credit_type_check admits only application/interview/
     // wallet_topup; odesseus_private.fulfill_billing_event branches on `sku`

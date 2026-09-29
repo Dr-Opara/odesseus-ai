@@ -216,14 +216,14 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, NotificationTypeMeta
     channel: "wallet_billing",
     priority: "normal",
     email: true,
-    phase: "catalog-only until premium interview wiring (2K deferral)",
+    phase: "wired: checkout fulfillment for Live SKUs (2N)",
   },
   PREMIUM_INTERVIEW_RENEWAL: {
     recipient: "candidate",
     channel: "wallet_billing",
     priority: "normal",
     email: true,
-    phase: "catalog-only until premium interview wiring (2K deferral)",
+    phase: "wired: money-verified Live membership sync (2N)",
   },
   PREMIUM_INTERVIEW_EXPIRING: {
     recipient: "candidate",

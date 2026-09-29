@@ -13,6 +13,10 @@ import {
   stripeWebhookIdempotencyKey,
 } from "@/lib/retry/service";
 import { notifyEmployerSubscriptionStatus } from "@/lib/notifications/employer";
+import {
+  notifyPremiumInterviewPurchased,
+  notifyPremiumInterviewRenewal,
+} from "@/lib/notifications/live-premium";
 
 export const runtime = "nodejs";
 
@@ -252,7 +256,8 @@ async function handleInvoicePaid(invoice: Stripe.Invoice, event: Stripe.Event) {
           : null,
         periodEnd: invoice.period_end ? new Date(invoice.period_end * 1000) : null,
       },
-      event
+      event,
+      { isRenewal: true }
     );
   }
 
@@ -556,7 +561,8 @@ type LiveMembershipUpdate = {
 async function syncLiveMembership(
   target: LiveSubscriptionTarget,
   update: LiveMembershipUpdate,
-  event: Stripe.Event
+  event: Stripe.Event,
+  opts?: { isRenewal?: boolean }
 ) {
   try {
     const supabase = createServiceClient();
@@ -583,6 +589,18 @@ async function syncLiveMembership(
         periodEnd: update.periodEnd?.toISOString() ?? null,
       },
     });
+
+    // Premium Live wire (2N): only the money-verified invoice.paid path
+    // counts as a renewal. Status-only lifecycle syncs stay silent.
+    // Best-effort and deduped; never blocks the sync above.
+    if (opts?.isRenewal) {
+      await notifyPremiumInterviewRenewal(supabase, {
+        userId: target.userId,
+        stripeSubscriptionId: update.stripeSubscriptionId,
+        periodEnd: update.periodEnd?.toISOString() ?? null,
+      });
+    }
+
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[ODESSEUS_LIVE] membership sync failed", error);
@@ -1184,5 +1202,16 @@ export async function POST(request: Request) {
     checkoutSessionId: session.id,
     details: { creditType: item.creditType, creditDelta: item.creditDelta },
   });
+
+  // Premium Live wire (2N): a fulfilled Live checkout earns one in-product
+  // notice. Best-effort and deduped; never blocks the fulfillment above.
+  if (item.creditType === "interview") {
+    await notifyPremiumInterviewPurchased(supabase, {
+      userId,
+      sku,
+      stripeEventId: event.id,
+    });
+  }
+
   return NextResponse.json({ received: true });
 }

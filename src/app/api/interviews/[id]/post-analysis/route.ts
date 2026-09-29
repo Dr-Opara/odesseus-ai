@@ -45,7 +45,10 @@ export async function POST(
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (!liveSession || liveSession.status !== "ended") {
+  // The normal end path (odesseus_complete_live_session) writes `completed`;
+  // the legacy end path (odesseus_end_live_session) writes `ended`. Both are
+  // terminal and both carry a full transcript eligible for analysis.
+  if (!liveSession || (liveSession.status !== "ended" && liveSession.status !== "completed")) {
     return NextResponse.json(
       { error: "End the Live interview before generating post-interview analysis." },
       { status: 409 }
