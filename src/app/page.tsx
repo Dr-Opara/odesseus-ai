@@ -3,7 +3,7 @@ import MarketingFooter from "@/components/marketing-footer";
 import HomepageBody from "@/components/homepage-body";
 import { createClient } from "@/lib/supabase/server";
 import { getCandidateUserId } from "@/lib/candidate/service";
-import { getHomepageJobsForRequest } from "@/lib/jobs/homepage";
+import { getHomepageJobsForRequest } from "@/lib/jobs/homepage-server";
 
 export default async function Home() {
   const supabase = await createClient();

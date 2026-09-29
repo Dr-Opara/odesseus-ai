@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getHomepageJobs, getHomepageJobsForRequest } from "@/lib/jobs/homepage";
+import { getHomepageJobs } from "@/lib/jobs/homepage";
+import { getHomepageJobsForRequest } from "@/lib/jobs/homepage-server";
 import { toHomepageJob, toHomepageJobs } from "@/lib/jobs/home-feed";
 import { HOMEPAGE_JOB_FIXTURES } from "@/lib/jobs/homepage-fixtures";
 

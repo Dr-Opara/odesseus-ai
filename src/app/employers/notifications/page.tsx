@@ -43,7 +43,7 @@ export default async function EmployerNotificationsPage() {
                 message={
                   notificationsResult.status === "unavailable"
                     ? notificationsResult.reason
-                    : "Notification preferences aren't available right now."
+                    : "Odesseus could not load your notification preferences."
                 }
               />
             </div>

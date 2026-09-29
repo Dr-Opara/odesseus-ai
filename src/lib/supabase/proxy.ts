@@ -36,12 +36,20 @@ const publicExactPaths = [
   // Public homepage job feed: real postings, and a Match Score only for a
   // signed-in candidate whose own verified score the backend returned.
   "/api/jobs/home-feed",
-  // Guest Live is intentionally no-account: the link token is the entire
-  // credential, so these routes must stay reachable without a session. They
-  // are token-scoped server routes and never expose owner data.
-  "/live/guest",
 ];
-const publicPrefixPaths = ["/auth", "/api/partners", "/api/referrals", "/live/guest", "/api/live/guest-access"];
+
+// Prefix-matched public routes. Guest Live is intentionally no-account: the
+// shared link token is the entire credential, so the token landing page and
+// its token-scoped API must stay reachable without a session. Those routes
+// resolve exactly one guest record from the token and never expose the link
+// owner's profile, resume, applications, wallet, billing, or another guest.
+const publicPrefixPaths = [
+  "/auth",
+  "/api/partners",
+  "/api/referrals",
+  "/live/guest",
+  "/api/live/guest-access",
+];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
