@@ -61,7 +61,7 @@ export default async function EmployerJobDetailPage({
                 kind="error"
                 title="This job isn't available"
                 message={jobResult.reason}
-                actionHref="/employers/jobs"
+                actionHref="/employers/dashboard/jobs"
                 actionLabel="Back to Jobs"
               />
             </div>
@@ -171,7 +171,7 @@ export default async function EmployerJobDetailPage({
           <JobDetailActions job={job} orgId={orgId ?? ""} />
 
           <div className="emp-page-actions">
-            <Link className="emp-btn-secondary" href="/employers/jobs">
+            <Link className="emp-btn-secondary" href="/employers/dashboard/jobs">
               Back to Jobs
             </Link>
           </div>

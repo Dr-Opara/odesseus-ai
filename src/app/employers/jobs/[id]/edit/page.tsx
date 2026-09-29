@@ -44,7 +44,7 @@ export default async function EmployerEditJobPage({
                 kind="error"
                 title="This job isn't available"
                 message={jobResult.reason}
-                actionHref="/employers/jobs"
+                actionHref="/employers/dashboard/jobs"
                 actionLabel="Back to Jobs"
               />
             </div>

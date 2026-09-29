@@ -66,10 +66,26 @@ export function isHiringManagerContext(context: EmployerContext): boolean {
 }
 
 /**
+ * True when the thrown value is Next's "this route is dynamic" signal rather
+ * than a failure.
+ *
+ * Next.js discovers a dynamic route by having `cookies()` throw during static
+ * analysis. Catching that and treating it as a read failure would log an error
+ * on every build for a route that is working exactly as intended, and — worse
+ * — would return `unavailable` where the framework expected the signal to
+ * propagate. These must be re-thrown.
+ */
+function isDynamicUsageSignal(error: unknown): boolean {
+  const digest = (error as { digest?: unknown } | null)?.digest;
+  return typeof digest === "string" && digest.startsWith("DYNAMIC_SERVER_USAGE");
+}
+
+/**
  * Resolves the signed-in employer request to its organization.
  *
- * Never throws: a read failure is an honest `unavailable` so a page renders
- * its state panel rather than a 500.
+ * Never throws a real failure: a read error becomes an honest `unavailable`
+ * so a page renders its state panel rather than a 500. The one exception is
+ * Next's dynamic-usage signal, which is control flow and must propagate.
  */
 export async function resolveEmployerContext(): Promise<EmployerContextResult> {
   try {
@@ -95,6 +111,7 @@ export async function resolveEmployerContext(): Promise<EmployerContextResult> {
       context: { userId, orgId: organization.id, role: (role as OrgRole | null) ?? null },
     };
   } catch (error) {
+    if (isDynamicUsageSignal(error)) throw error;
     const message = error instanceof Error ? error.message : String(error);
     console.error("[ODESSEUS_EMPLOYER_CTX] context resolution failed", message);
     return { status: "unavailable", reason: "Could not load your company workspace." };

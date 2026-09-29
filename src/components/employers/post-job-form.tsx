@@ -92,7 +92,7 @@ export default function PostJobForm({ orgId }: { orgId: string }) {
           </div>
         </div>
         <div className="emp-page-actions">
-          <Link className="figma-btn figma-btn-orange" href="/employers/jobs">
+          <Link className="figma-btn figma-btn-orange" href="/employers/dashboard/jobs">
             View your jobs
           </Link>
           <Link className="emp-btn-secondary" href="/employers/candidates">

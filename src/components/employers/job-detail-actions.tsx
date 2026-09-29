@@ -45,7 +45,7 @@ export default function JobDetailActions({
 
     if (transition === "delete") {
       // The row is gone; there is nothing to re-read on this page.
-      router.push("/employers/jobs");
+      router.push("/employers/dashboard/jobs");
       return;
     }
     router.refresh();

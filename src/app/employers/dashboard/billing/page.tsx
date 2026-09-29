@@ -1,54 +1,58 @@
 import Link from "next/link";
 import { requireEmployerOverview } from "@/app/employers/dashboard/overview";
-import EmployerPortalHeader from "@/components/employer/employer-portal-header";
-import EmployerMobileScreen, {
-  EmployerDesktopOnlyNotice,
-} from "@/components/employer/employer-mobile-screen";
-import {
-  EmployerNotices,
-  EmployerPlanCard,
-  EmployerSeatsCard,
-} from "@/components/employer/employer-cards";
+import { getEmployerBilling } from "@/lib/employers/billing-adapter";
+import { getEmployerOrgId } from "@/lib/employers/context";
 import {
   FEATURED_OPTION_BY_TIER,
   FEATURED_TIERS,
   planForTier,
   subscriptionStatusLabel,
 } from "@/lib/employer/plans";
+import {
+  EXTRA_RECRUITER_SEAT_PRICE_LABEL,
+  EXTRA_RECRUITER_SEAT_UNIT,
+} from "@/lib/employer/plans";
+import EmployerAppNav from "@/components/employers/app-nav";
+import EmployerStatePanel from "@/components/employers/state-panel";
+import { EmployerRow, EmployerRowList } from "@/components/employers/row-list";
+import ManagePlanButton from "@/components/employers/manage-plan-button";
+import { EmployerNotices } from "@/components/employer/employer-cards";
+import EmployerMobileScreen, {
+  EmployerDesktopOnlyNotice,
+} from "@/components/employer/employer-mobile-screen";
 
 /**
- * Employer billing (Phase 5).
+ * Employer Billing (Figma screen 82) on the canonical
+ * `/employers/dashboard/billing` route.
  *
- * A display of what the organization is on and what it has: the stored
- * subscription and its status, the granted job-post allowance, the paid seat
- * count, and the approved promotion prices.
+ * A separate surface from candidate wallet billing (`/billing`). The candidate
+ * wallet holds Apply money; this page holds a company subscription, a job-post
+ * allowance, recruiter seats, and promotions. They share no route, no adapter,
+ * and no balance.
  *
- * This page changes nothing. Subscription changes, seat administration and
- * featured purchases are Stripe-backed and backend-owned; the checkout entry
- * points do not exist on this branch yet (the wallet/billing backend has not
- * shipped), so the page shows real state and links to the published pricing
- * rather than wiring buttons to a checkout that would fail. See
- * `docs/phase-5-employer-blockers.md`.
+ * Every figure is the backend's billing view. An organization with no
+ * subscription renders "No plan" rather than inheriting Starter's price:
+ * "you are not subscribed" and "you are on the cheapest plan" are different
+ * statements, and only the first is true here.
  */
-
-function formatDate(value: string | null | undefined) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
 export default async function EmployerBillingPage() {
-  const overview = await requireEmployerOverview("/employers/dashboard/billing");
+  const [overview, billing, orgId] = await Promise.all([
+    requireEmployerOverview("/employers/dashboard/billing"),
+    getEmployerBilling(),
+    getEmployerOrgId(),
+  ]);
+
   const orgName = overview.organization?.name ?? overview.account.companyName;
   const plan = planForTier(overview.subscription?.tier);
 
   return (
     <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
-        <EmployerPortalHeader orgName={orgName} role={overview.yourRole} />
+        <div className="odesseus-desktop-only">
+          <EmployerAppNav />
+        </div>
 
-        <section className="odesseus-desktop-only" style={{ padding: "54px 0 80px" }}>
+        <section className="odesseus-desktop-only" style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
           <div>
             <span className="figma-eyebrow">BILLING</span>
             <h1>Billing</h1>
@@ -65,102 +69,75 @@ export default async function EmployerBillingPage() {
             <p className="muted" style={{ marginTop: 24 }}>
               Your company workspace is not set up yet, so there is no plan or billing to show.
             </p>
-          ) : (
+          ) : billing.status === "ok" ? (
             <>
-              <div className="figma-two-grid" style={{ marginTop: 28 }}>
-                <EmployerPlanCard
-                  subscription={overview.subscription}
-                  quota={overview.quota}
-                />
-                <EmployerSeatsCard seats={overview.seats} />
-              </div>
-
-              <article className="figma-info-card white employer-card" style={{ marginTop: 24 }}>
-                <h2>This billing period</h2>
-                <dl className="employer-facts">
-                  <div>
-                    <dt>Plan</dt>
-                    <dd>{plan ? plan.name : overview.subscription ? "Not recognised" : "None"}</dd>
-                  </div>
-                  <div>
-                    <dt>Status</dt>
-                    <dd>{subscriptionStatusLabel(overview.subscription?.status)}</dd>
-                  </div>
-                  <div>
-                    <dt>Period</dt>
-                    <dd>
-                      {formatDate(overview.subscription?.periodStart)} –{" "}
-                      {formatDate(overview.subscription?.periodEnd)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Job posts included</dt>
-                    <dd>{overview.quota?.included ?? "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Job posts used</dt>
-                    <dd>{overview.allowance?.used ?? "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Recruiter seats</dt>
-                    <dd>
-                      {overview.seats ? `${overview.seats.active} paid` : "—"}
-                      {overview.seats ? ` of ${overview.seats.required} included` : ""}
-                    </dd>
-                  </div>
-                </dl>
-                <p className="muted employer-billing-note">
-                  Stripe identifiers are never shown here. Plan changes and seat purchases are
-                  handled by our billing system once it is connected to this deployment.
-                </p>
-                <Link className="figma-btn figma-btn-orange" href="/employers/pricing">
-                  Compare plans
-                </Link>
-              </article>
-
-              <article className="figma-info-card white employer-card" style={{ marginTop: 24 }}>
-                <h2>Job promotions</h2>
-                <ul className="employer-promotion-list">
+              <div style={{ marginTop: 24 }}>
+                <EmployerRowList>
+                  <EmployerRow label="Plan" value={billing.data.planName ?? "No plan"} />
+                  <EmployerRow
+                    label="Status"
+                    value={subscriptionStatusLabel(billing.data.subscriptionStatus)}
+                  />
+                  <EmployerRow
+                    label="Job posts"
+                    value={
+                      billing.data.jobPostsRemaining === null
+                        ? "Not available"
+                        : `${billing.data.jobPostsRemaining} of ${
+                            billing.data.jobPostsIncluded ?? billing.data.jobPostsRemaining
+                          } remaining`
+                    }
+                  />
+                  <EmployerRow
+                    label="Recruiter seats"
+                    value={`${billing.data.seatsUsed} of ${billing.data.seatLimit} included`}
+                  />
+                  <EmployerRow label="Promotions running" value={billing.data.featuredActive} />
                   {FEATURED_TIERS.map((tier) => {
                     const option = FEATURED_OPTION_BY_TIER[tier];
-                    const running = overview.jobs.filter(
-                      (job) => job.featured?.tier === tier && job.featured.isActive
-                    ).length;
                     return (
-                      <li key={tier}>
-                        <div>
-                          <strong>{option.name}</strong>
-                          <span className="muted">{option.unit.replace(/^\/\s*/, "")}</span>
-                        </div>
-                        <div>
-                          <span className="employer-promotion-price">
-                            {option.priceLabel}
-                          </span>
-                          <span className="muted">
-                            {running ? `${running} running` : "none running"}
-                          </span>
-                        </div>
-                      </li>
+                      <EmployerRow
+                        key={tier}
+                        label={`${option.name} ${option.unit.replace(/^\/\s*/, "")}`}
+                        value={option.priceLabel}
+                      />
                     );
                   })}
-                </ul>
-                <p className="muted employer-billing-note">
-                  Buying a promotion is a Stripe checkout and is completed on a desktop browser.
-                </p>
-              </article>
-
-              <div className="employer-portal-foot">
-                <Link className="link" href="/employers/dashboard">
-                  Overview
-                </Link>
-                <Link className="link" href="/employers/dashboard/jobs">
-                  Jobs
-                </Link>
-                <Link className="link" href="/employers/dashboard/team">
-                  Team
-                </Link>
+                  <EmployerRow
+                    label="Extra recruiter seat"
+                    value={`${EXTRA_RECRUITER_SEAT_PRICE_LABEL} ${EXTRA_RECRUITER_SEAT_UNIT}`}
+                  />
+                </EmployerRowList>
               </div>
+
+              {billing.data.planId ? (
+                <ManagePlanButton orgId={orgId ?? ""} currentPlanId={billing.data.planId} />
+              ) : (
+                <div style={{ marginTop: 20 }}>
+                  <EmployerStatePanel
+                    kind="billing-required"
+                    title="Choose a plan to start hiring."
+                    message="Posting a job uses one of the job posts included in your subscription. Pick a plan to begin."
+                    actionHref="/employers/pricing"
+                    actionLabel="See plans"
+                  />
+                </div>
+              )}
+
+              <p className="muted" style={{ marginTop: 18, fontSize: 13 }}>
+                Billing details are handled by our payment provider. Card details are never stored
+                by Odesseus.{" "}
+                <Link className="link" href="/employers/pricing">
+                  Compare plans
+                </Link>
+              </p>
             </>
+          ) : (
+            <EmployerStatePanel
+              kind="error"
+              title="Billing isn't available"
+              message={billing.reason}
+            />
           )}
         </section>
 
@@ -175,7 +152,9 @@ export default async function EmployerBillingPage() {
           <div className="m-card employer-m-plan" style={{ margin: "0 4px" }}>
             <div className="m-copy">
               <small>Plan</small>
-              <strong>{plan ? plan.name : overview.subscription ? "Not recognised" : "No subscription"}</strong>
+              <strong>
+                {plan ? plan.name : overview.subscription ? "Not recognised" : "No subscription"}
+              </strong>
               <small>{subscriptionStatusLabel(overview.subscription?.status)}</small>
             </div>
             {plan ? (
@@ -189,11 +168,11 @@ export default async function EmployerBillingPage() {
             <div className="m-copy">
               <small>Job posts</small>
               <strong>
-                {overview.quota ? `${overview.quota.remaining} of ${overview.quota.included} left` : "Not available"}
+                {overview.quota
+                  ? `${overview.quota.remaining} of ${overview.quota.included} left`
+                  : "Not available"}
               </strong>
-              <small>
-                Renews {formatDate(overview.subscription?.periodEnd)}
-              </small>
+              <small>Renews {formatDate(overview.subscription?.periodEnd)}</small>
             </div>
           </div>
 
@@ -201,9 +180,13 @@ export default async function EmployerBillingPage() {
             <div className="m-copy">
               <small>Recruiter seats</small>
               <strong>
-                {overview.seats ? `${overview.seats.active} of ${overview.seats.required} included` : "Not available"}
+                {overview.seats
+                  ? `${overview.seats.active} of ${overview.seats.required} included`
+                  : "Not available"}
               </strong>
-              <small>$20 per additional seat each month</small>
+              <small>
+                {EXTRA_RECRUITER_SEAT_PRICE_LABEL} per additional seat each month
+              </small>
             </div>
           </div>
 
@@ -216,4 +199,11 @@ export default async function EmployerBillingPage() {
       </div>
     </main>
   );
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }

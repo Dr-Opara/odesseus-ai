@@ -158,14 +158,32 @@ describe("no employer surface fabricates hiring data", () => {
     // The positive half of the rule above: the screens that consume these
     // counts must have a way to say "not available". Without it, the only
     // thing left to render on failure is a number.
+    //
+    // The canonical paths are the `/employers/dashboard/*` routes; the older
+    // `/employers/jobs` and friends are redirects to them.
     for (const file of [
-      "src/app/employers/jobs/page.tsx",
+      "src/app/employers/dashboard/jobs/page.tsx",
       "src/app/employers/analytics/page.tsx",
       "src/app/employers/jobs/[id]/page.tsx",
     ]) {
       const source = readFileSync(join(process.cwd(), file), "utf8");
       expect(source, `${file} must have a not-available path`).toMatch(
-        /Not available|Not enough data|unavailable|Unavailable/
+        /Not available|Not enough data|unavailable|Unavailable|unrecognised/
+      );
+    }
+  });
+
+  it("consolidates jobs, team, and billing onto one canonical route each", () => {
+    // Two live pages for one feature means two reads of the same data and no
+    // way to tell which one is stale. The older paths must be redirects.
+    for (const [oldPath, canonical] of [
+      ["src/app/employers/jobs/page.tsx", "/employers/dashboard/jobs"],
+      ["src/app/employers/team/page.tsx", "/employers/dashboard/team"],
+      ["src/app/employers/billing/page.tsx", "/employers/dashboard/billing"],
+    ]) {
+      const source = readFileSync(join(process.cwd(), oldPath), "utf8");
+      expect(source, `${oldPath} must redirect to ${canonical}`).toContain(
+        `redirect("${canonical}")`
       );
     }
   });

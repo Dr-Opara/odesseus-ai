@@ -11,7 +11,7 @@ import { test, expect } from "@playwright/test";
 
 const protectedEmployerRoutes = [
   "/employers/dashboard",
-  "/employers/jobs",
+  "/employers/dashboard/jobs",
   "/employers/jobs/some-job-id",
   "/employers/jobs/some-job-id/edit",
   "/employers/company",
@@ -35,7 +35,7 @@ test.describe("employer portal auth boundary (Checkpoint 4)", () => {
     // proxy) is what would additionally sign out and reject an authenticated
     // *candidate* session that reached the page — see the page source for
     // /employers/jobs/[id]/page.tsx, /employers/dashboard/page.tsx, etc.
-    await page.goto("/employers/jobs");
+    await page.goto("/employers/dashboard/jobs");
     await expect(page).toHaveURL(/\/employers\/login/);
   });
 });

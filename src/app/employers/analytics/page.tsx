@@ -49,7 +49,7 @@ export default async function EmployerAnalyticsPage() {
                 kind="billing-required"
                 title="Growth+ analytics for your hiring funnel."
                 message="Hiring analytics are included on the Growth and Business plans. Upgrade to unlock funnel conversion data."
-                actionHref="/employers/billing"
+                actionHref="/employers/dashboard/billing"
                 actionLabel="Upgrade Plan"
               />
             </div>

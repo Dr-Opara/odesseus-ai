@@ -5,9 +5,9 @@ import { test, expect } from "@playwright/test";
 
 const protectedRoutes = [
   "/employers/analytics",
-  "/employers/billing",
+  "/employers/dashboard/billing",
   "/employers/jobs/some-job-id/feature",
-  "/employers/team",
+  "/employers/dashboard/team",
   "/employers/notifications",
 ];
 
@@ -22,7 +22,7 @@ test.describe("analytics/billing/team/notifications auth boundary (Checkpoint 6)
 
 test.describe("employer billing stays separate from candidate wallet billing", () => {
   test("/billing (candidate) and /employers/billing (employer) are distinct routes", async ({ page }) => {
-    await page.goto("/employers/billing");
+    await page.goto("/employers/dashboard/billing");
     await expect(page).toHaveURL(/\/employers\/login/);
     // Candidate billing requires its own (candidate) session — confirm the
     // two surfaces don't collapse into the same redirect/route by checking

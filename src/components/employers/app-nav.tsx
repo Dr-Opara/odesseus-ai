@@ -4,14 +4,18 @@ import { useState } from "react";
 import Link from "next/link";
 import OdesseusWordmark from "@/components/odesseus-wordmark";
 
+// Canonical employer routes. The employer portal is one app with one path per
+// feature, so these are the `/employers/dashboard/*` locations the backend
+// owns rather than a parallel set — two live pages for one feature is how a
+// surface ends up showing stale data on whichever link someone kept.
 const links = [
   { href: "/employers/dashboard", label: "Dashboard" },
-  { href: "/employers/jobs", label: "Jobs" },
+  { href: "/employers/dashboard/jobs", label: "Jobs" },
   { href: "/employers/candidates", label: "Applicants" },
   { href: "/employers/pipeline", label: "Pipeline" },
   { href: "/employers/analytics", label: "Analytics" },
-  { href: "/employers/team", label: "Team" },
-  { href: "/employers/billing", label: "Billing" },
+  { href: "/employers/dashboard/team", label: "Team" },
+  { href: "/employers/dashboard/billing", label: "Billing" },
   { href: "/employers/notifications", label: "Notifications" },
   { href: "/employers/company", label: "Company Profile" },
 ];
