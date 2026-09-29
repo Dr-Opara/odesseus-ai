@@ -1,7 +1,13 @@
 import { redirect } from "next/navigation";
-import EmployerNav from "@/components/employer-nav";
 import { createClient } from "@/lib/supabase/server";
+import EmployerAppNav from "@/components/employers/app-nav";
+import EmployerCapacityBadge from "@/components/employers/capacity-badge";
+import PostJobForm from "@/components/employers/post-job-form";
+import { getEmployerJobs } from "@/lib/employers/jobs-adapter";
+import { getEmployerProfile } from "@/lib/employers/onboarding-adapter";
+import { EMPLOYER_PLANS } from "@/lib/pricing/candidate-pricing";
 
+/** Post a Job (Figma screen 75, F13-E). */
 export default async function EmployerPostJobPage() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
@@ -16,35 +22,30 @@ export default async function EmployerPostJobPage() {
     redirect("/employers/signup?error=Create%20an%20employer%20account%20with%20your%20company%20email%20to%20post%20a%20job.");
   }
 
+  const [jobsResult, profileResult] = await Promise.all([getEmployerJobs(), getEmployerProfile()]);
+
   return (
     <main className="figma-site figma-soft-page">
       <div className="figma-page-wrap">
-        <EmployerNav />
+        <EmployerAppNav />
         <section style={{ width: "min(860px,100%)", margin: "54px auto 90px" }}>
           <span className="figma-eyebrow">FOR EMPLOYERS</span>
           <h1>Post a Job</h1>
-          <p className="muted">Publish a role and let Odesseus surface qualified candidates.</p>
+          <p className="muted">Create a new role.</p>
 
-          <form className="figma-info-card white" style={{ padding: 32, marginTop: 28 }}>
-            <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>Job title<input className="input" placeholder="e.g. GenAI Security Engineer" /></label>
-            <div className="figma-two-grid" style={{ marginTop: 18 }}>
-              <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>City<input className="input" placeholder="e.g. Lagos" /></label>
-              <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>Country<select className="input" defaultValue="Nigeria"><option>Nigeria</option><option>United States</option><option>Canada</option><option>United Kingdom</option></select></label>
+          {profileResult.status === "ok" && jobsResult.status === "ok" ? (
+            <div style={{ marginTop: 16 }}>
+              <EmployerCapacityBadge
+                capacity={{
+                  activeJobCount: jobsResult.data.filter((j) => j.status === "Published").length,
+                  planLimit: EMPLOYER_PLANS.find((p) => p.name === profileResult.data.planId)?.activeJobLimit ?? 0,
+                  planId: profileResult.data.planId,
+                }}
+              />
             </div>
-            <div className="figma-two-grid" style={{ marginTop: 18 }}>
-              <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>Work arrangement<select className="input"><option>Remote</option><option>Hybrid</option><option>On-site</option></select></label>
-              <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>Employment type<select className="input"><option>Full-time</option><option>Contract</option><option>Part-time</option></select></label>
-            </div>
-            <div className="figma-three-grid" style={{ marginTop: 18 }}>
-              <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>Currency<select className="input"><option>USD ($)</option><option>NGN (₦)</option><option>GBP (£)</option><option>CAD ($)</option></select></label>
-              <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>Min salary<input className="input" type="number" /></label>
-              <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>Max salary<input className="input" type="number" /></label>
-            </div>
-            <label style={{ display: "grid", gap: 8, marginTop: 18, fontWeight: 650 }}>Job description<textarea className="input" rows={9} placeholder="Describe the role, responsibilities and requirements…" /></label>
-            <label style={{ display: "flex", gap: 10, marginTop: 18, alignItems: "center" }}><input type="checkbox" /> Auto-renew this job for another 30 days when it expires.</label>
-            <div className="figma-info-card peach" style={{ marginTop: 20 }}><strong>Publishing this job uses 1 credit.</strong><p>Your listing will be live for 30 days from the moment it publishes.</p></div>
-            <button className="figma-btn figma-btn-orange" type="button" style={{ width: "100%", marginTop: 22 }}>Publish Job — Uses 1 Credit</button>
-          </form>
+          ) : null}
+
+          <PostJobForm />
         </section>
       </div>
     </main>

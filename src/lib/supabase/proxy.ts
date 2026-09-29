@@ -23,10 +23,6 @@ const publicExactPaths = [
   "/employers/login",
   "/employers/signup",
   "/employers/post-job",
-  "/employers/onboarding/company",
-  "/employers/onboarding/plan",
-  "/employers/onboarding/review",
-  "/employers/company",
   "/partners",
   "/partners/apply",
   "/partners/terms",
@@ -88,7 +84,11 @@ export async function updateSession(request: NextRequest) {
 
   if (!data?.claims && !isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    // Any protected /employers/* path (including dynamic ones like
+    // /employers/jobs/[id]) sends a signed-out visitor to the employer sign-in
+    // flow, not the candidate one — this covers dynamic employer routes
+    // without needing to whitelist each one individually.
+    url.pathname = effectivePathname.startsWith("/employers/") ? "/employers/login" : "/login";
     return NextResponse.redirect(url);
   }
 
