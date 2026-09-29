@@ -6,7 +6,7 @@ export const TEAM_MEMBER_FIXTURES: TeamMember[] = [
     id: "team-1",
     name: "Dana Whitfield",
     email: "dana@example.com",
-    role: "Admin",
+    role: "Owner",
     status: "Active",
     invitedAt: "2026-07-01T00:00:00.000Z",
     acceptedAt: "2026-07-01T00:00:00.000Z",

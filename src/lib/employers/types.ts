@@ -107,7 +107,7 @@ export type CandidateDetail = CandidateListItem & {
   employerNotes?: string[];
 };
 
-export type TeamMemberRole = "Admin" | "Recruiter";
+export type TeamMemberRole = "Owner" | "Admin" | "Recruiter";
 export type TeamMemberStatus = "Active" | "Pending";
 
 export type TeamMember = {
@@ -165,4 +165,13 @@ export type EmployerNotification = {
   detail?: string;
   createdAt: string;
   read: boolean;
+};
+
+/** Notification preference toggles (Figma screen 86). Keyed by category, not every EmployerNotificationCategory needs its own toggle. */
+export type EmployerNotificationPreferences = {
+  newApplicant: boolean;
+  strongFitCandidate: boolean;
+  interviewUpdate: boolean;
+  capacityWarning: boolean;
+  billingNotice: boolean;
 };

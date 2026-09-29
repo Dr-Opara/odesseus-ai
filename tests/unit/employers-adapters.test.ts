@@ -7,7 +7,7 @@ import { getTeamMembers, inviteTeamMember, revokeTeamMember } from "@/lib/employ
 import { getEmployerProfile, submitCompanyDetails, submitPlanSelection, completeOnboarding, updateCompanyProfile } from "@/lib/employers/onboarding-adapter";
 import { getEmployerBilling, changeEmployerPlan, purchaseRecruiterSeat } from "@/lib/employers/billing-adapter";
 import { getFeaturedJobPackages, purchaseFeaturedJob } from "@/lib/employers/featured-adapter";
-import { getEmployerNotifications, markNotificationRead, markAllNotificationsRead } from "@/lib/employers/notifications-adapter";
+import { getEmployerNotifications, getNotificationPreferences, markNotificationRead, markAllNotificationsRead, updateNotificationPreferences } from "@/lib/employers/notifications-adapter";
 import { PIPELINE_STAGES } from "@/lib/employers/types";
 
 afterEach(() => {
@@ -26,6 +26,7 @@ describe("employer adapter reads — dev fixtures outside production, honest una
     ["getEmployerProfile", getEmployerProfile],
     ["getEmployerBilling", getEmployerBilling],
     ["getEmployerNotifications", getEmployerNotifications],
+    ["getNotificationPreferences", getNotificationPreferences],
   ];
 
   for (const [name, fn] of reads) {
@@ -96,6 +97,17 @@ describe("employer adapter mutations — always honestly unavailable, never a fa
     ["purchaseFeaturedJob", () => purchaseFeaturedJob("job-1", "featured-7")],
     ["markNotificationRead", () => markNotificationRead("notif-1")],
     ["markAllNotificationsRead", markAllNotificationsRead],
+    [
+      "updateNotificationPreferences",
+      () =>
+        updateNotificationPreferences({
+          newApplicant: true,
+          strongFitCandidate: true,
+          interviewUpdate: true,
+          capacityWarning: true,
+          billingNotice: true,
+        }),
+    ],
   ];
 
   for (const [name, fn] of mutations) {
