@@ -3,8 +3,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { canStartLive, createTurnSequencer } from "@/lib/live/session-state";
+import {
+  canStartLive,
+  createTurnSequencer,
+  hasLiveEntitlement,
+  type LiveEntitlementGate,
+} from "@/lib/live/session-state";
 import { waitForIceGatheringComplete, waitForPeerConnected } from "@/lib/live/webrtc-timing";
+import {
+  applicantLiveLinks,
+  applicantLiveTransport,
+  type LiveNavigationLinks,
+  type LiveTransport,
+} from "@/lib/live/transport";
 
 type CaptureMode = "microphone" | "shared_audio" | "mixed";
 type GuidanceMode = "default" | "star" | "shorter" | "technical" | "follow_up" | "manual";
@@ -123,12 +134,74 @@ async function createCaptureStream(mode: CaptureMode) {
 
 export default function OdesseusLiveClient({
   interviewId,
-  interviewPasses,
+  entitlement,
+  transport: providedTransport,
+  afterEndUrl,
+  onEnded,
+  links: providedLinks,
 }: {
   interviewId: string;
-  interviewPasses: number;
+  /**
+   * Why this session may be started, and what the screen says about it.
+   *
+   * An applicant passes their real remaining pass count. A guest passes
+   * `included`, because the session is covered by the link owner's plan and
+   * the guest has no account, no balance, and no passes to count.
+   */
+  entitlement: LiveEntitlementGate;
+  /**
+   * Where the session calls go. Omit it for the authenticated applicant, which
+   * is the default and unchanged behaviour; a guest passes the token-scoped
+   * transport instead.
+   *
+   * This is the only difference between an applicant Live session and a guest
+   * one. The state machine below, the WebRTC negotiation, the guidance
+   * rendering, the timer, the recovery path, and the whole visual system are
+   * identical for both, which is the point: there is one Live engine, and a
+   * second copy of this file would be a second product.
+   */
+  transport?: LiveTransport;
+  /**
+   * Where to go once the session has ended. Defaults to a refresh, which is
+   * right for an applicant whose page re-reads their own session status. A
+   * guest passes their own post-interview path.
+   */
+  afterEndUrl?: string;
+  /** Called after a clean end, before any navigation. */
+  onEnded?: () => void;
+  /**
+   * Where the "Analyze interview" and "Back" buttons lead.
+   *
+   * These are the engine's only applicant-specific strings left, and they are
+   * injected rather than derived from `interviewId` so a guest is never offered
+   * a link to a page that would send them to a login screen. A guest has no
+   * account; the worst outcome for them is clicking "Back" and being asked to
+   * create one.
+   */
+  links?: LiveNavigationLinks;
 }) {
   const router = useRouter();
+  const transport = useMemo(
+    () => providedTransport ?? applicantLiveTransport(interviewId),
+    [providedTransport, interviewId]
+  );
+  const links = useMemo<LiveNavigationLinks>(
+    () => providedLinks ?? applicantLiveLinks(interviewId),
+    [providedLinks, interviewId]
+  );
+  /**
+   * Ends the session and then either navigates somewhere specific or simply
+   * re-reads the current page. One place, so a guest and an applicant cannot
+   * drift apart on what "finished" means.
+   */
+  const finishSession = useCallback(() => {
+    onEnded?.();
+    if (afterEndUrl) {
+      router.push(afterEndUrl);
+      return;
+    }
+    router.refresh();
+  }, [onEnded, afterEndUrl, router]);
   const [captureMode, setCaptureMode] = useState<CaptureMode>("shared_audio");
   const [consent, setConsent] = useState(false);
   const [state, setState] = useState<
@@ -152,7 +225,8 @@ export default function OdesseusLiveClient({
   const turnSequencerRef = useRef(createTurnSequencer());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const canStart = canStartLive(state, consent, interviewPasses);
+  const canStart = canStartLive(state, consent, entitlement);
+  const entitled = hasLiveEntitlement(entitlement);
 
   const modeCopy = useMemo(() => {
     if (captureMode === "shared_audio") {
@@ -199,26 +273,20 @@ export default function OdesseusLiveClient({
     ) => {
       const turnIndex = turnIndexFor(itemId);
 
-      const response = await fetch(
-        `/api/interviews/${interviewId}/live/transcript`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: sid,
-            itemId,
-            transcript,
-            mode,
-            forceGuidance,
-            turnIndex,
-          }),
-        }
-      );
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Odesseus could not process the transcript.");
-      }
+      const data = await transport
+        .transcript({
+          sessionId: sid,
+          itemId,
+          transcript,
+          mode,
+          forceGuidance,
+          turnIndex,
+        })
+        .then((result) => result as unknown as Record<string, unknown> & {
+          isQuestion?: boolean;
+          questionText?: string | null;
+          guidance?: Guidance | null;
+        });
 
       const item: TranscriptItem = {
         itemId,
@@ -242,7 +310,10 @@ export default function OdesseusLiveClient({
 
       return data;
     },
-    [interviewId, turnIndexFor]
+    // `transport` is a dependency, not an oversight: it is the only thing that
+    // decides where this turn is written, and leaving it out would leave a
+    // callback holding the previous transport for the life of the component.
+    [transport, turnIndexFor]
   );
 
   // Takes the prepared session id as an explicit parameter rather than
@@ -341,23 +412,9 @@ export default function OdesseusLiveClient({
     let dataChannel: RTCDataChannel | null = null;
 
     try {
-      const prepareResponse = await fetch(
-        `/api/interviews/${interviewId}/live/prepare`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ captureMode, consent: true }),
-        }
-      );
-
-      const prepareData = await prepareResponse.json();
-      if (!prepareResponse.ok) {
-        throw new Error(
-          prepareData.error || "Odesseus could not prepare the Live session."
-        );
-      }
-
-      const preparedSessionId = prepareData.sessionId as string;
+      const preparedSessionId = (
+        await transport.prepare({ captureMode, consent: true })
+      ).sessionId;
       setSessionId(preparedSessionId);
 
       stream = await createCaptureStream(captureMode);
@@ -397,29 +454,23 @@ export default function OdesseusLiveClient({
       // local description rather than the pre-gathering `offer` object.
       const finalSdp = peer.localDescription?.sdp || offer.sdp;
 
-      setStatusText("Connecting secure transcription…");
-
-      const webrtcResponse = await fetch(
-        `/api/interviews/${interviewId}/live/webrtc`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: preparedSessionId,
-            sdp: finalSdp,
-          }),
-        }
-      );
-
-      const realtimePayload = await webrtcResponse.json().catch(() => null);
-
-      if (!webrtcResponse.ok || !realtimePayload?.sdp) {
+      // An SDP offer is the entire request body for the realtime exchange, so
+      // "no offer" is not something to forward. Previously this fell through to
+      // `JSON.stringify`, which silently dropped the undefined field and sent
+      // the route a malformed body it would reject with a bare 400. Failing
+      // here names the actual problem instead.
+      if (!finalSdp) {
         throw new Error(
-          realtimePayload?.error?.message ||
-            realtimePayload?.error ||
-            "OpenAI Realtime could not connect."
+          "Odesseus could not read the audio connection offer. Please try again."
         );
       }
+
+      setStatusText("Connecting secure transcription…");
+
+      const realtimePayload = await transport.webrtc({
+        sessionId: preparedSessionId,
+        sdp: finalSdp,
+      });
 
       await peer.setRemoteDescription({
         type: "answer",
@@ -439,31 +490,17 @@ export default function OdesseusLiveClient({
         );
       }
 
-      const activateResponse = await fetch(
-        `/api/interviews/${interviewId}/live/activate`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: preparedSessionId,
-            openaiSessionId: extractSessionId(realtimePayload),
-          }),
-        }
-      );
-
-      const activateData = await activateResponse.json();
-      if (!activateResponse.ok) {
-        throw new Error(
-          activateData.error || "Odesseus could not activate the Live session."
-        );
-      }
+      await transport.activate({
+        sessionId: preparedSessionId,
+        openaiSessionId: extractSessionId(realtimePayload),
+      });
 
       const startTime = Date.now();
       setSessionStartTime(startTime);
       setSessionDuration(0);
       setState("live");
       setStatusText("Odesseus Live is listening for interview questions.");
-      router.refresh();
+      finishSession();
     } catch (err) {
       stream?.getTracks().forEach((track) => track.stop());
       dataChannel?.close();
@@ -525,23 +562,11 @@ export default function OdesseusLiveClient({
     cleanupConnection();
 
     try {
-      const response = await fetch(
-        `/api/interviews/${interviewId}/live/end`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId }),
-        }
-      );
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Odesseus could not end Live cleanly.");
-      }
+      await transport.end({ sessionId });
 
       setState("ended");
       setStatusText("Interview ended. Transcript context is ready for analysis.");
-      router.refresh();
+      finishSession();
     } catch (err) {
       setState("error");
       setError(
@@ -621,12 +646,26 @@ export default function OdesseusLiveClient({
         </label>
 
         <div className="live-pass-note">
-          <strong>
-            {interviewPasses} interview pass{interviewPasses === 1 ? "" : "es"} available
-          </strong>
-          <span className="muted">
-            No pass is used until the realtime connection successfully activates.
-          </span>
+          {entitlement.kind === "passes" ? (
+            <>
+              <strong>
+                {entitlement.available} interview pass
+                {entitlement.available === 1 ? "" : "es"} available
+              </strong>
+              <span className="muted">
+                No pass is used until the realtime connection successfully
+                activates.
+              </span>
+            </>
+          ) : (
+            <>
+              <strong>Covered by the person who shared this link</strong>
+              <span className="muted">
+                There is nothing to buy and no account to create. Odesseus
+                checks the link is still active when the session connects.
+              </span>
+            </>
+          )}
         </div>
 
         {error ? <div className="apply-error">{error}</div> : null}
@@ -637,7 +676,7 @@ export default function OdesseusLiveClient({
               className="btn btn-primary"
               type="button"
               onClick={state === "error" ? retryLive : startLive}
-              disabled={!consent || interviewPasses < 1}
+              disabled={!consent || !entitled}
             >
               {state === "error" ? "Try again" : "Start Odesseus Live"}
             </button>
@@ -676,6 +715,12 @@ export default function OdesseusLiveClient({
           </h2>
         </div>
 
+        {/*
+          A refusal has no answer. The coding guard returns only a caution, and
+          the point of it is that the person is told rather than left staring at
+          an unchanged panel -- so the caution renders on its own, and the
+          follow-up actions that only make sense for a real answer stay hidden.
+        */}
         {guidance?.response_text ? (
           <>
             <div className="live-answer">{guidance.response_text}</div>
@@ -695,37 +740,45 @@ export default function OdesseusLiveClient({
                 ))}
               </div>
             ) : null}
-
-            {guidance.caution ? (
-              <div className="review-note">{guidance.caution}</div>
-            ) : null}
-
-            <div className="live-guidance-actions">
-              {[
-                ["star", "STAR"],
-                ["shorter", "Shorter"],
-                ["technical", "More technical"],
-                ["follow_up", "Follow-up"],
-              ].map(([mode, label]) => (
-                <button
-                  key={mode}
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => requestMode(mode as GuidanceMode)}
-                  disabled={Boolean(busyMode)}
-                >
-                  {busyMode === mode ? "Working…" : label}
-                </button>
-              ))}
-            </div>
           </>
-        ) : (
+        ) : null}
+
+        {guidance?.caution ? (
+          <div className="review-note">{guidance.caution}</div>
+        ) : null}
+
+        {guidance?.response_text ? (
+          <div className="live-guidance-actions">
+            {[
+              ["star", "STAR"],
+              ["shorter", "Shorter"],
+              ["technical", "More technical"],
+              ["follow_up", "Follow-up"],
+            ].map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => requestMode(mode as GuidanceMode)}
+                disabled={Boolean(busyMode)}
+              >
+                {busyMode === mode ? "Working…" : label}
+              </button>
+            ))}
+          </div>
+        ) : /*
+           Only when nothing at all was said. If there is a caution, the caution
+           is the explanation: printing "Odesseus only surfaces guidance when it
+           identifies a question" underneath a deliberate refusal would read as
+           if Odesseus had merely not understood, which is the opposite of what
+           happened.
+         */ !guidance ? (
           <div className="live-waiting">
             <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
               Odesseus only surfaces guidance when it identifies a question or clear request for you to respond.
             </p>
           </div>
-        )}
+        ) : null}
       </section>
 
       <section className="card live-transcript-card">
@@ -771,17 +824,17 @@ export default function OdesseusLiveClient({
           </div>
           <Link
             className="btn btn-primary"
-            href={`/interviews/${interviewId}/analysis`}
+            href={links.analysis}
             style={{ marginTop: 18 }}
           >
             Analyze interview
           </Link>
           <Link
             className="btn btn-secondary"
-            href={`/interviews/${interviewId}`}
+            href={links.workspace}
             style={{ marginTop: 10 }}
           >
-            Back to interview workspace
+            {links.workspaceLabel}
           </Link>
         </section>
       )}
@@ -799,8 +852,8 @@ export default function OdesseusLiveClient({
             <button className="btn btn-primary" type="button" onClick={retryLive}>
               Try again
             </button>
-            <Link className="btn btn-secondary" href={`/interviews/${interviewId}`}>
-              Back to workspace
+            <Link className="btn btn-secondary" href={links.workspace}>
+              {links.workspaceLabel}
             </Link>
           </div>
         </section>

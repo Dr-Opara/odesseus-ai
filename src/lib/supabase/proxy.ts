@@ -34,7 +34,27 @@ const publicExactPaths = [
   "/faq",
   "/support",
 ];
-const publicPrefixPaths = ["/auth", "/api/partners", "/api/referrals"];
+const publicPrefixPaths = [
+  "/auth",
+  "/api/partners",
+  "/api/referrals",
+  // Guest Live (F12). A guest has no account, no session, and no way to obtain
+  // one -- that is the product. The shared link token in the URL is the entire
+  // credential, and every guest route re-derives its single guest record from
+  // the token's hash and authorizes itself; none of them read the caller's
+  // session, and none of them would behave differently if one existed.
+  //
+  // The prefix is deliberately narrow. `/api/live/guest-access/...` is public;
+  // `/api/live/guest-links` (minting a link) and `/api/live/entitlement` are
+  // not, because those belong to a signed-in owner. And the page prefix exposes
+  // only `/guest-live/<token>` and `/guest-live/<token>/analysis` -- both of
+  // which render nothing until the server confirms the token.
+  //
+  // Without these two entries every guest request is redirected to /login,
+  // which makes the product unreachable rather than merely restricted.
+  "/guest-live",
+  "/api/live/guest-access",
+];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

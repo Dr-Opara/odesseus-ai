@@ -126,6 +126,22 @@ export type GuestAccessLoad =
   | { ok: false; status: number; error: string };
 
 /**
+ * The single answer for a link that will not work.
+ *
+ * A token that never existed, a token that was cancelled, and a token whose
+ * owner's Share Annual plan has lapsed are three different facts about the
+ * database and one indistinguishable fact to whoever holds the URL. They return
+ * the same text on purpose: distinguishing them would let anyone with a list of
+ * guessed tokens learn which ones were once real, which is a slow enumeration
+ * oracle over the link space and nothing else.
+ *
+ * The status codes still differ, because internal callers branch on them, but
+ * they are not rendered differently by any surface.
+ */
+export const GUEST_LINK_UNAVAILABLE =
+  "This guest link is not available. Ask the person who shared it for a new one.";
+
+/**
  * Full guest authorization for a token-scoped route: valid link plus a
  * currently-valid Share Annual owner behind it. The guest never
  * authenticates; this check is the entire credential. No applicant data is
@@ -137,12 +153,12 @@ export async function loadGuestAccess(
 ): Promise<GuestAccessLoad> {
   const record = await resolveGuestAccessRecord(service, token);
   if (!record) {
-    return { ok: false, status: 404, error: "This guest link is not valid." };
+    return { ok: false, status: 404, error: GUEST_LINK_UNAVAILABLE };
   }
 
   const entitlement = await readLiveEntitlement(record.owner_user_id);
   if (!entitlement.ok || !canGenerateGuestLinks(entitlement.row)) {
-    return { ok: false, status: 403, error: "This guest link is no longer active." };
+    return { ok: false, status: 403, error: GUEST_LINK_UNAVAILABLE };
   }
 
   return { ok: true, record };

@@ -100,7 +100,9 @@ export default async function OdesseusLivePage({
 
       <OdesseusLiveClient
         interviewId={interview.id}
-        interviewPasses={credits?.interview_passes ?? 0}
+        // The applicant's real remaining passes, so the start gate and the
+        // displayed count are the same number the server will check.
+        entitlement={{ kind: "passes", available: credits?.interview_passes ?? 0 }}
       />
       </section>
     </AppShell>

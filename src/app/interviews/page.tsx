@@ -5,6 +5,9 @@ import AppShell from "@/components/app-shell";
 import MobileInterviews from "@/components/mobile/mobile-interviews";
 import { NON_GUEST_INTERVIEW_FILTER } from "@/lib/interviews/guest-share";
 import LiveEntryCard from "@/components/live-entry-card";
+import GuestLinkCard from "@/components/live/guest-link-card";
+import { readLiveEntitlement } from "@/lib/billing/live-entitlement";
+import { canGenerateGuestLinks } from "@/lib/interviews/guest-share";
 
 export default async function InterviewsPage() {
   const supabase = await createClient();
@@ -12,7 +15,12 @@ export default async function InterviewsPage() {
   const userId = auth?.claims?.sub;
   if (!userId) redirect("/login");
 
-  const [{ data: interviews }, { data: profile }, { data: credits }] = await Promise.all([
+  const [
+    { data: interviews },
+    { data: profile },
+    { data: credits },
+    entitlement,
+  ] = await Promise.all([
     supabase
       .from("interviews")
       .select("id,stage,scheduled_at,status,meeting_provider,source,readiness_generated_at,applications(company_name,role_title)")
@@ -22,7 +30,17 @@ export default async function InterviewsPage() {
       .order("scheduled_at", { ascending: true }),
     supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
     supabase.from("credit_balances").select("wallet_balance_cents,interview_passes,live_unlimited_until").eq("user_id", userId).maybeSingle(),
+    // The authoritative Share Annual check, read server-side so the card's
+    // initial state is real rather than a guess the click then contradicts.
+    // `canGenerateGuestLinks` is the same predicate the mint route enforces, so
+    // a card that renders the button is a card whose request will succeed.
+    readLiveEntitlement(userId),
   ]);
+
+  // Fail closed: if the entitlement could not be read, the card reports
+  // "not available" rather than offering a button that would 403.
+  const canCreateGuestLinks =
+    entitlement.ok && canGenerateGuestLinks(entitlement.row);
 
   const upcoming =
     interviews?.filter((item) =>
@@ -113,6 +131,12 @@ export default async function InterviewsPage() {
                 }
               : null}
           />
+        </div>
+      </section>
+
+      <section className="shell odesseus-desktop-only" style={{ padding: "0 0 90px" }}>
+        <div style={{ width: "min(820px,100%)", margin: "0 auto" }}>
+          <GuestLinkCard canCreateLinks={canCreateGuestLinks} />
         </div>
       </section>
 

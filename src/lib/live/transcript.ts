@@ -133,13 +133,35 @@ export async function appendTranscriptItem(
     .eq("user_id", userId);
 
   if (!guidance.responseText) {
+    // No answer, but there may still be something the person needs to read.
+    //
+    // This is the coding-interview path: `generateLiveGuidance` deliberately
+    // returns no response text and a caution saying Odesseus Live does not
+    // assist with coding. Returning `guidance: null` here discarded that
+    // message, so the panel simply went blank and the person concluded the
+    // product had failed. Silence is the wrong answer to "Odesseus will not
+    // help with this" -- the refusal itself is the content.
+    //
+    // A caution is therefore returned on its own, carrying no answer, no
+    // structure, and no evidence. The keys are the same snake_case the stored
+    // `live_guidance` row uses on the successful path below, so the engine
+    // reads one shape whatever happened: a second spelling here would render
+    // as a blank panel, which is the exact failure being fixed.
     return {
       ok: true,
       body: {
         transcriptItemId,
         isQuestion: true,
         questionText,
-        guidance: null,
+        guidance: guidance.caution
+          ? {
+              question_text: questionText,
+              response_text: null,
+              structure: null,
+              verified_evidence: [],
+              caution: guidance.caution,
+            }
+          : null,
       },
     };
   }

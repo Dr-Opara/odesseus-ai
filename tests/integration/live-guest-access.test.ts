@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fakeAuthedClient, fakeQueryResult, fromRouter } from "../helpers/fake-supabase";
+import { GUEST_LINK_UNAVAILABLE } from "@/lib/interviews/guest-share";
 
 const createClientMock = vi.fn();
 const createServiceClientMock = vi.fn();
@@ -177,11 +178,43 @@ describe("GET /api/live/guest-access/[token] (link validation)", () => {
     const body = await response.json();
 
     expect(response.status).toBe(404);
-    expect(body.error).toBe("This guest link is not valid.");
+    expect(body.error).toBe(GUEST_LINK_UNAVAILABLE);
   });
 
-  it("rejects malformed tokens before touching applicant tables", async () => {
-    const fromSpy = vi.fn(() => fakeQueryResult(null));
+  it("answers an unknown link and a lapsed plan identically", async () => {
+    // The two are different facts about the database and one indistinguishable
+    // fact to whoever holds the URL. Diverging text would let anyone with a
+    // list of guessed tokens learn which ones were once real.
+    const from = fromRouter({ guest_access_records: guestRecord() });
+
+    readLiveEntitlementMock.mockResolvedValue({
+      ok: true,
+      row: { ...SHARE_OWNER_ROW, has_access: false, source: "none" },
+    });
+    createServiceClientMock.mockReturnValue(
+      fakeAuthedClient({ userId: "service", from })
+    );
+    const { GET } = await import("@/app/api/live/guest-access/[token]/route");
+    const lapsed = await GET(new Request("http://localhost/x"), tokenParams);
+    const lapsedBody = await lapsed.json();
+
+    readLiveEntitlementMock.mockResolvedValue({ ok: true, row: SHARE_OWNER_ROW });
+    createServiceClientMock.mockReturnValue(
+      fakeAuthedClient({ userId: "service", from: () => fakeQueryResult(null) })
+    );
+    const unknown = await GET(new Request("http://localhost/x"), {
+      params: Promise.resolve({ token: "ff".repeat(32) }),
+    });
+    const unknownBody = await unknown.json();
+
+    expect(lapsed.status).toBe(403);
+    expect(unknown.status).toBe(404);
+    // Statuses may differ -- internal callers branch on them. The text may not.
+    expect(lapsedBody.error).toBe(GUEST_LINK_UNAVAILABLE);
+    expect(unknownBody.error).toBe(lapsedBody.error);
+  });
+
+  it("rejects malformed tokens before touching applicant tables", async () => {    const fromSpy = vi.fn(() => fakeQueryResult(null));
     createServiceClientMock.mockReturnValue(
       fakeAuthedClient({ userId: "service", from: fromSpy })
     );

@@ -1,9 +1,97 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { generatePostInterviewAnalysis } from "@/lib/ai/post-interview";
+import { postInterviewAnalysisSchema } from "@/lib/ai/schemas";
 import { loadGuestAccess } from "@/lib/interviews/guest-share";
 
 export const runtime = "nodejs";
+
+/**
+ * Read the guest's own post-interview analysis.
+ *
+ * The POST below generates and stores an analysis, but the guest could not read
+ * it back: the applicant analysis page reads the row straight from
+ * `post_interview_analyses` under the owner's session, which a guest does not
+ * have. Without this a guest could generate an analysis and never see it.
+ *
+ * The scope is the same as the POST and no wider. The interview id is not
+ * taken from the request -- it is `record.interview_id`, the single interview
+ * this token resolved to. One token reaches one guest record, which reaches
+ * one interview, so a guest cannot name another interview and the response is
+ * limited to the newest version of that one.
+ *
+ * The analysis is parsed through the same `postInterviewAnalysisSchema` the
+ * applicant page uses, so a stored row that no longer satisfies the schema
+ * renders as absent rather than half-populated. The follow-up draft comes back
+ * with no recipient address, because a guest never had one.
+ */
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ token: string }> }
+) {
+  const { token } = await params;
+  const service = createServiceClient();
+
+  const access = await loadGuestAccess(service, token);
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+
+  const { record } = access;
+
+  const empty = {
+    ok: true as const,
+    analysis: null,
+    followUp: null,
+    transcriptItemCount: 0,
+    versionNumber: null,
+    guestName: record.guest_name,
+    company: record.guest_company,
+    roleTitle: record.guest_role_title,
+  };
+
+  if (!record.interview_id) return NextResponse.json(empty);
+
+  const { data: analysisRow } = await service
+    .from("post_interview_analyses")
+    .select("id,version_number,analysis,transcript_item_count")
+    .eq("interview_id", record.interview_id)
+    .eq("user_id", record.owner_user_id)
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!analysisRow) return NextResponse.json(empty);
+
+  const parsed = postInterviewAnalysisSchema.safeParse(analysisRow.analysis);
+
+  const { data: followUp } = await service
+    .from("follow_up_drafts")
+    .select("id,subject,body,status")
+    .eq("analysis_id", analysisRow.id)
+    .eq("user_id", record.owner_user_id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return NextResponse.json({
+    ok: true as const,
+    analysis: parsed.success ? parsed.data : null,
+    versionNumber: analysisRow.version_number,
+    transcriptItemCount: analysisRow.transcript_item_count ?? 0,
+    followUp: followUp
+      ? {
+          id: followUp.id,
+          subject: followUp.subject,
+          body: followUp.body,
+          status: followUp.status,
+        }
+      : null,
+    guestName: record.guest_name,
+    company: record.guest_company,
+    roleTitle: record.guest_role_title,
+  });
+}
 
 /**
  * Guest post-interview analysis. Reuses the existing analysis generator and

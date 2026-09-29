@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MobileLive from "@/components/mobile/mobile-live";
+import { readLiveEntitlement } from "@/lib/billing/live-entitlement";
+import { canGenerateGuestLinks } from "@/lib/interviews/guest-share";
 
 export default async function MobileLivePage({
   searchParams,
@@ -14,25 +16,30 @@ export default async function MobileLivePage({
 
   if (!userId) redirect("/login");
 
-  const [{ data: interview }, { data: liveSession }, { data: credits }] = await Promise.all([
-    supabase
-      .from("interviews")
-      .select("id,stage,scheduled_at,meeting_provider,status,applications(company_name,role_title)")
-      .eq("id", id)
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabase
-      .from("live_interview_sessions")
-      .select("id,status,ended_at,activated_at,created_at")
-      .eq("interview_id", id)
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabase
-      .from("credit_balances")
-      .select("interview_passes,live_unlimited_until")
-      .eq("user_id", userId)
-      .maybeSingle(),
-  ]);
+  const [{ data: interview }, { data: liveSession }, { data: credits }, entitlement] =
+    await Promise.all([
+      supabase
+        .from("interviews")
+        .select("id,stage,scheduled_at,meeting_provider,status,applications(company_name,role_title)")
+        .eq("id", id)
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("live_interview_sessions")
+        .select("id,status,ended_at,activated_at,created_at")
+        .eq("interview_id", id)
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("credit_balances")
+        .select("interview_passes,live_unlimited_until")
+        .eq("user_id", userId)
+        .maybeSingle(),
+      // The same authoritative Share Annual check the desktop card uses, read
+      // server-side. Fail closed: an unreadable entitlement reports "not
+      // available" rather than a button that would be refused.
+      readLiveEntitlement(userId),
+    ]);
 
   if (!interview) redirect("/interviews");
 
@@ -41,6 +48,7 @@ export default async function MobileLivePage({
       interview={interview}
       interviewPasses={credits?.interview_passes ?? 0}
       liveUnlimitedUntil={credits?.live_unlimited_until ?? null}
+      canCreateGuestLinks={entitlement.ok && canGenerateGuestLinks(entitlement.row)}
       liveSession={liveSession}
     />
   );

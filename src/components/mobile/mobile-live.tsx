@@ -3,6 +3,7 @@
 import Link from "next/link";
 import MobileScreen from "@/components/mobile/mobile-screen";
 import { billingCatalog, liveSkus } from "@/lib/billing/catalog";
+import GuestLinkButton from "@/components/live/guest-link-button";
 
 // Same derivation as src/app/billing/page.tsx / live-entry-card.tsx — kept
 // out of the shared candidate-pricing module by design; only ever renders
@@ -23,6 +24,13 @@ type MobileLiveProps = {
   } | null;
   interviewPasses: number;
   liveUnlimitedUntil: string | null;
+  /**
+   * Whether this owner may mint Guest Live links, read server-side with the
+   * same predicate the mint route enforces. A mobile screen offering a button
+   * whose request would be refused is worse than one that says the plan does
+   * not include it.
+   */
+  canCreateGuestLinks: boolean;
   liveSession: {
     id: string;
     status: string;
@@ -36,6 +44,7 @@ export default function MobileLive({
   interview,
   interviewPasses,
   liveUnlimitedUntil,
+  canCreateGuestLinks,
   liveSession,
 }: MobileLiveProps) {
   const hasAnnualAccess = liveUnlimitedUntil && new Date(liveUnlimitedUntil) > new Date();
@@ -188,6 +197,37 @@ export default function MobileLive({
         <p className="m-note" style={{ marginTop: 12 }}>
           Purchase passes or Annual on desktop at <strong>/billing</strong>.
         </p>
+      </section>
+
+      <section className="m-section" style={{ marginTop: 20 }}>
+        <div className="m-section-heading">
+          <h2>Guest Live Access</h2>
+        </div>
+
+        <div className="m-card">
+          <span className="m-copy">
+            <strong>Share one interview of Live with a guest</strong>
+            <small>
+              They need no account and no payment, and they enter their own
+              name, role, company, and resume. Nothing they type reaches your
+              profile, Resume Hub, or interview history.
+            </small>
+          </span>
+        </div>
+
+        {canCreateGuestLinks ? (
+          <GuestLinkButton />
+        ) : (
+          <div className="m-card" style={{ opacity: 0.7, marginTop: 12 }}>
+            <span className="m-copy">
+              <strong>Not included in your plan</strong>
+              <small>
+                Guest Live links come with Share Annual. Manage your Live plan
+                on desktop at <strong>/billing</strong>.
+              </small>
+            </span>
+          </div>
+        )}
       </section>
 
       <section className="m-section" style={{ marginTop: 20 }}>
