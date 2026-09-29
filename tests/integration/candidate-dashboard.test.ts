@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { getCandidateDashboard } from "@/lib/candidate/dashboard";
+import { applyRates } from "@/lib/billing/catalog";
 import { fakeAuthedClient, fromRouter } from "../helpers/fake-supabase";
 import type { CandidateClient } from "@/lib/candidate/service";
 
@@ -280,8 +281,8 @@ describe("the application agent section", () => {
 
 describe("the wallet section", () => {
   it("reports the balance and says whether an application is affordable", async () => {
-    // "Has money" and "can apply" are different statements: a candidate with 48
-    // cents has money and cannot start a $0.49 application.
+    // "Has money" and "can apply" are different statements: a candidate with
+    // 38 cents has money and cannot start a Standard Apply.
     const { client: c } = client({
       tables: {
         ...emptyTables,
@@ -301,9 +302,29 @@ describe("the wallet section", () => {
 
   it("does not claim affordability one cent short of a standard apply", async () => {
     const { client: c } = client({
-      tables: { ...emptyTables, credit_balances: { wallet_balance_cents: 48 } },
+      tables: {
+        ...emptyTables,
+        credit_balances: { wallet_balance_cents: applyRates.standard.amountCents - 1 },
+      },
     });
     expect((await getCandidateDashboard(c, USER)).wallet.canApply).toBe(false);
+  });
+
+  it("claims affordability at exactly the standard apply rate", async () => {
+    // The regression this pins: the threshold used to be a hardcoded `49`,
+    // left over from when Standard Apply was $0.49. After the rate moved to
+    // $0.39 a candidate holding 39–48 cents was told they could not apply,
+    // even though the server would have accepted the charge. The threshold is
+    // now derived from the catalog, and this asserts the exact boundary in
+    // both directions so a future price change cannot silently desynchronise
+    // it again.
+    const atRate = client({
+      tables: {
+        ...emptyTables,
+        credit_balances: { wallet_balance_cents: applyRates.standard.amountCents },
+      },
+    });
+    expect((await getCandidateDashboard(atRate.client, USER)).wallet.canApply).toBe(true);
   });
 
   it("includes recent wallet movements with their sign", async () => {

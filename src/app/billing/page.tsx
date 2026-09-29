@@ -4,7 +4,7 @@ import { createCheckoutSession } from "@/app/actions/billing";
 import { billingCatalog, applyRates, liveSkus, LIVE_FAIR_USE, LIVE_SHARE_GUEST_LIMIT } from "@/lib/billing/catalog";
 import AppShell from "@/components/app-shell";
 
-/** Formats integer minor units as a USD string (e.g. 49 -> "$0.49"). */
+/** Formats integer minor units as a USD string (e.g. 39 -> "$0.39"). */
 const formatUsd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
 // Amounts are read from the sellable catalog rather than hardcoded so the

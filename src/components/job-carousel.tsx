@@ -82,10 +82,11 @@ function CarouselError({ onRetry }: { onRetry: () => void }) {
 }
 
 /**
- * Homepage job carousel (F1-B/F1-C/F1-F). Data-only props — agnostic to
- * whether `jobs` came from a live backend or a dev fixture (F1-E). Renders
- * both a desktop (paged 3-up, arrows, dots, auto-advance) and mobile
- * (native scroll-snap, dots) presentation; CSS shows only one per viewport.
+ * Homepage job carousel (F1-B/F1-C/F1-F). Data-only props, agnostic to where
+ * the jobs came from — it renders whatever the reader returned and never
+ * reaches for a data source of its own. Renders both a desktop (paged 3-up,
+ * arrows, dots, auto-advance) and mobile (native scroll-snap, dots)
+ * presentation; CSS shows only one per viewport.
  */
 export default function JobCarousel({
   result,

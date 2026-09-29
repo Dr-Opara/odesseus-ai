@@ -37,8 +37,8 @@ resolve the authenticated user's market from their **profile country**
     "available": true,
     "market_key": "USD_US",
     "currency": "USD",
-    "amount_minor": 2499,
-    "formatted_price": "$24.99",
+    "amount_minor": 1499,
+    "formatted_price": "$14.99",
     "is_fallback": false
   }]
 }
@@ -51,7 +51,7 @@ resolve the authenticated user's market from their **profile country**
 
 - Every amount is an integer of the currency's **minor units**
   (`pricing_prices.amount_minor`, `integer NOT NULL CHECK > 0`).
-- USD $24.99 → `2499`; GBP £24.99 → `2499`; JPY ¥2,500 → `2500` (JPY has
+- USD $14.99 → `1499`; GBP £14.99 → `1499`; JPY ¥2,500 → `2500` (JPY has
   **zero** decimal digits).
 - No `float`/`numeric` money columns exist. Decimal digits and symbols are
   derived at display time via `Intl.NumberFormat` (see

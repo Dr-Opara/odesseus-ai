@@ -38,6 +38,7 @@ import {
 import { getRecommendedJobs, type CandidateClient } from "./service";
 import type { CandidateJob } from "./types";
 import { NON_GUEST_INTERVIEW_FILTER } from "@/lib/interviews/guest-share";
+import { applyRates } from "@/lib/billing/catalog";
 
 /**
  * The strong-match threshold used when the candidate has not set one.
@@ -393,14 +394,19 @@ function emptyResume(): CandidateDashboardResume {
 }
 
 /**
- * The smallest chargeable application, in cents.
+ * The cheapest application, in cents.
  *
- * Standard Apply is priced at $0.49 per the billing rules, and the wallet is
- * drawn in whole cents, so a candidate with 48 cents cannot start one. Kept as
- * a named constant rather than inlined at the comparison so the reason the
- * threshold is not zero is legible next to the number.
+ * Derived from the billing catalog rather than written as a literal. This
+ * used to be the hardcoded `49`, left over from when Standard Apply was
+ * $0.49, which meant the dashboard told a candidate holding 39–48 cents that
+ * they could not start an application the server would have accepted. Every
+ * other place that quotes the rate reads `applyRates`; this one now does too,
+ * so a price change cannot leave a stale threshold behind.
  */
-const MINIMUM_APPLY_CHARGE_CENTS = 49;
+const MINIMUM_APPLY_CHARGE_CENTS = Math.min(
+  applyRates.standard.amountCents,
+  applyRates.smart.amountCents
+);
 
 /**
  * Builds the whole dashboard for one candidate.

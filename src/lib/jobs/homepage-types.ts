@@ -15,6 +15,21 @@ export type HomepageJob = {
   matchScore?: number;
 };
 
+/**
+ * The feed result.
+ *
+ * `source` is a single-valued marker rather than a choice. It used to be
+ * `"live" | "fixture"`, back when `getHomepageJobs` returned
+ * `HOMEPAGE_JOB_FIXTURES` outside production — which meant a preview deploy or
+ * a developer's own machine served invented companies and invented salaries on
+ * the public marketing homepage. Both readers now hit the real public feed, so
+ * narrowing the union makes a fixture path a compile error rather than
+ * something to catch in review.
+ *
+ * `unavailable` is deliberately distinct from an empty `ok` list: "we could not
+ * load jobs" and "there are no jobs right now" are different statements, and
+ * the carousel presents them differently.
+ */
 export type HomepageJobsResult =
-  | { status: "ok"; data: HomepageJob[]; source: "live" | "fixture" }
+  | { status: "ok"; data: HomepageJob[]; source: "live" }
   | { status: "unavailable"; reason: string };

@@ -48,12 +48,13 @@ Upload Resume -> Paste JD -> Match & Qualify -> Improve Existing Resume -> Revie
 ## Billing rules
 
 - Candidate core usage is pay-per-use from a prepaid wallet. No subscription for candidate core usage; employer plans and recruiter seats may be recurring subscriptions.
-- Standard Apply charges $0.49 per verified successful submission, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee.
-- Smart Apply charges $1.99 per verified successful submission. Smart Apply may add deeper automation (account creation, multi-page ATS navigation, question completion from known candidate data, resume tailoring, document attachment, retry/recovery, application package preparation) but must preserve user approval before final submission, no silent submission, stop/escalate on uncertain answers, and charging only after a verified successful submission.
+- Standard Apply charges $0.39 per verified successful submission, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee.
+- Smart Apply charges $0.99 per verified successful submission. Smart Apply may add deeper automation (account creation, multi-page ATS navigation, question completion from known candidate data, resume tailoring, document attachment, retry/recovery, application package preparation) but must preserve user approval before final submission, no silent submission, stop/escalate on uncertain answers, and charging only after a verified successful submission.
 - Wallet top-ups: $10, $20, $50.
 - Failed/unsupported/paused/cancelled application attempts, closed jobs, incomplete CAPTCHA/MFA/verification, and unconfirmed submissions must not deduct wallet funds.
 - Interview preparation is free.\n- Odesseus does not require email inbox access to detect interviews; users return when they receive an interview invitation.
-- Odesseus Live pricing: $24.99 per interview.
+- Odesseus Live pricing: Single $14.99, Monthly $19.99, Personal Annual $99, Share Annual $499 (10 guest places per membership year).
+- Odesseus Live is private to signed-in applicants and token-scoped guest links. It must never be advertised on a public marketing, pricing, or employer surface. Correcting these figures does not make Live publicly marketable; the SKUs live in the auth-gated billing catalogue and are deliberately absent from the public display catalogue.
 - Interview pass should be consumed only when the live session actually starts.
 - Employer plans: Starter $79 / 3 jobs, Growth $149 / 10 jobs, Business $299 / 25 jobs (recurring).
 - Featured listings: $29 / 7 days, $49 / 14 days, AI Featured $129 / 30 days.
