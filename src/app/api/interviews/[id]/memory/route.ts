@@ -45,6 +45,12 @@ export async function POST(
     return NextResponse.json({ error: "Interview not found." }, { status: 404 });
   }
 
+  // Manual interviews have no linked application; round memory requires one.
+  const applicationId = interview.application_id;
+  if (!applicationId) {
+    return NextResponse.json({ error: "Interview not found." }, { status: 404 });
+  }
+
   const service = createServiceClient();
 
   const { data: existingMemory } = await service
@@ -63,7 +69,7 @@ export async function POST(
     const { count } = await service
       .from("interview_round_memory")
       .select("id", { count: "exact", head: true })
-      .eq("application_id", interview.application_id)
+      .eq("application_id", applicationId)
       .eq("user_id", userId);
 
     roundNumber = (count ?? 0) + 1;
@@ -84,7 +90,7 @@ export async function POST(
 
     const values = {
       interview_id: id,
-      application_id: interview.application_id,
+      application_id: applicationId,
       user_id: userId,
       round_number: roundNumber,
       questions_asked: input.questionsAsked,

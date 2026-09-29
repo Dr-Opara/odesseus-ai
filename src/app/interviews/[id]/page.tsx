@@ -33,6 +33,10 @@ export default async function InterviewWorkspacePage({
 
   if (!interview?.applications) notFound();
 
+  // Manual interviews have no linked application; this workspace requires one.
+  const applicationId = interview.application_id;
+  if (!applicationId) notFound();
+
   const application = interview.applications;
 
   const [
@@ -56,7 +60,7 @@ export default async function InterviewWorkspacePage({
     supabase
       .from("application_status_events")
       .select("id,title,detail,source,occurred_at")
-      .eq("application_id", interview.application_id)
+      .eq("application_id", applicationId)
       .eq("user_id", userId)
       .order("occurred_at", { ascending: false })
       .limit(8),
@@ -69,7 +73,7 @@ export default async function InterviewWorkspacePage({
     supabase
       .from("interview_round_memory")
       .select("id,interview_id,round_number,questions_asked,topics_discussed,experiences_used,commitments,handoff_summary,created_at")
-      .eq("application_id", interview.application_id)
+      .eq("application_id", applicationId)
       .eq("user_id", userId)
       .order("round_number", { ascending: true }),
     supabase

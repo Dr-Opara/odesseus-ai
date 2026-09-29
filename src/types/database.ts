@@ -1441,7 +1441,7 @@ export type Database = {
       follow_up_drafts: {
         Row: {
           analysis_id: string | null;
-          application_id: string;
+          application_id: string | null;
           body: string;
           created_at: string;
           id: string;
@@ -1458,7 +1458,7 @@ export type Database = {
         };
         Insert: {
           analysis_id?: string | null;
-          application_id: string;
+          application_id?: string | null;
           body: string;
           created_at?: string;
           id?: string;
@@ -1475,7 +1475,7 @@ export type Database = {
         };
         Update: {
           analysis_id?: string | null;
-          application_id?: string;
+          application_id?: string | null;
           body?: string;
           created_at?: string;
           id?: string;
@@ -1641,7 +1641,7 @@ export type Database = {
       };
       interview_round_memory: {
         Row: {
-          application_id: string;
+          application_id: string | null;
           candidate_notes: string | null;
           commitments: string[];
           created_at: string;
@@ -1658,7 +1658,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
-          application_id: string;
+          application_id?: string | null;
           candidate_notes?: string | null;
           commitments?: string[];
           created_at?: string;
@@ -1675,7 +1675,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
-          application_id?: string;
+          application_id?: string | null;
           candidate_notes?: string | null;
           commitments?: string[];
           created_at?: string;
@@ -1710,7 +1710,9 @@ export type Database = {
       };
       interviews: {
         Row: {
-          application_id: string;
+          application_id: string | null;
+          application_url: string | null;
+          company: string | null;
           created_at: string;
           duration_minutes: number | null;
           ended_at: string | null;
@@ -1718,12 +1720,16 @@ export type Database = {
           interview_type: string | null;
           interviewer_details: NonNullable<Json>;
           live_pass_status: string;
+          location: string | null;
           meeting_provider: string | null;
+          meeting_type: string | null;
           meeting_url: string | null;
+          notes: string | null;
           post_analysis: NonNullable<Json>;
           readiness_generated_at: string | null;
           response_length: string | null;
           response_style: string | null;
+          role_title: string | null;
           round_number: number | null;
           scheduled_at: string | null;
           source: string | null;
@@ -1738,7 +1744,9 @@ export type Database = {
           user_id: string;
         };
         Insert: {
-          application_id: string;
+          application_id?: string | null;
+          application_url?: string | null;
+          company?: string | null;
           created_at?: string;
           duration_minutes?: number | null;
           ended_at?: string | null;
@@ -1746,12 +1754,16 @@ export type Database = {
           interview_type?: string | null;
           interviewer_details?: NonNullable<Json>;
           live_pass_status?: string;
+          location?: string | null;
           meeting_provider?: string | null;
+          meeting_type?: string | null;
           meeting_url?: string | null;
+          notes?: string | null;
           post_analysis?: NonNullable<Json>;
           readiness_generated_at?: string | null;
           response_length?: string | null;
           response_style?: string | null;
+          role_title?: string | null;
           round_number?: number | null;
           scheduled_at?: string | null;
           source?: string | null;
@@ -1766,7 +1778,9 @@ export type Database = {
           user_id: string;
         };
         Update: {
-          application_id?: string;
+          application_id?: string | null;
+          application_url?: string | null;
+          company?: string | null;
           created_at?: string;
           duration_minutes?: number | null;
           ended_at?: string | null;
@@ -1774,12 +1788,16 @@ export type Database = {
           interview_type?: string | null;
           interviewer_details?: NonNullable<Json>;
           live_pass_status?: string;
+          location?: string | null;
           meeting_provider?: string | null;
+          meeting_type?: string | null;
           meeting_url?: string | null;
+          notes?: string | null;
           post_analysis?: NonNullable<Json>;
           readiness_generated_at?: string | null;
           response_length?: string | null;
           response_style?: string | null;
+          role_title?: string | null;
           round_number?: number | null;
           scheduled_at?: string | null;
           source?: string | null;
@@ -2277,7 +2295,7 @@ export type Database = {
       live_interview_sessions: {
         Row: {
           activated_at: string | null;
-          application_id: string;
+          application_id: string | null;
           capture_mode: string;
           consented_at: string | null;
           context_snapshot: NonNullable<Json>;
@@ -2296,7 +2314,7 @@ export type Database = {
         };
         Insert: {
           activated_at?: string | null;
-          application_id: string;
+          application_id?: string | null;
           capture_mode?: string;
           consented_at?: string | null;
           context_snapshot?: NonNullable<Json>;
@@ -2315,7 +2333,7 @@ export type Database = {
         };
         Update: {
           activated_at?: string | null;
-          application_id?: string;
+          application_id?: string | null;
           capture_mode?: string;
           consented_at?: string | null;
           context_snapshot?: NonNullable<Json>;
@@ -3194,7 +3212,7 @@ export type Database = {
       post_interview_analyses: {
         Row: {
           analysis: NonNullable<Json>;
-          application_id: string;
+          application_id: string | null;
           created_at: string;
           id: string;
           interview_id: string;
@@ -3204,7 +3222,7 @@ export type Database = {
         };
         Insert: {
           analysis?: NonNullable<Json>;
-          application_id: string;
+          application_id?: string | null;
           created_at?: string;
           id?: string;
           interview_id: string;
@@ -3214,7 +3232,7 @@ export type Database = {
         };
         Update: {
           analysis?: NonNullable<Json>;
-          application_id?: string;
+          application_id?: string | null;
           created_at?: string;
           id?: string;
           interview_id?: string;

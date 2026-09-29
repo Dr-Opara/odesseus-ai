@@ -32,6 +32,12 @@ export async function POST(
     return NextResponse.json({ error: "Interview not found." }, { status: 404 });
   }
 
+  // Manual interviews have no linked application; post-analysis requires one.
+  const applicationId = interview.application_id;
+  if (!applicationId) {
+    return NextResponse.json({ error: "Interview not found." }, { status: 404 });
+  }
+
   const { data: liveSession } = await service
     .from("live_interview_sessions")
     .select("id,status")
@@ -68,7 +74,7 @@ export async function POST(
     service
       .from("interview_round_memory")
       .select("round_number,questions_asked,topics_discussed,experiences_used,interviewer_signals,commitments,candidate_notes,handoff_summary")
-      .eq("application_id", interview.application_id)
+      .eq("application_id", applicationId)
       .eq("user_id", userId)
       .neq("interview_id", id)
       .order("round_number", { ascending: true }),
@@ -186,7 +192,7 @@ export async function POST(
 
     const memoryValues = {
       interview_id: id,
-      application_id: interview.application_id,
+      application_id: applicationId,
       user_id: userId,
       ...merged,
       handoff_summary: handoff,

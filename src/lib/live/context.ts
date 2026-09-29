@@ -14,6 +14,12 @@ export async function buildLiveContext(userId: string, interviewId: string) {
     throw new Error("Interview context is incomplete.");
   }
 
+  // Manual interviews have no linked application; Live context requires one.
+  const applicationId = interview.application_id;
+  if (!applicationId) {
+    throw new Error("Interview context is incomplete.");
+  }
+
   const [
     { data: readiness },
     { data: priorRounds },
@@ -30,7 +36,7 @@ export async function buildLiveContext(userId: string, interviewId: string) {
     service
       .from("interview_round_memory")
       .select("round_number,questions_asked,topics_discussed,experiences_used,commitments,handoff_summary")
-      .eq("application_id", interview.application_id)
+      .eq("application_id", applicationId)
       .eq("user_id", userId)
       .neq("interview_id", interviewId)
       .order("round_number", { ascending: true }),

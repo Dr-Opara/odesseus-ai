@@ -171,6 +171,15 @@ export const interviewReadinessSchema = z.object({
     gap: z.string(),
     approach: z.string(),
   })).max(6),
+  // Optional prep modules generated from the briefing (all backward-compatible;
+  // old briefings omit these keys and parse successfully via .safeParse).
+  likelyQuestions: z.array(z.string()).max(20).optional(),
+  behavioralQuestions: z.array(z.object({ question: z.string(), focus: z.string() })).max(12).optional(),
+  starPrompts: z.array(z.object({ prompt: z.string(), exampleLabel: z.string().nullable(), sourceEvidence: z.array(z.string()) })).max(10).optional(),
+  technicalConceptQuestions: z.array(z.object({ concept: z.string(), question: z.string(), why: z.string() })).max(12).optional(),
+  companySpecific: z.array(z.object({ area: z.string(), preparation: z.string(), verifiedEvidence: z.array(z.string()) })).max(10).optional(),
+  questionsToAskInterviewer: z.array(z.string()).max(8).optional(),
+  prepSummary: z.string().optional(),
 });
 
 export type InterviewReadiness = z.infer<typeof interviewReadinessSchema>;

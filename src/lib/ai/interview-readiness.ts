@@ -35,6 +35,17 @@ Rules:
 - Questions to ask should be thoughtful, concise, and role-specific.
 - Do not run a mock interview.
 - Keep output practical and concise.
+
+Additionally, generate the following prep modules, grounded entirely in the provided context. If any module cannot be meaningfully populated from the available evidence, include it as an empty array or null.
+
+PREP MODULES (include all):
+- likelyQuestions: 5-8 likely question topics/areas the interviewer may explore, based on the job requirements and candidate's background.
+- behavioralQuestions: 4-6 structured behavioral questions (e.g. "Tell me about a time you..."), each with a brief focus area.
+- starPrompts: 3-5 STAR-format prompts (Situation-Task-Action-Result) with example labels and source evidence keywords.
+- technicalConceptQuestions: 3-4 technical concept questions relevant to the role, each with a brief "why this matters" explanation.
+- companySpecific: 3-4 company/job-specific preparation areas (e.g. recent product launches, mission alignment, key challenges).
+- questionsToAskInterviewer: 4-5 thoughtful questions the candidate may ask the interviewer, focused on role, team, or company.
+- prepSummary: A concise 2-sentence summary of the candidate's readiness state, highlighting strengths and one development area.
 `,
     prompt: `
 COMPANY: ${input.companyName}
@@ -60,7 +71,7 @@ Use prior-round memory to preserve continuity:
 - build on topics already covered
 - do not infer outcomes or interviewer intent
 
-Generate interview readiness guidance.
+Generate interview readiness guidance with all prep modules as described above.
 `,
     providerOptions: {
       openai: { store: false },

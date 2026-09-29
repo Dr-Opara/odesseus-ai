@@ -27,18 +27,24 @@ export async function POST(
     return NextResponse.json({ error: "Interview context is incomplete." }, { status: 404 });
   }
 
+  // Manual interviews have no linked application; readiness requires one.
+  const applicationId = interview.application_id;
+  if (!applicationId) {
+    return NextResponse.json({ error: "Interview context is incomplete." }, { status: 404 });
+  }
+
   const [{ data: timeline }, { data: priorRounds }] = await Promise.all([
     supabase
       .from("application_status_events")
       .select("title,detail,source,occurred_at")
       .eq("user_id", userId)
-      .eq("application_id", interview.application_id)
+      .eq("application_id", applicationId)
       .order("occurred_at", { ascending: true }),
     supabase
       .from("interview_round_memory")
       .select("round_number,questions_asked,topics_discussed,experiences_used,interviewer_signals,commitments,handoff_summary,created_at")
       .eq("user_id", userId)
-      .eq("application_id", interview.application_id)
+      .eq("application_id", applicationId)
       .neq("interview_id", id)
       .order("round_number", { ascending: true }),
   ]);
