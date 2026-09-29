@@ -51,14 +51,14 @@ export default async function EmployerDashboardPage() {
             {analyticsResult.status === "ok" && jobsResult.status === "ok" ? (
               <EmployerRowList>
                 <EmployerRow label="Active jobs" value={jobsResult.data.filter((j) => j.status === "Published").length} href="/employers/jobs" />
-                <EmployerRow label="Applicants" value={analyticsResult.data.applicantVolume} />
-                <EmployerRow label="Strong Fits" value={analyticsResult.data.strongFitCandidates} />
-                <EmployerRow label="Interviews" value={analyticsResult.data.stageDistribution.INTERVIEW ?? 0} />
+                <EmployerRow label="Applicants" value={analyticsResult.data.applicantVolume} href="/employers/candidates" />
+                <EmployerRow label="Strong Fits" value={analyticsResult.data.strongFitCandidates} href="/employers/candidates" />
+                <EmployerRow label="Interviews" value={analyticsResult.data.stageDistribution.INTERVIEW ?? 0} href="/employers/pipeline" />
                 {candidatesResult.status === "ok" && candidatesResult.data.length > 0 ? (
                   (() => {
                     const top = [...candidatesResult.data].sort((a, b) => (b.fitScoreOverall ?? 0) - (a.fitScoreOverall ?? 0))[0];
                     return top.fitScoreOverall ? (
-                      <EmployerRow label="Top match" value={`${top.name} · ${Math.round(top.fitScoreOverall)}% Fit`} />
+                      <EmployerRow label="Top match" value={`${top.name} · ${Math.round(top.fitScoreOverall)}% Fit`} href={`/employers/candidates/${top.id}`} />
                     ) : null;
                   })()
                 ) : null}

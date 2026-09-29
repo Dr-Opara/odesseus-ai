@@ -13,8 +13,8 @@ import type { EmployerResult } from "./result";
 
 export type PipelineBoard = Record<PipelineStage, CandidateListItem[]>;
 
-export async function getPipelineBoard(): Promise<EmployerResult<PipelineBoard>> {
-  const candidates = await getCandidates();
+export async function getPipelineBoard(filter?: { jobId?: string }): Promise<EmployerResult<PipelineBoard>> {
+  const candidates = await getCandidates(filter);
   if (candidates.status !== "ok") return candidates;
 
   const board = {} as PipelineBoard;

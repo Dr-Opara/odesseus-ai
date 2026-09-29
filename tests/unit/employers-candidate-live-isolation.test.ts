@@ -11,8 +11,13 @@ import { CANDIDATE_FIXTURES } from "@/lib/employers/fixtures/candidates";
 const EMPLOYER_DOMAIN_FILES = [
   "src/lib/employers/types.ts",
   "src/lib/employers/candidates-adapter.ts",
+  "src/lib/employers/pipeline-adapter.ts",
   "src/lib/employers/fixtures/candidates.ts",
   "src/components/employers/fit-score-panel.tsx",
+  "src/components/employers/candidate-stage-actions.tsx",
+  "src/app/employers/candidates/page.tsx",
+  "src/app/employers/candidates/[id]/page.tsx",
+  "src/app/employers/pipeline/page.tsx",
 ];
 
 // Matches real `from "@/lib/live"` / `from '@/lib/interviews/...'` import

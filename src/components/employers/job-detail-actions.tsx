@@ -37,6 +37,9 @@ export default function JobDetailActions({ job }: { job: EmployerJobDetail }) {
         <Link href={`/employers/candidates?job=${job.id}`} className="figma-btn figma-btn-orange">
           View Applicants
         </Link>
+        <Link href={`/employers/pipeline?job=${job.id}`} className="emp-btn-secondary">
+          View Pipeline
+        </Link>
         <Link href={`/employers/jobs/${job.id}/edit`} className="emp-btn-secondary">
           Edit Job
         </Link>
