@@ -3637,6 +3637,72 @@ export type Database = {
           },
         ];
       };
+      public_job_posts: {
+        Row: {
+          apply_url: string | null;
+          company_name: string;
+          created_at: string;
+          description: string;
+          employment_type: string | null;
+          external_id: string;
+          first_seen_at: string;
+          id: string;
+          is_active: boolean;
+          last_seen_at: string;
+          location: string | null;
+          provider: string;
+          published_at: string | null;
+          salary_text: string | null;
+          source_key: string;
+          source_url: string | null;
+          title: string;
+          updated_at: string;
+          work_arrangement: string | null;
+        };
+        Insert: {
+          apply_url?: string | null;
+          company_name: string;
+          created_at?: string;
+          description: string;
+          employment_type?: string | null;
+          external_id: string;
+          first_seen_at?: string;
+          id?: string;
+          is_active?: boolean;
+          last_seen_at?: string;
+          location?: string | null;
+          provider: string;
+          published_at?: string | null;
+          salary_text?: string | null;
+          source_key: string;
+          source_url?: string | null;
+          title: string;
+          updated_at?: string;
+          work_arrangement?: string | null;
+        };
+        Update: {
+          apply_url?: string | null;
+          company_name?: string;
+          created_at?: string;
+          description?: string | null;
+          employment_type?: string | null;
+          external_id?: string;
+          first_seen_at?: string;
+          id?: string;
+          is_active?: boolean;
+          last_seen_at?: string;
+          location?: string | null;
+          provider?: string;
+          published_at?: string | null;
+          salary_text?: string | null;
+          source_key?: string;
+          source_url?: string | null;
+          title?: string;
+          updated_at?: string;
+          work_arrangement?: string | null;
+        };
+        Relationships: [];
+      };
       pricing_products: {
         Row: {
           active: boolean;
