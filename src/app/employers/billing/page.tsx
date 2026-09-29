@@ -1,30 +1,29 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireEmployerPage } from "@/app/employers/guard";
 import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import { EmployerRow, EmployerRowList } from "@/components/employers/row-list";
-import ManagePlanButton from "@/components/employers/manage-plan-button";
+import EmployerPlanPicker from "@/components/employers/manage-plan-button";
 import { getEmployerBilling } from "@/lib/employers/billing-adapter";
-import { getEmployerJobs } from "@/lib/employers/jobs-adapter";
-import { EMPLOYER_PLANS, PROMOTION_PLANS, RECRUITER_SEAT_PRICE_LABEL, RECRUITER_SEAT_UNIT } from "@/lib/pricing/candidate-pricing";
+import { getFeaturedJobPackages } from "@/lib/employers/featured-adapter";
+import { EMPLOYER_PLANS, RECRUITER_SEAT_PRICE_LABEL, RECRUITER_SEAT_UNIT } from "@/lib/pricing/candidate-pricing";
+
+function formatDate(value: string | null): string {
+  if (!value) return "Not set";
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? "Not set" : parsed.toLocaleDateString();
+}
 
 /**
  * Employer Billing (Figma screen 82, F13-N). A separate surface from
- * candidate wallet billing (`/billing`) — never shares an adapter or route
- * with it.
+ * candidate wallet billing (`/billing`) — no adapter, route, or price source
+ * is shared with it. Capacity, seats, and plan state are read from the
+ * billing endpoint; a plan or seat only changes once Stripe confirms.
  */
 export default async function EmployerBillingPage() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
-  if (!user) redirect("/employers/login");
-  if (user.user_metadata?.account_type !== "employer") {
-    await supabase.auth.signOut();
-    redirect("/employers/login?error=This%20account%20is%20not%20registered%20as%20an%20employer.");
-  }
+  const { orgId } = await requireEmployerPage("/employers/billing");
 
-  const [billingResult, jobsResult] = await Promise.all([getEmployerBilling(), getEmployerJobs()]);
-  const activeCount = jobsResult.status === "ok" ? jobsResult.data.filter((j) => j.status === "Published").length : undefined;
+  const billingResult = await getEmployerBilling(orgId);
+  const packages = getFeaturedJobPackages();
 
   return (
     <main className="figma-site figma-soft-page">
@@ -34,7 +33,10 @@ export default async function EmployerBillingPage() {
           <h1>Employer Billing</h1>
           {billingResult.status === "ok" ? (
             <p className="muted">
-              {billingResult.data.planId} plan · {billingResult.data.priceLabel}
+              {billingResult.data.planId
+                ? `${billingResult.data.planId} plan${billingResult.data.priceLabel ? ` · ${billingResult.data.priceLabel}` : ""}`
+                : "No active plan"}
+              {billingResult.data.subscriptionStatus ? ` · ${billingResult.data.subscriptionStatus.replaceAll("_", " ")}` : ""}
             </p>
           ) : null}
 
@@ -42,24 +44,38 @@ export default async function EmployerBillingPage() {
             {billingResult.status === "ok" ? (
               <>
                 <EmployerRowList>
-                  <EmployerRow label="Plan" value={billingResult.data.planId} />
+                  <EmployerRow label="Plan" value={billingResult.data.planId ?? "No active plan"} />
                   <EmployerRow
                     label="Active jobs"
+                    value={`${billingResult.data.capacity.published} of ${billingResult.data.capacity.included}`}
+                  />
+                  <EmployerRow label="Renews" value={formatDate(billingResult.data.periodEnd)} />
+                  <EmployerRow
+                    label="Recruiter seats"
                     value={
-                      activeCount !== undefined
-                        ? `${activeCount} of ${EMPLOYER_PLANS.find((p) => p.name === billingResult.data.planId)?.activeJobLimit ?? "—"}`
-                        : "—"
+                      billingResult.data.seats
+                        ? `${billingResult.data.seats.active} of ${billingResult.data.seats.required}`
+                        : "Not available"
                     }
                   />
-                  {PROMOTION_PLANS.map((plan) => (
-                    <EmployerRow key={`${plan.name}-${plan.unit}`} label={`${plan.name} ${plan.unit.replace(/^\//, "").trim()}`} value={plan.priceLabel} />
+                  <EmployerRow label="Featured listings" value={billingResult.data.featuredActive} />
+                  {packages.map((pkg) => (
+                    <EmployerRow key={pkg.id} label={`${pkg.name} ${pkg.unit.replace(/^\//, "").trim()}`} value={pkg.priceLabel} />
                   ))}
-                  <EmployerRow label="Extra recruiter seat" value={`${RECRUITER_SEAT_PRICE_LABEL}${RECRUITER_SEAT_UNIT.replace("per additional seat", "").trim()}`} />
+                  <EmployerRow
+                    label="Extra recruiter seat"
+                    value={`${RECRUITER_SEAT_PRICE_LABEL}${RECRUITER_SEAT_UNIT.replace("per additional seat", "").trim()}`}
+                  />
                 </EmployerRowList>
-                <ManagePlanButton currentPlanId={billingResult.data.planId} />
+
+                <EmployerPlanPicker orgId={orgId} currentPlanId={billingResult.data.planId} />
+                <p className="muted" style={{ marginTop: 18, fontSize: 13 }}>
+                  Starter includes {EMPLOYER_PLANS[0].jobs.toLowerCase()}, Growth includes {EMPLOYER_PLANS[1].jobs.toLowerCase()}, and
+                  Business includes {EMPLOYER_PLANS[2].jobs.toLowerCase()}. Plan changes take effect once payment is confirmed.
+                </p>
               </>
             ) : (
-              <EmployerStatePanel kind="error" title="Billing isn't available yet" message={billingResult.reason} />
+              <EmployerStatePanel kind="error" title="We couldn't load your billing details" message={billingResult.reason} />
             )}
           </div>
         </section>

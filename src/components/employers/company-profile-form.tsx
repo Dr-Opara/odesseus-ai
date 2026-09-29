@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getEmployerProfile, updateCompanyProfile } from "@/lib/employers/onboarding-adapter";
 import type { EmployerProfile } from "@/lib/employers/types";
 import EmployerStatePanel from "@/components/employers/state-panel";
 
-type FieldState = { companyName: string; companyWebsite: string; industry: string; companySize: string; contactName: string; contactEmail: string };
+type FieldState = { companyName: string; companyWebsite: string; industry: string; companySize: string; description: string };
 
 function toFields(profile: EmployerProfile): FieldState {
   return {
@@ -13,51 +14,71 @@ function toFields(profile: EmployerProfile): FieldState {
     companyWebsite: profile.companyWebsite ?? "",
     industry: profile.industry ?? "",
     companySize: profile.companySize ?? "",
-    contactName: profile.contactName ?? "",
-    contactEmail: profile.contactEmail ?? "",
+    description: profile.description ?? "",
   };
 }
 
-export default function CompanyProfileForm() {
-  const [loadStatus, setLoadStatus] = useState<"loading" | "ok" | "unavailable">("loading");
+/**
+ * Company Profile (F13-Q). The employer organization row is owner-only on the
+ * backend, and a refusal is shown as the backend states it — the form never
+ * implies a non-owner edit was saved.
+ */
+export default function CompanyProfileForm({
+  orgId,
+  initialProfile,
+}: {
+  orgId: string;
+  initialProfile: EmployerProfile | null;
+}) {
+  const router = useRouter();
+  const [fields, setFields] = useState<FieldState | null>(initialProfile ? toFields(initialProfile) : null);
+  const [loadStatus, setLoadStatus] = useState<"loading" | "ok" | "failed">(
+    initialProfile ? "ok" : "loading"
+  );
   const [loadReason, setLoadReason] = useState("");
-  const [fields, setFields] = useState<FieldState | null>(null);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "unavailable">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   const [saveReason, setSaveReason] = useState("");
   const [reloadToken, setReloadToken] = useState(0);
 
+  // `reloadToken` is a manual-refresh key, so the read is re-run after a retry
+  // rather than being pushed down by an effect on every render.
   useEffect(() => {
+    if (initialProfile) return;
     let cancelled = false;
-    getEmployerProfile().then((result) => {
+    void getEmployerProfile(orgId).then((result) => {
       if (cancelled) return;
       if (result.status === "ok") {
         setFields(toFields(result.data));
         setLoadStatus("ok");
-      } else {
-        setLoadReason(result.reason);
-        setLoadStatus("unavailable");
+        return;
       }
+      setLoadReason(result.reason);
+      setLoadStatus("failed");
     });
     return () => {
       cancelled = true;
     };
-  }, [reloadToken]);
-
-  function retryLoad() {
-    setLoadStatus("loading");
-    setReloadToken((t) => t + 1);
-  }
+  }, [initialProfile, orgId, reloadToken]);
 
   async function handleSave() {
     if (!fields) return;
     setSaveStatus("saving");
-    const result = await updateCompanyProfile(fields);
+    setSaveReason("");
+    const result = await updateCompanyProfile(orgId, {
+      companyName: fields.companyName.trim(),
+      companyWebsite: fields.companyWebsite.trim() || undefined,
+      industry: fields.industry.trim() || undefined,
+      companySize: fields.companySize.trim() || undefined,
+      description: fields.description.trim() || undefined,
+    });
     if (result.status === "ok") {
+      setFields(toFields(result.data));
       setSaveStatus("saved");
-    } else {
-      setSaveReason(result.reason);
-      setSaveStatus("unavailable");
+      router.refresh();
+      return;
     }
+    setSaveReason(result.reason);
+    setSaveStatus("failed");
   }
 
   if (loadStatus === "loading") {
@@ -68,10 +89,18 @@ export default function CompanyProfileForm() {
     );
   }
 
-  if (loadStatus === "unavailable" || !fields) {
+  if (loadStatus === "failed" || !fields) {
     return (
       <div style={{ marginTop: 24 }}>
-        <EmployerStatePanel kind="error" title="Company profile isn't available yet" message={loadReason} onRetry={retryLoad} />
+        <EmployerStatePanel
+          kind="error"
+          title="We couldn&rsquo;t load your company profile"
+          message={loadReason}
+          onRetry={() => {
+            setLoadStatus("loading");
+            setReloadToken((token) => token + 1);
+          }}
+        />
       </div>
     );
   }
@@ -91,11 +120,17 @@ export default function CompanyProfileForm() {
         <input className="input" value={fields.industry} onChange={(e) => setFields({ ...fields, industry: e.target.value })} />
       </label>
       <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>
-        Location
-        <input className="input" value={fields.companySize} onChange={(e) => setFields({ ...fields, companySize: e.target.value })} placeholder="Company size" />
+        Company size
+        <input className="input" value={fields.companySize} onChange={(e) => setFields({ ...fields, companySize: e.target.value })} placeholder="51-200" />
+      </label>
+      <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>
+        Company description
+        <textarea className="input" rows={4} value={fields.description} onChange={(e) => setFields({ ...fields, description: e.target.value })} />
       </label>
 
-      {saveStatus === "unavailable" ? <EmployerStatePanel kind="error" title="Couldn't save changes" message={saveReason} onRetry={handleSave} /> : null}
+      {saveStatus === "failed" ? (
+        <EmployerStatePanel kind="error" title="Couldn't save changes" message={saveReason} />
+      ) : null}
       {saveStatus === "saved" ? <p style={{ color: "#1d9e4a", fontWeight: 650, fontSize: 13 }}>Saved.</p> : null}
 
       <button

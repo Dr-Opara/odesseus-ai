@@ -1,24 +1,22 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireEmployerPage } from "@/app/employers/guard";
 import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import { EmployerRow, EmployerRowList } from "@/components/employers/row-list";
 import AddSeatButton from "@/components/employers/add-seat-button";
-import { getTeamMembers } from "@/lib/employers/team-adapter";
+import InviteTeamForm from "@/components/employers/invite-team-form";
+import { getEmployerTeam } from "@/lib/employers/team-adapter";
 import { RECRUITER_SEAT_PRICE_LABEL, RECRUITER_SEAT_UNIT } from "@/lib/pricing/candidate-pricing";
 
-/** Recruiter Seats / Team (Figma screen 84, F13-M). Membership stays backend-owned — no client-side provisioning. */
+/**
+ * Recruiter Seats / Team (Figma screen 84, F13-M). Membership and seats stay
+ * backend-owned: the roster, the outstanding invitations, and the seat
+ * arithmetic are all read from the team endpoint, and every change goes
+ * through the backend.
+ */
 export default async function EmployerTeamPage() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
-  if (!user) redirect("/employers/login");
-  if (user.user_metadata?.account_type !== "employer") {
-    await supabase.auth.signOut();
-    redirect("/employers/login?error=This%20account%20is%20not%20registered%20as%20an%20employer.");
-  }
+  const { orgId } = await requireEmployerPage("/employers/team");
 
-  const teamResult = await getTeamMembers();
+  const teamResult = await getEmployerTeam(orgId);
 
   return (
     <main className="figma-site figma-soft-page">
@@ -29,25 +27,46 @@ export default async function EmployerTeamPage() {
           <p className="muted">Manage employer team access.</p>
 
           <div style={{ marginTop: 24 }}>
-            {teamResult.status === "ok" && teamResult.data.length > 0 ? (
-              <EmployerRowList>
-                {teamResult.data.map((member) => (
+            {teamResult.status === "ok" ? (
+              <>
+                <EmployerRowList>
                   <EmployerRow
-                    key={member.id}
-                    label={member.name}
-                    value={member.status === "Pending" ? `${member.role} · Pending invitation` : member.role}
+                    label="Seats in use"
+                    value={`${teamResult.data.seats.active} of ${teamResult.data.seats.required}`}
                   />
-                ))}
-                <EmployerRow label="Additional seat" value={`${RECRUITER_SEAT_PRICE_LABEL}${RECRUITER_SEAT_UNIT.replace("per additional seat", "").trim()}`} />
-              </EmployerRowList>
-            ) : teamResult.status === "ok" ? (
-              <EmployerStatePanel kind="empty" title="No Team Members Yet" message="Add a recruiter seat to start building your hiring team." />
+                  {teamResult.data.members.map((member) => (
+                    <EmployerRow
+                      key={member.id}
+                      label={`${member.role}${member.isYou ? " (you)" : ""}`}
+                      value={member.joinedAt ? `Joined ${new Date(member.joinedAt).toLocaleDateString()}` : "Active"}
+                    />
+                  ))}
+                  {teamResult.data.invitations.map((invitation) => (
+                    <EmployerRow
+                      key={invitation.id}
+                      label={invitation.name}
+                      value={`${invitation.role} · Pending invitation`}
+                    />
+                  ))}
+                  <EmployerRow
+                    label="Additional seat"
+                    value={`${RECRUITER_SEAT_PRICE_LABEL}${RECRUITER_SEAT_UNIT.replace("per additional seat", "").trim()}`}
+                  />
+                </EmployerRowList>
+
+                {teamResult.data.members.length === 0 && teamResult.data.invitations.length === 0 ? (
+                  <div style={{ marginTop: 18 }}>
+                    <EmployerStatePanel kind="empty" title="No Team Members Yet" message="Add a recruiter seat to start building your hiring team." />
+                  </div>
+                ) : null}
+
+                {teamResult.data.isCallerAdmin ? <InviteTeamForm orgId={orgId} /> : null}
+                <AddSeatButton orgId={orgId} />
+              </>
             ) : (
-              <EmployerStatePanel kind="error" title="Team isn't available yet" message={teamResult.reason} />
+              <EmployerStatePanel kind="error" title="We couldn't load your team" message={teamResult.reason} />
             )}
           </div>
-
-          <AddSeatButton />
         </section>
       </div>
     </main>

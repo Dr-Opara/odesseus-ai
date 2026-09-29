@@ -7,8 +7,6 @@ export const EMPLOYER_PROFILE_FIXTURE: EmployerProfile = {
   companyWebsite: "https://acme-robotics.example.com",
   industry: "Robotics",
   companySize: "51-200",
-  contactName: "Dana Whitfield",
-  contactEmail: "dana@example.com",
-  planId: "Starter",
-  onboardingComplete: true,
+  description: "Autonomous warehouse robotics.",
+  yourRole: "owner",
 };

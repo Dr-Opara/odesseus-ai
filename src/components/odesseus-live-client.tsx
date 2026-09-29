@@ -5,19 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { canStartLive, createTurnSequencer } from "@/lib/live/session-state";
 import { waitForIceGatheringComplete, waitForPeerConnected } from "@/lib/live/webrtc-timing";
-
-type CaptureMode = "microphone" | "shared_audio" | "mixed";
-type GuidanceMode = "default" | "star" | "shorter" | "technical" | "follow_up" | "manual";
-
-type Guidance = {
-  id?: string;
-  mode?: string;
-  question_text?: string;
-  response_text?: string;
-  structure?: string | null;
-  verified_evidence?: string[];
-  caution?: string | null;
-};
+import type { GuidancePayload, LiveSessionEndpoints } from "@/lib/live/endpoints";
+import type { CaptureMode, GuidanceMode } from "@/lib/live/live-types";
 
 type TranscriptItem = {
   itemId: string;
@@ -31,16 +20,6 @@ type TranscriptItem = {
 // new audio, so an in-flight transcription-completed event for whatever
 // was already said can still arrive and be persisted before teardown.
 const END_DRAIN_MS = 1200;
-
-function extractSessionId(payload: any) {
-  return (
-    payload?.id ||
-    payload?.session?.id ||
-    payload?.client_secret?.session?.id ||
-    payload?.client_secret?.id ||
-    "realtime"
-  );
-}
 
 function wait(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -124,9 +103,24 @@ async function createCaptureStream(mode: CaptureMode) {
 export default function OdesseusLiveClient({
   interviewId,
   interviewPasses,
+  endpoints,
+  requiresPass = true,
+  passNote,
+  workspaceHref,
+  analysisHref,
+  endedFooter,
 }: {
   interviewId: string;
   interviewPasses: number;
+  /** The routes that drive this session. One engine, applicant or guest. */
+  endpoints: LiveSessionEndpoints;
+  /** Guests have no interview pass: their link is already paid for. */
+  requiresPass?: boolean;
+  passNote?: { title: string; detail: string };
+  /** Applicant-only navigation. Guests have no interview workspace of their own. */
+  workspaceHref?: string;
+  analysisHref?: string;
+  endedFooter?: React.ReactNode;
 }) {
   const router = useRouter();
   const [captureMode, setCaptureMode] = useState<CaptureMode>("shared_audio");
@@ -137,7 +131,7 @@ export default function OdesseusLiveClient({
   const [statusText, setStatusText] = useState("Ready when the interview starts.");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [transcripts, setTranscripts] = useState<TranscriptItem[]>([]);
-  const [guidance, setGuidance] = useState<Guidance | null>(null);
+  const [guidance, setGuidance] = useState<GuidancePayload | null>(null);
   const [lastQuestion, setLastQuestion] = useState("");
   const [busyMode, setBusyMode] = useState<GuidanceMode | null>(null);
   const [error, setError] = useState("");
@@ -152,7 +146,7 @@ export default function OdesseusLiveClient({
   const turnSequencerRef = useRef(createTurnSequencer());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const canStart = canStartLive(state, consent, interviewPasses);
+  const canStart = canStartLive(state, consent, requiresPass ? interviewPasses : 1);
 
   const modeCopy = useMemo(() => {
     if (captureMode === "shared_audio") {
@@ -199,31 +193,23 @@ export default function OdesseusLiveClient({
     ) => {
       const turnIndex = turnIndexFor(itemId);
 
-      const response = await fetch(
-        `/api/interviews/${interviewId}/live/transcript`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: sid,
-            itemId,
-            transcript,
-            mode,
-            forceGuidance,
-            turnIndex,
-          }),
-        }
-      );
+      const data = await endpoints.transcript({
+        sessionId: sid,
+        itemId,
+        transcript,
+        mode,
+        forceGuidance,
+        turnIndex,
+      });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Odesseus could not process the transcript.");
+      if (!data.ok) {
+        throw new Error(data.error);
       }
 
       const item: TranscriptItem = {
         itemId,
         transcript,
-        isQuestion: Boolean(data.isQuestion),
+        isQuestion: data.isQuestion,
         questionText: data.questionText || null,
         turnIndex,
       };
@@ -242,7 +228,7 @@ export default function OdesseusLiveClient({
 
       return data;
     },
-    [interviewId, turnIndexFor]
+    [endpoints, turnIndexFor]
   );
 
   // Takes the prepared session id as an explicit parameter rather than
@@ -341,23 +327,12 @@ export default function OdesseusLiveClient({
     let dataChannel: RTCDataChannel | null = null;
 
     try {
-      const prepareResponse = await fetch(
-        `/api/interviews/${interviewId}/live/prepare`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ captureMode, consent: true }),
-        }
-      );
-
-      const prepareData = await prepareResponse.json();
-      if (!prepareResponse.ok) {
-        throw new Error(
-          prepareData.error || "Odesseus could not prepare the Live session."
-        );
+      const started = await endpoints.start({ captureMode, consent: true });
+      if (!started.ok) {
+        throw new Error(started.error);
       }
 
-      const preparedSessionId = prepareData.sessionId as string;
+      const preparedSessionId = started.sessionId;
       setSessionId(preparedSessionId);
 
       stream = await createCaptureStream(captureMode);
@@ -396,34 +371,20 @@ export default function OdesseusLiveClient({
       // offer must carry every candidate gathered above — read the final
       // local description rather than the pre-gathering `offer` object.
       const finalSdp = peer.localDescription?.sdp || offer.sdp;
+      if (!finalSdp) {
+        throw new Error("Odesseus could not build a connection offer. Please try again.");
+      }
 
       setStatusText("Connecting secure transcription…");
 
-      const webrtcResponse = await fetch(
-        `/api/interviews/${interviewId}/live/webrtc`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: preparedSessionId,
-            sdp: finalSdp,
-          }),
-        }
-      );
-
-      const realtimePayload = await webrtcResponse.json().catch(() => null);
-
-      if (!webrtcResponse.ok || !realtimePayload?.sdp) {
-        throw new Error(
-          realtimePayload?.error?.message ||
-            realtimePayload?.error ||
-            "OpenAI Realtime could not connect."
-        );
+      const connected = await endpoints.connect({ sessionId: preparedSessionId, sdp: finalSdp });
+      if (!connected.ok) {
+        throw new Error(connected.error);
       }
 
       await peer.setRemoteDescription({
         type: "answer",
-        sdp: realtimePayload.sdp,
+        sdp: connected.sdp,
       });
 
       setStatusText("Establishing realtime connection…");
@@ -432,30 +393,19 @@ export default function OdesseusLiveClient({
       // actually works (ICE/DTLS can still fail on a restrictive
       // network) — do not activate, and do not consume the interview
       // pass, until the peer connection genuinely reaches "connected".
-      const connected = await waitForPeerConnected(peer);
-      if (!connected) {
+      const isConnected = await waitForPeerConnected(peer);
+      if (!isConnected) {
         throw new Error(
           "Odesseus could not establish a stable realtime connection. Please try again."
         );
       }
 
-      const activateResponse = await fetch(
-        `/api/interviews/${interviewId}/live/activate`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: preparedSessionId,
-            openaiSessionId: extractSessionId(realtimePayload),
-          }),
-        }
-      );
-
-      const activateData = await activateResponse.json();
-      if (!activateResponse.ok) {
-        throw new Error(
-          activateData.error || "Odesseus could not activate the Live session."
-        );
+      const activated = await endpoints.activate({
+        sessionId: preparedSessionId,
+        openaiSessionId: connected.id,
+      });
+      if (!activated.ok) {
+        throw new Error(activated.error);
       }
 
       const startTime = Date.now();
@@ -525,18 +475,9 @@ export default function OdesseusLiveClient({
     cleanupConnection();
 
     try {
-      const response = await fetch(
-        `/api/interviews/${interviewId}/live/end`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId }),
-        }
-      );
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Odesseus could not end Live cleanly.");
+      const ended = await endpoints.end({ sessionId });
+      if (!ended.ok) {
+        throw new Error(ended.error);
       }
 
       setState("ended");
@@ -561,8 +502,6 @@ export default function OdesseusLiveClient({
     setSessionDuration(0);
     setStatusText("Ready when the interview starts.");
   }
-
-  const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
 
   return (
     <div className="live-client-grid">
@@ -622,10 +561,12 @@ export default function OdesseusLiveClient({
 
         <div className="live-pass-note">
           <strong>
-            {interviewPasses} interview pass{interviewPasses === 1 ? "" : "es"} available
+            {passNote?.title ??
+              `${interviewPasses} interview pass${interviewPasses === 1 ? "" : "es"} available`}
           </strong>
           <span className="muted">
-            No pass is used until the realtime connection successfully activates.
+            {passNote?.detail ??
+              "No pass is used until the realtime connection successfully activates."}
           </span>
         </div>
 
@@ -637,7 +578,7 @@ export default function OdesseusLiveClient({
               className="btn btn-primary"
               type="button"
               onClick={state === "error" ? retryLive : startLive}
-              disabled={!consent || interviewPasses < 1}
+              disabled={!canStart}
             >
               {state === "error" ? "Try again" : "Start Odesseus Live"}
             </button>
@@ -769,20 +710,17 @@ export default function OdesseusLiveClient({
               <span className="muted">duration</span>
             </div>
           </div>
-          <Link
-            className="btn btn-primary"
-            href={`/interviews/${interviewId}/analysis`}
-            style={{ marginTop: 18 }}
-          >
-            Analyze interview
-          </Link>
-          <Link
-            className="btn btn-secondary"
-            href={`/interviews/${interviewId}`}
-            style={{ marginTop: 10 }}
-          >
-            Back to interview workspace
-          </Link>
+          {analysisHref ? (
+            <Link className="btn btn-primary" href={analysisHref} style={{ marginTop: 18 }}>
+              Analyze interview
+            </Link>
+          ) : null}
+          {workspaceHref ? (
+            <Link className="btn btn-secondary" href={workspaceHref} style={{ marginTop: 10 }}>
+              Back to interview workspace
+            </Link>
+          ) : null}
+          {endedFooter}
         </section>
       )}
 
@@ -799,9 +737,11 @@ export default function OdesseusLiveClient({
             <button className="btn btn-primary" type="button" onClick={retryLive}>
               Try again
             </button>
-            <Link className="btn btn-secondary" href={`/interviews/${interviewId}`}>
-              Back to workspace
-            </Link>
+            {workspaceHref ? (
+              <Link className="btn btn-secondary" href={workspaceHref}>
+                Back to workspace
+              </Link>
+            ) : null}
           </div>
         </section>
       )}

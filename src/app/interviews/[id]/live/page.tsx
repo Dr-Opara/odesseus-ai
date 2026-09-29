@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import OdesseusLiveClient from "@/components/odesseus-live-client";
+import { candidateLiveEndpoints } from "@/lib/live/endpoints";
 import AppShell from "@/components/app-shell";
 
 export default async function OdesseusLivePage({
@@ -101,6 +102,9 @@ export default async function OdesseusLivePage({
       <OdesseusLiveClient
         interviewId={interview.id}
         interviewPasses={credits?.interview_passes ?? 0}
+        endpoints={candidateLiveEndpoints(interview.id)}
+        workspaceHref={`/interviews/${id}`}
+        analysisHref={`/interviews/${id}/analysis`}
       />
       </section>
     </AppShell>

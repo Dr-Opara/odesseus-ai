@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
 import MobileInterviews from "@/components/mobile/mobile-interviews";
 import LiveEntryCard from "@/components/live-entry-card";
+import GuestLinkGenerator from "@/components/guest-link-generator";
 
 export default async function InterviewsPage() {
   const supabase = await createClient();
@@ -123,6 +124,12 @@ export default async function InterviewsPage() {
             </div>
             <span className="muted" style={{ fontSize: 14 }}>→</span>
           </Link>
+        </div>
+      </section>
+
+      <section className="shell odesseus-desktop-only" style={{ padding: "0 0 90px" }}>
+        <div style={{ width: "min(820px,100%)", margin: "0 auto" }}>
+          <GuestLinkGenerator />
         </div>
       </section>
 

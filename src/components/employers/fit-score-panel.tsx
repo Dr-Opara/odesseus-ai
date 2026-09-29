@@ -9,17 +9,24 @@ import type { FitScore } from "@/lib/employers/types";
  */
 export default function FitScorePanel({
   fitScore,
+  score,
   compact = false,
 }: {
   fitScore?: FitScore;
+  /** Overall score only, for list rows where the backend returned just the number. */
+  score?: number;
   compact?: boolean;
 }) {
-  if (!fitScore) {
-    return <span className="emp-fit-score is-unavailable">Fit Score not yet available</span>;
+  if (compact) {
+    return typeof score === "number" ? (
+      <span className="emp-fit-score">{Math.round(score)}% Fit</span>
+    ) : (
+      <span className="emp-fit-score is-unavailable">Fit Score not available</span>
+    );
   }
 
-  if (compact) {
-    return <span className="emp-fit-score">{Math.round(fitScore.overall)}% Fit</span>;
+  if (!fitScore) {
+    return <span className="emp-fit-score is-unavailable">Fit Score not yet available</span>;
   }
 
   return (
@@ -85,6 +92,13 @@ export default function FitScorePanel({
         <div className="emp-fit-score-section">
           <strong>Location / work-mode alignment</strong>
           <span>{fitScore.locationAlignment ? "Aligned" : "Not aligned"}</span>
+        </div>
+      ) : null}
+
+      {fitScore.explanation ? (
+        <div className="emp-fit-score-section">
+          <strong>Why this score</strong>
+          <span>{fitScore.explanation}</span>
         </div>
       ) : null}
     </div>

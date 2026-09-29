@@ -1,76 +1,125 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireEmployerPage } from "@/app/employers/guard";
 import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerCapacityBadge from "@/components/employers/capacity-badge";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import { EmployerRow, EmployerRowList } from "@/components/employers/row-list";
-import { getEmployerProfile } from "@/lib/employers/onboarding-adapter";
-import { getEmployerJobs } from "@/lib/employers/jobs-adapter";
-import { getEmployerAnalytics } from "@/lib/employers/analytics-adapter";
-import { getCandidates } from "@/lib/employers/candidates-adapter";
-import { EMPLOYER_PLANS } from "@/lib/pricing/candidate-pricing";
+import { getEmployerDashboard } from "@/lib/employers/dashboard-adapter";
+import { toPipelineStage } from "@/lib/employers/types";
 
-/** Employer Dashboard (Figma screen 73, F13-C). Every number here is adapter-sourced — never hardcoded. */
+function formatDate(value: string | null | undefined): string {
+  if (!value) return "Not recorded";
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? "Not recorded" : parsed.toLocaleDateString();
+}
+
+/**
+ * Employer Dashboard (Figma screen 73, F13-C). Every number comes from the
+ * real dashboard read: active jobs, applicants, strong fits, capacity, seats,
+ * plan, and recent activity. Read gaps the backend reported render as quiet
+ * notices rather than as zeroes.
+ */
 export default async function EmployerDashboardPage() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
-  if (!user) redirect("/employers/login");
-  if (user.user_metadata?.account_type !== "employer") {
-    await supabase.auth.signOut();
-    redirect("/employers/login?error=This%20account%20is%20not%20registered%20as%20an%20employer.");
+  const { orgId } = await requireEmployerPage("/employers/dashboard");
+  const dashboardResult = await getEmployerDashboard(orgId);
+
+  if (dashboardResult.status === "unavailable") {
+    return (
+      <main className="figma-site figma-soft-page">
+        <div className="figma-page-wrap">
+          <EmployerAppNav />
+          <section style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
+            <h1>Hiring Overview</h1>
+            <div style={{ marginTop: 24 }}>
+              <EmployerStatePanel
+                kind="error"
+                title="We couldn't load your hiring overview"
+                message={dashboardResult.reason}
+                actionHref="/employers/jobs"
+                actionLabel="Go to Jobs"
+              />
+            </div>
+          </section>
+        </div>
+      </main>
+    );
   }
 
-  const [profileResult, jobsResult, analyticsResult, candidatesResult] = await Promise.all([
-    getEmployerProfile(),
-    getEmployerJobs(),
-    getEmployerAnalytics(),
-    getCandidates(),
-  ]);
+  const dashboard = dashboardResult.data;
+  const interviews = dashboard.recentPipelineActivity.filter(
+    (entry) => toPipelineStage(entry.stage) === "INTERVIEW"
+  ).length;
 
   return (
     <main className="figma-site figma-soft-page">
       <div className="figma-page-wrap">
         <EmployerAppNav />
         <section style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
-          <h1>Hiring Overview</h1>
+          <h1>{dashboard.organizationName || "Hiring Overview"}</h1>
+          <p className="muted">
+            {dashboard.planName
+              ? `${dashboard.planName} plan`
+              : "No active plan yet — post a job to start building your pipeline."}
+          </p>
 
-          {profileResult.status === "ok" && jobsResult.status === "ok" ? (
+          {dashboard.notices.length > 0 ? (
+            <div className="emp-row-list" style={{ marginTop: 18 }}>
+              {dashboard.notices.map((notice) => (
+                <div className="emp-row" key={notice}>
+                  <span className="emp-row-value">{notice}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {dashboard.capacity && dashboard.planName ? (
             <div style={{ marginTop: 16 }}>
               <EmployerCapacityBadge
                 capacity={{
-                  activeJobCount: jobsResult.data.filter((j) => j.status === "Published").length,
-                  planLimit: EMPLOYER_PLANS.find((p) => p.name === profileResult.data.planId)?.activeJobLimit ?? 0,
-                  planId: profileResult.data.planId,
+                  activeJobCount: dashboard.capacity.published,
+                  planLimit: dashboard.capacity.included,
+                  planId: dashboard.planName,
                 }}
               />
             </div>
           ) : null}
 
           <div style={{ marginTop: 24 }}>
-            {analyticsResult.status === "ok" && jobsResult.status === "ok" ? (
-              <EmployerRowList>
-                <EmployerRow label="Active jobs" value={jobsResult.data.filter((j) => j.status === "Published").length} href="/employers/jobs" />
-                <EmployerRow label="Applicants" value={analyticsResult.data.applicantVolume} href="/employers/candidates" />
-                <EmployerRow label="Strong Fits" value={analyticsResult.data.strongFitCandidates} href="/employers/candidates" />
-                <EmployerRow label="Interviews" value={analyticsResult.data.stageDistribution.INTERVIEW ?? 0} href="/employers/pipeline" />
-                {candidatesResult.status === "ok" && candidatesResult.data.length > 0 ? (
-                  (() => {
-                    const top = [...candidatesResult.data].sort((a, b) => (b.fitScoreOverall ?? 0) - (a.fitScoreOverall ?? 0))[0];
-                    return top.fitScoreOverall ? (
-                      <EmployerRow label="Top match" value={`${top.name} · ${Math.round(top.fitScoreOverall)}% Fit`} href={`/employers/candidates/${top.id}`} />
-                    ) : null;
-                  })()
-                ) : null}
-              </EmployerRowList>
-            ) : (
+            <EmployerRowList>
+              <EmployerRow label="Active jobs" value={dashboard.jobCounts.published} href="/employers/jobs" />
+              <EmployerRow label="Drafts" value={dashboard.jobCounts.draft} href="/employers/jobs" />
+              <EmployerRow label="Applicants" value={dashboard.applicantTotal} href="/employers/candidates" />
+              <EmployerRow label="Strong Fits" value={dashboard.strongFitCount} href="/employers/candidates" />
+              <EmployerRow label="Interviews" value={interviews} href="/employers/pipeline" />
+              {dashboard.seats ? (
+                <EmployerRow
+                  label="Recruiter seats"
+                  value={`${dashboard.seats.active} of ${dashboard.seats.required}`}
+                  href="/employers/team"
+                />
+              ) : null}
+              <EmployerRow label="Featured listings" value={dashboard.featuredActive} />
+            </EmployerRowList>
+          </div>
+
+          <h2 style={{ marginTop: 40 }}>Recent applicants</h2>
+          <div className="emp-row-list" style={{ marginTop: 14 }}>
+            {dashboard.recentApplicants.length === 0 ? (
               <EmployerStatePanel
                 kind="empty"
-                title="No Analytics Yet"
-                message={analyticsResult.status === "unavailable" ? analyticsResult.reason : "Post a job to start seeing hiring data here."}
+                title="No applicants yet"
+                message="Post a job to start receiving applicants."
                 actionHref="/employers/post-job"
                 actionLabel="Post a Job"
               />
+            ) : (
+              dashboard.recentApplicants.map((applicant) => (
+                <EmployerRow
+                  key={applicant.applicationId}
+                  label={applicant.jobTitle}
+                  value={`${applicant.applicationStatus} · ${formatDate(applicant.submittedAt)}`}
+                  href={`/employers/candidates/${applicant.applicationId}`}
+                />
+              ))
             )}
           </div>
         </section>

@@ -1,41 +1,53 @@
 "use client";
 
 import { useState } from "react";
-import { createEmployerJob } from "@/lib/employers/jobs-adapter";
+import { useRouter } from "next/navigation";
+import { createEmployerJob, publishEmployerJob } from "@/lib/employers/jobs-adapter";
 import EmployerStatePanel from "@/components/employers/state-panel";
+import type { WorkArrangement } from "@/lib/employers/types";
 
-function linesToArray(value: string): string[] {
-  return value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-/** Post Job form (F13-E). Salary is optional and never invented. */
-export default function PostJobForm() {
-  const [status, setStatus] = useState<"idle" | "submitting" | "unavailable">("idle");
+/**
+ * Post Job form (F13-E). The employer posting record stores a title,
+ * description, location, work arrangement, and the requirement texts, so
+ * those are exactly the fields offered here — nothing typed is silently
+ * dropped. Creating produces a draft; publishing is a separate call, and a
+ * plan-capacity or credit refusal is shown with the backend's own wording.
+ */
+export default function PostJobForm({ orgId }: { orgId: string }) {
+  const router = useRouter();
+  const [status, setStatus] = useState<"idle" | "submitting" | "done" | "failed">("idle");
   const [reason, setReason] = useState("");
 
   async function handleSubmit(formData: FormData) {
     setStatus("submitting");
-    const result = await createEmployerJob({
-      title: String(formData.get("title") || ""),
-      department: String(formData.get("department") || "") || undefined,
-      employmentType: String(formData.get("employmentType") || "") || undefined,
-      location: String(formData.get("location") || "") || undefined,
-      workArrangement: (String(formData.get("workArrangement") || "") || undefined) as "Remote" | "Hybrid" | "On-site" | undefined,
-      compensationText: String(formData.get("compensationText") || "") || undefined,
-      description: String(formData.get("description") || "") || undefined,
-      responsibilities: linesToArray(String(formData.get("responsibilities") || "")),
-      requiredQualifications: linesToArray(String(formData.get("requiredQualifications") || "")),
-      preferredQualifications: linesToArray(String(formData.get("preferredQualifications") || "")),
+    setReason("");
+
+    const created = await createEmployerJob(orgId, {
+      title: String(formData.get("title") || "").trim(),
+      location: String(formData.get("location") || "").trim() || undefined,
+      workArrangement: (String(formData.get("workArrangement") || "") || undefined) as WorkArrangement | undefined,
+      description: String(formData.get("description") || "").trim() || undefined,
+      requiredQualificationsText: String(formData.get("requiredQualifications") || "").trim() || undefined,
+      preferredQualificationsText: String(formData.get("preferredQualifications") || "").trim() || undefined,
     });
-    if (result.status === "unavailable") {
-      setReason(result.reason);
-      setStatus("unavailable");
-    } else {
-      setStatus("idle");
+
+    if (created.status === "unavailable") {
+      setReason(created.reason);
+      setStatus("failed");
+      return;
     }
+
+    const published = await publishEmployerJob(orgId, created.data.id);
+    if (published.status === "unavailable") {
+      // The draft exists; publishing is what the plan refused.
+      setReason(`${published.reason} Your job was saved as a draft.`);
+      setStatus("failed");
+      router.refresh();
+      return;
+    }
+
+    setStatus("done");
+    router.push(`/employers/jobs/${created.data.id}`);
   }
 
   return (
@@ -44,20 +56,6 @@ export default function PostJobForm() {
         Job title
         <input className="input" name="title" required placeholder="AI Security Engineer" />
       </label>
-      <div className="figma-two-grid" style={{ marginTop: 18 }}>
-        <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>
-          Department
-          <input className="input" name="department" placeholder="Engineering" />
-        </label>
-        <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>
-          Employment type
-          <select className="input" name="employmentType" defaultValue="Full-time">
-            <option>Full-time</option>
-            <option>Contract</option>
-            <option>Part-time</option>
-          </select>
-        </label>
-      </div>
       <div className="figma-two-grid" style={{ marginTop: 18 }}>
         <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>
           Location
@@ -73,16 +71,8 @@ export default function PostJobForm() {
         </label>
       </div>
       <label style={{ display: "grid", gap: 8, marginTop: 18, fontWeight: 650 }}>
-        Compensation <span className="muted" style={{ fontWeight: 500, fontSize: 12 }}>(optional)</span>
-        <input className="input" name="compensationText" placeholder="$180K–$220K" />
-      </label>
-      <label style={{ display: "grid", gap: 8, marginTop: 18, fontWeight: 650 }}>
         Job description
         <textarea className="input" name="description" rows={6} placeholder="Role summary and requirements…" />
-      </label>
-      <label style={{ display: "grid", gap: 8, marginTop: 18, fontWeight: 650 }}>
-        Responsibilities <span className="muted" style={{ fontWeight: 500, fontSize: 12 }}>(one per line)</span>
-        <textarea className="input" name="responsibilities" rows={4} />
       </label>
       <label style={{ display: "grid", gap: 8, marginTop: 18, fontWeight: 650 }}>
         Required qualifications <span className="muted" style={{ fontWeight: 500, fontSize: 12 }}>(one per line)</span>
@@ -93,9 +83,9 @@ export default function PostJobForm() {
         <textarea className="input" name="preferredQualifications" rows={4} />
       </label>
 
-      {status === "unavailable" ? (
+      {status === "failed" ? (
         <div style={{ marginTop: 20 }}>
-          <EmployerStatePanel kind="error" title="Publishing isn't available yet" message={reason} />
+          <EmployerStatePanel kind="error" title="We couldn't publish that job" message={reason} />
         </div>
       ) : null}
 

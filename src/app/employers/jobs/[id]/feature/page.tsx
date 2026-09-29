@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireEmployerPage } from "@/app/employers/guard";
 import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import FeatureJobForm from "@/components/employers/feature-job-form";
@@ -9,16 +8,9 @@ import { getFeaturedJobPackages } from "@/lib/employers/featured-adapter";
 /** Job Add-ons / Featured Jobs purchase (Figma screen 83, F13-O). */
 export default async function EmployerFeatureJobPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
-  if (!user) redirect("/employers/login");
-  if (user.user_metadata?.account_type !== "employer") {
-    await supabase.auth.signOut();
-    redirect("/employers/login?error=This%20account%20is%20not%20registered%20as%20an%20employer.");
-  }
+  const { orgId } = await requireEmployerPage(`/employers/jobs/${id}/feature`);
 
-  const jobResult = await getEmployerJob(id);
+  const jobResult = await getEmployerJob(orgId, id);
   const packages = getFeaturedJobPackages();
 
   return (
@@ -30,10 +22,16 @@ export default async function EmployerFeatureJobPage({ params }: { params: Promi
           <p className="muted">Promote a specific job post.</p>
 
           {jobResult.status === "ok" ? (
-            <FeatureJobForm jobId={jobResult.data.id} jobTitle={jobResult.data.title} packages={packages} alreadyFeatured={jobResult.data.featured} />
+            <FeatureJobForm
+              orgId={orgId}
+              jobId={jobResult.data.id}
+              jobTitle={jobResult.data.title}
+              packages={packages}
+              alreadyFeatured={Boolean(jobResult.data.featured)}
+            />
           ) : (
             <div style={{ marginTop: 24 }}>
-              <EmployerStatePanel kind="error" title="This job isn't available yet" message={jobResult.reason} actionHref="/employers/jobs" actionLabel="Back to Jobs" />
+              <EmployerStatePanel kind="error" title="We couldn't load this job" message={jobResult.reason} actionHref="/employers/jobs" actionLabel="Back to Jobs" />
             </div>
           )}
         </section>

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import EmployerAppNav from "@/components/employers/app-nav";
 import OnboardingReviewForm from "@/components/employers/onboarding-review-form";
 import { EMPLOYER_PLANS } from "@/lib/pricing/candidate-pricing";
+import type { EmployerPlanId } from "@/lib/employers/types";
 
 /** Employer Onboarding — Review (Figma screen 72). Step 3 of 3. */
 export default async function EmployerOnboardingReviewPage({
@@ -20,7 +21,7 @@ export default async function EmployerOnboardingReviewPage({
   }
 
   const carried = await searchParams;
-  const planId = (carried.planId as "Starter" | "Growth" | "Business" | undefined) ?? "Starter";
+  const planId = (carried.planId as EmployerPlanId | undefined) ?? "Starter";
   const plan = EMPLOYER_PLANS.find((p) => p.name === planId) ?? EMPLOYER_PLANS[0];
 
   return (
@@ -54,13 +55,13 @@ export default async function EmployerOnboardingReviewPage({
 
             <OnboardingReviewForm
               companyDetails={{
-                companyName: carried.companyName,
+                companyName: carried.companyName ?? "",
                 companyWebsite: carried.companyWebsite,
                 industry: carried.industry,
                 companySize: carried.companySize,
-                contactName: carried.contactName,
+                description: carried.description,
               }}
-              planId={plan.name}
+              planId={plan.name as EmployerPlanId}
             />
           </div>
         </section>

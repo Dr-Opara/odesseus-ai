@@ -1,30 +1,25 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireEmployerPage } from "@/app/employers/guard";
 import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import NotificationsPanel from "@/components/employers/notifications-panel";
-import { getEmployerNotifications, getNotificationPreferences } from "@/lib/employers/notifications-adapter";
+import {
+  getEmployerNotifications,
+  getNotificationPreferences,
+} from "@/lib/employers/notifications-adapter";
 
 /**
- * Employer Notifications (Figma screen 86, F13-R). Figma's mock only shows
- * the preference-toggle rows; the notification list/unread-state/mark-read
- * functionality F13-R explicitly requires isn't in that particular mock, so
- * it's added above the toggles using the same visual row language rather
- * than skipped. Supports the Phase 2K categories: new applicant, strong-fit
- * candidate, pipeline update, interview event, capacity warning, seat
- * warning, billing/subscription, featured-job expiration.
+ * Employer Notifications (Figma screen 86, F13-R). Figma's mock only shows the
+ * preference-toggle rows, so the notification list, unread state, and
+ * mark-read actions F13-R requires are added above the toggles using the same
+ * visual row language.
  */
 export default async function EmployerNotificationsPage() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
-  if (!user) redirect("/employers/login");
-  if (user.user_metadata?.account_type !== "employer") {
-    await supabase.auth.signOut();
-    redirect("/employers/login?error=This%20account%20is%20not%20registered%20as%20an%20employer.");
-  }
+  const { orgId } = await requireEmployerPage("/employers/notifications");
 
-  const [notificationsResult, preferencesResult] = await Promise.all([getEmployerNotifications(), getNotificationPreferences()]);
+  const [notificationsResult, preferencesResult] = await Promise.all([
+    getEmployerNotifications(orgId),
+    getNotificationPreferences(orgId),
+  ]);
 
   return (
     <main className="figma-site figma-soft-page">
@@ -35,13 +30,21 @@ export default async function EmployerNotificationsPage() {
           <p className="muted">Choose hiring alerts.</p>
 
           {notificationsResult.status === "ok" && preferencesResult.status === "ok" ? (
-            <NotificationsPanel initialNotifications={notificationsResult.data} initialPreferences={preferencesResult.data} />
+            <NotificationsPanel
+              orgId={orgId}
+              initialNotifications={notificationsResult.data}
+              initialPreferences={preferencesResult.data}
+            />
           ) : (
             <div style={{ marginTop: 24 }}>
               <EmployerStatePanel
                 kind="error"
-                title="Notifications aren't available yet"
-                message={notificationsResult.status === "unavailable" ? notificationsResult.reason : "Notification preferences aren't available yet."}
+                title="We couldn't load your notifications"
+                message={
+                  notificationsResult.status === "unavailable"
+                    ? notificationsResult.reason
+                    : "Notification preferences aren't available right now."
+                }
               />
             </div>
           )}

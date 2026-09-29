@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireEmployerPage } from "@/app/employers/guard";
 import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import { EmployerRow, EmployerRowList } from "@/components/employers/row-list";
@@ -18,27 +17,18 @@ const STAGE_LABELS: Record<string, string> = {
 };
 
 /**
- * Hiring Pipeline (Figma screen 80, F13-K). Figma's example row list shows 6
- * of the 7 locked stages (no Rejected row in that particular mock) — the
- * locked stage set is a product rule, not a Figma styling choice, so all 7
- * render here. Each row drills into the Applicants list filtered to that
- * stage, which is where an individual candidate's stage actually gets moved
- * (via Candidate Detail's Move to Interview / Reject).
+ * Hiring Pipeline (Figma screen 80, F13-K). The locked stage set is a product
+ * rule, so all seven stages render. Each row drills into the Applicants list
+ * filtered to that stage, which is where an individual applicant is moved
+ * (and where the optimistic transition can roll back).
  */
 export default async function EmployerPipelinePage({ searchParams }: { searchParams: Promise<{ job?: string }> }) {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
-  if (!user) redirect("/employers/login");
-  if (user.user_metadata?.account_type !== "employer") {
-    await supabase.auth.signOut();
-    redirect("/employers/login?error=This%20account%20is%20not%20registered%20as%20an%20employer.");
-  }
-
   const { job: jobId } = await searchParams;
+  const { orgId } = await requireEmployerPage("/employers/pipeline");
+
   const [boardResult, jobResult] = await Promise.all([
-    getPipelineBoard(jobId ? { jobId } : undefined),
-    jobId ? getEmployerJob(jobId) : Promise.resolve(null),
+    getPipelineBoard(orgId, jobId ? { jobId } : undefined),
+    jobId ? getEmployerJob(orgId, jobId) : Promise.resolve(null),
   ]);
 
   return (
@@ -51,18 +41,33 @@ export default async function EmployerPipelinePage({ searchParams }: { searchPar
 
           <div style={{ marginTop: 24 }}>
             {boardResult.status === "ok" ? (
-              <EmployerRowList>
-                {PIPELINE_STAGES.map((stage) => (
-                  <EmployerRow
-                    key={stage}
-                    label={STAGE_LABELS[stage]}
-                    value={boardResult.data[stage].length}
-                    href={`/employers/candidates?stage=${stage}${jobId ? `&job=${jobId}` : ""}`}
-                  />
-                ))}
-              </EmployerRowList>
+              <>
+                <EmployerRowList>
+                  {PIPELINE_STAGES.map((stage) => (
+                    <EmployerRow
+                      key={stage}
+                      label={STAGE_LABELS[stage]}
+                      value={boardResult.data[stage].length}
+                      href={`/employers/candidates?stage=${stage}${jobId ? `&job=${jobId}` : ""}`}
+                    />
+                  ))}
+                </EmployerRowList>
+
+                <div className="emp-row-list" style={{ marginTop: 20 }}>
+                  {PIPELINE_STAGES.flatMap((stage) =>
+                    boardResult.data[stage].map((candidate) => (
+                      <EmployerRow
+                        key={`${stage}-${candidate.id}`}
+                        label={candidate.appliedJobTitle}
+                        value={STAGE_LABELS[stage]}
+                        href={`/employers/candidates/${candidate.id}`}
+                      />
+                    ))
+                  )}
+                </div>
+              </>
             ) : (
-              <EmployerStatePanel kind="error" title="Pipeline isn't available yet" message={boardResult.reason} />
+              <EmployerStatePanel kind="error" title="We couldn't load your pipeline" message={boardResult.reason} />
             )}
           </div>
         </section>

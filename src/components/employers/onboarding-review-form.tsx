@@ -1,69 +1,76 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { submitCompanyDetails, submitPlanSelection, completeOnboarding, type CompanyDetailsInput } from "@/lib/employers/onboarding-adapter";
+import { useRouter } from "next/navigation";
+import { provisionEmployerOrg, type CompanyDetailsInput } from "@/lib/employers/onboarding-adapter";
+import { startPlanCheckout } from "@/lib/employers/billing-adapter";
 import type { EmployerPlanId } from "@/lib/employers/types";
 import EmployerStatePanel from "@/components/employers/state-panel";
 
 /**
  * Final onboarding submission (F13-B): loading/success/failure/retry states,
- * never an optimistic "you're all set" — `completeOnboarding()` is honest
- * about the backend not existing yet, so this shows that plainly rather than
- * pretending, while still letting the employer continue exploring the
- * dashboard (which renders from dev fixtures regardless of this step).
+ * never an optimistic "you're all set".
+ *
+ * Two real calls, in order, and only what each confirmed is reported:
+ * 1. `POST /api/employer/orgs` provisions the organization and owner
+ *    membership (idempotent, so a retry converges instead of duplicating).
+ * 2. The chosen plan is a paid subscription, so the employer is handed to
+ *    Stripe's checkout. Their plan is not "set" until the billing webhook
+ *    confirms payment, and the screen never says otherwise.
  */
 export default function OnboardingReviewForm({
   companyDetails,
   planId,
 }: {
-  companyDetails: Partial<CompanyDetailsInput>;
+  companyDetails: CompanyDetailsInput;
   planId: EmployerPlanId;
 }) {
-  const [status, setStatus] = useState<"idle" | "loading" | "unavailable">("idle");
+  const router = useRouter();
+  const [status, setStatus] = useState<"idle" | "saving" | "failed">("idle");
   const [reason, setReason] = useState("");
 
   async function handleComplete() {
-    setStatus("loading");
-    const companyResult = await submitCompanyDetails({ companyName: companyDetails.companyName || "", ...companyDetails });
-    const planResult = await submitPlanSelection(planId);
-    const finalResult = await completeOnboarding();
+    setStatus("saving");
+    setReason("");
 
-    const firstFailure = [companyResult, planResult, finalResult].find((r) => r.status === "unavailable");
-    if (firstFailure && firstFailure.status === "unavailable") {
-      setReason(firstFailure.reason);
-      setStatus("unavailable");
+    const provisioned = await provisionEmployerOrg({
+      ...companyDetails,
+      companyName: companyDetails.companyName.trim(),
+    });
+
+    if (provisioned.status === "unavailable") {
+      setReason(provisioned.reason);
+      setStatus("failed");
       return;
     }
-    setStatus("idle");
+
+    const checkout = await startPlanCheckout(provisioned.data.id, planId);
+    if (checkout.status === "unavailable") {
+      setReason(
+        `Your company is set up. ${checkout.reason} You can pick a plan any time from Employer Billing.`
+      );
+      setStatus("failed");
+      router.refresh();
+      return;
+    }
+
+    window.location.assign(checkout.data.checkoutUrl);
   }
 
-  if (status === "loading") {
+  if (status === "saving") {
     return <EmployerStatePanel kind="loading" />;
   }
 
-  if (status === "unavailable") {
-    return (
-      <div style={{ marginTop: 24 }}>
-        <EmployerStatePanel
-          kind="error"
-          title="Setup isn't fully saved yet"
-          message={reason}
-          onRetry={handleComplete}
-        />
-        <p className="muted" style={{ textAlign: "center", marginTop: 14, fontSize: 13 }}>
-          You can still explore your dashboard while this connects.{" "}
-          <Link href="/employers/dashboard" className="link">
-            Continue to Dashboard →
-          </Link>
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <button className="figma-btn figma-btn-orange" type="button" style={{ width: "100%", marginTop: 22 }} onClick={handleComplete}>
-      Go to Employer Dashboard
-    </button>
+    <>
+      {status === "failed" ? (
+        <div style={{ marginTop: 24 }}>
+          <EmployerStatePanel kind="error" title="Setup isn't finished yet" message={reason} onRetry={handleComplete} />
+        </div>
+      ) : null}
+      <button className="figma-btn figma-btn-orange" type="button" style={{ width: "100%", marginTop: 22 }} onClick={handleComplete}>
+        Create company and continue to payment
+      </button>
+    </>
   );
 }

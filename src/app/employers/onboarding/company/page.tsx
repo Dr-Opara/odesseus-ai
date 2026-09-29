@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getEmployerOrgContext } from "@/lib/employers/org";
 import EmployerAppNav from "@/components/employers/app-nav";
 
 /**
  * Employer Onboarding — Company Details (Figma screen 70). Step 1 of 3.
  * Carries collected fields forward to the plan step via a GET form — no
- * client JS needed, and nothing is persisted until the final review step
- * (F13-B: don't pretend provisioning succeeded before the backend confirms it).
+ * client JS needed, and nothing is persisted until the final review step.
+ * An employer who already has an organization skips straight to the review.
  */
 export default async function EmployerOnboardingCompanyPage() {
   const supabase = await createClient();
@@ -17,6 +18,10 @@ export default async function EmployerOnboardingCompanyPage() {
   if (user.user_metadata?.account_type !== "employer") {
     await supabase.auth.signOut();
     redirect("/employers/login?error=This%20account%20is%20not%20registered%20as%20an%20employer.");
+  }
+
+  if (await getEmployerOrgContext()) {
+    redirect("/employers/dashboard");
   }
 
   const defaultCompanyName = typeof user.user_metadata?.company_name === "string" ? user.user_metadata.company_name : "";
@@ -48,16 +53,16 @@ export default async function EmployerOnboardingCompanyPage() {
                 <option value="" disabled>
                   Select a range
                 </option>
-                <option>1–10 employees</option>
-                <option>11–50 employees</option>
-                <option>51–200 employees</option>
-                <option>201–1,000 employees</option>
+                <option>1-10 employees</option>
+                <option>11-50 employees</option>
+                <option>51-200 employees</option>
+                <option>201-1,000 employees</option>
                 <option>1,000+ employees</option>
               </select>
             </label>
             <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>
-              HQ location
-              <input className="input" name="hqLocation" placeholder="Austin, TX" />
+              About the company
+              <textarea className="input" name="description" rows={3} placeholder="What your company does." />
             </label>
             <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>
               Recruiter/admin contact name

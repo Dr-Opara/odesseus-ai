@@ -1,17 +1,11 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireEmployerPage } from "@/app/employers/guard";
 import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import { EmployerRow, EmployerRowList } from "@/components/employers/row-list";
 import { getCandidates } from "@/lib/employers/candidates-adapter";
 import { getEmployerJob } from "@/lib/employers/jobs-adapter";
-import type { PipelineStage } from "@/lib/employers/types";
-
-const VALID_STAGES = new Set(["APPLIED", "REVIEWING", "SHORTLISTED", "INTERVIEW", "OFFER", "HIRED", "REJECTED"]);
-
-function rowValue(fitScoreOverall: number | undefined, stage: string): string {
-  return typeof fitScoreOverall === "number" ? `${Math.round(fitScoreOverall)}% Fit` : stage;
-}
+import FitScorePanel from "@/components/employers/fit-score-panel";
+import { toPipelineStage, type PipelineStage } from "@/lib/employers/types";
 
 /** Applicants / Candidates list (Figma screen 78, F13-H). No protected demographic attributes are rendered — none exist on the type at all. */
 export default async function EmployerCandidatesPage({
@@ -19,21 +13,13 @@ export default async function EmployerCandidatesPage({
 }: {
   searchParams: Promise<{ job?: string; stage?: string }>;
 }) {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
-  if (!user) redirect("/employers/login");
-  if (user.user_metadata?.account_type !== "employer") {
-    await supabase.auth.signOut();
-    redirect("/employers/login?error=This%20account%20is%20not%20registered%20as%20an%20employer.");
-  }
-
   const { job: jobId, stage } = await searchParams;
-  const stageFilter = stage && VALID_STAGES.has(stage) ? (stage as PipelineStage) : undefined;
+  const { orgId } = await requireEmployerPage("/employers/candidates");
 
+  const stageFilter = stage ? toPipelineStage(stage) : undefined;
   const [candidatesResult, jobResult] = await Promise.all([
-    getCandidates({ jobId, stage: stageFilter }),
-    jobId ? getEmployerJob(jobId) : Promise.resolve(null),
+    getCandidates(orgId, { jobId, stage: stageFilter ?? undefined }),
+    jobId ? getEmployerJob(orgId, jobId) : Promise.resolve(null),
   ]);
 
   return (
@@ -50,20 +36,29 @@ export default async function EmployerCandidatesPage({
                 {candidatesResult.data.map((candidate) => (
                   <EmployerRow
                     key={candidate.id}
-                    label={candidate.name}
-                    value={rowValue(candidate.fitScoreOverall, candidate.stage)}
+                    label={`${candidate.appliedJobTitle}${candidate.location ? ` · ${candidate.location}` : ""}`}
+                    value={
+                      <>
+                        <FitScorePanel score={candidate.fitScoreOverall} compact />
+                        {candidate.fitScoreOverall === undefined ? ` · ${stageLabel(candidate.stage)}` : ""}
+                      </>
+                    }
                     href={`/employers/candidates/${candidate.id}`}
                   />
                 ))}
               </EmployerRowList>
             ) : candidatesResult.status === "ok" ? (
-              <EmployerStatePanel kind="empty" title={stageFilter ? "No Candidates in This Stage" : "No Applicants Yet"} message="Candidates will appear here once they apply." />
+              <EmployerStatePanel kind="empty" title={stageFilter ? "No Applicants in This Stage" : "No Applicants Yet"} message="Applicants will appear here once they apply." />
             ) : (
-              <EmployerStatePanel kind="error" title="Applicants aren't available yet" message={candidatesResult.reason} />
+              <EmployerStatePanel kind="error" title="We couldn't load applicants" message={candidatesResult.reason} />
             )}
           </div>
         </section>
       </div>
     </main>
   );
+}
+
+function stageLabel(stage: PipelineStage): string {
+  return stage.charAt(0) + stage.slice(1).toLowerCase();
 }

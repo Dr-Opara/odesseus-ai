@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireEmployerPage } from "@/app/employers/guard";
 import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import EditJobForm from "@/components/employers/edit-job-form";
@@ -8,16 +7,9 @@ import { getEmployerJob } from "@/lib/employers/jobs-adapter";
 /** Edit Job (Figma screen 76, F13-F). Loads the existing job and preserves its values. */
 export default async function EmployerEditJobPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
-  if (!user) redirect("/employers/login");
-  if (user.user_metadata?.account_type !== "employer") {
-    await supabase.auth.signOut();
-    redirect("/employers/login?error=This%20account%20is%20not%20registered%20as%20an%20employer.");
-  }
+  const { orgId } = await requireEmployerPage(`/employers/jobs/${id}/edit`);
 
-  const jobResult = await getEmployerJob(id);
+  const jobResult = await getEmployerJob(orgId, id);
 
   return (
     <main className="figma-site figma-soft-page">
@@ -29,10 +21,10 @@ export default async function EmployerEditJobPage({ params }: { params: Promise<
           {jobResult.status === "ok" ? <p className="muted">{jobResult.data.title}</p> : null}
 
           {jobResult.status === "ok" ? (
-            <EditJobForm job={jobResult.data} />
+            <EditJobForm job={jobResult.data} orgId={orgId} />
           ) : (
             <div style={{ marginTop: 28 }}>
-              <EmployerStatePanel kind="error" title="This job isn't available yet" message={jobResult.reason} actionHref="/employers/jobs" actionLabel="Back to Jobs" />
+              <EmployerStatePanel kind="error" title="We couldn't load this job" message={jobResult.reason} actionHref="/employers/jobs" actionLabel="Back to Jobs" />
             </div>
           )}
         </section>
