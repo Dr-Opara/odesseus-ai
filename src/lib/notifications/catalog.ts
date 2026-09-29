@@ -294,7 +294,7 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, NotificationTypeMeta
     channel: "interview_events",
     priority: "normal",
     email: true,
-    phase: "hook deferred to employer phases (2P-2S)",
+    phase: "wired: pipeline interview transitions (2R)",
   },
   EMPLOYER_JOB_CAPACITY_WARNING: {
     recipient: "employer_member",
@@ -315,7 +315,7 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, NotificationTypeMeta
     channel: "capacity",
     priority: "high",
     email: true,
-    phase: "hook deferred to employer phases (2P-2S)",
+    phase: "wired: invitation accept at seat capacity (2S)",
   },
   EMPLOYER_SUBSCRIPTION_EVENT: {
     recipient: "employer_member",
@@ -336,14 +336,14 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, NotificationTypeMeta
     channel: "featured",
     priority: "normal",
     email: true,
-    phase: "hook deferred to employer phases (2P-2S)",
+    phase: "wired: featured expiry cron (2S)",
   },
   EMPLOYER_FEATURED_JOB_EXPIRED: {
     recipient: "employer_member",
     channel: "featured",
     priority: "normal",
     email: true,
-    phase: "hook deferred to employer phases (2P-2S)",
+    phase: "wired: featured expiry cron (2S)",
   },
 };
 

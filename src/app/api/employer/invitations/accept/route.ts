@@ -42,6 +42,32 @@ export async function POST(request: Request) {
   const result = await acceptInvitation(supabase, token);
 
   if (result.ok) {
+    // Best-effort capacity warning: joining may have filled the last paid
+    // seat. Never blocks or fails the acceptance itself.
+    try {
+      const { getEmployerSeats } = await import("@/lib/employer/service");
+      const { notifyEmployerMembers } = await import("@/lib/notifications/employer");
+      const seats = await getEmployerSeats(supabase, result.orgId);
+      if (seats && seats.required >= seats.active) {
+        await notifyEmployerMembers(
+          result.orgId,
+          {
+            notification_type: "EMPLOYER_RECRUITER_SEAT_WARNING",
+            title: "Your team has filled its recruiter seats",
+            message: "Add a seat before inviting anyone else.",
+            entity_type: "employer_organization",
+            entity_id: result.orgId,
+            priority: "high",
+          },
+          {
+            dedupeTemplate: `employer:${result.orgId}:seats:${seats.active}:full:{user}`,
+          }
+        );
+      }
+    } catch (notifyError) {
+      console.error("[ODESSEUS_EMPLOYER_TEAM] seat warning failed", notifyError);
+    }
+
     return NextResponse.json({
       joined: { orgId: result.orgId, orgName: result.orgName, role: result.role },
     });

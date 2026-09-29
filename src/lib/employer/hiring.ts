@@ -513,6 +513,25 @@ export async function transitionPipelineStage(
     stage: input.stage,
   });
 
+  // A move into the interview stage is additionally an interview event for
+  // the hiring team, with its own dedupe identity per history row.
+  if (input.stage === "interview") {
+    await notifyEmployerMembers(
+      input.orgId,
+      {
+        notification_type: "EMPLOYER_INTERVIEW_EVENT",
+        title: `Interview scheduled for ${(jobRow as { title: string } | null)?.title ?? "your job"}`,
+        message: "An applicant moved into the interview stage.",
+        entity_type: "application",
+        entity_id: input.applicationId,
+        priority: "normal",
+      },
+      {
+        dedupeTemplate: `employer:${input.orgId}:interview-event:${row.id}:{user}`,
+      }
+    );
+  }
+
   return {
     id: row.id,
     jobId: input.jobId,

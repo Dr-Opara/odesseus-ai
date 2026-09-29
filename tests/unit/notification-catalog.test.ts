@@ -108,6 +108,13 @@ describe("notification type catalog", () => {
     expect(NOTIFICATION_CATALOG.EMPLOYER_PIPELINE_UPDATED.phase).toMatch(/wired/);
   });
 
+  it("marks the 2S-wired employer interview/seat/featured types as wired", () => {
+    expect(NOTIFICATION_CATALOG.EMPLOYER_INTERVIEW_EVENT.phase).toMatch(/wired/);
+    expect(NOTIFICATION_CATALOG.EMPLOYER_RECRUITER_SEAT_WARNING.phase).toMatch(/wired/);
+    expect(NOTIFICATION_CATALOG.EMPLOYER_FEATURED_JOB_EXPIRING.phase).toMatch(/wired/);
+    expect(NOTIFICATION_CATALOG.EMPLOYER_FEATURED_JOB_EXPIRED.phase).toMatch(/wired/);
+  });
+
   it("keeps the strong-match type marked wired and the product type marketing-gated", () => {
     expect(NOTIFICATION_CATALOG.JOB_STRONG_MATCH.phase).toMatch(/wired/);
     expect(NOTIFICATION_CATALOG.PRODUCT_UPDATE.phase).toMatch(/product channel/);

@@ -400,7 +400,7 @@ describe("GET /api/cron/expire-featured-listings", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body).toEqual({ ok: true, expired: 2 });
+    expect(body).toEqual({ ok: true, expired: 2, expiringNotified: 0, expiredNotified: 0 });
     expect(rpc).toHaveBeenCalledWith("expire_ended_featured_listings");
   });
 });

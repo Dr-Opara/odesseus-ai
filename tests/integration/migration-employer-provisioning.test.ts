@@ -40,7 +40,9 @@ describe("employer provisioning migration (2P backend slice)", () => {
   });
 
   it("leaves the deprecated credit-grant path alone", () => {
-    expect(sql).not.toMatch(/grant_employer_tier_job_posts/i);
-    expect(sql).not.toMatch(/claim_job_post_credit/i);
+    // No function definitions for the deprecated path: it is referenced in
+    // prose only, to document that it stays untouched history.
+    expect(sql).not.toMatch(/^CREATE OR REPLACE FUNCTION public\.grant_employer_tier_job_posts/im);
+    expect(sql).not.toMatch(/^CREATE OR REPLACE FUNCTION .*claim_job_post_credit/im);
   });
 });
