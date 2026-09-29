@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { createEmployerJob } from "@/lib/employers/jobs-adapter";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { saveEmployerJobAction, transitionJobAction } from "@/lib/employers/actions";
 import EmployerStatePanel from "@/components/employers/state-panel";
 
 function linesToArray(value: string): string[] {
@@ -11,32 +13,97 @@ function linesToArray(value: string): string[] {
     .filter(Boolean);
 }
 
-/** Post Job form (F13-E). Salary is optional and never invented. */
-export default function PostJobForm() {
-  const [status, setStatus] = useState<"idle" | "submitting" | "unavailable">("idle");
-  const [reason, setReason] = useState("");
+/**
+ * Post Job (Figma screen 75, F13-E) on the real backend.
+ *
+ * Two deliberate steps, because the backend treats them as two:
+ *
+ *  1. **Create** writes a draft. Creating never publishes, so the employer can
+ *     review the role before it consumes any of their plan's job posts.
+ *  2. **Publish** is a separate confirmation that goes through the jobs
+ *     route, which enforces the plan's active-job capacity and consumes the
+ *     credit through the `claim_job_post_credit` trigger. A refusal — no plan,
+ *     or at capacity — is shown as the route stated it.
+ *
+ * Compensation is optional and is never invented. Department, employment type,
+ * and responsibilities are folded into the stored description rather than
+ * discarded, so nothing the employer typed is lost.
+ */
+export default function PostJobForm({ orgId }: { orgId: string }) {
+  const router = useRouter();
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [published, setPublished] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
 
   async function handleSubmit(formData: FormData) {
-    setStatus("submitting");
-    const result = await createEmployerJob({
+    setSaving(true);
+    setFailure(null);
+
+    const result = await saveEmployerJobAction(orgId, {
       title: String(formData.get("title") || ""),
       department: String(formData.get("department") || "") || undefined,
       employmentType: String(formData.get("employmentType") || "") || undefined,
       location: String(formData.get("location") || "") || undefined,
-      workArrangement: (String(formData.get("workArrangement") || "") || undefined) as "Remote" | "Hybrid" | "On-site" | undefined,
+      workArrangement: String(formData.get("workArrangement") || "") || undefined,
       compensationText: String(formData.get("compensationText") || "") || undefined,
       description: String(formData.get("description") || "") || undefined,
       responsibilities: linesToArray(String(formData.get("responsibilities") || "")),
       requiredQualifications: linesToArray(String(formData.get("requiredQualifications") || "")),
       preferredQualifications: linesToArray(String(formData.get("preferredQualifications") || "")),
     });
+
+    setSaving(false);
+
     if (result.status === "unavailable") {
-      setReason(result.reason);
-      setStatus("unavailable");
-    } else {
-      setStatus("idle");
+      setFailure(result.reason);
+      return;
     }
+
+    // The draft is real and has an id. Offer to publish it, but never publish
+    // on the employer's behalf.
+    setDraftId(result.data.id);
   }
+
+  async function publish() {
+    if (!draftId) return;
+    setPublishing(true);
+    setFailure(null);
+
+    const result = await transitionJobAction(orgId, draftId, "publish");
+    setPublishing(false);
+
+    if (result.status === "unavailable") {
+      setFailure(result.reason);
+      return;
+    }
+
+    setPublished(true);
+    router.refresh();
+  }
+
+  if (published) {
+    return (
+      <div style={{ marginTop: 28 }}>
+        <div className="emp-capacity-badge">
+          <div className="emp-capacity-badge-row">
+            <span>Your job is live.</span>
+          </div>
+        </div>
+        <div className="emp-page-actions">
+          <Link className="figma-btn figma-btn-orange" href="/employers/jobs">
+            View your jobs
+          </Link>
+          <Link className="emp-btn-secondary" href="/employers/candidates">
+            See applicants
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const hasDraft = draftId !== null;
 
   return (
     <form action={handleSubmit} className="figma-info-card white" style={{ padding: 32, marginTop: 28 }}>
@@ -93,15 +160,47 @@ export default function PostJobForm() {
         <textarea className="input" name="preferredQualifications" rows={4} />
       </label>
 
-      {status === "unavailable" ? (
-        <div style={{ marginTop: 20 }}>
-          <EmployerStatePanel kind="error" title="Publishing isn't available yet" message={reason} />
+      {hasDraft ? (
+        <div className="emp-capacity-badge" style={{ marginTop: 20 }} role="status">
+          <div className="emp-capacity-badge-row">
+            <span>Draft saved. Publishing uses one of your plan&rsquo;s job posts.</span>
+          </div>
+          <div className="emp-page-actions">
+            <button
+              type="button"
+              className="figma-btn figma-btn-orange"
+              onClick={publish}
+              disabled={publishing}
+            >
+              {publishing ? "Publishing…" : "Publish this job"}
+            </button>
+            <Link className="emp-btn-secondary" href={`/employers/jobs/${draftId}/edit`}>
+              Review the draft
+            </Link>
+          </div>
         </div>
       ) : null}
 
-      <button className="figma-btn figma-btn-orange" type="submit" style={{ width: "100%", marginTop: 22 }} disabled={status === "submitting"}>
-        {status === "submitting" ? "Publishing…" : "Publish Job"}
-      </button>
+      {failure ? (
+        <div style={{ marginTop: 20 }}>
+          <EmployerStatePanel
+            kind={hasDraft ? "capacity-reached" : "error"}
+            title="Could not post this job"
+            message={failure}
+          />
+        </div>
+      ) : null}
+
+      {hasDraft ? null : (
+        <button
+          className="figma-btn figma-btn-orange"
+          type="submit"
+          style={{ width: "100%", marginTop: 22 }}
+          disabled={saving}
+        >
+          {saving ? "Saving draft…" : "Save as draft"}
+        </button>
+      )}
     </form>
   );
 }

@@ -53,13 +53,7 @@ export default async function EmployerOnboardingReviewPage({
             </div>
 
             <OnboardingReviewForm
-              companyDetails={{
-                companyName: carried.companyName,
-                companyWebsite: carried.companyWebsite,
-                industry: carried.industry,
-                companySize: carried.companySize,
-                contactName: carried.contactName,
-              }}
+              companyName={carried.companyName || "Your company"}
               planId={plan.name}
             />
           </div>

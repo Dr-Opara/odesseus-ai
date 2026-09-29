@@ -4,18 +4,39 @@ import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerCapacityBadge from "@/components/employers/capacity-badge";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import { EmployerRow, EmployerRowList } from "@/components/employers/row-list";
-import { getEmployerJobs } from "@/lib/employers/jobs-adapter";
-import { getEmployerProfile } from "@/lib/employers/onboarding-adapter";
-import { EMPLOYER_PLANS } from "@/lib/pricing/candidate-pricing";
+import { getEmployerJobs, getEmployerCapacity } from "@/lib/employers/jobs-adapter";
+import { getCandidates } from "@/lib/employers/candidates-adapter";
 
-function rowValue(job: { status: string; applicantCount?: number }): string {
-  if (job.status === "Published") {
-    return `${job.applicantCount ?? 0} applicant${job.applicantCount === 1 ? "" : "s"}`;
-  }
-  return job.status;
+/**
+ * The row value for a job in the list.
+ *
+ * A draft or closed job shows its status, which is a fact about the job. A
+ * published job shows its real applicant count — counted from the applicants
+ * the hiring backend returned for that job.
+ *
+ * It deliberately does not fall back to `0`. The jobs list has no applicant
+ * count on the job row, so a default here would render "0 applicants" for
+ * every live job whenever the applicant read was not available, which reads
+ * as a measurement the product never made.
+ */
+function rowValue(
+  job: { status: string; title: string },
+  applicantCount: number | null
+): string {
+  if (job.status !== "Published") return job.status;
+  if (applicantCount === null) return "Applicants unavailable";
+  return `${applicantCount} applicant${applicantCount === 1 ? "" : "s"}`;
 }
 
-/** Employer Jobs list (Figma screen 74, F13-D). */
+/**
+ * Employer Jobs list (Figma screen 74, F13-D).
+ *
+ * Capacity comes from `getEmployerCapacity`, which reads the stored
+ * subscription's plan limit — the same number the publish path enforces
+ * server-side. An unrecognised tier yields a `null` limit, rendered as
+ * unknown rather than as `0`, because "0 active jobs used" would be a false
+ * statement about a plan the build does not recognise.
+ */
 export default async function EmployerJobsPage() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
@@ -26,7 +47,21 @@ export default async function EmployerJobsPage() {
     redirect("/employers/login?error=This%20account%20is%20not%20registered%20as%20an%20employer.");
   }
 
-  const [jobsResult, profileResult] = await Promise.all([getEmployerJobs(), getEmployerProfile()]);
+  const [jobsResult, capacityResult, applicantsResult] = await Promise.all([
+    getEmployerJobs(),
+    getEmployerCapacity(),
+    getCandidates(),
+  ]);
+
+  // One applicant read covers the whole list, so a published job's count is
+  // the number of returned applicants on that job. Absent read -> null, which
+  // renders as unavailable rather than as zero.
+  const countsByJob = new Map<string, number>();
+  if (applicantsResult.status === "ok") {
+    for (const candidate of applicantsResult.data) {
+      countsByJob.set(candidate.appliedJobId, (countsByJob.get(candidate.appliedJobId) ?? 0) + 1);
+    }
+  }
 
   return (
     <main className="figma-site figma-soft-page">
@@ -43,27 +78,47 @@ export default async function EmployerJobsPage() {
             </a>
           </div>
 
-          {profileResult.status === "ok" && jobsResult.status === "ok" ? (
+          {capacityResult.status === "ok" ? (
             <div style={{ marginTop: 16 }}>
               <EmployerCapacityBadge
                 capacity={{
-                  activeJobCount: jobsResult.data.filter((j) => j.status === "Published").length,
-                  planLimit: EMPLOYER_PLANS.find((p) => p.name === profileResult.data.planId)?.activeJobLimit ?? 0,
-                  planId: profileResult.data.planId,
+                  activeJobCount: capacityResult.data.activeJobCount,
+                  planLimit: capacityResult.data.planLimit,
+                  planId: capacityResult.data.planId,
                 }}
               />
             </div>
-          ) : null}
+          ) : (
+            <div style={{ marginTop: 16 }}>
+              <p className="muted">{capacityResult.reason}</p>
+            </div>
+          )}
 
           <div style={{ marginTop: 24 }}>
             {jobsResult.status === "ok" && jobsResult.data.length > 0 ? (
               <EmployerRowList>
                 {jobsResult.data.map((job) => (
-                  <EmployerRow key={job.id} label={job.title} value={rowValue(job)} href={`/employers/jobs/${job.id}`} />
+                  <EmployerRow
+                    key={job.id}
+                    label={job.title}
+                    value={rowValue(
+                      job,
+                      applicantsResult.status === "ok"
+                        ? (countsByJob.get(job.id) ?? 0)
+                        : null
+                    )}
+                    href={`/employers/jobs/${job.id}`}
+                  />
                 ))}
               </EmployerRowList>
             ) : jobsResult.status === "ok" ? (
-              <EmployerStatePanel kind="empty" title="No Jobs Yet" message="Post your first role to start receiving applicants." actionHref="/employers/post-job" actionLabel="Post a Job" />
+              <EmployerStatePanel
+                kind="empty"
+                title="No Jobs Yet"
+                message="Post your first role to start receiving applicants."
+                actionHref="/employers/post-job"
+                actionLabel="Post a Job"
+              />
             ) : (
               <EmployerStatePanel kind="error" title="Jobs aren't available yet" message={jobsResult.reason} />
             )}

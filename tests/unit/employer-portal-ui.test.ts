@@ -122,12 +122,85 @@ describe("no employer surface fabricates hiring data", () => {
     expect(dashboard).not.toMatch(/<h2>\{?\d+\}?<\/h2>/);
   });
 
-  it("does not present an applicant or match count, because the schema has no employer link", () => {
+  it("renders applicant and match counts from real backend data, never from a default", () => {
+    // This assertion used to be "no employer surface may mention Applicants or
+    // Shortlisted", on the grounds that the schema had no employer->applicant
+    // link at all. That is no longer true: `odesseus_get_employer_applicants`
+    // and `employer_pipeline_stages` give an organization a real view of the
+    // applicants on its own jobs, and the analytics aggregate reports
+    // applicant totals, strong-fit counts, and pipeline distribution.
+    //
+    // So the rule is restated as the invariant that actually matters now: a
+    // count may be shown, but only if it came from a read. The specific
+    // failure being guarded against is the one the old test was reaching for
+    // — a screen that cannot load the data and renders `0` as though that were
+    // a measurement.
+    //
+    // The pattern targets a count read off a value that may be absent *and*
+    // rendered directly. Accumulation into a map (`counts.get(x) ?? 0 + 1`)
+    // and a lookup guarded by a presence check are not fabrications and are
+    // deliberately not matched: `0` is the right answer for a key no applicant
+    // has been counted against.
+    const FABRICATED_DEFAULT = /(?:applicantCount|applicantVolume|strongFit|planLimit|seatLimit|activeJobCount)\s*\?\?\s*0/gi;
+
     const offenders: string[] = [];
     for (const [file, source] of employerCode) {
-      if (/\bApplicants\b|\bShortlist(ed)?\b/.test(source)) offenders.push(relative(file));
+      if (FABRICATED_DEFAULT.test(source)) offenders.push(relative(file));
+    }
+    FABRICATED_DEFAULT.lastIndex = 0;
+    expect(
+      offenders,
+      "a count must not fall back to 0 when the read that supplies it may have failed"
+    ).toEqual([]);
+  });
+
+  it("shows an explicit unavailable state rather than a zero when a read fails", () => {
+    // The positive half of the rule above: the screens that consume these
+    // counts must have a way to say "not available". Without it, the only
+    // thing left to render on failure is a number.
+    for (const file of [
+      "src/app/employers/jobs/page.tsx",
+      "src/app/employers/analytics/page.tsx",
+      "src/app/employers/jobs/[id]/page.tsx",
+    ]) {
+      const source = readFileSync(join(process.cwd(), file), "utf8");
+      expect(source, `${file} must have a not-available path`).toMatch(
+        /Not available|Not enough data|unavailable|Unavailable/
+      );
+    }
+  });
+
+  it("no employer surface fabricates an applicant, fit, or pipeline number from a literal", () => {
+    // A count written into the JSX is a fabricated measurement no matter what
+    // it says. The counts must be expressions over read data.
+    const offenders: string[] = [];
+    for (const [file, source] of employerCode) {
+      // `<h2>12</h2>`, `{12}`, or a bare numeric prop on a count-bearing row.
+      if (/<h2>\s*\{?\d+\}?\s*<\/h2>/.test(source)) offenders.push(relative(file));
+      if (/(Applicants|Strong Fits?|Interviews|Pipeline)\D{0,20}\{\s*\d+\s*\}/i.test(source)) {
+        offenders.push(relative(file));
+      }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it("the employer applicant and pipeline reads go through the real hiring backend", () => {
+    // The counts above are only trustworthy if they are the backend's. Assert
+    // the wiring rather than the rendering: the adapters read the applicant
+    // RPC and the append-only stage history, and never a fixture.
+    const candidates = readFileSync(
+      join(process.cwd(), "src", "lib", "employers", "candidates-adapter.ts"),
+      "utf8"
+    );
+    expect(candidates).toContain("listApplicants");
+    expect(candidates).toContain("getPipeline");
+
+    const pipeline = readFileSync(
+      join(process.cwd(), "src", "lib", "employers", "pipeline-adapter.ts"),
+      "utf8"
+    );
+    expect(pipeline).toContain("listApplicants");
+    expect(pipeline).toContain("getPipeline");
   });
 });
 

@@ -1,36 +1,66 @@
 /**
- * INTEGRATION POINT — featured job purchase backend (OpenCode Phase 2P-2S,
- * not yet shipped). Package definitions themselves are locked pricing data
- * (`PROMOTION_PLANS`), not a fixture — no production gate needed. The
- * purchase action never gets a fixture path: never mark a job featured until
- * the backend confirms it (F13-O).
+ * Featured job listings — the real backend read.
+ *
+ * The package list itself is pure approved data and lives in
+ * `./featured-packages`, which is client-safe; this module holds only the
+ * server-side read of the organization's current featured state.
+ *
+ * What was a stub is the purchase, and it now starts a real Stripe checkout
+ * through the org's featured route (see `./actions`).
+ *
+ * The important rule: **nothing here marks a job featured.** A featured
+ * listing only becomes active when the billing webhook confirms payment and
+ * calls `odesseus_create_featured_listing`. Until then the job's own
+ * `featured` flag is unchanged, and this adapter reports that honestly rather
+ * than optimistically flipping it. F13-O: never mark a listing featured before
+ * backend confirmation.
  */
-import { PROMOTION_PLANS } from "@/lib/pricing/candidate-pricing";
-import type { FeaturedJobPackageId, FeaturedJobPurchase } from "./types";
+
+import { createClient } from "@/lib/supabase/server";
+import { getOrgFeaturedView } from "@/lib/employer/service";
+import { resolveEmployerContext } from "./context";
+import { getFeaturedJobPackages, type FeaturedJobOverview } from "./featured-packages";
 import type { EmployerResult } from "./result";
 
-export type FeaturedJobPackage = {
-  id: FeaturedJobPackageId;
-  name: string;
-  priceLabel: string;
-  unit: string;
-};
+export {
+  getFeaturedJobPackages,
+  type FeaturedJobPackage,
+  type FeaturedJobOverview,
+  type FeaturedListingView,
+} from "./featured-packages";
 
-const PACKAGE_IDS: FeaturedJobPackageId[] = ["featured-7", "featured-14", "ai-featured-30"];
+/** The organization's featured state, read from the backend. */
+export async function getFeaturedOverview(): Promise<EmployerResult<FeaturedJobOverview>> {
+  const resolved = await resolveEmployerContext();
+  if (resolved.status === "unavailable") return resolved;
 
-export function getFeaturedJobPackages(): FeaturedJobPackage[] {
-  return PROMOTION_PLANS.map((plan, i) => ({
-    id: PACKAGE_IDS[i],
-    name: plan.name,
-    priceLabel: plan.priceLabel,
-    unit: plan.unit,
-  }));
-}
+  try {
+    const supabase = await createClient();
+    const view = await getOrgFeaturedView(
+      supabase,
+      resolved.context.orgId,
+      resolved.context.userId
+    );
 
-/** INTEGRATION POINT: replace with a real checkout + featured-status call once the backend ships. */
-export async function purchaseFeaturedJob(
-  _jobId: string,
-  _packageId: FeaturedJobPackageId
-): Promise<EmployerResult<FeaturedJobPurchase>> {
-  return { status: "unavailable", reason: "Purchasing a featured listing is not yet available." };
+    return {
+      status: "ok",
+      source: "live",
+      data: {
+        listings: view.listings.map((listing) => ({
+          id: listing.id,
+          jobId: listing.jobId,
+          tier: listing.tier,
+          isBoosted: listing.isBoosted,
+          startsAt: listing.startsAt,
+          expiresAt: listing.expiresAt,
+        })),
+        jobs: view.jobs,
+        packages: getFeaturedJobPackages(),
+      },
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[ODESSEUS_EMPLOYER_FEATURED] read failed", message);
+    return { status: "unavailable", reason: "Odesseus could not load your promotions." };
+  }
 }

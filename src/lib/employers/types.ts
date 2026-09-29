@@ -38,15 +38,32 @@ export type EmployerProfile = {
   onboardingComplete: boolean;
 };
 
-/** F13-G — backend is authoritative; this is presentation data only. */
+/**
+ * F13-G — backend is authoritative; this is presentation data only.
+ *
+ * `planLimit` and `planId` are nullable because an organization can be on a
+ * tier this build does not recognise. Coercing that to `0`/`"Starter"` would
+ * claim a limit the product has not established, and the badge would render
+ * "0 of 0 active jobs used" as though it were a measurement.
+ */
 export type EmployerCapacity = {
   activeJobCount: number;
-  planLimit: number;
-  planId: EmployerPlanId;
+  planLimit: number | null;
+  planId: EmployerPlanId | null;
 };
 
 export type EmployerJobStatus = "Draft" | "Published" | "Closed";
-export type WorkArrangement = "Remote" | "Hybrid" | "On-site";
+
+/**
+ * Work arrangement in the product vocabulary.
+ *
+ * The backend stores it lowercase (`employer_jobs.work_arrangement`:
+ * `remote | hybrid | onsite`). The adapter normalises it, but the value can
+ * still arrive unrecognised, so this is a union of the known labels rather
+ * than a closed enum — an unexpected value renders as the form's default
+ * option instead of failing the page.
+ */
+export type WorkArrangement = "Remote" | "Hybrid" | "On-site" | "remote" | "hybrid" | "onsite";
 
 export type EmployerJob = {
   id: string;

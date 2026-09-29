@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { updateEmployerJob } from "@/lib/employers/jobs-adapter";
+import { useRouter } from "next/navigation";
+import { saveEmployerJobAction } from "@/lib/employers/actions";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import type { EmployerJobDetail } from "@/lib/employers/types";
 
@@ -13,35 +14,69 @@ function linesToArray(value: string): string[] {
 }
 
 /**
- * Edit Job form (F13-F). If the backend limits editing after publication,
- * that limit must come from the backend's response, never a frontend-only
- * rule invented here — today the adapter is honestly unavailable, so no
- * such restriction is asserted client-side.
+ * Maps a stored work arrangement onto one of the select's options.
+ *
+ * The backend stores it lowercase and the adapter already normalises the known
+ * values, but an unrecognised one can still arrive. Falling back to "Remote"
+ * would silently change the employer's choice, so anything unrecognised leaves
+ * the select on its first option and the employer sees and corrects it.
  */
-export default function EditJobForm({ job }: { job: EmployerJobDetail }) {
+function normalizeArrangement(value: string | undefined): string {
+  if (value === "Hybrid" || value === "hybrid") return "Hybrid";
+  if (value === "On-site" || value === "onsite" || value === "on-site") return "On-site";
+  return "Remote";
+}
+
+/**
+ * Edit Job (Figma screen 78, F13-F).
+ *
+ * The backend limits editing to drafts and refuses anything else. That limit
+ * is not reimplemented here: the page is only reachable for a draft, and a
+ * refusal from the route is shown as the route stated it. Inventing a
+ * client-side copy of that rule would be a second policy that could disagree
+ * with the server's.
+ */
+export default function EditJobForm({
+  orgId,
+  job,
+}: {
+  orgId: string;
+  job: EmployerJobDetail;
+}) {
+  const router = useRouter();
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "unavailable">("idle");
   const [reason, setReason] = useState("");
 
   async function handleSubmit(formData: FormData) {
     setStatus("saving");
-    const result = await updateEmployerJob(job.id, {
-      title: String(formData.get("title") || ""),
-      department: String(formData.get("department") || "") || undefined,
-      employmentType: String(formData.get("employmentType") || "") || undefined,
-      location: String(formData.get("location") || "") || undefined,
-      workArrangement: (String(formData.get("workArrangement") || "") || undefined) as "Remote" | "Hybrid" | "On-site" | undefined,
-      compensationText: String(formData.get("compensationText") || "") || undefined,
-      description: String(formData.get("description") || "") || undefined,
-      responsibilities: linesToArray(String(formData.get("responsibilities") || "")),
-      requiredQualifications: linesToArray(String(formData.get("requiredQualifications") || "")),
-      preferredQualifications: linesToArray(String(formData.get("preferredQualifications") || "")),
-    });
+    setReason("");
+
+    const result = await saveEmployerJobAction(
+      orgId,
+      {
+        title: String(formData.get("title") || ""),
+        department: String(formData.get("department") || "") || undefined,
+        employmentType: String(formData.get("employmentType") || "") || undefined,
+        location: String(formData.get("location") || "") || undefined,
+        workArrangement: String(formData.get("workArrangement") || "") || undefined,
+        compensationText: String(formData.get("compensationText") || "") || undefined,
+        description: String(formData.get("description") || "") || undefined,
+        responsibilities: linesToArray(String(formData.get("responsibilities") || "")),
+        requiredQualifications: linesToArray(String(formData.get("requiredQualifications") || "")),
+        preferredQualifications: linesToArray(String(formData.get("preferredQualifications") || "")),
+      },
+      job.id
+    );
+
     if (result.status === "unavailable") {
       setReason(result.reason);
       setStatus("unavailable");
-    } else {
-      setStatus("saved");
+      return;
     }
+
+    setStatus("saved");
+    // Re-read so the page shows the persisted values.
+    router.refresh();
   }
 
   return (
@@ -71,7 +106,11 @@ export default function EditJobForm({ job }: { job: EmployerJobDetail }) {
         </label>
         <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>
           Work arrangement
-          <select className="input" name="workArrangement" defaultValue={job.workArrangement || "Remote"}>
+          <select
+            className="input"
+            name="workArrangement"
+            defaultValue={normalizeArrangement(job.workArrangement)}
+          >
             <option>Remote</option>
             <option>Hybrid</option>
             <option>On-site</option>
@@ -101,12 +140,19 @@ export default function EditJobForm({ job }: { job: EmployerJobDetail }) {
 
       {status === "unavailable" ? (
         <div style={{ marginTop: 20 }}>
-          <EmployerStatePanel kind="error" title="Saving isn't available yet" message={reason} />
+          <EmployerStatePanel kind="error" title="Couldn&rsquo;t save this job" message={reason} />
         </div>
       ) : null}
-      {status === "saved" ? <p style={{ color: "#1d9e4a", fontWeight: 650, fontSize: 13, marginTop: 16 }}>Saved.</p> : null}
+      {status === "saved" ? (
+        <p style={{ color: "#1d9e4a", fontWeight: 650, fontSize: 13, marginTop: 16 }}>Saved.</p>
+      ) : null}
 
-      <button className="figma-btn figma-btn-orange" type="submit" style={{ width: "100%", marginTop: 22 }} disabled={status === "saving"}>
+      <button
+        className="figma-btn figma-btn-orange"
+        type="submit"
+        style={{ width: "100%", marginTop: 22 }}
+        disabled={status === "saving"}
+      >
         {status === "saving" ? "Saving…" : "Save Changes"}
       </button>
     </form>

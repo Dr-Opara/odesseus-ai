@@ -2,43 +2,66 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { submitCompanyDetails, submitPlanSelection, completeOnboarding, type CompanyDetailsInput } from "@/lib/employers/onboarding-adapter";
+import { provisionOrganizationAction, startPlanCheckoutAction } from "@/lib/employers/actions";
 import type { EmployerPlanId } from "@/lib/employers/types";
 import EmployerStatePanel from "@/components/employers/state-panel";
 
 /**
- * Final onboarding submission (F13-B): loading/success/failure/retry states,
- * never an optimistic "you're all set" — `completeOnboarding()` is honest
- * about the backend not existing yet, so this shows that plainly rather than
- * pretending, while still letting the employer continue exploring the
- * dashboard (which renders from dev fixtures regardless of this step).
+ * Final onboarding submission (F13-B), step 3 of 3.
+ *
+ * Two real steps, because the backend has two:
+ *
+ *  1. **Provision the organization.** Signup creates only the auth user, so
+ *     this is the call that gives the employer a company workspace. The RPC
+ *     is idempotent, so a double submit converges on one organization rather
+ *     than creating two.
+ *  2. **Choose a plan.** A plan is a paid subscription, so this starts a
+ *     Stripe checkout and leaves for the hosted page. The subscription row and
+ *     its job-post credits appear only once the webhook confirms payment.
+ *
+ * There is deliberately no optimistic "you're all set". A button that reported
+ * success here would tell an employer their workspace and plan exist when the
+ * server had recorded neither.
  */
 export default function OnboardingReviewForm({
-  companyDetails,
+  companyName,
   planId,
+  onProvisioned,
 }: {
-  companyDetails: Partial<CompanyDetailsInput>;
+  companyName: string;
   planId: EmployerPlanId;
+  /** Called with the new org id once the workspace really exists. */
+  onProvisioned?: (orgId: string) => void;
 }) {
-  const [status, setStatus] = useState<"idle" | "loading" | "unavailable">("idle");
+  const [status, setStatus] = useState<"idle" | "provisioning" | "unavailable">("idle");
   const [reason, setReason] = useState("");
 
   async function handleComplete() {
-    setStatus("loading");
-    const companyResult = await submitCompanyDetails({ companyName: companyDetails.companyName || "", ...companyDetails });
-    const planResult = await submitPlanSelection(planId);
-    const finalResult = await completeOnboarding();
+    setStatus("provisioning");
+    setReason("");
 
-    const firstFailure = [companyResult, planResult, finalResult].find((r) => r.status === "unavailable");
-    if (firstFailure && firstFailure.status === "unavailable") {
-      setReason(firstFailure.reason);
+    const provisioned = await provisionOrganizationAction(companyName);
+    if (provisioned.status === "unavailable") {
+      setReason(provisioned.reason);
       setStatus("unavailable");
       return;
     }
-    setStatus("idle");
+
+    onProvisioned?.(provisioned.data.orgId);
+
+    // The plan is a purchase, so this leaves for checkout rather than
+    // reporting a plan the server has not recorded.
+    const checkout = await startPlanCheckoutAction(provisioned.data.orgId, planId);
+    if (checkout.status === "unavailable") {
+      setReason(checkout.reason);
+      setStatus("unavailable");
+      return;
+    }
+
+    window.location.assign(checkout.data.url);
   }
 
-  if (status === "loading") {
+  if (status === "provisioning") {
     return <EmployerStatePanel kind="loading" />;
   }
 
@@ -52,7 +75,7 @@ export default function OnboardingReviewForm({
           onRetry={handleComplete}
         />
         <p className="muted" style={{ textAlign: "center", marginTop: 14, fontSize: 13 }}>
-          You can still explore your dashboard while this connects.{" "}
+          Your workspace may already be set up.{" "}
           <Link href="/employers/dashboard" className="link">
             Continue to Dashboard →
           </Link>
@@ -62,8 +85,13 @@ export default function OnboardingReviewForm({
   }
 
   return (
-    <button className="figma-btn figma-btn-orange" type="button" style={{ width: "100%", marginTop: 22 }} onClick={handleComplete}>
-      Go to Employer Dashboard
+    <button
+      className="figma-btn figma-btn-orange"
+      type="button"
+      style={{ width: "100%", marginTop: 22 }}
+      onClick={handleComplete}
+    >
+      Set up workspace and continue to checkout
     </button>
   );
 }

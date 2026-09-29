@@ -1,25 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import { markNotificationRead, markAllNotificationsRead, updateNotificationPreferences } from "@/lib/employers/notifications-adapter";
+import { useRouter } from "next/navigation";
+import {
+  markNotificationReadAction,
+  markAllNotificationsReadAction,
+  saveNotificationPreferencesAction,
+} from "@/lib/employers/actions";
+import { EMPLOYER_PREFERENCE_ROWS } from "@/lib/employers/preferences";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import type { EmployerNotification, EmployerNotificationPreferences } from "@/lib/employers/types";
 
-const PREFERENCE_ROWS: { key: keyof EmployerNotificationPreferences; label: string }[] = [
-  { key: "newApplicant", label: "New applicant" },
-  { key: "strongFitCandidate", label: "Strong-fit candidate" },
-  { key: "interviewUpdate", label: "Interview update" },
-  { key: "capacityWarning", label: "Plan capacity warning" },
-  { key: "billingNotice", label: "Billing notice" },
-];
-
+/**
+ * The notification list and preference toggles (F13-R).
+ *
+ * Read state and preferences are applied optimistically and rolled back if the
+ * backend refuses. That is safe because a refusal here is a real failure and
+ * never a silent no-op — the routes either persist the change or answer with
+ * an error, and nothing is reported as saved until they do.
+ *
+ * The preference rows come from `@/lib/employers/preferences`, which is the
+ * single mapping between the Figma toggles and the backend's org channels.
+ * Both are client-safe, so the mapping can be shared without pulling a server
+ * client into this bundle.
+ */
 export default function NotificationsPanel({
+  orgId,
   initialNotifications,
   initialPreferences,
 }: {
+  orgId: string;
   initialNotifications: EmployerNotification[];
   initialPreferences: EmployerNotificationPreferences;
 }) {
+  const router = useRouter();
   const [notifications, setNotifications] = useState(initialNotifications);
   const [preferences, setPreferences] = useState(initialPreferences);
   const [failure, setFailure] = useState<string | null>(null);
@@ -29,40 +43,48 @@ export default function NotificationsPanel({
   async function handleMarkOneRead(id: string) {
     const previous = notifications;
     setNotifications((list) => list.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    const result = await markNotificationRead(id);
+    setFailure(null);
+    const result = await markNotificationReadAction(orgId, id);
     if (result.status === "unavailable") {
       setNotifications(previous);
       setFailure(result.reason);
+      return;
     }
+    router.refresh();
   }
 
   async function handleMarkAllRead() {
     const previous = notifications;
     setNotifications((list) => list.map((n) => ({ ...n, read: true })));
-    const result = await markAllNotificationsRead();
+    setFailure(null);
+    const result = await markAllNotificationsReadAction(orgId);
     if (result.status === "unavailable") {
       setNotifications(previous);
       setFailure(result.reason);
+      return;
     }
+    router.refresh();
   }
 
   async function handleTogglePreference(key: keyof EmployerNotificationPreferences) {
     const previous = preferences;
     const next = { ...preferences, [key]: !preferences[key] };
     setPreferences(next);
-    const result = await updateNotificationPreferences(next);
+    setFailure(null);
+
+    const result = await saveNotificationPreferencesAction(orgId, toChannels(next));
     if (result.status === "unavailable") {
       setPreferences(previous);
       setFailure(result.reason);
+      return;
     }
+    router.refresh();
   }
 
   return (
     <>
       <div style={{ marginTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <strong>
-          {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
-        </strong>
+        <strong>{unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}</strong>
         {unreadCount > 0 ? (
           <button type="button" className="emp-btn-secondary" onClick={handleMarkAllRead}>
             Mark all as read
@@ -72,7 +94,11 @@ export default function NotificationsPanel({
 
       <div className="emp-row-list" style={{ marginTop: 14 }}>
         {notifications.length === 0 ? (
-          <EmployerStatePanel kind="empty" title="No Notifications Yet" message="Hiring alerts will show up here." />
+          <EmployerStatePanel
+            kind="empty"
+            title="No Notifications Yet"
+            message="Hiring alerts will show up here."
+          />
         ) : (
           notifications.map((n) => (
             <button
@@ -91,19 +117,42 @@ export default function NotificationsPanel({
 
       <h2 style={{ marginTop: 40 }}>Notification Preferences</h2>
       <div className="emp-row-list" style={{ marginTop: 14 }}>
-        {PREFERENCE_ROWS.map((row) => (
+        {EMPLOYER_PREFERENCE_ROWS.map((row) => (
           <label key={row.key} className="emp-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
             <span className="emp-row-value">{row.label}</span>
-            <input type="checkbox" checked={preferences[row.key]} onChange={() => handleTogglePreference(row.key)} style={{ width: 20, height: 20, accentColor: "var(--od-orange)" }} />
+            <input
+              type="checkbox"
+              checked={preferences[row.key]}
+              onChange={() => handleTogglePreference(row.key)}
+              style={{ width: 20, height: 20, accentColor: "var(--od-orange)" }}
+            />
           </label>
         ))}
       </div>
 
       {failure ? (
         <div style={{ marginTop: 20 }}>
-          <EmployerStatePanel kind="error" title="Couldn't save that change" message={failure} />
+          <EmployerStatePanel kind="error" title="Couldn&rsquo;t save that change" message={failure} />
         </div>
       ) : null}
     </>
   );
+}
+
+/**
+ * Flattens the Figma toggles into the backend's org channel set.
+ *
+ * The route upserts a partial patch, so the full channel map is sent rather
+ * than one key: sending only the changed toggle would leave the rest at
+ * whatever the stored row held, which is not the same as "keep what is on
+ * screen".
+ */
+function toChannels(preferences: EmployerNotificationPreferences): Record<string, boolean> {
+  return {
+    new_applicants: preferences.newApplicant,
+    strong_fit: preferences.strongFitCandidate,
+    interview_events: preferences.interviewUpdate,
+    capacity: preferences.capacityWarning,
+    billing: preferences.billingNotice,
+  };
 }
