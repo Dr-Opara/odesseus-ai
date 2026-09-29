@@ -4,13 +4,34 @@ import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { createJob, listJobs } from "@/lib/employer/service";
 import { requireOrgAdmin } from "@/lib/employer/service";
+import {
+  JOB_EMPLOYMENT_TYPES,
+  type CreateJobInput,
+  type JobEmploymentType,
+} from "@/lib/employer/service";
 
 export const runtime = "nodejs";
 
+/**
+ * The body shape accepted by POST.
+ *
+ * Kept as a permissive declaration rather than the strict `zod` schema above,
+ * which describes a narrower create. Every field is bounded and the two
+ * vocabularies are checked explicitly in the handler, so a request that would
+ * be refused gets a 400 naming the field instead of a database constraint
+ * error surfacing as a 500.
+ */
 const createSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(5000).optional().nullable(),
   location: z.string().max(200).optional().nullable(),
+  department: z.string().max(200).optional().nullable(),
+  employmentType: z.string().max(40).optional().nullable(),
+  compensationText: z.string().max(200).optional().nullable(),
+  responsibilitiesText: z.string().max(10000).optional().nullable(),
+  requirementsText: z.string().max(10000).optional().nullable(),
+  preferredText: z.string().max(10000).optional().nullable(),
+  workArrangement: z.string().max(20).optional().nullable(),
 });
 
 /**
@@ -95,28 +116,30 @@ export async function POST(
     return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   }
 
-  let input: {
-    title: string;
-    description?: string | null;
-    location?: string | null;
-    requirementsText?: string | null;
-    preferredText?: string | null;
-    workArrangement?: string | null;
-  };
+  // The body type is the service's own `CreateJobInput`, imported rather than
+  // restated. It was previously written out twice -- once as a declaration and
+  // once as a cast -- which is how a field reaches the service but not the
+  // route's validation, or the reverse, and the mismatch only shows up as a
+  // rejected or dropped value at write time.
+  let input: CreateJobInput;
   try {
-    input = JSON.parse(await request.text()) as {
-      title: string;
-      description?: string | null;
-      location?: string | null;
-      requirementsText?: string | null;
-      preferredText?: string | null;
-      workArrangement?: string | null;
-    };
+    input = JSON.parse(await request.text()) as CreateJobInput;
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { title, description, location, requirementsText, preferredText, workArrangement } = input;
+  const {
+    title,
+    description,
+    location,
+    requirementsText,
+    preferredText,
+    workArrangement,
+    department,
+    employmentType,
+    compensationText,
+    responsibilitiesText,
+  } = input;
 
   if (!title || title.trim().length === 0 || title.length > 200) {
     return NextResponse.json({ error: "Title is required and must be at most 200 characters." }, { status: 400 });
@@ -141,6 +164,38 @@ export async function POST(
     return NextResponse.json({ error: "Work arrangement must be remote, hybrid, or onsite." }, { status: 400 });
   }
 
+  // The four structured job-form fields, checked here rather than left to fail
+  // as a check-constraint violation inside the service. Employment type is
+  // validated against the database's own vocabulary so the form and the column
+  // can never disagree about what is storable.
+  if (department !== undefined && department !== null && department.length > 200) {
+    return NextResponse.json({ error: "Department must be at most 200 characters." }, { status: 400 });
+  }
+  if (
+    employmentType !== undefined &&
+    employmentType !== null &&
+    !(JOB_EMPLOYMENT_TYPES as readonly string[]).includes(employmentType)
+  ) {
+    return NextResponse.json({ error: "That employment type is not recognised." }, { status: 400 });
+  }
+  if (
+    compensationText !== undefined &&
+    compensationText !== null &&
+    compensationText.length > 200
+  ) {
+    return NextResponse.json({ error: "Compensation must be at most 200 characters." }, { status: 400 });
+  }
+  if (
+    responsibilitiesText !== undefined &&
+    responsibilitiesText !== null &&
+    responsibilitiesText.length > 10000
+  ) {
+    return NextResponse.json(
+      { error: "Responsibilities must be at most 10000 characters." },
+      { status: 400 }
+    );
+  }
+
   const job = await createJob(supabase, orgId, {
     title: title.trim(),
     description: description?.trim() ?? null,
@@ -148,6 +203,10 @@ export async function POST(
     requirementsText: requirementsText?.trim() || null,
     preferredText: preferredText?.trim() || null,
     workArrangement: (workArrangement as "remote" | "hybrid" | "onsite" | null) ?? null,
+    department: department?.trim() || null,
+    employmentType: (employmentType as JobEmploymentType | null) ?? null,
+    compensationText: compensationText?.trim() || null,
+    responsibilitiesText: responsibilitiesText?.trim() || null,
   });
 
   return NextResponse.json(job, { status: 201 });

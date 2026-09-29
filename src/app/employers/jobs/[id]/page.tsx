@@ -9,7 +9,6 @@ import { getEmployerJob, getEmployerCapacity } from "@/lib/employers/jobs-adapte
 import { getEmployerOrgId } from "@/lib/employers/context";
 import { getCandidates } from "@/lib/employers/candidates-adapter";
 import { STAGE_LABELS } from "@/lib/employers/stages";
-import { parseJobDescription } from "@/lib/employers/job-description";
 import { PIPELINE_STAGES } from "@/lib/employers/types";
 
 /**
@@ -72,7 +71,8 @@ export default async function EmployerJobDetailPage({
   }
 
   const job = jobResult.data;
-  const description = parseJobDescription(job.description);
+  // The four structured fields are columns now, projected onto the detail type
+  // by the adapter, with the legacy description parse as their fallback.
   const applicants = candidatesResult.status === "ok" ? candidatesResult.data : null;
 
   const stageCounts = applicants
@@ -94,8 +94,8 @@ export default async function EmployerJobDetailPage({
           <h1>{job.title}</h1>
           <p className="muted">
             {job.location ?? "Location not set"}
-            {description.department ? ` · ${description.department}` : ""}
-            {description.employmentType ? ` · ${description.employmentType}` : ""}
+            {job.department ? ` · ${job.department}` : ""}
+            {job.employmentType ? ` · ${job.employmentType}` : ""}
           </p>
 
           <div style={{ marginTop: 20 }}>
@@ -129,15 +129,40 @@ export default async function EmployerJobDetailPage({
             </EmployerRowList>
           </div>
 
-          {description.body ? (
+          {/* The four structured fields, each read from its own column. Absent
+              values are omitted rather than shown as a blank, so an employer can
+              tell "not stated" from "stated as blank". */}
+          {job.department || job.employmentType || job.compensationText ? (
+            <div style={{ marginTop: 20 }}>
+              <EmployerRowList>
+                {job.department ? (
+                  <EmployerRow label="Department" value={job.department} />
+                ) : null}
+                {job.employmentType ? (
+                  <EmployerRow label="Employment type" value={job.employmentType} />
+                ) : null}
+                {job.compensationText ? (
+                  <EmployerRow label="Compensation" value={job.compensationText} />
+                ) : null}
+              </EmployerRowList>
+            </div>
+          ) : null}
+
+          {job.description ? (
             <article className="figma-info-card white" style={{ padding: 24, marginTop: 20 }}>
               <strong style={{ display: "block", marginBottom: 10 }}>About this role</strong>
-              <p style={{ whiteSpace: "pre-wrap", margin: 0, lineHeight: 1.6 }}>{description.body}</p>
-              {description.compensationText ? (
-                <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-                  Compensation: {description.compensationText}
-                </p>
-              ) : null}
+              <p style={{ whiteSpace: "pre-wrap", margin: 0, lineHeight: 1.6 }}>{job.description}</p>
+            </article>
+          ) : null}
+
+          {job.responsibilities?.length ? (
+            <article className="figma-info-card white" style={{ padding: 24, marginTop: 20 }}>
+              <strong style={{ display: "block", marginBottom: 10 }}>Responsibilities</strong>
+              <ul className="emp-fit-score-section">
+                {job.responsibilities.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
             </article>
           ) : null}
 

@@ -4,6 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveEmployerJobAction, transitionJobAction } from "@/lib/employers/actions";
+import {
+  JOB_EMPLOYMENT_TYPES,
+  toFormEmploymentType,
+} from "@/lib/employer/service";
 import EmployerStatePanel from "@/components/employers/state-panel";
 
 function linesToArray(value: string): string[] {
@@ -118,10 +122,18 @@ export default function PostJobForm({ orgId }: { orgId: string }) {
         </label>
         <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>
           Employment type
-          <select className="input" name="employmentType" defaultValue="Full-time">
-            <option>Full-time</option>
-            <option>Contract</option>
-            <option>Part-time</option>
+          {/* The database's vocabulary, so the form cannot submit a value the
+              check constraint would refuse. "Not stated" is a real option: an
+              employer who has not said is recorded as unknown rather than
+              defaulting to full-time, which would put the job in front of
+              candidates who filtered for full-time roles. */}
+          <select className="input" name="employmentType" defaultValue="">
+            <option value="">Not stated</option>
+            {JOB_EMPLOYMENT_TYPES.map((value) => (
+              <option key={value} value={value}>
+                {toFormEmploymentType(value)}
+              </option>
+            ))}
           </select>
         </label>
       </div>

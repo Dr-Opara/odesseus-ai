@@ -42,12 +42,9 @@ import {
   type UpdateJobInput,
 } from "@/lib/employer/service";
 import { planForTier } from "@/lib/employer/plans";
+import { toFormEmploymentType, toStoredEmploymentType } from "@/lib/employer/service";
 import { resolveEmployerContext, isHiringManagerContext } from "./context";
-import {
-  buildJobDescription,
-  parseJobDescription,
-  splitRequirementLines,
-} from "./job-description";
+import { parseJobDescription, splitRequirementLines } from "./job-description";
 import type { EmployerJob, EmployerJobDetail, EmployerJobStatus, WorkArrangement } from "./types";
 import type { EmployerResult } from "./result";
 
@@ -66,6 +63,10 @@ type ServiceJob = {
   id: string;
   title: string;
   description?: string | null;
+  department?: string | null;
+  employmentType?: string | null;
+  compensationText?: string | null;
+  responsibilitiesText?: string | null;
   location: string | null;
   requirementsText?: string | null;
   preferredText?: string | null;
@@ -106,22 +107,57 @@ function toDisplayJob(row: ServiceJob): EmployerJob {
   };
 }
 
-function toDisplayDetail(row: ServiceJob): EmployerJobDetail {
-  // The backend folds department, employment type, compensation, and
-  // responsibilities into the description text (see ./job-description), so
-  // they are parsed back out here rather than shown as one flat block.
-  const parts = parseJobDescription(row.description);
+/**
+ * The four structured fields, preferring the column over the legacy block.
+ *
+ * Jobs created before the columns existed carry these values inside
+ * `description`, and the migration backfilled what it could recognise. A row
+ * that still has a null column but a recognisable block is one the backfill
+ * did not reach -- a job written by a path other than the employer form -- so
+ * the block is read as a fallback rather than the value being dropped.
+ *
+ * The column always wins. Once an employer edits a job through the form, the
+ * columns are authoritative and a stale block must not override them.
+ */
+export function toStructuredFields(row: ServiceJob) {
+  const legacy = parseJobDescription(row.description);
+  // The legacy parser already returns responsibilities as display lines, so
+  // that branch needs no second split. The column stores them newline-delimited.
+  const legacyResponsibilities = legacy.responsibilities?.length
+    ? legacy.responsibilities
+    : undefined;
 
   return {
+    department: row.department ?? legacy.department,
+    employmentType: row.employmentType
+      ? toFormEmploymentType(row.employmentType)
+      : legacy.employmentType,
+    compensationText: row.compensationText ?? legacy.compensationText,
+    responsibilities: splitLines(row.responsibilitiesText) ?? legacyResponsibilities,
+  };
+}
+
+function toDisplayDetail(row: ServiceJob): EmployerJobDetail {
+  return {
     ...toDisplayJob(row),
-    department: parts.department,
-    employmentType: parts.employmentType,
-    compensationText: parts.compensationText,
-    responsibilities: parts.responsibilities,
-    description: parts.body,
+    ...toStructuredFields(row),
+    // The free-text body is what remains once the folded blocks are removed,
+    // so a job written through the form no longer shows its department and
+    // compensation twice.
+    description: parseJobDescription(row.description).body,
     requiredQualifications: splitRequirementLines(row.requirementsText),
     preferredQualifications: splitRequirementLines(row.preferredText),
   };
+}
+
+/** Splits a stored newline-delimited field into display lines. */
+function splitLines(value: string | null | undefined): string[] | undefined {
+  if (!value) return undefined;
+  const lines = value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return lines.length ? lines : undefined;
 }
 
 /** Maps the Figma form's work-arrangement vocabulary to the stored one. */
@@ -194,14 +230,16 @@ export async function getEmployerJob(jobId: string): Promise<EmployerResult<Empl
 /**
  * The input the Figma Post Job and Edit Job forms collect.
  *
- * `department`, `employmentType`, and `responsibilities` have no dedicated
- * column on `employer_jobs`; they are folded into the description by
- * `buildJobDescription` so nothing the employer typed is lost.
+ * `department`, `employmentType`, `compensationText`, and `responsibilities`
+ * each have their own column on `employer_jobs`. They used to be folded into
+ * the description as a labelled block; see `./job-description` for the legacy
+ * format and why the read path still understands it.
  */
 export type EmployerJobInput = {
   title: string;
   location?: string;
   workArrangement?: string;
+  /** The employer's free-text role summary. Stored as typed, with nothing appended. */
   description?: string;
   department?: string;
   employmentType?: string;
@@ -209,6 +247,7 @@ export type EmployerJobInput = {
   /** Requirement prose, one item per line from the Figma textareas. */
   requiredQualifications?: string[];
   preferredQualifications?: string[];
+  /** One item per line. */
   responsibilities?: string[];
 };
 
@@ -220,7 +259,15 @@ function requirementsText(input: Partial<EmployerJobInput>): string | null {
   return parts.join("\n\n").trim() || null;
 }
 
-/** Merges a partial edit over the job's current stored values. */
+/** The four structured fields, mapped onto the columns that now hold them. */
+function structuredFields(input: Partial<EmployerJobInput>) {
+  return {
+    department: input.department?.trim() || null,
+    employmentType: toStoredEmploymentType(input.employmentType),
+    compensationText: input.compensationText?.trim() || null,
+    responsibilitiesText: (input.responsibilities ?? []).join("\n").trim() || null,
+  };
+}
 
 /**
  * Creates a draft job.
@@ -244,11 +291,12 @@ export async function createEmployerJob(
     const supabase = await createClient();
     const job = await createJob(supabase, resolved.context.orgId, {
       title,
-      description: buildJobDescription(input),
+      description: input.description?.trim() || null,
       location: input.location?.trim() || null,
       requirementsText: requirementsText(input),
       preferredText: null,
       workArrangement: toWorkArrangement(input.workArrangement),
+      ...structuredFields(input),
     });
     return { status: "ok", data: toDisplayJob(job as ServiceJob), source: "live" };
   } catch (error) {
@@ -275,51 +323,44 @@ export async function updateEmployerJob(
 
   const patch: UpdateJobInput = {};
 
-  // Description-backed fields share one column, so any of them changing means
-  // the whole block is rebuilt from the current stored values merged with the
-  // edit. Reading first is what keeps a compensation-only save from blanking
-  // the body the employer did not touch.
-  const touchesDescription =
-    input.description !== undefined ||
-    input.compensationText !== undefined ||
-    input.department !== undefined ||
-    input.employmentType !== undefined ||
-    input.responsibilities !== undefined;
+  // Each of the four is its own column now, so a compensation-only save cannot
+  // blank the body the employer did not touch: the fields are independent and
+  // only the ones the caller actually sent are written.
+  //
+  // Requirements are the one exception. `requirements_text` holds both the
+  // required and the preferred lists as a single prose column, so changing
+  // either means rebuilding it from the current stored value merged with the
+  // edit.
   const touchesRequirements =
     input.requiredQualifications !== undefined || input.preferredQualifications !== undefined;
 
-  if (touchesDescription || touchesRequirements) {
+  if (touchesRequirements) {
     const current = (await getJob(await createClient(), resolved.context.orgId, jobId)) as ServiceJob | null;
     if (!current) return refusalOf("not_found");
 
-    if (touchesDescription) {
-      const stored = parseJobDescription(current.description);
-      patch.description = buildJobDescription({
-        body: input.description !== undefined ? input.description : stored.body,
-        department: input.department !== undefined ? input.department : stored.department,
-        employmentType:
-          input.employmentType !== undefined ? input.employmentType : stored.employmentType,
-        compensationText:
-          input.compensationText !== undefined ? input.compensationText : stored.compensationText,
-        responsibilities:
-          input.responsibilities !== undefined ? input.responsibilities : stored.responsibilities,
-      });
-    }
-
-    if (touchesRequirements) {
-      patch.requirementsText = requirementsText({
-        requiredQualifications:
-          input.requiredQualifications ?? splitRequirementLines(current.requirementsText) ?? [],
-        preferredQualifications:
-          input.preferredQualifications ?? splitRequirementLines(current.preferredText) ?? [],
-      });
-    }
+    patch.requirementsText = requirementsText({
+      requiredQualifications:
+        input.requiredQualifications ?? splitRequirementLines(current.requirementsText) ?? [],
+      preferredQualifications:
+        input.preferredQualifications ?? splitRequirementLines(current.preferredText) ?? [],
+    });
   }
 
   if (input.title !== undefined) patch.title = input.title.trim();
   if (input.location !== undefined) patch.location = input.location.trim() || null;
   if (input.workArrangement !== undefined) {
     patch.workArrangement = toWorkArrangement(input.workArrangement);
+  }
+  if (input.description !== undefined) patch.description = input.description.trim() || null;
+  if (input.department !== undefined) patch.department = input.department.trim() || null;
+  if (input.employmentType !== undefined) {
+    patch.employmentType = toStoredEmploymentType(input.employmentType);
+  }
+  if (input.compensationText !== undefined) {
+    patch.compensationText = input.compensationText.trim() || null;
+  }
+  if (input.responsibilities !== undefined) {
+    patch.responsibilitiesText = input.responsibilities.join("\n").trim() || null;
   }
 
   if (Object.keys(patch).length === 0) {

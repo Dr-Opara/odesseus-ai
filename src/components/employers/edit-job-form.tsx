@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveEmployerJobAction } from "@/lib/employers/actions";
+import {
+  JOB_EMPLOYMENT_TYPES,
+  toFormEmploymentType,
+} from "@/lib/employer/service";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import type { EmployerJobDetail } from "@/lib/employers/types";
 
@@ -92,10 +96,20 @@ export default function EditJobForm({
         </label>
         <label style={{ display: "grid", gap: 8, fontWeight: 650 }}>
           Employment type
-          <select className="input" name="employmentType" defaultValue={job.employmentType || "Full-time"}>
-            <option>Full-time</option>
-            <option>Contract</option>
-            <option>Part-time</option>
+          {/* The options are the database's own vocabulary, so the form cannot
+              offer a value the check constraint would refuse. An unrecognised
+              stored value falls back to the first option and the employer sees
+              and corrects it. */}
+          <select
+            className="input"
+            name="employmentType"
+            defaultValue={job.employmentType ?? "full_time"}
+          >
+            {JOB_EMPLOYMENT_TYPES.map((value) => (
+              <option key={value} value={value}>
+                {toFormEmploymentType(value)}
+              </option>
+            ))}
           </select>
         </label>
       </div>

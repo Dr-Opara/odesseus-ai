@@ -103,7 +103,19 @@ export type FitScore = {
 /** F13-H — no protected demographic attributes belong on this type. */
 export type CandidateListItem = {
   id: string;
+  /**
+   * The applicant's display name, or the role they applied for when they have
+   * none. Never a truncated id and never derived from an email address.
+   */
   name: string;
+  /**
+   * The address the candidate applied with, for this organization's job.
+   *
+   * Absent only when the candidate has no reachable address. It is not a key
+   * into anything: the backend's identity read returns no user id, so this
+   * cannot be used to reach a candidate's wallet, Live, or resume data.
+   */
+  email?: string;
   appliedJobId: string;
   appliedJobTitle: string;
   stage: PipelineStage;

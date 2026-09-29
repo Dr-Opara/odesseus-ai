@@ -1,30 +1,43 @@
 /**
- * Serialisation between the Figma job form and the backend's `employer_jobs`
- * columns.
+ * The legacy labelled-description format, and reading it.
  *
- * The form collects more than the table stores. `employer_jobs` has columns
- * for title, location, work arrangement, description, requirements text, and
- * preferred text — but no column for department, employment type,
- * compensation, or responsibilities.
+ * When `employer_jobs` had no columns for department, employment type,
+ * compensation, or responsibilities, the employer form folded them into
+ * `description` as a labelled block:
  *
- * Those four are therefore folded into the description as labelled blocks
- * rather than discarded. The alternative — dropping them — would silently
- * lose what the employer typed, and inventing columns would be a schema
- * change this module should not make unilaterally.
+ *     Own application security.
  *
- * The format round-trips: `parseJobDescription` reads back exactly what
- * `buildJobDescription` wrote, so the Edit form re-renders the employer's own
- * input into the same fields instead of showing a flattened blob.
+ *     Department: Engineering
+ *
+ *     Compensation: $180K-$220K
+ *
+ *     Responsibilities:
+ *     Threat modelling
+ *     Secure code review
+ *
+ * Those four fields are real columns now. Nothing writes this format any more,
+ * and `buildJobDescription` is deliberately absent so it cannot be reintroduced
+ * by accident.
+ *
+ * What is left here is the read path, and it earns its place: a description
+ * predating the migration may exist only in this shape, and a row whose column
+ * is still null but whose block is recognisable is one the backfill did not
+ * reach. Dropping the parse would turn those jobs' fields into silently
+ * missing values.
+ *
+ * Nothing here alters a description. The block is left in the stored text
+ * because removing text an employer wrote is a worse failure than a redundant
+ * field, and the read path prefers the column in any case.
  */
 
-/** Labels for the folded fields. Stable: the parser matches on these. */
+/** Labels the legacy serialiser wrote. Stable: the parser matches on these. */
 const DEPARTMENT = "Department";
 const EMPLOYMENT_TYPE = "Employment type";
 const COMPENSATION = "Compensation";
 const RESPONSIBILITIES = "Responsibilities";
 
 export type JobDescriptionParts = {
-  /** The employer's free-text role summary. */
+  /** The employer's free-text role summary, with the folded blocks removed. */
   body?: string;
   department?: string;
   employmentType?: string;
@@ -39,37 +52,14 @@ function blankToUndefined(value: string | undefined): string | undefined {
 }
 
 /**
- * Builds the stored description.
+ * Splits a legacy description into its free-text body and folded fields.
  *
- * Returns `null` when the employer supplied nothing, so an untouched field is
- * not written as an empty string.
+ * A single pass, so a folded block cannot be mistaken for body text and the
+ * body cannot swallow a folded block. Returns `{}` for an absent description.
  */
-export function buildJobDescription(parts: JobDescriptionParts): string | null {
-  const body = parts.body?.trim();
-  const responsibilities = (parts.responsibilities ?? []).filter((line) => line.trim());
-
-  const blocks: string[] = [];
-  if (body) blocks.push(body);
-
-  const department = blankToUndefined(parts.department);
-  if (department) blocks.push(`${DEPARTMENT}: ${department}`);
-
-  const employmentType = blankToUndefined(parts.employmentType);
-  if (employmentType) blocks.push(`${EMPLOYMENT_TYPE}: ${employmentType}`);
-
-  const compensation = blankToUndefined(parts.compensationText);
-  if (compensation) blocks.push(`${COMPENSATION}: ${compensation}`);
-
-  if (responsibilities.length) {
-    blocks.push(`${RESPONSIBILITIES}:\n${responsibilities.map((line) => line.trim()).join("\n")}`);
-  }
-
-  const joined = blocks.join("\n\n").trim();
-  return joined || null;
-}
-
-/** Reads a stored description back into the form's own fields. */
-export function parseJobDescription(description: string | null | undefined): JobDescriptionParts {
+export function parseJobDescription(
+  description: string | null | undefined
+): JobDescriptionParts {
   if (!description) return {};
 
   const body: string[] = [];
@@ -80,9 +70,8 @@ export function parseJobDescription(description: string | null | undefined): Job
   let inResponsibilities = false;
 
   for (const raw of description.split("\n")) {
-    // An exact label match starts (or restarts) a folded block. `startsWith`
-    // is deliberate: "Department: Engineering" matches, "Departmental: x"
-    // does not.
+    // `startsWith` on the full label is deliberate: "Department: Engineering"
+    // matches, "Departmental: x" does not.
     const singleLine = matchLabel(raw);
     if (singleLine) {
       inResponsibilities = false;
@@ -107,9 +96,9 @@ export function parseJobDescription(description: string | null | undefined): Job
 
   return {
     body: body.join("\n").trim() || undefined,
-    department,
-    employmentType,
-    compensationText,
+    department: blankToUndefined(department),
+    employmentType: blankToUndefined(employmentType),
+    compensationText: blankToUndefined(compensationText),
     responsibilities: responsibilities.length ? responsibilities : undefined,
   };
 }
@@ -131,7 +120,9 @@ function matchLabel(line: string): { label: string; value: string } | null {
  * The employer may have typed one item per line or a single sentence. Both
  * render as lines; nothing is parsed into a structure it did not have.
  */
-export function splitRequirementLines(value: string | null | undefined): string[] | undefined {
+export function splitRequirementLines(
+  value: string | null | undefined
+): string[] | undefined {
   if (!value) return undefined;
   const lines = value
     .split("\n")

@@ -1232,6 +1232,62 @@ export async function getOrgFeaturedView(
 // Job CRUD (Phase 14B)
 // ---------------------------------------------------------------------------
 
+/**
+ * The stored employment-type vocabulary.
+ *
+ * Mirrors `employer_jobs_employment_type_check`. The database is the authority;
+ * this is here so the form can offer the same set and so a value the check
+ * would refuse is never sent.
+ */
+export const JOB_EMPLOYMENT_TYPES = [
+  "full_time",
+  "part_time",
+  "contract",
+  "temporary",
+  "internship",
+  "volunteer",
+  "other",
+] as const;
+
+export type JobEmploymentType = (typeof JOB_EMPLOYMENT_TYPES)[number];
+
+/**
+ * Maps the job form's employment-type option onto the stored value.
+ *
+ * The form offers "Full-time"; the column stores `full_time`. An unrecognised
+ * value resolves to null rather than to a guess, because a defaulted type makes
+ * a job visible to candidates who filtered for a type it is not.
+ */
+export function toStoredEmploymentType(
+  value: string | null | undefined
+): JobEmploymentType | null {
+  if (!value) return null;
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return (JOB_EMPLOYMENT_TYPES as readonly string[]).includes(normalized)
+    ? (normalized as JobEmploymentType)
+    : null;
+}
+
+/**
+ * A stored value rendered back into the form's own option vocabulary.
+ *
+ * Only the first word is capitalised, because that is the approved product
+ * vocabulary: "Full-time", not "Full-Time". Capitalising each segment would read
+ * as a different label from the one the rest of the product copy uses.
+ */
+export function toFormEmploymentType(
+  value: string | null | undefined
+): string | undefined {
+  if (!value) return undefined;
+  const label = value.split("_").join("-");
+  if (!label) return undefined;
+  return label[0].toUpperCase() + label.slice(1);
+}
+
 export type CreateJobInput = {
   title: string;
   description?: string | null;
@@ -1239,6 +1295,20 @@ export type CreateJobInput = {
   requirementsText?: string | null;
   preferredText?: string | null;
   workArrangement?: "remote" | "hybrid" | "onsite" | null;
+  /**
+   * The approved job form's department, employment type, compensation, and
+   * responsibilities, each on its own column.
+   *
+   * These were previously folded into `description` as a labelled block and
+   * split back out on read. That round trip was lossy in both directions: a
+   * role summary that merely mentioned "Compensation:" parsed as compensation,
+   * a multi-line value could not round-trip at all, and none of the four was
+   * queryable. See the migration for the per-field reasoning.
+   */
+  department?: string | null;
+  employmentType?: JobEmploymentType | null;
+  compensationText?: string | null;
+  responsibilitiesText?: string | null;
 };
 
 export type CreateJobResult =
@@ -1272,10 +1342,14 @@ export async function createJob(
       requirements_text: input.requirementsText?.trim() || null,
       preferred_text: input.preferredText?.trim() || null,
       work_arrangement: input.workArrangement ?? null,
+      department: input.department?.trim() || null,
+      employment_type: input.employmentType ?? null,
+      compensation_text: input.compensationText?.trim() || null,
+      responsibilities_text: input.responsibilitiesText?.trim() || null,
       status: "draft",
     })
     .select(
-      "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at"
+      JOB_COLUMNS
     )
     .single();
 
@@ -1300,7 +1374,7 @@ export async function listJobs(
   const { data, error, count } = await client
     .from("employer_jobs")
     .select(
-      "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at",
+      JOB_COLUMNS,
       { count: "exact" }
     )
     .eq("org_id", orgId)
@@ -1328,7 +1402,7 @@ export async function getJob(
   const { data, error } = await client
     .from("employer_jobs")
     .select(
-      "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at"
+      JOB_COLUMNS
     )
     .eq("id", jobId)
     .eq("org_id", orgId)
@@ -1348,6 +1422,10 @@ export type UpdateJobInput = {
   requirementsText?: string | null;
   preferredText?: string | null;
   workArrangement?: "remote" | "hybrid" | "onsite" | null;
+  department?: string | null;
+  employmentType?: JobEmploymentType | null;
+  compensationText?: string | null;
+  responsibilitiesText?: string | null;
 };
 
 export async function updateJob(
@@ -1379,6 +1457,10 @@ export async function updateJob(
     requirements_text: string | null;
     preferred_text: string | null;
     work_arrangement: "remote" | "hybrid" | "onsite" | null;
+    department: string | null;
+    employment_type: JobEmploymentType | null;
+    compensation_text: string | null;
+    responsibilities_text: string | null;
   }> = {};
 
   if (input.title !== undefined) updates.title = input.title.trim();
@@ -1393,12 +1475,24 @@ export async function updateJob(
   if (input.workArrangement !== undefined) {
     updates.work_arrangement = input.workArrangement;
   }
+  if (input.department !== undefined) {
+    updates.department = input.department?.trim() || null;
+  }
+  if (input.employmentType !== undefined) {
+    updates.employment_type = input.employmentType;
+  }
+  if (input.compensationText !== undefined) {
+    updates.compensation_text = input.compensationText?.trim() || null;
+  }
+  if (input.responsibilitiesText !== undefined) {
+    updates.responsibilities_text = input.responsibilitiesText?.trim() || null;
+  }
 
   if (Object.keys(updates).length === 0) {
     const { data, error } = await client
       .from("employer_jobs")
       .select(
-        "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at"
+        JOB_COLUMNS
       )
       .eq("id", jobId)
       .eq("org_id", orgId)
@@ -1413,7 +1507,7 @@ export async function updateJob(
     .eq("id", jobId)
     .eq("org_id", orgId)
     .select(
-      "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at"
+      JOB_COLUMNS
     )
     .single();
 
@@ -1489,7 +1583,7 @@ export async function publishJob(
     .eq("id", jobId)
     .eq("org_id", orgId)
     .select(
-      "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at"
+      JOB_COLUMNS
     )
     .maybeSingle();
 
@@ -1540,7 +1634,7 @@ export async function closeJob(
     .eq("id", jobId)
     .eq("org_id", orgId)
     .select(
-      "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at"
+      JOB_COLUMNS
     )
     .single();
 

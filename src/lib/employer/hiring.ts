@@ -68,6 +68,26 @@ export type EmployerApplicant = {
   verificationEvidence: unknown;
 };
 
+/**
+ * Who applied, for the applications on an organization's own jobs.
+ *
+ * This is deliberately a separate read from {@link EmployerApplicant} rather
+ * than two more fields on it. `odesseus_get_employer_applicants` returns
+ * application payloads and, by design, no `user_id`; identity is its own
+ * narrow surface so that a future change to the payload reader cannot quietly
+ * widen what an employer learns about a person.
+ *
+ * No user id is returned here either, so nothing in this shape is a key into
+ * candidate-private data.
+ */
+export type EmployerApplicantIdentity = {
+  applicationId: string;
+  /** Null when the candidate has no profile or cleared the field. Never derived. */
+  candidateName: string | null;
+  /** Null only if the auth record is missing. */
+  candidateEmail: string | null;
+};
+
 export type EmployerFitScoreView = {
   id: string;
   score: number;
@@ -126,6 +146,37 @@ export async function listApplicants(
     jobSnapshot: row.job_snapshot ?? null,
     matchScoreSnapshot: (row.match_score_snapshot as number | null) ?? null,
     verificationEvidence: row.verification_evidence ?? null,
+  }));
+}
+
+/**
+ * The applicant's display name and contact address, for the org's own
+ * applications.
+ *
+ * The RPC proves the whole chain itself -- session, membership (member row or
+ * organization owner), org, job, and application -- and raises on a foreign
+ * org, so this cannot be pointed at another company's applicants. It is a
+ * separate call from {@link listApplicants} so the identity surface stays
+ * auditable on its own.
+ */
+export async function listApplicantIdentities(
+  client: EmployerClient,
+  orgId: string,
+  jobId?: string
+): Promise<EmployerApplicantIdentity[]> {
+  const { data, error } = await client.rpc("odesseus_get_employer_applicant_identities", {
+    p_org_id: orgId,
+    p_job_id: jobId ?? null,
+  });
+
+  if (error) {
+    throw new Error("Could not load applicant identity: " + error.message);
+  }
+
+  return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
+    applicationId: row.application_id as string,
+    candidateName: (row.candidate_name as string | null) ?? null,
+    candidateEmail: (row.candidate_email as string | null) ?? null,
   }));
 }
 

@@ -2,13 +2,20 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getOrgRole } from "@/lib/employer/service";
-import { getApplicant } from "@/lib/employer/hiring";
+import { getApplicant, listApplicantIdentities } from "@/lib/employer/hiring";
 
 export const runtime = "nodejs";
 
 /**
  * One applicant by id. Member-scoped: an id from another org resolves to
  * null here and answers 404, never leaking across the org boundary.
+ *
+ * The applicant's display name and contact address come from the identity
+ * accessor, which is a separate, narrower read that proves the membership ->
+ * org -> job -> application chain itself and returns no user id. A missing
+ * identity row is not an error: the applicant is still returned, with the
+ * identity fields absent, because "this applicant has no name on file" and
+ * "this applicant does not exist" are different answers.
  */
 export async function GET(
   _request: Request,
@@ -46,7 +53,20 @@ export async function GET(
     if (!applicant) {
       return NextResponse.json({ error: "That applicant could not be found." }, { status: 404 });
     }
-    return NextResponse.json({ applicant });
+
+    // Scoped to this org, then narrowed to this one application. The accessor
+    // raises for a foreign org, which the role check above already refused, so
+    // reaching here means the caller's own application.
+    const identities = await listApplicantIdentities(supabase, orgId);
+    const identity = identities.find((row) => row.applicationId === applicationId);
+
+    return NextResponse.json({
+      applicant: {
+        ...applicant,
+        candidateName: identity?.candidateName ?? null,
+        candidateEmail: identity?.candidateEmail ?? null,
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("[ODESSEUS_EMPLOYER_HIRING] applicant read failed", message);

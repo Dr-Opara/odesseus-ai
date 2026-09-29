@@ -67,9 +67,13 @@ import {
   updateNotificationPreferences,
 } from "@/lib/employers/notifications-adapter";
 import { PIPELINE_STAGES } from "@/lib/employers/types";
+import {
+  JOB_EMPLOYMENT_TYPES,
+  toFormEmploymentType,
+  toStoredEmploymentType,
+} from "@/lib/employer/service";
 import { STORED_STAGES, toProductStage, toStoredStage } from "@/lib/employers/stages";
 import {
-  buildJobDescription,
   parseJobDescription,
   splitRequirementLines,
 } from "@/lib/employers/job-description";
@@ -93,6 +97,11 @@ const ADAPTER_FILES = [
 
 function readSource(file: string) {
   return readFileSync(join(process.cwd(), file), "utf8");
+}
+
+/** Removes comments so a doc block explaining the rule is not read as a violation. */
+function stripComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
 describe("no employer adapter can serve fixture data", () => {
@@ -279,18 +288,28 @@ describe("pipeline stage vocabulary is translated in exactly one place", () => {
   });
 });
 
-describe("the job description block round-trips the fields with no column", () => {
-  it("keeps every field the form collects", () => {
-    const built = buildJobDescription({
-      body: "Own application security.",
-      department: "Engineering",
-      employmentType: "Full-time",
-      compensationText: "$180K–$220K",
-      responsibilities: ["Threat modelling", "Secure code review"],
-    });
-    expect(built).toBeTruthy();
+describe("the legacy labelled-description block is read but never written", () => {
+  // Department, employment type, compensation, and responsibilities are real
+  // columns on employer_jobs now. This parser exists only to read descriptions
+  // written before those columns existed, and for rows the migration backfill
+  // did not reach. Nothing writes the format any more, and the serialiser is
+  // gone from the module so it cannot be reintroduced.
+  const LEGACY = [
+    "Own application security.",
+    "",
+    "Department: Engineering",
+    "",
+    "Employment type: Full-time",
+    "",
+    "Compensation: $180K–$220K",
+    "",
+    "Responsibilities:",
+    "Threat modelling",
+    "Secure code review",
+  ].join("\n");
 
-    const parsed = parseJobDescription(built);
+  it("recovers every field the legacy format carried", () => {
+    const parsed = parseJobDescription(LEGACY);
     expect(parsed.body).toBe("Own application security.");
     expect(parsed.department).toBe("Engineering");
     expect(parsed.employmentType).toBe("Full-time");
@@ -298,19 +317,127 @@ describe("the job description block round-trips the fields with no column", () =
     expect(parsed.responsibilities).toEqual(["Threat modelling", "Secure code review"]);
   });
 
-  it("returns null rather than an empty string when nothing was entered", () => {
-    expect(buildJobDescription({})).toBeNull();
-    expect(buildJobDescription({ body: "   " })).toBeNull();
-  });
-
   it("handles an absent description", () => {
     expect(parseJobDescription(null)).toEqual({});
+    expect(parseJobDescription(undefined)).toEqual({});
     expect(splitRequirementLines(undefined)).toBeUndefined();
   });
 
   it("does not mistake a body line for a label", () => {
-    const built = buildJobDescription({ body: "Departmental lead role" });
-    expect(parseJobDescription(built).department).toBeUndefined();
-    expect(parseJobDescription(built).body).toBe("Departmental lead role");
+    const parsed = parseJobDescription("Departmental lead role");
+    expect(parsed.department).toBeUndefined();
+    expect(parsed.body).toBe("Departmental lead role");
+  });
+
+  it("does not treat a mid-sentence mention as a field", () => {
+    // The same failure the SQL backfill guard covers: an employer whose role
+    // summary mentions the word is not a stored compensation value.
+    const parsed = parseJobDescription("Ask about Compensation: it is negotiable.");
+    expect(parsed.compensationText).toBeUndefined();
+    expect(parsed.body).toBe("Ask about Compensation: it is negotiable.");
+  });
+
+  it("the module no longer exports a serialiser", () => {
+    // A compile-time guarantee expressed as a source check, because the point
+    // is that nobody starts writing the format again.
+    const source = readSource("src/lib/employers/job-description.ts");
+    expect(stripComments(source)).not.toContain("buildJobDescription");
+  });
+});
+
+describe("the employment-type vocabulary matches the database check", () => {
+  it("maps every form option onto a stored value", () => {
+    expect(toStoredEmploymentType("Full-time")).toBe("full_time");
+    expect(toStoredEmploymentType("Part-time")).toBe("part_time");
+    expect(toStoredEmploymentType("Contract")).toBe("contract");
+    expect(toStoredEmploymentType("  FULL_TIME  ")).toBe("full_time");
+  });
+
+  it("resolves an unknown value to null rather than to a guess", () => {
+    // A defaulted type would make a job visible to candidates who filtered for
+    // a type it is not.
+    expect(toStoredEmploymentType("Wizard")).toBeNull();
+    expect(toStoredEmploymentType("")).toBeNull();
+    expect(toStoredEmploymentType(undefined)).toBeNull();
+  });
+
+  it("round-trips a stored value back to the form's label", () => {
+    expect(toFormEmploymentType("full_time")).toBe("Full-time");
+    expect(toFormEmploymentType("part_time")).toBe("Part-time");
+    expect(toFormEmploymentType(null)).toBeUndefined();
+  });
+
+  it("exports exactly the values the check constraint allows", () => {
+    expect([...JOB_EMPLOYMENT_TYPES]).toEqual([
+      "full_time",
+      "part_time",
+      "contract",
+      "temporary",
+      "internship",
+      "volunteer",
+      "other",
+    ]);
+  });
+});
+
+describe("the four structured job fields are their own columns", () => {
+  it("the service reads and writes them as columns, not as description prose", () => {
+    const source = readSource("src/lib/employer/service.ts");
+    for (const column of [
+      "department",
+      "employment_type",
+      "compensation_text",
+      "responsibilities_text",
+    ]) {
+      expect(source, `service.ts must handle ${column}`).toContain(column);
+    }
+    // One shared column list, so a new column cannot be added to the table and
+    // missed by some of the six read and write sites.
+    const lists = source.match(/"id,org_id,title,description[^"]*"/g) ?? [];
+    expect(lists, "the inline job column lists should be gone").toEqual([]);
+  });
+
+  it("the adapters read the column and fall back to the legacy block", () => {
+    const source = readSource("src/lib/employers/jobs-adapter.ts");
+    expect(source).toContain("row.department ?? legacy.department");
+    expect(source).toContain("row.compensationText ?? legacy.compensationText");
+    expect(source).toContain("splitLines(row.responsibilitiesText)");
+  });
+
+  it("nothing writes the labelled block any more", () => {
+    // The write path must not re-flatten the four fields into `description`.
+    const adapter = stripComments(readSource("src/lib/employers/jobs-adapter.ts"));
+    const actions = stripComments(readSource("src/lib/employers/actions.ts"));
+    for (const source of [adapter, actions]) {
+      expect(source).not.toContain("buildJobDescription");
+    }
+  });
+});
+
+describe("applicant identity is its own narrow read", () => {
+  it("the service exposes a dedicated identity accessor, not fields on the payload", () => {
+    const source = readSource("src/lib/employer/hiring.ts");
+    expect(source).toContain("odesseus_get_employer_applicant_identities");
+    // The pre-existing payload reader must not have been widened to carry a
+    // name, so identity stays an auditable surface of its own.
+    const applicants = source.slice(
+      source.indexOf("odesseus_get_employer_applicants"),
+      source.indexOf("odesseus_get_employer_applicant_identities")
+    );
+    expect(applicants).not.toContain("candidate_name");
+  });
+
+  it("carries no user id, so an employer read cannot pivot into private data", () => {
+    const source = stripComments(readSource("src/lib/employer/hiring.ts"));
+    const identity = source.slice(source.indexOf("EmployerApplicantIdentity"));
+    expect(identity).not.toMatch(/userId/);
+    expect(identity).not.toMatch(/user_id/);
+  });
+
+  it("maps the name and email through, and does not derive a fallback", () => {
+    const source = readSource("src/lib/employers/candidates-adapter.ts");
+    expect(source).toContain("listApplicantIdentities");
+    expect(source).toContain("candidateName");
+    expect(source).toContain("candidateEmail");
   });
 });

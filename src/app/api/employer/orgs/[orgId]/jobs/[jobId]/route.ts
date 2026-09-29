@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import {
+  JOB_EMPLOYMENT_TYPES,
+  type JobEmploymentType,
+} from "@/lib/employer/service";
 
 export const runtime = "nodejs";
 
@@ -145,6 +149,13 @@ export async function PATCH(
   const requirementsText = bodyRecord.requirementsText as string | null | undefined;
   const preferredText = bodyRecord.preferredText as string | null | undefined;
   const workArrangement = bodyRecord.workArrangement as string | null | undefined;
+  // The four structured job-form fields. Each is a nullable column, so an
+  // absent key means "leave it alone" and an explicit null means "clear it" --
+  // the distinction the updateJob patch type relies on.
+  const department = bodyRecord.department as string | null | undefined;
+  const employmentType = bodyRecord.employmentType as string | null | undefined;
+  const compensationText = bodyRecord.compensationText as string | null | undefined;
+  const responsibilitiesText = bodyRecord.responsibilitiesText as string | null | undefined;
 
   if (title !== undefined && (typeof title !== "string" || title.length < 1 || title.length > 200)) {
     return NextResponse.json({ error: "Title must be at most 200 characters." }, { status: 400 });
@@ -168,6 +179,38 @@ export async function PATCH(
   ) {
     return NextResponse.json({ error: "Work arrangement must be remote, hybrid, or onsite." }, { status: 400 });
   }
+  // The four structured fields, bounded and vocabulary-checked here so a bad
+  // value is a 400 naming the field rather than a check-constraint failure
+  // surfacing from the service as a 500.
+  if (department !== undefined && department !== null && typeof department === "string" && department.length > 200) {
+    return NextResponse.json({ error: "Department must be at most 200 characters." }, { status: 400 });
+  }
+  if (
+    employmentType !== undefined &&
+    employmentType !== null &&
+    !JOB_EMPLOYMENT_TYPES.includes(employmentType as (typeof JOB_EMPLOYMENT_TYPES)[number])
+  ) {
+    return NextResponse.json({ error: "That employment type is not recognised." }, { status: 400 });
+  }
+  if (
+    compensationText !== undefined &&
+    compensationText !== null &&
+    typeof compensationText === "string" &&
+    compensationText.length > 200
+  ) {
+    return NextResponse.json({ error: "Compensation must be at most 200 characters." }, { status: 400 });
+  }
+  if (
+    responsibilitiesText !== undefined &&
+    responsibilitiesText !== null &&
+    typeof responsibilitiesText === "string" &&
+    responsibilitiesText.length > 10000
+  ) {
+    return NextResponse.json(
+      { error: "Responsibilities must be at most 10000 characters." },
+      { status: 400 }
+    );
+  }
 
   const { updateJob } = await import("@/lib/employer/service");
   const result = await updateJob(supabase, orgId, jobId, {
@@ -182,6 +225,15 @@ export async function PATCH(
       workArrangement === undefined
         ? undefined
         : ((workArrangement as "remote" | "hybrid" | "onsite" | null) ?? null),
+    department: department === undefined ? undefined : (department?.trim() || null),
+    employmentType:
+      employmentType === undefined
+        ? undefined
+        : ((employmentType as JobEmploymentType | null) ?? null),
+    compensationText:
+      compensationText === undefined ? undefined : (compensationText?.trim() || null),
+    responsibilitiesText:
+      responsibilitiesText === undefined ? undefined : (responsibilitiesText?.trim() || null),
   });
 
   if ("reason" in result) {

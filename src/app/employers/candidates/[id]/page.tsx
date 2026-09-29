@@ -84,10 +84,16 @@ export default async function EmployerCandidateDetailPage({
 
           <div style={{ marginTop: 20 }}>
             <EmployerRowList>
+              {candidate.email ? <EmployerRow label="Email" value={candidate.email} /> : null}
               <EmployerRow label="Stage" value={STAGE_LABELS[candidate.stage]} />
               <EmployerRow label="Applied" value={formatDate(candidate.appliedAt)} />
             </EmployerRowList>
           </div>
+          {candidate.email ? null : (
+            <p className="muted" style={{ marginTop: 10, fontSize: 13 }}>
+              This applicant has no contact address on file.
+            </p>
+          )}
 
           {fitScore ? (
             <div style={{ marginTop: 20 }}>

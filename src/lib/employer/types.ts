@@ -60,6 +60,17 @@ export type EmployerJob = {
   requirementsText?: string | null;
   preferredText?: string | null;
   workArrangement?: string | null;
+  /**
+   * The approved job form's four additional fields, each on its own column.
+   *
+   * All nullable: a job may leave any of them blank and nothing here is ever
+   * defaulted. `employmentType` is the stored vocabulary (`full_time`), not the
+   * form's label (`Full-time`); `toFormEmploymentType` converts for display.
+   */
+  department?: string | null;
+  employmentType?: string | null;
+  compensationText?: string | null;
+  responsibilitiesText?: string | null;
   status: EmployerJobStatus | string;
   postedAt: string | null;
   createdAt: string | null;

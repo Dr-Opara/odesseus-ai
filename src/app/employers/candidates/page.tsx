@@ -5,12 +5,28 @@ import EmployerStatePanel from "@/components/employers/state-panel";
 import { EmployerRow, EmployerRowList } from "@/components/employers/row-list";
 import { getCandidates } from "@/lib/employers/candidates-adapter";
 import { getEmployerJob } from "@/lib/employers/jobs-adapter";
-import type { PipelineStage } from "@/lib/employers/types";
+import type { CandidateListItem, PipelineStage } from "@/lib/employers/types";
+import { STAGE_LABELS } from "@/lib/employers/stages";
 
 const VALID_STAGES = new Set(["APPLIED", "REVIEWING", "SHORTLISTED", "INTERVIEW", "OFFER", "HIRED", "REJECTED"]);
 
-function rowValue(fitScoreOverall: number | undefined, stage: string): string {
-  return typeof fitScoreOverall === "number" ? `${Math.round(fitScoreOverall)}% Fit` : stage;
+/**
+ * The row value: a scored fit percentage, or the pipeline stage.
+ *
+ * The applicant's contact address is included when the backend supplied one,
+ * because an employer triaging a pipeline needs to know who to reply to. It is
+ * absent, not blank, when there is none, so the row never shows an empty
+ * string that reads as "we tried and found nothing".
+ */
+function rowValue(candidate: CandidateListItem): string {
+  const parts: string[] = [];
+  if (typeof candidate.fitScoreOverall === "number") {
+    parts.push(`${Math.round(candidate.fitScoreOverall)}% Fit`);
+  } else {
+    parts.push(STAGE_LABELS[candidate.stage]);
+  }
+  if (candidate.email) parts.push(candidate.email);
+  return parts.join(" · ");
 }
 
 /** Applicants / Candidates list (Figma screen 78, F13-H). No protected demographic attributes are rendered — none exist on the type at all. */
@@ -51,7 +67,7 @@ export default async function EmployerCandidatesPage({
                   <EmployerRow
                     key={candidate.id}
                     label={candidate.name}
-                    value={rowValue(candidate.fitScoreOverall, candidate.stage)}
+                    value={rowValue(candidate)}
                     href={`/employers/candidates/${candidate.id}`}
                   />
                 ))}

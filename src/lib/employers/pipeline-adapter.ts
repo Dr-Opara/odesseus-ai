@@ -19,7 +19,7 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
-import { getPipeline, listApplicants } from "@/lib/employer/hiring";
+import { getPipeline, listApplicantIdentities, listApplicants } from "@/lib/employer/hiring";
 import { resolveEmployerContext, isHiringManagerContext } from "./context";
 import { DEFAULT_STAGE, isStoredStage, toProductStage } from "./stages";
 import { PIPELINE_STAGES, type CandidateListItem, type PipelineStage } from "./types";
@@ -51,9 +51,10 @@ export async function getPipelineBoard(filter?: {
     const supabase = await createClient();
     const orgId = resolved.context.orgId;
 
-    const [applicants, history] = await Promise.all([
+    const [applicants, history, identities] = await Promise.all([
       listApplicants(supabase, orgId, filter?.jobId),
       getPipeline(supabase, orgId, filter?.jobId),
+      listApplicantIdentities(supabase, orgId, filter?.jobId),
     ]);
 
     // The history is append-only and ordered ascending, so the last row per
@@ -62,6 +63,10 @@ export async function getPipelineBoard(filter?: {
     for (const entry of history) {
       current[entry.applicationId] = toProductStage(entry.stage);
     }
+
+    const names = new Map(
+      identities.map((row) => [row.applicationId, row.candidateName ?? undefined])
+    );
 
     const board = Object.fromEntries(
       PIPELINE_STAGES.map((stage) => [stage, [] as CandidateListItem[]])
@@ -78,7 +83,10 @@ export async function getPipelineBoard(filter?: {
       const stage = current[applicant.applicationId] ?? DEFAULT_STAGE;
       board[stage].push({
         id: applicant.applicationId,
-        name: applicant.roleTitle?.trim() || "Applicant",
+        // The applicant's own name, from the identity read, with the applied-for
+        // role as the fallback. The employer is triaging their own pipeline, so
+        // a column of truncated ids is not a usable list.
+        name: names.get(applicant.applicationId) ?? applicant.roleTitle?.trim() ?? "Applicant",
         appliedJobId: applicant.jobId,
         appliedJobTitle: applicant.jobTitle,
         stage,

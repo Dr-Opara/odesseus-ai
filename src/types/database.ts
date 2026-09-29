@@ -1037,42 +1037,54 @@ export type Database = {
       };
       employer_jobs: {
         Row: {
+          compensation_text: string | null;
           created_at: string;
+          department: string | null;
           description: string | null;
+          employment_type: string | null;
           id: string;
           location: string | null;
           org_id: string;
           posted_at: string | null;
           preferred_text: string | null;
           requirements_text: string | null;
+          responsibilities_text: string | null;
           status: string;
           title: string;
           updated_at: string;
           work_arrangement: string | null;
         };
         Insert: {
+          compensation_text?: string | null;
           created_at?: string;
+          department?: string | null;
           description?: string | null;
+          employment_type?: string | null;
           id?: string;
           location?: string | null;
           org_id: string;
           posted_at?: string | null;
           preferred_text?: string | null;
           requirements_text?: string | null;
+          responsibilities_text?: string | null;
           status?: string;
           title: string;
           updated_at?: string;
           work_arrangement?: string | null;
         };
         Update: {
+          compensation_text?: string | null;
           created_at?: string;
+          department?: string | null;
           description?: string | null;
+          employment_type?: string | null;
           id?: string;
           location?: string | null;
           org_id?: string;
           posted_at?: string | null;
           preferred_text?: string | null;
           requirements_text?: string | null;
+          responsibilities_text?: string | null;
           status?: string;
           title?: string;
           updated_at?: string;
@@ -4186,6 +4198,25 @@ export type Database = {
           joined_org_id: string;
           joined_role: string;
           org_name: string;
+        }[];
+      };
+      odesseus_get_employer_applicant_identities: {
+        Args: { p_job_id?: string | null; p_org_id: string };
+        Returns: {
+          application_id: string;
+          /**
+           * The candidate's own display name, or null when they have no profile
+           * or cleared the field. Never derived from the email address.
+           */
+          candidate_name: string | null;
+          /**
+           * The address the candidate applied with. Bounded to applications on
+           * the caller's own jobs, and deliberately not paired with a user id:
+           * this function returns no `user_id`, so an employer read cannot pivot
+           * into candidate-private Live, mock-interview, prep, post-interview,
+           * wallet, billing, or resume data.
+           */
+          candidate_email: string | null;
         }[];
       };
       odesseus_get_employer_applicants: {

@@ -16,13 +16,19 @@
  *     candidate-only. The backend's applicant payload does not contain them
  *     and neither does anything below — `tests/unit/employers-candidate-live-isolation.test.ts`
  *     enforces the import boundary.
- *  3. **No candidate identity is invented.** The applicant row carries the
- *     candidate's own `roleTitle`/`companyName` from the application snapshot.
- *     The employer sees job context, not a person the backend did not return.
+ *  3. **Identity is a separate, narrow read.** The applicant's name and contact
+ *     address come from `odesseus_get_employer_applicant_identities`, which
+ *     proves the whole membership -> org -> job -> application chain itself
+ *     and returns no user id. Nothing here is a key into another candidate
+ *     table.
+ *  4. **No candidate identity is invented.** The name is the candidate's own
+ *     display name, and the label falls back to the role they applied for when
+ *     it is absent — never to a name derived from an email address.
  */
 
 import { createClient } from "@/lib/supabase/server";
-import { getFitScore, getPipeline, listApplicants } from "@/lib/employer/hiring";
+import { getFitScore, getPipeline, listApplicantIdentities, listApplicants } from "@/lib/employer/hiring";
+import type { EmployerApplicantIdentity } from "@/lib/employer/hiring";
 import { resolveEmployerContext } from "./context";
 import { splitRequirementLines } from "./job-description";
 import { DEFAULT_STAGE, isStoredStage, toProductStage } from "./stages";
@@ -57,22 +63,36 @@ type ServiceApplicant = {
 };
 
 /**
- * A display name for an applicant.
+ * The label an applicant row shows.
  *
- * The applicant payload is deliberately anonymous — it is org hiring data, not
- * a candidate profile. `roleTitle` is the role the candidate applied for,
- * which is real context the employer already has. When a name is genuinely
- * unavailable the UI shows the role, and no name is invented.
+ * The applicant's own display name, from the identity read. A candidate who
+ * applied to this employer has disclosed their name to them, and the employer
+ * cannot run a hiring process without being able to see and contact who
+ * applied.
+ *
+ * When the name is genuinely absent -- no profile, or the candidate cleared the
+ * field -- the label falls back to the role they applied for, which is real
+ * context the employer already has. It is never derived from the email
+ * local-part: turning `ada.lovelace@` into "Ada Lovelace" is a guess about a
+ * person, and the rule that forbids inventing qualifications forbids inventing
+ * identity just as much.
  */
-function applicantLabel(applicant: ServiceApplicant): string {
-  return applicant.roleTitle?.trim() || "Applicant";
+function applicantLabel(
+  applicant: ServiceApplicant,
+  identity: EmployerApplicantIdentity | undefined
+): string {
+  return identity?.candidateName?.trim() || applicant.roleTitle?.trim() || "Applicant";
 }
 
 /** Projects an applicant row onto the candidates-list display type. */
-function toListItem(applicant: ServiceApplicant): CandidateListItem {
+function toListItem(
+  applicant: ServiceApplicant,
+  identity: EmployerApplicantIdentity | undefined
+): CandidateListItem {
   return {
     id: applicant.applicationId,
-    name: applicantLabel(applicant),
+    name: applicantLabel(applicant, identity),
+    email: identity?.candidateEmail ?? undefined,
     appliedJobId: applicant.jobId,
     appliedJobTitle: applicant.jobTitle,
     // The applicant's own pipeline stage comes from the pipeline read; the
@@ -152,17 +172,22 @@ export async function getCandidates(filter?: {
 
   try {
     const supabase = await createClient();
-    const applicants = (await listApplicants(
-      supabase,
-      resolved.context.orgId,
-      filter?.jobId
-    )) as ServiceApplicant[];
+    const [applicants, identities, stages] = await Promise.all([
+      listApplicants(supabase, resolved.context.orgId, filter?.jobId) as Promise<
+        ServiceApplicant[]
+      >,
+      listApplicantIdentities(supabase, resolved.context.orgId, filter?.jobId),
+      currentStagesFor(supabase, resolved.context.orgId, filter?.jobId),
+    ]);
 
-    const stages = await currentStagesFor(supabase, resolved.context.orgId, filter?.jobId);
+    const byApplication = new Map(identities.map((row) => [row.applicationId, row]));
 
     let data = applicants.map((applicant) => {
-      const item = toListItem(applicant);
-      return { ...item, stage: stages[applicant.applicationId] ?? toStage(undefined) };
+      const identity = byApplication.get(applicant.applicationId);
+      return {
+        ...toListItem(applicant, identity),
+        stage: stages[applicant.applicationId] ?? toStage(undefined),
+      };
     });
 
     if (filter?.stage) data = data.filter((item) => item.stage === filter.stage);
@@ -203,14 +228,19 @@ export async function getCandidateDetail(
 
   try {
     const supabase = await createClient();
-    const applicants = (await listApplicants(supabase, resolved.context.orgId)) as ServiceApplicant[];
+    const [applicants, identities, stages] = await Promise.all([
+      listApplicants(supabase, resolved.context.orgId) as Promise<ServiceApplicant[]>,
+      listApplicantIdentities(supabase, resolved.context.orgId),
+      currentStagesFor(supabase, resolved.context.orgId),
+    ]);
+
     const applicant = applicants.find((row) => row.applicationId === applicationId);
     if (!applicant) {
       return { status: "unavailable", reason: "That applicant could not be found." };
     }
 
-    const stages = await currentStagesFor(supabase, resolved.context.orgId);
     const stage = stages[applicationId] ?? toStage(undefined);
+    const identity = identities.find((row) => row.applicationId === applicationId);
 
     // Fit Score is org- and job-scoped on the server. A row for a different
     // job or org cannot be read here, so a missing row is genuinely unscored
@@ -228,7 +258,7 @@ export async function getCandidateDetail(
       status: "ok",
       source: "live",
       data: {
-        ...toListItem(applicant),
+        ...toListItem(applicant, identity),
         stage,
         fitScore: fitScoreRow ? toFitScore(fitScoreRow) : undefined,
         requiredQualifications: jobSnapshotRequirements.required,

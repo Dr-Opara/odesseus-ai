@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getOrgRole } from "@/lib/employer/service";
-import { listApplicants } from "@/lib/employer/hiring";
+import { listApplicantIdentities, listApplicants } from "@/lib/employer/hiring";
 
 export const runtime = "nodejs";
 
@@ -47,8 +47,29 @@ export async function GET(
   }
 
   try {
-    const applicants = await listApplicants(supabase, orgId, jobId ?? undefined);
-    return NextResponse.json({ applicants });
+    // Two reads, deliberately: the applicant payloads and the applicant
+    // identities are separate accessors, each proving the membership -> org ->
+    // job -> application chain itself, and neither returning a user id. Joining
+    // them here on the application id keeps each surface independently
+    // auditable -- widening the payload reader must not be the way to add a
+    // name to it.
+    const [applicants, identities] = await Promise.all([
+      listApplicants(supabase, orgId, jobId ?? undefined),
+      listApplicantIdentities(supabase, orgId, jobId ?? undefined),
+    ]);
+
+    const byApplication = new Map(identities.map((row) => [row.applicationId, row]));
+
+    return NextResponse.json({
+      applicants: applicants.map((applicant) => {
+        const identity = byApplication.get(applicant.applicationId);
+        return {
+          ...applicant,
+          candidateName: identity?.candidateName ?? null,
+          candidateEmail: identity?.candidateEmail ?? null,
+        };
+      }),
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (message.includes("Not permitted")) {

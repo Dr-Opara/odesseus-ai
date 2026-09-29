@@ -26,7 +26,7 @@
  * a prop from the page that read it there.
  */
 
-import { buildJobDescription } from "./job-description";
+import { toStoredEmploymentType } from "@/lib/employer/service";
 import type { EmployerPlanId, PipelineStage } from "./types";
 
 /** The result shape every action here returns. */
@@ -146,32 +146,32 @@ type JobInput = {
  * Maps the form's fields onto the route's request body.
  *
  * The route takes the backend's own column names (`requirementsText`,
- * `preferredText`, `workArrangement`), and `workArrangement` in the stored
- * vocabulary rather than the form's capitalised one. Department, employment
- * type, compensation, and responsibilities have no column, so they are folded
- * into the description's labelled block by `buildJobDescription` — the
- * employer never silently loses what they typed.
+ * `preferredText`, `workArrangement`, and the four structured fields), and
+ * `workArrangement` and `employmentType` in the stored vocabulary rather than
+ * the form's capitalised one. Department, compensation, and responsibilities
+ * are their own columns, so nothing is flattened into the description and
+ * nothing the employer typed is lost.
  */
 function toJobBody(input: JobInput) {
   const workArrangement = input.workArrangement?.trim().toLowerCase();
   return {
     title: input.title.trim(),
-    description: buildJobDescription({
-      body: input.description,
-      department: input.department,
-      employmentType: input.employmentType,
-      compensationText: input.compensationText,
-      responsibilities: input.responsibilities,
-    }),
+    description: input.description?.trim() || null,
     location: input.location?.trim() || null,
     requirementsText: (input.requiredQualifications ?? []).join("\n").trim() || null,
     preferredText: (input.preferredQualifications ?? []).join("\n").trim() || null,
     workArrangement:
-      workArrangement === "remote" || workArrangement === "hybrid" || workArrangement === "onsite"
+      workArrangement === "remote" ||
+      workArrangement === "hybrid" ||
+      workArrangement === "onsite"
         ? workArrangement
         : workArrangement === "on-site"
           ? "onsite"
           : null,
+    department: input.department?.trim() || null,
+    employmentType: toStoredEmploymentType(input.employmentType),
+    compensationText: input.compensationText?.trim() || null,
+    responsibilitiesText: (input.responsibilities ?? []).join("\n").trim() || null,
   };
 }
 
