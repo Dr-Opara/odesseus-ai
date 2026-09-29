@@ -62,6 +62,8 @@ describe("POST /api/interviews/[id]/live/transcript — turn-index-derived order
             created_at: activatedAt,
           });
         }
+        // Owner-side guest guard: a genuine candidate interview passes.
+        if (table === "interviews") return fakeQueryResult({ id: "iv-1", source: "manual" });
         if (table === "live_transcript_items") return itemsBuilder;
         return fakeQueryResult(null);
       }),
@@ -106,6 +108,8 @@ describe("POST /api/interviews/[id]/live/transcript — turn-index-derived order
             created_at: activatedAt,
           });
         }
+        // Owner-side guest guard: a genuine candidate interview passes.
+        if (table === "interviews") return fakeQueryResult({ id: "iv-1", source: "manual" });
         if (table === "live_transcript_items") return itemsBuilder;
         return fakeQueryResult(null);
       }),

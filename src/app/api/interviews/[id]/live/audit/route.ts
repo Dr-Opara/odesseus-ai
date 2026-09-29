@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { GUEST_SHARE_SOURCE } from "@/lib/interviews/guest-share";
 
 const querySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
@@ -23,16 +24,17 @@ export async function GET(
   const url = new URL(request.url);
   const { limit } = querySchema.parse(Object.fromEntries(url.searchParams));
 
-  // Verify interview ownership
+  // Verify interview ownership. Guest-share interviews are private to their
+  // guest link and never surface here.
   const service = createServiceClient();
   const { data: interview } = await service
     .from("interviews")
-    .select("id")
+    .select("id,source")
     .eq("id", id)
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (!interview) {
+  if (!interview || interview.source === GUEST_SHARE_SOURCE) {
     return NextResponse.json({ error: "Interview not found." }, { status: 404 });
   }
 

@@ -19,9 +19,9 @@ type Row = Record<string, unknown>;
 
 /**
  * A filter-aware fake Supabase client for the candidate service layer. It
- * applies the real `.eq()/.neq()/.not(in)/.in()` filters to per-table rows
- * and resolves like the real postgrest-js thenable, so service reads behave
- * the same as with the pricing service tests.
+ * applies the real `.eq()/.neq()/.not(in)/.in()/.or()` filters to per-table
+ * rows and resolves like the real postgrest-js thenable, so service reads
+ * behave the same as with the pricing service tests.
  */
 function candidateFake(routes: Record<string, Row[]>, userId: string | null = "user-1") {
   const from = (table: string) => {
@@ -49,6 +49,23 @@ function candidateFake(routes: Record<string, Row[]>, userId: string | null = "u
     };
     builder.in = (column: string, values: unknown[]) => {
       filters.push((row) => values.includes(row[column]));
+      return builder;
+    };
+    builder.or = (expr: string) => {
+      // Supports comma-separated disjunctions of `column.is.null`,
+      // `column.neq.value`, and `column.eq.value`, e.g. the null-safe
+      // guest-share exclusion used by interview reads.
+      const clauses = String(expr).split(",");
+      filters.push((row) =>
+        clauses.some((clause) => {
+          const [column, op, ...rest] = clause.split(".");
+          const value = rest.join(".");
+          if (op === "is" && value === "null") return row[column] == null;
+          if (op === "neq") return row[column] !== value;
+          if (op === "eq") return row[column] === value;
+          return true;
+        })
+      );
       return builder;
     };
     builder.order = () => builder;
@@ -198,6 +215,39 @@ describe("candidate service layer (Phase 5 shared reads)", () => {
     });
     const result = await getUpcomingInterviews(client as never, "user-1");
     expect(result[0]).toMatchObject({ role_title: "Dev", company_name: "Acme" });
+  });
+
+  it("excludes guest-share interviews from upcoming interviews (2O isolation)", async () => {
+    const client = candidateFake({
+      interviews: [
+        {
+          id: "i1",
+          user_id: "user-1",
+          status: "scheduled",
+          source: "manual",
+          scheduled_at: "2026-02-01T09:00:00Z",
+          applications: { company_name: "Acme", role_title: "Dev" },
+        },
+        {
+          id: "guest-1",
+          user_id: "user-1",
+          status: "scheduled",
+          source: "guest_share_link",
+          scheduled_at: "2026-02-01T09:00:00Z",
+          applications: null,
+        },
+        {
+          id: "legacy-1",
+          user_id: "user-1",
+          status: "scheduled",
+          source: null,
+          scheduled_at: "2026-02-01T09:00:00Z",
+          applications: null,
+        },
+      ],
+    });
+    const result = await getUpcomingInterviews(client as never, "user-1");
+    expect(result.map((row) => row.id).sort()).toEqual(["i1", "legacy-1"]);
   });
 
   it("loads job preferences and documents", async () => {

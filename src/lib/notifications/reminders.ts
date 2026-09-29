@@ -17,6 +17,7 @@
 
 import { createServiceClient } from "@/lib/supabase/service";
 import { createNotificationOnce } from "./records";
+import { NON_GUEST_INTERVIEW_FILTER } from "@/lib/interviews/guest-share";
 
 /** Mirrors odesseus_private.notification_interview_reminder_minutes(). */
 export const INTERVIEW_REMINDER_MINUTES = [1440, 60] as const;
@@ -83,6 +84,8 @@ export async function fireDueInterviewReminders(options: {
   const { data: interviews } = await client
     .from("interviews")
     .select("id,user_id,application_id,scheduled_at,timezone,status")
+    // Guest-share sessions are private to their guest link: no reminders.
+    .or(NON_GUEST_INTERVIEW_FILTER)
     .in("id", interviewIds);
   const interviewsById = new Map((interviews ?? []).map((row) => [row.id, row]));
 

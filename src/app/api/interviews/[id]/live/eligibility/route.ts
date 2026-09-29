@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { readLiveEntitlement } from "@/lib/billing/live-entitlement";
+import { GUEST_SHARE_SOURCE } from "@/lib/interviews/guest-share";
 
 export const runtime = "nodejs";
 
@@ -23,16 +24,17 @@ export async function GET(
     return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
   }
 
-  // Verify interview exists and belongs to user
+  // Verify interview exists and belongs to user. Guest-share interviews are
+  // private to their guest link and never surface here.
   const service = createServiceClient();
   const { data: interview } = await service
     .from("interviews")
-    .select("id,application_id,status,live_pass_status")
+    .select("id,application_id,status,live_pass_status,source")
     .eq("id", id)
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (!interview) {
+  if (!interview || interview.source === GUEST_SHARE_SOURCE) {
     return NextResponse.json({ error: "Interview not found." }, { status: 404 });
   }
 

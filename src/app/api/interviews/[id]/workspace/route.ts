@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { buildInterviewContext } from "@/lib/interviews/context";
 import type { InterviewWorkspaceContext } from "@/lib/interviews/context";
 import { createNotificationOnce } from "@/lib/notifications/records";
+import { GUEST_SHARE_SOURCE } from "@/lib/interviews/guest-share";
 
 export async function GET(
   _request: Request,
@@ -20,6 +21,12 @@ export async function GET(
 
   try {
     const context: InterviewWorkspaceContext = await buildInterviewContext(userId, id);
+
+    // Guest-share interviews are private to their guest link and never
+    // surface in the owner's workspace.
+    if (context.interview.source === GUEST_SHARE_SOURCE) {
+      return NextResponse.json({ error: "Interview not found." }, { status: 404 });
+    }
 
     // Fire INTERVIEW_PREP_READY notification once per readiness version.
     // createNotificationOnce dedupes on (recipient_user_id, dedupe_key).

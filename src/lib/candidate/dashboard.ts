@@ -37,6 +37,7 @@ import {
 } from "./activity";
 import { getRecommendedJobs, type CandidateClient } from "./service";
 import type { CandidateJob } from "./types";
+import { NON_GUEST_INTERVIEW_FILTER } from "@/lib/interviews/guest-share";
 
 /**
  * The strong-match threshold used when the candidate has not set one.
@@ -524,6 +525,8 @@ export async function getCandidateDashboard(
         )
         .eq("user_id", userId)
         .in("status", ["invited", "scheduled", "ready"])
+        // Guest-share sessions are private to their guest link.
+        .or(NON_GUEST_INTERVIEW_FILTER)
         .order("scheduled_at", { ascending: true })
         .limit(UPCOMING_INTERVIEW_LIMIT),
       client

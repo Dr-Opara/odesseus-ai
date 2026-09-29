@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { isCandidateLiveSession } from "@/lib/interviews/guest-share";
 
 const schema = z.object({
   sessionId: z.string().uuid(),
@@ -39,6 +40,12 @@ export async function POST(
     .maybeSingle();
 
   if (!liveSession) {
+    return NextResponse.json({ error: "Live session not found." }, { status: 404 });
+  }
+
+  // Guest-share sessions are private to their guest link and are driven only
+  // through the token-scoped guest routes, never here.
+  if (!(await isCandidateLiveSession(service, input.sessionId, id, userId))) {
     return NextResponse.json({ error: "Live session not found." }, { status: 404 });
   }
 

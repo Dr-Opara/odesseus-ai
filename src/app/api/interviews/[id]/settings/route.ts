@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { GUEST_SHARE_SOURCE } from "@/lib/interviews/guest-share";
 
 const schema = z.object({
   interviewType: z.enum([
@@ -58,12 +59,13 @@ export async function POST(
 
   const { data: interview } = await supabase
     .from("interviews")
-    .select("id")
+    .select("id,source")
     .eq("id", id)
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (!interview) {
+  // Guest-share interviews are private to their guest link.
+  if (!interview || interview.source === GUEST_SHARE_SOURCE) {
     return NextResponse.json({ error: "Interview not found." }, { status: 404 });
   }
 

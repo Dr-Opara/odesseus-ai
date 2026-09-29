@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
 import MobileInterviews from "@/components/mobile/mobile-interviews";
+import { NON_GUEST_INTERVIEW_FILTER } from "@/lib/interviews/guest-share";
 
 export default async function InterviewsPage() {
   const supabase = await createClient();
@@ -15,6 +16,8 @@ export default async function InterviewsPage() {
       .from("interviews")
       .select("id,stage,scheduled_at,status,meeting_provider,source,readiness_generated_at,applications(company_name,role_title)")
       .eq("user_id", userId)
+      // Guest-share sessions are private to their guest link.
+      .or(NON_GUEST_INTERVIEW_FILTER)
       .order("scheduled_at", { ascending: true }),
     supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
     supabase.from("credit_balances").select("wallet_balance_cents,interview_passes").eq("user_id", userId).maybeSingle(),

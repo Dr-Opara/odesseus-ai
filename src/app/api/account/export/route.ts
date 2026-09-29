@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { NON_GUEST_INTERVIEW_FILTER } from "@/lib/interviews/guest-share";
 
 export const runtime = "nodejs";
 
@@ -30,7 +31,8 @@ export async function GET() {
     supabase.from("job_opportunities").select("*").eq("user_id", userId),
     supabase.from("applications").select("*").eq("user_id", userId),
     supabase.from("resume_tailorings").select("*").eq("user_id", userId),
-    supabase.from("interviews").select("*").eq("user_id", userId),
+    // Guest-share interviews are private to their guest session.
+    supabase.from("interviews").select("*").eq("user_id", userId).or(NON_GUEST_INTERVIEW_FILTER),
     supabase.from("resumes").select("id,file_name,mime_type,size_bytes,is_master,is_approved,created_at").eq("user_id", userId),
     supabase.from("integration_accounts").select("id,service_type,provider,account_email,status,connected_at").eq("user_id", userId),
     supabase.from("credit_balances").select("*").eq("user_id", userId).maybeSingle(),

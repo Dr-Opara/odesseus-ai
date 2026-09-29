@@ -2104,6 +2104,93 @@ export type Database = {
           },
         ];
       };
+      guest_access_records: {
+        Row: {
+          activated_at: string | null;
+          cancelled_at: string | null;
+          completed_at: string | null;
+          created_at: string;
+          guest_company: string | null;
+          guest_interview_type: string | null;
+          guest_job_description: string | null;
+          guest_name: string | null;
+          guest_notes: string | null;
+          guest_resume_profile: NonNullable<Json> | null;
+          guest_resume_storage_path: string | null;
+          guest_resume_text: string | null;
+          guest_role_title: string | null;
+          guest_round: string | null;
+          id: string;
+          interview_id: string | null;
+          live_session_id: string | null;
+          owner_user_id: string;
+          status: string;
+          token_sha256: string;
+          updated_at: string;
+        };
+        Insert: {
+          activated_at?: string | null;
+          cancelled_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          guest_company?: string | null;
+          guest_interview_type?: string | null;
+          guest_job_description?: string | null;
+          guest_name?: string | null;
+          guest_notes?: string | null;
+          guest_resume_profile?: NonNullable<Json> | null;
+          guest_resume_storage_path?: string | null;
+          guest_resume_text?: string | null;
+          guest_role_title?: string | null;
+          guest_round?: string | null;
+          id?: string;
+          interview_id?: string | null;
+          live_session_id?: string | null;
+          owner_user_id: string;
+          status?: string;
+          token_sha256: string;
+          updated_at?: string;
+        };
+        Update: {
+          activated_at?: string | null;
+          cancelled_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          guest_company?: string | null;
+          guest_interview_type?: string | null;
+          guest_job_description?: string | null;
+          guest_name?: string | null;
+          guest_notes?: string | null;
+          guest_resume_profile?: NonNullable<Json> | null;
+          guest_resume_storage_path?: string | null;
+          guest_resume_text?: string | null;
+          guest_role_title?: string | null;
+          guest_round?: string | null;
+          id?: string;
+          interview_id?: string | null;
+          live_session_id?: string | null;
+          owner_user_id?: string;
+          status?: string;
+          token_sha256?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "guest_access_records_interview_id_fkey";
+            columns: ["interview_id"];
+            isOneToOne: false;
+            referencedRelation: "interviews";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "guest_access_records_live_session_id_fkey";
+            columns: ["live_session_id"];
+            isOneToOne: false;
+            referencedRelation: "live_interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       live_guest_invites: {
         Row: {
           accepted_at: string | null;
@@ -2121,6 +2208,7 @@ export type Database = {
           membership_period_start: string;
           owner_user_id: string;
           revoked_at: string | null;
+          session_id: string | null;
           status: string;
           updated_at: string;
         };
@@ -2140,6 +2228,7 @@ export type Database = {
           membership_period_start: string;
           owner_user_id: string;
           revoked_at?: string | null;
+          session_id?: string | null;
           status?: string;
           updated_at?: string;
         };
@@ -2159,6 +2248,7 @@ export type Database = {
           membership_period_start?: string;
           owner_user_id?: string;
           revoked_at?: string | null;
+          session_id?: string | null;
           status?: string;
           updated_at?: string;
         };

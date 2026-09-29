@@ -15,6 +15,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import { NON_GUEST_INTERVIEW_FILTER } from "@/lib/interviews/guest-share";
 import type {
   CandidateActivity,
   CandidateApplication,
@@ -288,6 +289,8 @@ export async function getUpcomingInterviews(
     .select("id,stage,scheduled_at,status,meeting_provider,readiness_generated_at,applications(company_name,role_title)")
     .eq("user_id", userId)
     .in("status", ["invited", "scheduled", "ready", "live"])
+    // Guest-share sessions are private to their guest link.
+    .or(NON_GUEST_INTERVIEW_FILTER)
     .order("scheduled_at", { ascending: true });
 
   if (limit && limit > 0) query = query.limit(limit);
