@@ -6,6 +6,11 @@ import MobilePricing from "@/components/mobile/mobile-pricing";
 import {
   APPLY_TIERS,
   EMPLOYER_PLANS,
+  FAILED_SUBMISSION_DESCRIPTION,
+  FAILED_SUBMISSION_LABEL,
+  FAILED_SUBMISSION_PRICE_LABEL,
+  PREP_AGENT_DESCRIPTION,
+  PREP_AGENT_LABEL,
   PROMOTION_PLANS,
   RECRUITER_SEAT_PRICE_LABEL,
   RECRUITER_SEAT_UNIT,
@@ -40,14 +45,18 @@ export default function PricingPage() {
             </article>
             <article className="figma-price-card green">
               <strong>Free</strong>
-              <p>Prep Agent interview preparation.</p>
+              <p>{PREP_AGENT_LABEL} — {PREP_AGENT_DESCRIPTION}</p>
+            </article>
+            <article className="figma-price-card">
+              <strong>{FAILED_SUBMISSION_PRICE_LABEL}</strong>
+              <p>{FAILED_SUBMISSION_LABEL} — {FAILED_SUBMISSION_DESCRIPTION}</p>
             </article>
           </section>
           <section className="figma-three-grid compact">
             {WALLET_TOPUP_AMOUNTS_CENTS.map((amountCents) => (
               <article className="figma-price-card" key={amountCents}>
                 <strong>{formatCents(amountCents)}</strong>
-                <p>Wallet top-up — spend on Standard or Smart Apply as you go.</p>
+                <p>Wallet top-up — spend on {APPLY_TIERS.standard.label} or {APPLY_TIERS.smart.label} as you go.</p>
               </article>
             ))}
           </section>

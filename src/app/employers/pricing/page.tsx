@@ -19,11 +19,9 @@ export default function EmployerPricingPage() {
             <article className="figma-info-card lavender" key={plan.name}>
               <span className="figma-eyebrow">{plan.name.toUpperCase()}</span>
               <h2>{plan.priceLabel} <small>{plan.unit}</small></h2>
-              <p>✓ {plan.jobs}</p>
-              <p>✓ AI candidate matching</p>
-              <p>✓ Applicant pipeline</p>
-              <p>✓ Employer dashboard</p>
-              <p>✓ Verified employer experience</p>
+              {plan.features.map((feature) => (
+                <p key={feature}>✓ {feature}</p>
+              ))}
               <Link className="figma-btn figma-btn-orange" href="/employers/signup">Start Hiring</Link>
             </article>
           ))}

@@ -119,7 +119,7 @@ export default async function BillingPage({
           <div className="muted" style={{ fontSize: 13 }}>Pay as you go</div>
           <h2 style={{ fontSize: 24, margin: "7px 0 8px" }}>Wallet</h2>
           <p className="muted" style={{ margin: "0 0 18px", maxWidth: 620 }}>
-            Standard Apply and Smart Apply are charged from your wallet after a verified successful
+            Apply and Smart Apply are charged from your wallet after a verified successful
             submission — no more pre-buying credit packs.{" "}
             <Link href="/pricing" style={{ fontWeight: 700 }}>See full pricing →</Link>
           </p>

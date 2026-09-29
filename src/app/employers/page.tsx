@@ -1,8 +1,10 @@
 import Link from "next/link";
 import EmployerNav from "@/components/employer-nav";
 import MarketingFooter from "@/components/marketing-footer";
+import { EMPLOYER_PLANS } from "@/lib/pricing/candidate-pricing";
 
 export default function EmployersPage() {
+  const starterPlan = EMPLOYER_PLANS[0];
   return (
     <main className="figma-site figma-dark-page">
       <div className="figma-page-wrap">
@@ -30,7 +32,7 @@ export default function EmployersPage() {
           </div>
         </section>
         <section id="pricing" className="figma-pricing-section">
-          <div className="figma-section-heading"><span className="figma-eyebrow">STARTER PLAN</span><h2>$79 every month</h2><p>3 active job posts included.</p></div>
+          <div className="figma-section-heading"><span className="figma-eyebrow">STARTER PLAN</span><h2>{starterPlan.priceLabel} every month</h2><p>{starterPlan.jobs} included.</p></div>
           <Link className="figma-btn figma-btn-orange" href="/employers/pricing">See Employer Pricing</Link>
         </section>
       </div>

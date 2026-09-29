@@ -13,7 +13,7 @@ export default async function EmployerSignupPage({ searchParams }: { searchParam
             <span className="figma-eyebrow">FOR EMPLOYERS</span>
             <h1>Hire globally, with confidence.</h1>
             <p>AI-matched candidates. Verified employers. Simple, transparent pricing built for teams hiring across every market.</p>
-            <p style={{ marginTop: 24 }}>✓ Verified Employer program &nbsp;&nbsp; ✓ AI candidate matching &nbsp;&nbsp; ✓ 150+ countries</p>
+            <p style={{ marginTop: 24 }}>✓ Verified Employer program &nbsp;&nbsp; ✓ Applicant pipeline &nbsp;&nbsp; ✓ Employer dashboard</p>
           </div>
 
           <div className="figma-info-card white" style={{ padding: 34 }}>

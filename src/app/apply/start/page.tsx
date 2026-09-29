@@ -44,8 +44,8 @@ export default async function ApplyStartPage({
 
   if (!job) redirect("/dashboard");
 
-  // Wallet eligibility gate: Standard Apply needs at least 49 cents and Smart
-  // Apply needs at least 199 cents (candidate-pricing). The wallet balance is
+  // Wallet eligibility gate: Apply needs at least 39 cents and Smart
+  // Apply needs at least 99 cents (candidate-pricing). The wallet balance is
   // read-only for clients; mutations stay server-side. Legacy application
   // credits no longer decide whether an application can start.
   const walletBalanceCents = balance?.wallet_balance_cents ?? 0;

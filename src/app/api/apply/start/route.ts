@@ -90,8 +90,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Approve a tailored resume before starting Apply." }, { status: 400 });
   }
 
-  // Wallet eligibility gate — the tier price is the requirement (Standard
-  // Apply ≥ 49¢, Smart Apply ≥ 199¢). The legacy application-credit balance
+  // Wallet eligibility gate — the tier price is the requirement (Apply
+  // ≥ 39¢, Smart Apply ≥ 99¢). The legacy application-credit balance
   // never decides whether an application can start; it is preserved only as
   // historical data.
   const tier: ApplyTier = input.applyTier ?? "standard";

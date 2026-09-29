@@ -77,8 +77,8 @@ Do not add Supabase secret/service-role keys to browser environment variables.
 
 No subscription. Pay when Odesseus works for you.
 
-- Standard Apply — $0.49 per successfully submitted application
-- Smart Apply — $1.99 per successfully submitted application (deeper role-specific tailoring and a closer pass on hard requirements)
+- Apply — $0.39 per successfully submitted application
+- Smart Apply — $0.99 per successfully submitted application (deeper role-specific tailoring and a closer pass on hard requirements)
 - Wallet top-ups of $10, $20, or $50 — Odesseus is charged from the wallet only after a verified successful submission, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
 - $24.99 per successfully activated Odesseus Live interview session
 - No required subscription
@@ -152,12 +152,12 @@ See `docs/development/codex.md` for the recommended VS Code + Codex workflow.
 
 ## Odesseus Billing v0.4
 
-Billing started with prepaid application credits and interview passes without a subscription. The wallet replaces prepaid application credit packs: users top up $10 / $20 / $50 and Odesseus is charged per verified submission (Standard $0.49 / Smart $1.99) from the wallet. The wallet ledger is backend-owned (`backend/pricing-wallet`); this branch ships the frontend wallet UI only, with honest not-yet-available states until that API exists.
+Billing started with prepaid application credits and interview passes without a subscription. The wallet replaces prepaid application credit packs: users top up $10 / $20 / $50 and Odesseus is charged per verified submission (Apply $0.39 / Smart $0.99) from the wallet. The wallet ledger is backend-owned (`backend/pricing-wallet`); this branch ships the frontend wallet UI only, with honest not-yet-available states until that API exists.
 
 ### Application pricing
 
-- Standard Apply — $0.49 per successful submission
-- Smart Apply — $1.99 per successful submission
+- Apply — $0.39 per successful submission
+- Smart Apply — $0.99 per successful submission
 - Covers a successful submission across any supported job board or employer career site (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
 
 Charges are not applied at start time. The Apply workflow charges from the candidate wallet only after a successful application submission.
@@ -196,11 +196,11 @@ Odesseus Apply is an assisted, human-in-the-loop application browser.
 7. Candidate can open the live browser and take over when needed.
 8. Odesseus pauses again before final submission.
 9. Candidate explicitly presses **Submit application**.
-10. The wallet is charged (Standard $0.49 / Smart $1.99) only after a success confirmation is detected.
+10. The wallet is charged (Apply $0.39 / Smart $0.99) only after a success confirmation is detected.
 
 ### Coverage
 
-Odesseus applies across supported job boards and direct employer career sites, including Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites — at the same per-application price (Standard $0.49 / Smart $1.99) regardless of which platform the job is on. This is not a claim of universal technical compatibility with every site; coverage is scoped to supported job boards and employer career sites.
+Odesseus applies across supported job boards and direct employer career sites, including Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites — at the same per-application price (Apply $0.39 / Smart $0.99) regardless of which platform the job is on. This is not a claim of universal technical compatibility with every site; coverage is scoped to supported job boards and employer career sites.
 
 ### Browser runtime
 

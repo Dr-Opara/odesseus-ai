@@ -5,6 +5,11 @@ import { useState } from "react";
 import {
   APPLY_TIERS,
   EMPLOYER_PLANS,
+  FAILED_SUBMISSION_DESCRIPTION,
+  FAILED_SUBMISSION_LABEL,
+  FAILED_SUBMISSION_PRICE_LABEL,
+  PREP_AGENT_DESCRIPTION,
+  PREP_AGENT_LABEL,
   PREP_AGENT_PRICE_LABEL,
   PROMOTION_PLANS,
   RECRUITER_SEAT_PRICE_LABEL,
@@ -68,14 +73,20 @@ export default function MobilePricing() {
             <div className="m-card" key={amountCents}>
               <span className="m-copy">
                 <strong>Wallet top-up · {formatCents(amountCents)}</strong>
-                <small>Spend on Standard or Smart Apply as you go</small>
+                <small>Spend on {APPLY_TIERS.standard.label} or {APPLY_TIERS.smart.label} as you go</small>
               </span>
             </div>
           ))}
           <div className="m-card">
             <span className="m-copy">
-              <strong>Interview preparation · {PREP_AGENT_PRICE_LABEL}</strong>
-              <small>Role-based questions, STAR stories and technical prep</small>
+              <strong>{PREP_AGENT_LABEL} · {PREP_AGENT_PRICE_LABEL}</strong>
+              <small>{PREP_AGENT_DESCRIPTION}</small>
+            </span>
+          </div>
+          <div className="m-card">
+            <span className="m-copy">
+              <strong>{FAILED_SUBMISSION_LABEL} · {FAILED_SUBMISSION_PRICE_LABEL}</strong>
+              <small>{FAILED_SUBMISSION_DESCRIPTION}</small>
             </span>
           </div>
         </div>

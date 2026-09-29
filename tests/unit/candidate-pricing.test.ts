@@ -12,22 +12,24 @@ import {
 } from "@/lib/pricing/candidate-pricing";
 
 describe("candidate apply tiers", () => {
-  it("prices Standard Apply at exactly $0.49", () => {
-    expect(APPLY_TIERS.standard.priceCents).toBe(49);
-    expect(APPLY_TIERS.standard.priceLabel).toBe("$0.49");
-    expect(APPLY_TIERS.standard.label).toBe("Standard Apply");
+  it("prices Apply at exactly $0.39", () => {
+    expect(APPLY_TIERS.standard.priceCents).toBe(39);
+    expect(APPLY_TIERS.standard.priceLabel).toBe("$0.39");
+    expect(APPLY_TIERS.standard.label).toBe("Apply");
   });
 
-  it("prices Smart Apply at exactly $1.99", () => {
-    expect(APPLY_TIERS.smart.priceCents).toBe(199);
-    expect(APPLY_TIERS.smart.priceLabel).toBe("$1.99");
+  it("prices Smart Apply at exactly $0.99", () => {
+    expect(APPLY_TIERS.smart.priceCents).toBe(99);
+    expect(APPLY_TIERS.smart.priceLabel).toBe("$0.99");
     expect(APPLY_TIERS.smart.label).toBe("Smart Apply");
   });
 
-  it("has no stale $0.99 per-application figure anywhere in the candidate tiers", () => {
+  it("has no stale $0.49/$1.99 per-application figures anywhere in the candidate tiers", () => {
     for (const info of Object.values(APPLY_TIERS)) {
-      expect(info.priceLabel).not.toBe("$0.99");
-      expect(info.priceCents).not.toBe(99);
+      expect(info.priceLabel).not.toBe("$0.49");
+      expect(info.priceCents).not.toBe(49);
+      expect(info.priceLabel).not.toBe("$1.99");
+      expect(info.priceCents).not.toBe(199);
     }
   });
 
@@ -38,28 +40,28 @@ describe("candidate apply tiers", () => {
 });
 
 describe("wallet-based apply eligibility", () => {
-  it("derives the minimum start balance from the cheapest tier (49 cents)", () => {
-    expect(MIN_APPLY_PRICE_CENTS).toBe(49);
+  it("derives the minimum start balance from the cheapest tier (39 cents)", () => {
+    expect(MIN_APPLY_PRICE_CENTS).toBe(39);
     expect(MIN_APPLY_PRICE_CENTS).toBe(APPLY_TIERS.standard.priceCents);
   });
 
-  it("requires at least 49 cents for Standard Apply", () => {
+  it("requires at least 39 cents for Apply", () => {
     expect(canAffordTier("standard", 0)).toBe(false);
-    expect(canAffordTier("standard", 48)).toBe(false);
-    expect(canAffordTier("standard", 49)).toBe(true);
+    expect(canAffordTier("standard", 38)).toBe(false);
+    expect(canAffordTier("standard", 39)).toBe(true);
     expect(canAffordTier("standard", 120)).toBe(true);
   });
 
-  it("requires at least 199 cents for Smart Apply", () => {
-    expect(canAffordTier("smart", 198)).toBe(false);
-    expect(canAffordTier("smart", 199)).toBe(true);
+  it("requires at least 99 cents for Smart Apply", () => {
+    expect(canAffordTier("smart", 98)).toBe(false);
+    expect(canAffordTier("smart", 99)).toBe(true);
     expect(canAffordTier("smart", 1000)).toBe(true);
   });
 
-  it("gates Smart Apply above the Standard floor but below the Smart price", () => {
-    // A wallet that can start Standard Apply must not unlock Smart Apply.
-    expect(canAffordTier("standard", 100)).toBe(true);
-    expect(canAffordTier("smart", 100)).toBe(false);
+  it("gates Smart Apply above the Apply floor but below the Smart price", () => {
+    // A wallet that can start Apply must not unlock Smart Apply.
+    expect(canAffordTier("standard", 50)).toBe(true);
+    expect(canAffordTier("smart", 50)).toBe(false);
   });
 
   it("never consults a legacy application-credit balance", () => {

@@ -3,7 +3,7 @@ import MarketingFooter from "@/components/marketing-footer";
 import MobileScreen from "@/components/mobile/mobile-screen";
 
 const faqs=[
- ["Does Odesseus require a subscription?","No. Standard Apply ($0.49) and Smart Apply ($1.99) are charged from your wallet only after a successful application submission."],
+ ["Does Odesseus require a subscription?","No. Apply ($0.39) and Smart Apply ($0.99) are charged from your wallet only after a successful application submission."],
  ["Does Odesseus read my email?","No. Candidate inbox access is not required."],
  ["How does the wallet work?","Add $10, $20, or $50 to your wallet. Money stays there until Odesseus successfully submits an application — no fixed credit packs."],
  ["Is Prep Agent free?","Yes. Role-specific interview preparation is free."],
