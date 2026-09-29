@@ -95,14 +95,28 @@ export async function POST(
     return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   }
 
-  let input: { title: string; description?: string | null; location?: string | null };
+  let input: {
+    title: string;
+    description?: string | null;
+    location?: string | null;
+    requirementsText?: string | null;
+    preferredText?: string | null;
+    workArrangement?: string | null;
+  };
   try {
-    input = JSON.parse(await request.text()) as { title: string; description?: string | null; location?: string | null };
+    input = JSON.parse(await request.text()) as {
+      title: string;
+      description?: string | null;
+      location?: string | null;
+      requirementsText?: string | null;
+      preferredText?: string | null;
+      workArrangement?: string | null;
+    };
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { title, description, location } = input;
+  const { title, description, location, requirementsText, preferredText, workArrangement } = input;
 
   if (!title || title.trim().length === 0 || title.length > 200) {
     return NextResponse.json({ error: "Title is required and must be at most 200 characters." }, { status: 400 });
@@ -113,11 +127,27 @@ export async function POST(
   if (location !== undefined && location !== null && location.length > 200) {
     return NextResponse.json({ error: "Location must be at most 200 characters." }, { status: 400 });
   }
+  if (requirementsText !== undefined && requirementsText !== null && requirementsText.length > 10000) {
+    return NextResponse.json({ error: "Requirements must be at most 10000 characters." }, { status: 400 });
+  }
+  if (preferredText !== undefined && preferredText !== null && preferredText.length > 10000) {
+    return NextResponse.json({ error: "Preferences must be at most 10000 characters." }, { status: 400 });
+  }
+  if (
+    workArrangement !== undefined &&
+    workArrangement !== null &&
+    !["remote", "hybrid", "onsite"].includes(workArrangement)
+  ) {
+    return NextResponse.json({ error: "Work arrangement must be remote, hybrid, or onsite." }, { status: 400 });
+  }
 
   const job = await createJob(supabase, orgId, {
     title: title.trim(),
     description: description?.trim() ?? null,
     location: location?.trim() ?? null,
+    requirementsText: requirementsText?.trim() || null,
+    preferredText: preferredText?.trim() || null,
+    workArrangement: (workArrangement as "remote" | "hybrid" | "onsite" | null) ?? null,
   });
 
   return NextResponse.json(job, { status: 201 });

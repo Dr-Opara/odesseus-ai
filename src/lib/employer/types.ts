@@ -55,7 +55,11 @@ export type EmployerInvitation = {
 export type EmployerJob = {
   id: string;
   title: string;
+  description?: string | null;
   location: string | null;
+  requirementsText?: string | null;
+  preferredText?: string | null;
+  workArrangement?: string | null;
   status: EmployerJobStatus | string;
   postedAt: string | null;
   createdAt: string | null;

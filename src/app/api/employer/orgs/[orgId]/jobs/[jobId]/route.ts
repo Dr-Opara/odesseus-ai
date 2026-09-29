@@ -142,6 +142,9 @@ export async function PATCH(
   const title = bodyRecord.title as string | undefined;
   const description = bodyRecord.description as string | undefined;
   const location = bodyRecord.location as string | undefined;
+  const requirementsText = bodyRecord.requirementsText as string | null | undefined;
+  const preferredText = bodyRecord.preferredText as string | null | undefined;
+  const workArrangement = bodyRecord.workArrangement as string | null | undefined;
 
   if (title !== undefined && (typeof title !== "string" || title.length < 1 || title.length > 200)) {
     return NextResponse.json({ error: "Title must be at most 200 characters." }, { status: 400 });
@@ -152,12 +155,33 @@ export async function PATCH(
   if (location !== undefined && location !== null && typeof location === "string" && location.length > 200) {
     return NextResponse.json({ error: "Location must be at most 200 characters." }, { status: 400 });
   }
+  if (requirementsText !== undefined && requirementsText !== null && typeof requirementsText === "string" && requirementsText.length > 10000) {
+    return NextResponse.json({ error: "Requirements must be at most 10000 characters." }, { status: 400 });
+  }
+  if (preferredText !== undefined && preferredText !== null && typeof preferredText === "string" && preferredText.length > 10000) {
+    return NextResponse.json({ error: "Preferences must be at most 10000 characters." }, { status: 400 });
+  }
+  if (
+    workArrangement !== undefined &&
+    workArrangement !== null &&
+    !["remote", "hybrid", "onsite"].includes(workArrangement)
+  ) {
+    return NextResponse.json({ error: "Work arrangement must be remote, hybrid, or onsite." }, { status: 400 });
+  }
 
   const { updateJob } = await import("@/lib/employer/service");
   const result = await updateJob(supabase, orgId, jobId, {
     title: title?.trim(),
     description: description?.trim() ?? null,
     location: location?.trim() ?? null,
+    requirementsText:
+      requirementsText === undefined ? undefined : (requirementsText?.trim() || null),
+    preferredText:
+      preferredText === undefined ? undefined : (preferredText?.trim() || null),
+    workArrangement:
+      workArrangement === undefined
+        ? undefined
+        : ((workArrangement as "remote" | "hybrid" | "onsite" | null) ?? null),
   });
 
   if ("reason" in result) {

@@ -956,6 +956,85 @@ export type Database = {
           },
         ];
       };
+      employer_fit_scores: {
+        Row: {
+          application_id: string;
+          blockers: NonNullable<Json>;
+          created_at: string;
+          explanation: string;
+          id: string;
+          job_id: string;
+          location_alignment: NonNullable<Json>;
+          missing_qualifications: NonNullable<Json>;
+          missing_skills: NonNullable<Json>;
+          model_version: string;
+          org_id: string;
+          preferred_matches: NonNullable<Json>;
+          required_matches: NonNullable<Json>;
+          score: number;
+          updated_at: string;
+          version_number: number;
+        };
+        Insert: {
+          application_id: string;
+          blockers?: NonNullable<Json>;
+          created_at?: string;
+          explanation?: string;
+          id?: string;
+          job_id: string;
+          location_alignment?: NonNullable<Json>;
+          missing_qualifications?: NonNullable<Json>;
+          missing_skills?: NonNullable<Json>;
+          model_version?: string;
+          org_id: string;
+          preferred_matches?: NonNullable<Json>;
+          required_matches?: NonNullable<Json>;
+          score: number;
+          updated_at?: string;
+          version_number?: number;
+        };
+        Update: {
+          application_id?: string;
+          blockers?: NonNullable<Json>;
+          created_at?: string;
+          explanation?: string;
+          id?: string;
+          job_id?: string;
+          location_alignment?: NonNullable<Json>;
+          missing_qualifications?: NonNullable<Json>;
+          missing_skills?: NonNullable<Json>;
+          model_version?: string;
+          org_id?: string;
+          preferred_matches?: NonNullable<Json>;
+          required_matches?: NonNullable<Json>;
+          score?: number;
+          updated_at?: string;
+          version_number?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "employer_fit_scores_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "employer_organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "employer_fit_scores_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "employer_jobs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "employer_fit_scores_application_id_fkey";
+            columns: ["application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       employer_jobs: {
         Row: {
           created_at: string;
@@ -964,9 +1043,12 @@ export type Database = {
           location: string | null;
           org_id: string;
           posted_at: string | null;
+          preferred_text: string | null;
+          requirements_text: string | null;
           status: string;
           title: string;
           updated_at: string;
+          work_arrangement: string | null;
         };
         Insert: {
           created_at?: string;
@@ -975,9 +1057,12 @@ export type Database = {
           location?: string | null;
           org_id: string;
           posted_at?: string | null;
+          preferred_text?: string | null;
+          requirements_text?: string | null;
           status?: string;
           title: string;
           updated_at?: string;
+          work_arrangement?: string | null;
         };
         Update: {
           created_at?: string;
@@ -986,9 +1071,12 @@ export type Database = {
           location?: string | null;
           org_id?: string;
           posted_at?: string | null;
+          preferred_text?: string | null;
+          requirements_text?: string | null;
           status?: string;
           title?: string;
           updated_at?: string;
+          work_arrangement?: string | null;
         };
         Relationships: [
           {
@@ -1075,6 +1163,64 @@ export type Database = {
             columns: ["org_id"];
             isOneToOne: false;
             referencedRelation: "employer_organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      employer_pipeline_stages: {
+        Row: {
+          application_id: string;
+          changed_by: string | null;
+          created_at: string;
+          id: string;
+          job_id: string;
+          metadata: NonNullable<Json>;
+          notes: string | null;
+          org_id: string;
+          stage: string;
+        };
+        Insert: {
+          application_id: string;
+          changed_by?: string | null;
+          created_at?: string;
+          id?: string;
+          job_id: string;
+          metadata?: NonNullable<Json>;
+          notes?: string | null;
+          org_id: string;
+          stage: string;
+        };
+        Update: {
+          application_id?: string;
+          changed_by?: string | null;
+          created_at?: string;
+          id?: string;
+          job_id?: string;
+          metadata?: NonNullable<Json>;
+          notes?: string | null;
+          org_id?: string;
+          stage?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "employer_pipeline_stages_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "employer_organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "employer_pipeline_stages_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "employer_jobs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "employer_pipeline_stages_application_id_fkey";
+            columns: ["application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
             referencedColumns: ["id"];
           },
         ];
@@ -3974,6 +4120,23 @@ export type Database = {
           joined_org_id: string;
           joined_role: string;
           org_name: string;
+        }[];
+      };
+      odesseus_get_employer_applicants: {
+        Args: { p_job_id?: string | null; p_org_id: string };
+        Returns: {
+          application_id: string;
+          application_status: string;
+          company_name: string;
+          employer_job_id: string;
+          job_snapshot: NonNullable<Json>;
+          job_status: string;
+          job_title: string;
+          match_score_snapshot: number | null;
+          resume_snapshot: NonNullable<Json>;
+          role_title: string;
+          submitted_at: string | null;
+          verification_evidence: NonNullable<Json>;
         }[];
       };
       odesseus_ensure_employer_organization: {

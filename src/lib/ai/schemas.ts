@@ -228,3 +228,41 @@ export const postInterviewAnalysisSchema = z.object({
     body: z.string(),
   }),
 });
+
+export type PostInterviewAnalysis = z.infer<typeof postInterviewAnalysisSchema>;
+
+/**
+ * Employer Fit Score (Phase 2R).
+ *
+ * Evidence-backed assessment of one application against one employer posting.
+ * Every match cites resume evidence; gaps are stated as missing, never
+ * filled in. Protected characteristics are never inputs: the scorer receives
+ * only the job posting and the submitted resume, and the schema has no field
+ * that could carry them.
+ */
+export const employerFitScoreSchema = z.object({
+  overallScore: z.number().int().min(0).max(100),
+  requiredMatches: z.array(z.object({
+    requirement: z.string(),
+    matched: z.boolean(),
+    evidence: z.array(z.string()).max(6),
+  })).max(20),
+  preferredMatches: z.array(z.object({
+    preference: z.string(),
+    matched: z.boolean(),
+    evidence: z.array(z.string()).max(6),
+  })).max(20),
+  missingQualifications: z.array(z.string()).max(20),
+  missingSkills: z.array(z.string()).max(20),
+  locationAlignment: z.object({
+    aligned: z.boolean(),
+    note: z.string(),
+  }),
+  blockers: z.array(z.object({
+    blocker: z.string(),
+    detail: z.string(),
+  })).max(10),
+  explanation: z.string(),
+});
+
+export type EmployerFitScore = z.infer<typeof employerFitScoreSchema>;

@@ -1236,6 +1236,9 @@ export type CreateJobInput = {
   title: string;
   description?: string | null;
   location?: string | null;
+  requirementsText?: string | null;
+  preferredText?: string | null;
+  workArrangement?: "remote" | "hybrid" | "onsite" | null;
 };
 
 export type CreateJobResult =
@@ -1266,10 +1269,13 @@ export async function createJob(
       title: input.title.trim(),
       description: input.description?.trim() ?? null,
       location: input.location?.trim() ?? null,
+      requirements_text: input.requirementsText?.trim() || null,
+      preferred_text: input.preferredText?.trim() || null,
+      work_arrangement: input.workArrangement ?? null,
       status: "draft",
     })
     .select(
-      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+      "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at"
     )
     .single();
 
@@ -1294,7 +1300,7 @@ export async function listJobs(
   const { data, error, count } = await client
     .from("employer_jobs")
     .select(
-      "id,org_id,title,description,location,status,posted_at,created_at,updated_at",
+      "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at",
       { count: "exact" }
     )
     .eq("org_id", orgId)
@@ -1322,7 +1328,7 @@ export async function getJob(
   const { data, error } = await client
     .from("employer_jobs")
     .select(
-      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+      "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at"
     )
     .eq("id", jobId)
     .eq("org_id", orgId)
@@ -1339,6 +1345,9 @@ export type UpdateJobInput = {
   title?: string;
   description?: string | null;
   location?: string | null;
+  requirementsText?: string | null;
+  preferredText?: string | null;
+  workArrangement?: "remote" | "hybrid" | "onsite" | null;
 };
 
 export async function updateJob(
@@ -1367,17 +1376,29 @@ export async function updateJob(
     title: string;
     description: string | null;
     location: string | null;
+    requirements_text: string | null;
+    preferred_text: string | null;
+    work_arrangement: "remote" | "hybrid" | "onsite" | null;
   }> = {};
 
   if (input.title !== undefined) updates.title = input.title.trim();
   if (input.description !== undefined) updates.description = input.description?.trim() ?? null;
   if (input.location !== undefined) updates.location = input.location?.trim() ?? null;
+  if (input.requirementsText !== undefined) {
+    updates.requirements_text = input.requirementsText?.trim() || null;
+  }
+  if (input.preferredText !== undefined) {
+    updates.preferred_text = input.preferredText?.trim() || null;
+  }
+  if (input.workArrangement !== undefined) {
+    updates.work_arrangement = input.workArrangement;
+  }
 
   if (Object.keys(updates).length === 0) {
     const { data, error } = await client
       .from("employer_jobs")
       .select(
-        "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+        "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at"
       )
       .eq("id", jobId)
       .eq("org_id", orgId)
@@ -1392,7 +1413,7 @@ export async function updateJob(
     .eq("id", jobId)
     .eq("org_id", orgId)
     .select(
-      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+      "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at"
     )
     .single();
 
@@ -1468,7 +1489,7 @@ export async function publishJob(
     .eq("id", jobId)
     .eq("org_id", orgId)
     .select(
-      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+      "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at"
     )
     .maybeSingle();
 
@@ -1519,7 +1540,7 @@ export async function closeJob(
     .eq("id", jobId)
     .eq("org_id", orgId)
     .select(
-      "id,org_id,title,description,location,status,posted_at,created_at,updated_at"
+      "id,org_id,title,description,location,requirements_text,preferred_text,work_arrangement,status,posted_at,created_at,updated_at"
     )
     .single();
 

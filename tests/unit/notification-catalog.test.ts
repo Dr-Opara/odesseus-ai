@@ -103,6 +103,11 @@ describe("notification type catalog", () => {
     expect(NOTIFICATION_CATALOG.PREMIUM_INTERVIEW_RENEWAL.phase).toMatch(/wired/);
   });
 
+  it("marks the 2R-wired employer fit/pipeline types as wired", () => {
+    expect(NOTIFICATION_CATALOG.EMPLOYER_STRONG_FIT.phase).toMatch(/wired/);
+    expect(NOTIFICATION_CATALOG.EMPLOYER_PIPELINE_UPDATED.phase).toMatch(/wired/);
+  });
+
   it("keeps the strong-match type marked wired and the product type marketing-gated", () => {
     expect(NOTIFICATION_CATALOG.JOB_STRONG_MATCH.phase).toMatch(/wired/);
     expect(NOTIFICATION_CATALOG.PRODUCT_UPDATE.phase).toMatch(/product channel/);

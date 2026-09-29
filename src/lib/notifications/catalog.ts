@@ -280,14 +280,14 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, NotificationTypeMeta
     channel: "strong_fit",
     priority: "normal",
     email: true,
-    phase: "hook deferred to employer phases (2P-2S)",
+    phase: "wired: fit computation notifies hiring team (2R)",
   },
   EMPLOYER_PIPELINE_UPDATED: {
     recipient: "employer_member",
     channel: "pipeline",
     priority: "normal",
     email: true,
-    phase: "hook deferred to employer phases (2P-2S)",
+    phase: "wired: pipeline transitions notify hiring team (2R)",
   },
   EMPLOYER_INTERVIEW_EVENT: {
     recipient: "employer_member",
