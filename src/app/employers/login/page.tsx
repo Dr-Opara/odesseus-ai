@@ -11,8 +11,8 @@ export default async function EmployerLoginPage({ searchParams }: { searchParams
         <section style={{ width: "min(520px,100%)", margin: "90px auto 130px" }}>
           <div className="figma-info-card white" style={{ padding: 34 }}>
             <span className="figma-eyebrow">EMPLOYER SIGN IN ONLY</span>
-            <h1 style={{ marginTop: 12 }}>Welcome back.</h1>
-            <p>Sign in with the company account you use for Odesseus.</p>
+            <h1 style={{ marginTop: 12 }}>Employer Sign In</h1>
+            <p>Welcome back! Sign in to continue.</p>
             {error ? <div style={{ margin: "18px 0", padding: 12, borderRadius: 12, background: "#fff1ef", color: "#8d1d12" }}>{error}</div> : null}
             <form action={employerLogin}>
               <label style={{ display: "grid", gap: 8, marginTop: 22, fontWeight: 650 }}>

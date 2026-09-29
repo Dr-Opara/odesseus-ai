@@ -65,7 +65,7 @@ export async function employerSignup(formData: FormData) {
 
   if (error) redirect(`/employers/signup?error=${encodeURIComponent(error.message)}`);
 
-  if (data.session) redirect("/employers/dashboard");
+  if (data.session) redirect("/employers/onboarding/company");
   redirect("/check-email");
 }
 

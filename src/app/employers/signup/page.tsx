@@ -11,8 +11,8 @@ export default async function EmployerSignupPage({ searchParams }: { searchParam
         <section className="figma-two-grid" style={{ padding: "80px 0 110px", alignItems: "start" }}>
           <div className="figma-page-hero inverse" style={{ minHeight: 0, padding: 0, background: "transparent" }}>
             <span className="figma-eyebrow">FOR EMPLOYERS</span>
-            <h1>Hire globally, with confidence.</h1>
-            <p>AI-matched candidates. Verified employers. Simple, transparent pricing built for teams hiring across every market.</p>
+            <h1>Create your employer account.</h1>
+            <p>Use Google or your work email. Verified employers, simple transparent pricing.</p>
             <p style={{ marginTop: 24 }}>✓ Verified Employer program &nbsp;&nbsp; ✓ Applicant pipeline &nbsp;&nbsp; ✓ Employer dashboard</p>
           </div>
 
@@ -34,7 +34,7 @@ export default async function EmployerSignupPage({ searchParams }: { searchParam
                 Password
                 <input className="input" name="password" type="password" minLength={8} required placeholder="Create a password" />
               </label>
-              <button className="figma-btn figma-btn-orange" type="submit" style={{ width: "100%", marginTop: 24 }}>Create Account</button>
+              <button className="figma-btn figma-btn-orange" type="submit" style={{ width: "100%", marginTop: 24 }}>Create Employer Account</button>
             </form>
             <p className="muted" style={{ marginTop: 18, fontSize: 13 }}>By creating an account, you agree to our <Link href="/terms" className="link">Terms of Service</Link> and <Link href="/privacy" className="link">Privacy Policy</Link>.</p>
             <p style={{ marginTop: 18 }}>Already have an account? <Link href="/employers/login" className="link">Sign in</Link></p>
