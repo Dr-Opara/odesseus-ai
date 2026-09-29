@@ -264,12 +264,12 @@ export async function getEmployerAccount(client: EmployerClient): Promise<Employ
 }
 
 /**
- * The organization for a user id, resolved through `employer_members`.
+ * The organization for a user id.
  *
- * `employer_organizations` is selectable when the caller owns the row or is an
- * org member, and `employer_members` is selectable for your own row, so this
- * two-step read is the narrowest path that works. The `org_id` used downstream
- * is the one Postgres itself authorised.
+ * Resolved through `employer_members` first; when the caller owns an org but
+ * holds no member row (for example a historically half-provisioned account),
+ * falls back to the org they own. Both paths read only rows Postgres already
+ * authorised for this session.
  */
 export async function getEmployerOrganization(
   client: EmployerClient,
@@ -282,12 +282,24 @@ export async function getEmployerOrganization(
     .limit(1)
     .maybeSingle<{ org_id: string; role: string }>();
 
-  if (membership.error || !membership.data?.org_id) return null;
+  let orgId: string | null = null;
+  if (!membership.error && membership.data?.org_id) {
+    orgId = membership.data.org_id;
+  } else {
+    const owned = await client
+      .from("employer_organizations")
+      .select("id")
+      .eq("owner_user_id", userId)
+      .limit(1)
+      .maybeSingle<{ id: string }>();
+    if (owned.error || !owned.data?.id) return null;
+    orgId = owned.data.id;
+  }
 
   const org = await client
     .from("employer_organizations")
     .select(ORG_COLUMNS)
-    .eq("id", membership.data.org_id)
+    .eq("id", orgId)
     .maybeSingle<Row>();
 
   if (org.error || !org.data) return null;
@@ -461,7 +473,7 @@ export async function getUnrecognisedFeaturedTiers(
   return [...new Set(listings.map((l) => l.tier).filter((tier) => !isFeaturedTier(tier)))];
 }
 
-/** The organization's current subscription, if any. */
+/** The organization's current subscription, if any (latest period first). */
 export async function getEmployerSubscription(
   client: EmployerClient,
   orgId: string
@@ -470,6 +482,7 @@ export async function getEmployerSubscription(
     .from("employer_subscriptions")
     .select(SUBSCRIPTION_COLUMNS)
     .eq("org_id", orgId)
+    .order("period_end", { ascending: false, nullsFirst: false })
     .limit(1)
     .maybeSingle<Row>();
 
@@ -492,12 +505,13 @@ export async function getEmployerSubscription(
 }
 
 /**
- * The granted job-post allowance for the current period.
+ * The granted job-post allowance for the current period (latest grant).
  *
  * `total` and `used` come from `employer_job_post_credits`, which is written by
  * the subscription sync; the remaining count is derived here and clamped at
  * zero so a `used` value that overshot (for example a job published just as a
- * period closed) can never render as negative quota.
+ * period closed) can never render as negative quota. Renewals insert a new
+ * row per period, so the latest grant is read, not an arbitrary one.
  */
 export async function getJobPostAllowance(
   client: EmployerClient,
@@ -507,6 +521,7 @@ export async function getJobPostAllowance(
     .from("employer_job_post_credits")
     .select(ALLOWANCE_COLUMNS)
     .eq("org_id", orgId)
+    .order("granted_at", { ascending: false, nullsFirst: false })
     .limit(1)
     .maybeSingle<Row>();
 
@@ -1391,17 +1406,22 @@ export async function updateJob(
 /**
  * Publish a draft job.
  *
- * This transitions the job from 'draft' to 'published', which triggers the
- * claim_job_post_credit database trigger to consume a job-post credit from
- * the organization's available credits. The operation is atomic and idempotent:
- * re-publishing an already-published job is a no-op and does not consume a
+ * Capacity is enforced server-side in two layers that agree:
+ *   1. The plan cap for the org's active subscription tier (Starter 3,
+ *      Growth 10, Business 25), checked here against the live count of
+ *      published jobs, so the caller gets a clean at_capacity answer.
+ *   2. The claim_job_post_credit database trigger, which atomically consumes
+ *      one granted credit on the draft -> published transition and stays the
+ *      final authority under concurrency.
+ *
+ * Re-publishing an already-published job is a no-op and does not consume a
  * second credit.
  */
 export async function publishJob(
   client: EmployerClient,
   orgId: string,
   jobId: string
-): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: "not_found" | "wrong_status" | "no_credits" }> {
+): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: "not_found" | "wrong_status" | "no_credits" | "at_capacity" }> {
   const { data: job, error: fetchError } = await client
     .from("employer_jobs")
     .select("status")
@@ -1418,6 +1438,30 @@ export async function publishJob(
     return { ok: false, reason: "wrong_status" };
   }
 
+  const subscription = await getEmployerSubscription(client, orgId);
+  const plan =
+    subscription && isActiveSubscriptionStatus(subscription.status)
+      ? planForTier(subscription.tier)
+      : null;
+
+  if (!plan) {
+    return { ok: false, reason: "no_credits" };
+  }
+
+  const { count: publishedCount, error: countError } = await client
+    .from("employer_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("org_id", orgId)
+    .eq("status", "published");
+
+  if (countError) {
+    throw new Error("Could not check job capacity: " + countError.message);
+  }
+
+  if ((publishedCount ?? 0) >= plan.jobPostsIncluded) {
+    return { ok: false, reason: "at_capacity" };
+  }
+
   const { data, error } = await client
     .from("employer_jobs")
     .update({ status: "published", posted_at: new Date().toISOString() })
@@ -1429,7 +1473,10 @@ export async function publishJob(
     .maybeSingle();
 
   if (error) {
-    if (error.message.includes("no_credits")) {
+    // The claim trigger raises "no job post credits available for this
+    // employer" when the grant ledger is exhausted (e.g. lost a race with
+    // another publish); map it to the same clean answer as the cap check.
+    if (error.message.includes("no job post credits")) {
       return { ok: false, reason: "no_credits" };
     }
     throw new Error("Could not publish job: " + error.message);

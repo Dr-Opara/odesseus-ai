@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   countJobsByStatus,
   getActiveSeatCount,
@@ -14,6 +14,7 @@ import {
   getEmployerUserId,
   getJobPostAllowance,
   getUnrecognisedFeaturedTiers,
+  publishJob,
   resolveJobQuota,
 } from "@/lib/employer/service";
 import type { EmployerJob } from "@/lib/employer/types";
@@ -191,8 +192,18 @@ describe("employer organization resolution", () => {
   });
 
   it("returns null when the user is not a member of any organization", async () => {
-    const client = employerFake({ routes: { employer_organizations: [ORG_ROW] } });
+    const client = employerFake({ routes: { employer_organizations: [{ ...ORG_ROW, owner_user_id: "user-9" }] } });
     await expect(getEmployerOrganization(client as never, "user-1")).resolves.toBeNull();
+  });
+
+  it("resolves an owned org that has no member row (heals half-provisioned accounts)", async () => {
+    const client = employerFake({ routes: { employer_organizations: [ORG_ROW] } });
+    await expect(getEmployerOrganization(client as never, "user-1")).resolves.toEqual({
+      id: "org-1",
+      name: "Acme Corp",
+      ownerUserId: "user-1",
+      createdAt: "2026-01-04T10:00:00Z",
+    });
   });
 
   it("returns null when the membership row exists but the org row does not", async () => {
@@ -488,6 +499,122 @@ describe("employer job quota", () => {
 
   it("returns null when there is no subscription at all", () => {
     expect(resolveJobQuota(null, null)).toBeNull();
+  });
+});
+
+describe("employer publish capacity (2Q)", () => {
+  const SUBSCRIPTION = {
+    tier: "starter",
+    status: "active",
+    job_posts_included: 3,
+    period_start: "2026-01-01T00:00:00Z",
+    period_end: "2026-02-01T00:00:00Z",
+  };
+
+  function publishFake(options: {
+    jobStatus?: string | null;
+    subscription?: Record<string, unknown> | null;
+    publishedCount?: number;
+    updateError?: string | null;
+  }) {
+    const {
+      jobStatus = "draft",
+      subscription = SUBSCRIPTION,
+      publishedCount = 0,
+      updateError = null,
+    } = options;
+    const updateSpy = vi.fn(async () => ({
+      data: { id: "job-1", status: "published" },
+      error: updateError ? { message: updateError } : null,
+    }));
+    const from = (table: string) => {
+      const chain = (value: unknown) => {
+        const builder: Record<string, unknown> = {};
+        let updateFailed: string | null = null;
+        builder.select = () => builder;
+        builder.eq = () => builder;
+        builder.order = () => builder;
+        builder.limit = () => builder;
+        builder.update = (...args: unknown[]) => {
+          (updateSpy as (...call: unknown[]) => unknown)(...args);
+          updateFailed = updateError;
+          return builder;
+        };
+        builder.maybeSingle = async () =>
+          updateFailed
+            ? { data: null, error: { message: updateFailed } }
+            : { data: value, error: null };
+        builder.then = (
+          resolve: (value: { data: unknown; error: null; count?: number }) => unknown
+        ) =>
+          Promise.resolve({
+            data: value,
+            error: null,
+            count: value as number | undefined,
+          }).then(resolve);
+        return builder;
+      };
+      if (table === "employer_jobs" && jobStatus === "__count__") {
+        return chain(null);
+      }
+      if (table === "employer_jobs") {
+        // The job-status fetch resolves the draft row; the capacity count is
+        // answered by the head-count query below via the call order.
+        return chain(jobStatus === null ? null : { status: jobStatus });
+      }
+      if (table === "employer_subscriptions") return chain(subscription);
+      return chain(null);
+    };
+    // Answer order for publishJob: job fetch, subscription fetch,
+    // published-count query, then the update.
+    let calls = 0;
+    const countingFrom = (table: string) => {
+      calls += 1;
+      if (table === "employer_jobs" && calls === 3) {
+        const builder: Record<string, unknown> = {};
+        builder.select = () => builder;
+        builder.eq = () => builder;
+        builder.order = () => builder;
+        builder.limit = () => builder;
+        builder.then = (resolve: (value: unknown) => unknown) =>
+          Promise.resolve({ data: [], error: null, count: publishedCount }).then(
+            resolve as (value: unknown) => unknown
+          );
+        return builder;
+      }
+      return from(table);
+    };
+    return { client: { from: countingFrom } as never, updateSpy };
+  }
+
+  it("publishes a draft while plan capacity remains", async () => {
+    const { client, updateSpy } = publishFake({ publishedCount: 2 });
+    const result = await publishJob(client, "org-1", "job-1");
+    expect(result).toMatchObject({ ok: true });
+    expect(updateSpy).toHaveBeenCalledOnce();
+  });
+
+  it("rejects with at_capacity at exactly the Starter limit of 3", async () => {
+    const { client, updateSpy } = publishFake({ publishedCount: 3 });
+    const result = await publishJob(client, "org-1", "job-1");
+    expect(result).toEqual({ ok: false, reason: "at_capacity" });
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it("rejects with no_credits when no live subscription backs the org", async () => {
+    const { client, updateSpy } = publishFake({ subscription: null });
+    const result = await publishJob(client, "org-1", "job-1");
+    expect(result).toEqual({ ok: false, reason: "no_credits" });
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it("maps the credit-claim trigger message to no_credits instead of throwing", async () => {
+    const { client } = publishFake({
+      publishedCount: 0,
+      updateError: "no job post credits available for this employer",
+    });
+    const result = await publishJob(client, "org-1", "job-1");
+    expect(result).toEqual({ ok: false, reason: "no_credits" });
   });
 });
 

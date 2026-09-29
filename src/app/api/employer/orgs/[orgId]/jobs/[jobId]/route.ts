@@ -99,9 +99,17 @@ export async function PATCH(
       const { publishJob } = await import("@/lib/employer/service");
       const result = await publishJob(supabase, orgId, jobId);
       if (!result.ok) {
-        const status = result.reason === "not_found" ? 404 : result.reason === "no_credits" ? 402 : 409;
+        const status = result.reason === "not_found" ? 404 : result.reason === "wrong_status" ? 409 : 402;
         return NextResponse.json(
-          { error: result.reason === "no_credits" ? "No job post credits available." : "Job cannot be published." },
+          {
+            error:
+              result.reason === "no_credits"
+                ? "No job post credits available."
+                : result.reason === "at_capacity"
+                  ? "Your plan's active job limit is reached. Close a job or upgrade to publish."
+                  : "Job cannot be published.",
+            reason: result.reason,
+          },
           { status }
         );
       }

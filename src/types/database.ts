@@ -1131,22 +1131,34 @@ export type Database = {
       };
       employer_organizations: {
         Row: {
+          company_size: string | null;
           created_at: string;
+          description: string | null;
           id: string;
+          industry: string | null;
           name: string;
           owner_user_id: string;
+          website: string | null;
         };
         Insert: {
+          company_size?: string | null;
           created_at?: string;
+          description?: string | null;
           id?: string;
+          industry?: string | null;
           name: string;
           owner_user_id: string;
+          website?: string | null;
         };
         Update: {
+          company_size?: string | null;
           created_at?: string;
+          description?: string | null;
           id?: string;
+          industry?: string | null;
           name?: string;
           owner_user_id?: string;
+          website?: string | null;
         };
         Relationships: [];
       };
@@ -3963,6 +3975,25 @@ export type Database = {
           joined_role: string;
           org_name: string;
         }[];
+      };
+      odesseus_ensure_employer_organization: {
+        Args: { p_company_name: string; p_user_id: string };
+        Returns: {
+          company_size: string | null;
+          created_at: string;
+          description: string | null;
+          id: string;
+          industry: string | null;
+          name: string;
+          owner_user_id: string;
+          website: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "employer_organizations";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       odesseus_accept_live_guest_invite: {
         Args: { p_guest_user_id: string; p_token: string };
