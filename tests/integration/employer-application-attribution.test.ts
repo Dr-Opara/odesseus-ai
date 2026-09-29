@@ -243,9 +243,11 @@ describe("rls audit inventory stays in sync with the schema", () => {
   it("matches the pinned count, which a table addition must bump in both files", () => {
     // Phase 2K added notifications, notification_reminders and
     // employer_notification_preferences, taking the public schema from 69 to 72
-    // tables. This pin and the one inside rls-audit.test.sql are the same
+    // tables. Phases 2M (4 mock tables), 2O (guest_access_records), 2R (fit
+    // scores, pipeline stages) and the homepage feed (public_job_posts) take
+    // it to 80. This pin and the one inside rls-audit.test.sql are the same
     // number; when a migration adds a table, both must change together.
     const rlsAudit = read("supabase/tests/rls-audit.test.sql");
-    expect(rlsAudit).toMatch(/56 \+ 9 \+ 1 \+ 6, 'public schema holds exactly 72 tables/);
+    expect(rlsAudit).toMatch(/56 \+ 9 \+ 1 \+ 6 \+ 8, 'public schema holds exactly 80 tables/);
   });
 });

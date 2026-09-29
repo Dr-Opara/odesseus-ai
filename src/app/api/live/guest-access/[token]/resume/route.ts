@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 import { parseResume } from "@/lib/ai/resume";
 import type { Json } from "@/types/database";
 import {
   GUEST_RESUME_PREFIX,
+  guestTokenBucket,
   loadGuestAccess,
 } from "@/lib/interviews/guest-share";
 
@@ -27,6 +29,15 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
+
+  const rate = checkRateLimit(guestTokenBucket(token, "resume"), 10, 60 * 60 * 1000);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many uploads. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rate.retryAfterMs / 1000)) } }
+    );
+  }
+
   const service = createServiceClient();
 
   const access = await loadGuestAccess(service, token);

@@ -22,7 +22,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 
 -- NOTE: bump this plan's inventory count in the same commit as any migration
 -- that adds or removes a public table (see assertion 1 below).
-SELECT plan(29);
+SELECT plan(30);
 
 -- ---------------------------------------------------------------------------
 -- 1. Baseline inventory
@@ -32,7 +32,7 @@ SELECT is(
    JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public' AND c.relkind = 'r'
      AND c.relname <> 'schema_migrations'),
-  56 + 9 + 1 + 6, 'public schema holds exactly 72 tables (audit inventory is current: +candidate_work_authorization, +application_agent_settings, +application_agent_decisions, +candidate_activity_events, +notifications, +notification_reminders, +employer_notification_preferences)');
+  56 + 9 + 1 + 6 + 8, 'public schema holds exactly 80 tables (audit inventory is current: +candidate_work_authorization, +application_agent_settings, +application_agent_decisions, +candidate_activity_events, +notifications, +notification_reminders, +employer_notification_preferences, +mock_interview_sessions, +mock_interview_questions, +mock_interview_answers, +mock_interview_feedback, +guest_access_records, +employer_fit_scores, +employer_pipeline_stages, +public_job_posts)');
 
 SELECT is(
   (SELECT count(*)::int FROM pg_class c
@@ -47,10 +47,23 @@ SELECT is(
    JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public' AND c.relkind = 'r'
      AND c.relname <> 'schema_migrations'
+     -- public_job_posts is the deliberate exception: RLS is on, but it
+     -- carries zero policies because no client role may read it directly.
+     -- The feed API serves an allowlisted projection through the service
+     -- role, and the grant assertions below prove both anon and
+     -- authenticated hold nothing on it.
+     AND c.relname <> 'public_job_posts'
      AND NOT EXISTS (
        SELECT 1 FROM pg_policies p
        WHERE p.schemaname = 'public' AND p.tablename = c.relname)),
-  0, 'every public table has at least one policy');
+  0, 'every public table except the policy-free feed store has at least one policy');
+
+SELECT is(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema = 'public'
+     AND table_name = 'public_job_posts'
+     AND grantee IN ('anon', 'authenticated')),
+  0, 'the policy-free feed store grants nothing to anon or authenticated');
 
 -- ---------------------------------------------------------------------------
 -- 2. Anonymous grant surface (post-M9 hardening)

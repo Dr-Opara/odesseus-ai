@@ -56,7 +56,7 @@ create or replace function public.odesseus_get_employer_applicants (
     role_title text,
     resume_snapshot jsonb,
     job_snapshot jsonb,
-    match_score_snapshot double precision,
+    match_score_snapshot smallint,
     verification_evidence jsonb
   )
   language plpgsql

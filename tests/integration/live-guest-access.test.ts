@@ -235,6 +235,56 @@ describe("GET /api/live/guest-access/[token] (link validation)", () => {
   });
 });
 
+describe("guest rate limits (security)", () => {
+  beforeEach(() => {
+    createClientMock.mockReset();
+    createServiceClientMock.mockReset();
+    readLiveEntitlementMock.mockReset();
+    readLiveEntitlementMock.mockResolvedValue({ ok: true, row: SHARE_OWNER_ROW });
+  });
+
+  it("throttles token validation per IP without ever logging the token", async () => {
+    createServiceClientMock.mockReturnValue(
+      fakeAuthedClient({
+        userId: "service",
+        from: fromRouter({ guest_access_records: guestRecord() }),
+      })
+    );
+
+    const { GET } = await import("@/app/api/live/guest-access/[token]/route");
+    const request = () =>
+      GET(new Request("http://localhost/x", { headers: { "x-forwarded-for": "9.9.9.9" } }), {
+        params: Promise.resolve({ token: TOKEN }),
+      });
+
+    for (let i = 0; i < 60; i++) {
+      const response = await request();
+      expect(response.status).toBe(200);
+    }
+    const limited = await request();
+    expect(limited.status).toBe(429);
+  });
+
+  it("throttles link minting per owner", async () => {
+    // A dedicated user id: the in-memory limiter is process-global and an
+    // earlier test already spent one call from "user-owner".
+    createClientMock.mockResolvedValue(fakeAuthedClient({ userId: "user-owner-rl" }));
+    createServiceClientMock.mockReturnValue(
+      fakeAuthedClient({
+        userId: "service",
+        from: () => fakeQueryResult({ id: "rec-1" }),
+      })
+    );
+
+    const { POST } = await import("@/app/api/live/guest-links/route");
+    for (let i = 0; i < 20; i++) {
+      const response = await POST();
+      expect(response.status).toBe(200);
+    }
+    expect((await POST()).status).toBe(429);
+  });
+});
+
 describe("POST /api/live/guest-access/[token]/setup (guest setup)", () => {
   beforeEach(() => {
     createClientMock.mockReset();

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 import {
   guestSetupSchema,
+  guestTokenBucket,
   loadGuestAccess,
 } from "@/lib/interviews/guest-share";
 
@@ -17,6 +19,15 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
+
+  const rate = checkRateLimit(guestTokenBucket(token, "setup"), 30, 60 * 60 * 1000);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rate.retryAfterMs / 1000)) } }
+    );
+  }
+
   const service = createServiceClient();
 
   const access = await loadGuestAccess(service, token);

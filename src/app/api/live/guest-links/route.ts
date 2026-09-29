@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { readLiveEntitlement } from "@/lib/billing/live-entitlement";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 import {
   canGenerateGuestLinks,
   generateGuestLinkToken,
@@ -25,6 +26,15 @@ export async function POST() {
 
   if (!userId) {
     return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
+  }
+
+  // Link minting is cheap and retry-heavy; the bound only stops scripting.
+  const rate = checkRateLimit(`live:guest-links:${userId}`, 20, 60 * 60 * 1000);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many guest links created. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rate.retryAfterMs / 1000)) } }
+    );
   }
 
   const entitlement = await readLiveEntitlement(userId);

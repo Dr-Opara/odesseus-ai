@@ -57,6 +57,20 @@ export function isPlausibleGuestLinkToken(token: string): boolean {
   return /^[0-9a-f]{64}$/.test(token);
 }
 
+/** First client IP for rate-limit keys; never the guest token. */
+export function guestRequestIp(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  return forwarded?.split(",")[0]?.trim() || "unknown";
+}
+
+/**
+ * Rate-limit bucket for token-scoped guest writes, keyed by a token-hash
+ * prefix (never the raw token, which must not land in logs or stores).
+ */
+export function guestTokenBucket(token: string, action: string): string {
+  return `live:guest:${hashGuestLinkToken(token).slice(0, 16)}:${action}`;
+}
+
 /**
  * Whether an entitlement row authorizes its holder to mint guest links:
  * an active Share Annual owner with current access. Guests, monthly and

@@ -6,6 +6,7 @@ import {
   buildGuestLiveContext,
   canGenerateGuestLinks,
   generateGuestLinkToken,
+  guestTokenBucket,
   hashGuestLinkToken,
   isGuestShareInterview,
   isPlausibleGuestLinkToken,
@@ -73,6 +74,13 @@ describe("guest link tokens (2O)", () => {
     expect(isPlausibleGuestLinkToken("not-a-token")).toBe(false);
     expect(isPlausibleGuestLinkToken("")).toBe(false);
     expect(isPlausibleGuestLinkToken("ab".repeat(31))).toBe(false);
+  });
+
+  it("buckets rate limits by token hash, never the raw token", () => {
+    const token = "ab".repeat(32);
+    const bucket = guestTokenBucket(token, "setup");
+    expect(bucket).toContain(hashGuestLinkToken(token).slice(0, 16));
+    expect(bucket).not.toContain(token);
   });
 });
 
