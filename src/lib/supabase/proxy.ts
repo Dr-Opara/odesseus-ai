@@ -6,6 +6,7 @@ import { resolveQaMobilePath } from "@/lib/mobile/screen-map";
 
 const publicExactPaths = [
   "/",
+  "/signin",
   "/login",
   "/signup",
   "/check-email",
