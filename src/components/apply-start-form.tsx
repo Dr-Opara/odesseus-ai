@@ -13,7 +13,7 @@ export default function ApplyStartForm({
   defaultUrl?: string | null;
   /**
    * Apply tier, sent to /api/apply/start. The server validates the wallet
-   * balance against the tier price (Standard ≥ 49¢, Smart ≥ 199¢) before
+   * balance against the tier price (Apply ≥ 39¢, Smart ≥ 99¢) before
    * accepting the run and persists it as the run's execution_mode, which the
    * backend finalization RPC uses to debit the wallet at the tier rate on
    * verified successful submission.

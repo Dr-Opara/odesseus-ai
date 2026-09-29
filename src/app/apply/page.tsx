@@ -3,12 +3,9 @@ import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 import { APPLY_TIERS } from "@/lib/pricing/candidate-pricing";
 
-const standardLabel = APPLY_TIERS.standard.priceLabel;
-const smartLabel = APPLY_TIERS.smart.priceLabel;
-
 export const metadata: Metadata = {
-  title: `Apply with Odesseus — from ${standardLabel} per successful application`,
-  description: `Odesseus matches the role, tailors your resume, completes the application, and tracks it — Standard Apply from ${standardLabel}, Smart Apply from ${smartLabel}, only after a successful submission.`,
+  title: `Apply with Odesseus — from ${APPLY_TIERS.standard.priceLabel} per successful application`,
+  description: `Odesseus matches the role, tailors your resume, completes the application, and tracks it — ${APPLY_TIERS.standard.label} from ${APPLY_TIERS.standard.priceLabel}, ${APPLY_TIERS.smart.label} from ${APPLY_TIERS.smart.priceLabel}, only after a successful submission.`,
 };
 
 const platforms = [
@@ -58,8 +55,8 @@ const stages = [
 ];
 
 const billingRules = [
-  { label: `Standard Apply — successful submission`, amount: standardLabel, charge: true },
-  { label: `Smart Apply — successful submission`, amount: smartLabel, charge: true },
+  { label: `${APPLY_TIERS.standard.label} — successful submission`, amount: APPLY_TIERS.standard.priceLabel, charge: true },
+  { label: `${APPLY_TIERS.smart.label} — successful submission`, amount: APPLY_TIERS.smart.priceLabel, charge: true },
   { label: "Unsupported", amount: "$0", charge: false },
   { label: "Failed", amount: "$0", charge: false },
   { label: "Cancelled", amount: "$0", charge: false },
@@ -75,12 +72,11 @@ export default function ApplyPage() {
       </div>
 
       <section className="shell page-hero">
-        <div className="badge">From {standardLabel} · Apply with Odesseus</div>
+        <div className="badge">From {APPLY_TIERS.standard.priceLabel} · Apply with Odesseus</div>
         <h1 className="font-display page-hero-headline">Apply anywhere your next opportunity lives.</h1>
         <p className="muted page-hero-copy">
           Odesseus matches the role, tailors your resume, completes the application, and tracks it —
-          Standard Apply from {standardLabel}, Smart Apply from {smartLabel}, only after a successful
-          submission.
+          {" "}{APPLY_TIERS.standard.label} from {APPLY_TIERS.standard.priceLabel}, {APPLY_TIERS.smart.label} from {APPLY_TIERS.smart.priceLabel}, only after a successful submission.
         </p>
         <div className="hero-ctas" style={{ marginTop: 26 }}>
 

@@ -15,7 +15,7 @@ type Job = {
  * Mobile Approval screen (screen 09) — reuses the exact same preflight data
  * and apply tier + start flow (POST /api/apply/start) the desktop approval
  * page uses. No separate approval logic; eligibility is the wallet-based
- * per-tier check (Standard 49¢ / Smart 199¢), matching the desktop gate.
+ * per-tier check (Apply 39¢ / Smart 99¢), matching the desktop gate.
  */
 export default function MobileApplyStart({
   job,

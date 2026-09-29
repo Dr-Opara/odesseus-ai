@@ -13,10 +13,13 @@ import { test, expect } from "@playwright/test";
 //  2. A signed-in applicant still sees Odesseus Live where intended
 //     (billing keeps the feature and the interview-pass balance exposed).
 //
-// The pricing tokens reflect the public advertising ban: no "$24.99 Live
-// session", "3 Live passes $59.99", or "Annual Live $499" anywhere signed out.
+// The pricing tokens reflect the public advertising ban: no Live session,
+// pass, monthly, or annual pricing anywhere signed out. This covers both the
+// current catalog (Single $14.99, Monthly $19.99, Personal Annual $99, Share
+// Annual $499) and the retired figures ($24.99, $59.99) so neither the live
+// product nor a stale price can leak to a public page.
 
-const FORBIDDEN = ["odesseus live", "$24.99", "$59.99", "$499"] as const;
+const FORBIDDEN = ["odesseus live", "$14.99", "$19.99", "$99", "$24.99", "$59.99", "$499"] as const;
 
 // Every route the auth boundary proxy marks public (see src/lib/supabase/proxy.ts):
 // the splash, public pricing, marketing/help pages, and the employer site.
@@ -153,13 +156,13 @@ test.describe("signed-in applicants still see Odesseus Live where intended", () 
     await page.goto("/billing");
     await expect(page).toHaveURL(/\/billing$/);
     await expect(page.getByText(/One pass is used when Odesseus Live starts/i)).toBeVisible();
-
     // Odesseus Live is private to signed-in applicants, not withdrawn: the
     // authenticated /billing surface is where the Live feature and its
     // interview-pass product are offered. Live session pricing appears here
     // even though it is absent from every public marketing page.
     await expect(page.getByText("Odesseus Live", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("$24.99").first()).toBeVisible();
+    await expect(page.getByText("$14.99").first()).toBeVisible();
+    await expect(page.getByText("$19.99").first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Interview passes" })).toBeVisible();
 
     // The wallet is the only candidate currency: top-ups are sold here, and

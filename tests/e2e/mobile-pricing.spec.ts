@@ -32,7 +32,7 @@ test.describe("mobile /pricing audience tabs (signed out)", () => {
       await expect(business).toBeVisible();
       await expect(business).toHaveAttribute("aria-selected", "false");
 
-      // Standard/Smart applies, wallet top-ups, free prep.
+      // Apply/Smart Apply, wallet top-ups, free prep.
       for (const figure of ["$0.39", "$0.99", "$10", "$20", "$50"]) {
         await expect(page.getByText(figure).filter({ visible: true }).first()).toBeVisible();
       }

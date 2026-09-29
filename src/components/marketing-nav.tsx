@@ -41,7 +41,7 @@ export default function MarketingNav({ inverse = false }: { inverse?: boolean })
           <Link href="/about#faq">FAQ</Link>
         </nav>
         <div className="figma-nav-actions">
-          <Link className={`figma-text-link ${inverse ? "is-inverse" : ""}`} href="/login">Sign In</Link>
+          <Link className={`figma-text-link ${inverse ? "is-inverse" : ""}`} href="/signin">Sign In</Link>
           <Link className="figma-btn figma-btn-orange" href="/signup">Get Started</Link>
         </div>
       </div>

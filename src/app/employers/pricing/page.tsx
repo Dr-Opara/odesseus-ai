@@ -11,7 +11,7 @@ export default function EmployerPricingPage() {
         <section className="figma-page-hero inverse" style={{ minHeight: 0 }}>
           <span className="figma-eyebrow">EMPLOYER PRICING</span>
           <h1>Plans that scale with your hiring.</h1>
-          <p>Pricing shown in your local currency, determined by your company’s billing country.</p>
+          <p>Pricing shown in your local currency, determined by your company&rsquo;s billing country.</p>
         </section>
 
         <section className="figma-three-grid employer-prices" style={{ paddingBottom: 20 }}>
@@ -19,11 +19,9 @@ export default function EmployerPricingPage() {
             <article className="figma-info-card lavender" key={plan.name}>
               <span className="figma-eyebrow">{plan.name.toUpperCase()}</span>
               <h2>{plan.priceLabel} <small>{plan.unit}</small></h2>
-              <p>✓ {plan.jobs}</p>
-              <p>✓ AI candidate matching</p>
-              <p>✓ Applicant pipeline</p>
-              <p>✓ Employer dashboard</p>
-              <p>✓ Verified employer experience</p>
+              {plan.features.map((feature) => (
+                <p key={feature}>✓ {feature}</p>
+              ))}
               {/* Employer accounts are created on desktop/web only. On a phone
                   the business entry point is Business Login, so the call to
                   action points at sign-in there instead of at a sign-up form

@@ -7,9 +7,7 @@ import { test, expect } from "@playwright/test";
 // credentials — these are all public pages.
 
 const pages = [
-  // The homepage hero is a visual job-search dashboard showcase with no
-  // visible headline on small screens; the H1 is present for accessibility/SEO.
-  { path: "/", heading: "Discover Your Dream Job with Odesseus.ai", visible: false },
+  { path: "/", heading: "Discover Your Dream Job with Odesseus.ai" },
   { path: "/how-it-works", heading: "A smarter path from search to interview." },
   { path: "/apply", heading: "Apply anywhere your next opportunity lives." },
   // /live redirects to /agents as part of the three-core-agent simplification.
@@ -20,17 +18,12 @@ const pages = [
 ];
 
 test.describe("marketing page titles and headings", () => {
-  for (const { path, heading, mobileHeading, visible = true } of pages) {
+  for (const { path, heading, mobileHeading } of pages) {
     test(`${path} has a title tied to Odesseus and the expected heading`, async ({ page, isMobile }) => {
       await page.goto(path);
       await expect(page).toHaveTitle(/Odesseus/);
       const expectedHeading = isMobile && mobileHeading ? mobileHeading : heading;
-      const headingLocator = page.getByRole("heading", { name: expectedHeading, level: 1 });
-      if (visible) {
-        await expect(headingLocator).toBeVisible();
-      } else {
-        await expect(headingLocator).toBeAttached();
-      }
+      await expect(page.getByRole("heading", { name: expectedHeading, level: 1 })).toBeVisible();
     });
   }
 });
@@ -136,7 +129,7 @@ test.describe("shared marketing footer", () => {
 });
 
 test.describe("pricing figures", () => {
-  test("/apply prominently shows Standard $0.39 and Smart $0.99 with the wallet success rule", async ({ page }) => {
+  test("/apply prominently shows Apply $0.39 and Smart Apply $0.99 with the wallet success rule", async ({ page }) => {
     await page.goto("/apply");
     await expect(page.getByText("$0.39").filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByText("$0.99").filter({ visible: true }).first()).toBeVisible();
@@ -176,7 +169,6 @@ test.describe("wallet and pay-as-you-go pricing", () => {
     await page.goto("/pricing");
     await expect(page.getByText("Wallet top-up").filter({ visible: true }).first()).toBeVisible();
     const body = (await page.locator("body").innerText()).toLowerCase();
-    expect(body).not.toContain("$0.99");
     expect(body).not.toContain("credit pack");
     expect(body).not.toContain("25 credits");
   });

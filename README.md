@@ -70,17 +70,17 @@ Do not add Supabase secret/service-role keys to browser environment variables.
 2. Show what needs attention, not everything Odesseus knows.
 3. Keep AI behavior understandable and reviewable.
 4. Never fabricate candidate qualifications.
-5. Charge the wallet (Standard Apply $0.49 / Smart Apply $1.99) only after a verified successful submission.
+5. Charge the wallet (Standard Apply $0.39 / Smart Apply $0.99) only after a verified successful submission.
 6. Keep interview workspace free; consume an interview pass only when Odesseus Live starts.
 
 ## Pricing direction
 
 Candidate core usage is pay-per-use from a prepaid wallet. No subscription for candidate core usage; employer plans and recruiter seats may be recurring subscriptions.
 
-- Standard Apply — $0.49 per verified successful submission, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
-- Smart Apply — $1.99 per verified successful submission; deeper automation, with user approval still required before final submission
+- Standard Apply — $0.39 per verified successful submission, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
+- Smart Apply — $0.99 per verified successful submission; deeper automation with deeper role-specific tailoring and a closer pass on hard requirements, with user approval still required before final submission
 - Wallet top-ups — $10 / $20 / $50
-- $24.99 per successfully activated Odesseus Live interview session (3 passes $59.99, annual $499)
+- Odesseus Live — Single $14.99, Monthly $19.99, Personal Annual $99, Share Annual $499 per successfully activated Live interview workflow (authenticated applicants only)
 - Employer plans — Starter $79 / 3 jobs, Growth $149 / 10 jobs, Business $299 / 25 jobs (recurring)
 - Featured listings — $29 / 7 days, $49 / 14 days, AI Featured $129 / 30 days
 - Recruiter seat — $20/month per additional employer-team seat
@@ -159,8 +159,8 @@ Billing adds a prepaid candidate wallet, Standard/Smart Apply charges, and inter
 ### Candidate wallet
 
 - Top-ups: $10 / $20 / $50, added to a server-controlled wallet balance (minor units)
-- Standard Apply — $0.49 per verified successful submission, across any supported job board or employer career site (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
-- Smart Apply — $1.99 per verified successful submission; deeper automation (multi-page ATS navigation, question completion from known candidate data, document attachment, retry/recovery) with user approval still required before final submission
+- Standard Apply — $0.39 per verified successful submission, across any supported job board or employer career site (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee
+- Smart Apply — $0.99 per verified successful submission; deeper automation (multi-page ATS navigation, question completion from known candidate data, document attachment, retry/recovery) with deeper role-specific tailoring and a closer pass on hard requirements, with user approval still required before final submission
 
 Wallet funds are not spent at top-up time. The Apply workflow draws the Standard or Smart rate only after a successful application submission is verified. Failed, unsupported, paused, cancelled, or unconfirmed submissions never deduct wallet funds.
 
@@ -168,7 +168,7 @@ Legacy note: the pre-wallet model charged one "$0.99 application credit" per sub
 
 ### Interview pass
 
-- 1 Odesseus Live interview pass — $24.99 (3 passes $59.99, annual $499)
+- Odesseus Live — Single $14.99, Monthly $19.99, Personal Annual $99, Share Annual $499
 - Workspace setup remains free
 - The pass will be consumed only when the live interview assistant starts
 
@@ -206,11 +206,11 @@ Odesseus Apply is an assisted, human-in-the-loop application browser.
 7. Candidate can open the live browser and take over when needed.
 8. Odesseus pauses again before final submission.
 9. Candidate explicitly presses **Submit application**.
-10. The wallet is charged (Standard $0.49 / Smart $1.99) only after a success confirmation is detected.
+10. The wallet is charged (Standard Apply $0.39 / Smart Apply $0.99) only after a success confirmation is detected.
 
 ### Coverage
 
-Odesseus applies across supported job boards and direct employer career sites, including Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites — at the same Standard $0.49 / Smart $1.99 rates regardless of which platform the job is on. This is not a claim of universal technical compatibility with every site; coverage is scoped to supported job boards and employer career sites.
+Odesseus applies across supported job boards and direct employer career sites, including Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites — at the same Standard $0.39 / Smart $0.99 rates regardless of which platform the job is on. This is not a claim of universal technical compatibility with every site; coverage is scoped to supported job boards and employer career sites.
 
 ### Browser runtime
 

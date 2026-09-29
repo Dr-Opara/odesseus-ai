@@ -7,6 +7,7 @@ import { getCandidateDashboard } from "@/lib/candidate/dashboard";
 import { getCandidateUserId } from "@/lib/candidate/service";
 import type { CreditBalance } from "@/lib/candidate/types";
 import { MIN_APPLY_PRICE_CENTS, formatCents } from "@/lib/pricing/candidate-pricing";
+import LiveEntryCard from "@/components/live-entry-card";
 
 function firstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "there";
@@ -16,7 +17,7 @@ function labelStatus(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function formatWhen(value: string | null) {
+export function formatWhen(value: string | null) {
   if (!value) return "Time pending";
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -328,6 +329,12 @@ export default async function DashboardPage() {
             </div>
           )}
         </section>
+
+        <LiveEntryCard
+          interviewPasses={wallet.interviewPasses}
+          liveUnlimitedUntil={wallet.liveUnlimitedUntil}
+          upcomingInterview={null}
+        />
       </section>
 
       <MobileHome

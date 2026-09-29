@@ -75,6 +75,10 @@ export default function MobileInterviews({
           Generate Prep Plan →
         </Link>
       ) : null}
+
+      <Link className="m-action" href="/interviews/live-history" style={{ display: "block", textAlign: "center", textDecoration: "none", marginTop: 12, opacity: 0.7 }}>
+        Live session history →
+      </Link>
     </MobileScreen>
   );
 }

@@ -22,6 +22,7 @@ export const mobileScreens: MobileScreenSpec[] = [
   ["10","Applications","45:131",844,1],
   ["11","Prep Agent","45:157",844,1],
   ["12","Profile","45:185",844,1],
+  ["13","Odesseus Live","45:210",844,1],
   ["14","Account Settings","65:36",844,1],
   ["15","Password & Security","65:77",844,1],
   ["16","Notifications","65:110",844,1],
@@ -64,6 +65,7 @@ export function resolveMobileScreen(pathname: string): MobileScreenSpec | null {
   if (pathname === "/apply/start" || /^\/apply\/run\//.test(pathname)) return byIndex.get("09") ?? null;
   if (pathname === "/applications") return byIndex.get("10") ?? null;
   if (pathname === "/interviews") return byIndex.get("11") ?? null;
+  if (/^\/interviews\/[^/]+\/live/.test(pathname)) return byIndex.get("13") ?? null;
   if (pathname === "/profile") return byIndex.get("12") ?? null;
   if (pathname === "/settings") return byIndex.get("14") ?? null;
   if (pathname === "/settings/security") return byIndex.get("15") ?? null;
@@ -110,6 +112,7 @@ export const SCREEN_REAL_PATHS: Partial<Record<string, string>> = {
   "10": "/applications",
   "11": "/interviews",
   "12": "/profile",
+  "13": "/interviews/[id]/live",
   "14": "/settings",
   "15": "/settings/security",
   "16": "/settings/notifications",

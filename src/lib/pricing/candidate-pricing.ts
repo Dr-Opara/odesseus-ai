@@ -22,20 +22,30 @@ export const APPLY_TIERS: Record<
   { label: string; priceCents: number; priceLabel: string; description: string }
 > = {
   standard: {
-    label: applyRates.standard.label,
+    // Label is the Figma/product-locked display copy ("Apply", not the
+    // catalog's internal "Standard Apply") — amount is derived from the
+    // billing catalog so the advertised rate can never drift from the
+    // charged rate (see this file's header comment for why that matters).
+    label: "Apply",
     priceCents: applyRates.standard.amountCents,
     priceLabel: `$${(applyRates.standard.amountCents / 100).toFixed(2)}`,
     description:
       "Odesseus tailors your resume and submits the application. Charged only after a verified successful submission.",
   },
   smart: {
-    label: applyRates.smart.label,
+    label: "Smart Apply",
     priceCents: applyRates.smart.amountCents,
     priceLabel: `$${(applyRates.smart.amountCents / 100).toFixed(2)}`,
     description:
-      "Everything in Standard Apply, plus deeper role-specific tailoring and a closer pass on hard requirements before submission.",
+      "Everything in Apply, plus deeper role-specific tailoring and a closer pass on hard requirements before submission.",
   },
 };
+
+export const PREP_AGENT_LABEL = "Interview Prep";
+export const PREP_AGENT_DESCRIPTION = "Practice from your job and application context.";
+export const FAILED_SUBMISSION_LABEL = "Failed submission";
+export const FAILED_SUBMISSION_PRICE_LABEL = "$0";
+export const FAILED_SUBMISSION_DESCRIPTION = "No verified success means no application charge.";
 
 export const WALLET_TOPUP_AMOUNTS_CENTS = [1000, 2000, 5000] as const;
 export type WalletTopUpAmountCents = (typeof WALLET_TOPUP_AMOUNTS_CENTS)[number];
@@ -46,7 +56,7 @@ export function formatCents(cents: number): string {
 
 /**
  * Minimum wallet balance (cents) required to START any apply. The cheapest
- * tier is Standard Apply, so no candidate with less than this can begin an
+ * tier is Apply, so no candidate with less than this can begin an
  * application — charging only happens on verified successful submission, but
  * the start gate uses the tier price so no one burns an assisted run they
  * cannot pay for.
@@ -64,9 +74,36 @@ export function canAffordTier(tier: ApplyTier, walletBalanceCents: number): bool
 export const PREP_AGENT_PRICE_LABEL = "Free";
 
 export const EMPLOYER_PLANS = [
-  { name: "Starter", priceLabel: "$79", unit: "/mo", jobs: "3 active jobs" },
-  { name: "Growth", priceLabel: "$149", unit: "/mo", jobs: "10 active jobs" },
-  { name: "Business", priceLabel: "$299", unit: "/mo", jobs: "25 active jobs" },
+  {
+    name: "Starter",
+    priceLabel: "$79",
+    unit: "/mo",
+    jobs: "3 active jobs",
+    activeJobLimit: 3,
+    features: ["3 active jobs", "Applicant pipeline", "Employer dashboard"],
+  },
+  {
+    name: "Growth",
+    priceLabel: "$149",
+    unit: "/mo",
+    jobs: "10 active jobs",
+    activeJobLimit: 10,
+    features: ["10 active jobs", "Basic analytics", "Applicant pipeline", "Employer dashboard"],
+  },
+  {
+    name: "Business",
+    priceLabel: "$299",
+    unit: "/mo",
+    jobs: "25 active jobs",
+    activeJobLimit: 25,
+    features: [
+      "25 active jobs",
+      "AI candidate matching",
+      "Multiple recruiter seats",
+      "Applicant pipeline",
+      "Employer dashboard",
+    ],
+  },
 ] as const;
 
 export const PROMOTION_PLANS = [
