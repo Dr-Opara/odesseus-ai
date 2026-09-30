@@ -68,6 +68,7 @@ export default async function DocumentsPage({
                 name="file"
                 accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 required
+                aria-label="Resume file"
                 style={{ fontSize: 13 }}
               />
               <button type="submit" className="btn btn-primary">Upload resume</button>

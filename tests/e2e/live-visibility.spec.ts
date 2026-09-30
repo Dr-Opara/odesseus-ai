@@ -1,4 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { ensureCandidate, signedInStorageState } from "./support/qa-candidate";
+
+/** Stable account for the one signed-in check below; see qa-candidate.ts. */
+const BILLING_EMAIL = "qa.live.billing@odesseus-test.dev";
 
 // Odesseus Live is a private, applicant-only feature. These tests enforce
 // both directions of that visibility contract:
@@ -130,26 +134,25 @@ test.describe("signed-out public surfaces never mention Odesseus Live", () => {
 });
 
 test.describe("signed-in applicants still see Odesseus Live where intended", () => {
-  // Deterministic desktop signup (the mobile signup is a two-step flow),
-  // mirroring logout.spec — then check /billing, which is auth-gated and
-  // exposes the Live feature plus the interview-pass balance. Live session
-  // pricing/offers live in the billing catalog behind this boundary.
-  test("billing keeps the Odesseus Live feature and interview-pass balance", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
+  // A signed-in candidate, then /billing, which is auth-gated and exposes the
+  // Live feature plus the interview-pass balance. Live session pricing/offers
+  // live in the billing catalog behind this boundary.
+  //
+  // The account is provisioned with the service role rather than by driving
+  // /signup: the local stack meters sign-ins and sign-ups together across the
+  // whole suite, so one signup per test per Playwright project exhausts the
+  // bucket and every later spec fails on the rate limit. The desktop signup
+  // form itself is covered in auth-boundary.spec.ts. See
+  // tests/e2e/support/qa-candidate.ts.
+  test("billing keeps the Odesseus Live feature and interview-pass balance", async ({ browser }) => {
+    await ensureCandidate(BILLING_EMAIL);
 
-    const stamp = Date.now();
-    const email = `qa-live-vis-${stamp}@example.com`;
-    const password = "TestPassword123!";
-
-    await page.goto("/signup");
-    await page.fill('input[name="first_name"]', "Ada");
-    await page.fill('input[name="last_name"]', "Lovelace");
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', password);
-    await Promise.all([
-      page.waitForURL("**/onboarding", { timeout: 15000 }),
-      page.click('button.candidate-continue-button[type="submit"]'),
-    ]);
+    const storageState = await signedInStorageState(browser, BILLING_EMAIL, /\/dashboard/);
+    const context = await browser.newContext({
+      storageState,
+      viewport: { width: 1280, height: 800 },
+    });
+    const page = await context.newPage();
 
     // /billing only needs a session (no onboarding gate) and is the public
     // page that becomes Live-aware once authenticated.
@@ -169,5 +172,7 @@ test.describe("signed-in applicants still see Odesseus Live where intended", () 
     // the retired application-credit balance is not presented as one.
     await expect(page.getByRole("heading", { name: "Wallet top-ups" })).toBeVisible();
     await expect(page.getByText(/application credits/i)).toHaveCount(0);
+
+    await context.close();
   });
 });

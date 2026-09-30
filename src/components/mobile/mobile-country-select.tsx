@@ -84,6 +84,7 @@ export default function MobileCountrySelect({
       <div className="m-search">
         <input
           placeholder="⌕ Search countries"
+          aria-label="Search countries"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />

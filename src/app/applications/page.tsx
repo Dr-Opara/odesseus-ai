@@ -67,8 +67,9 @@ export default async function ApplicationsPage({
           name="q"
           defaultValue={q}
           placeholder="Search company or role"
+          aria-label="Search company or role"
         />
-        <select className="input" name="status" defaultValue={status}>
+        <select className="input" name="status" defaultValue={status} aria-label="Filter by status">
           {filterStatuses.map(([value, label]) => (
             <option value={value} key={value}>{label}</option>
           ))}
