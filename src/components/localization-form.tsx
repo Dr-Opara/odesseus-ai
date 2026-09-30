@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, useSyncExternalStore } from "react";
 import type { Country } from "@/lib/countries/service";
 import {
   browserTimeZones,
@@ -34,6 +34,11 @@ function currencyOptionLabel(code: string) {
   return label && label !== code ? `${code} — ${label}` : code;
 }
 
+/** The snapshot never changes after mount, so there is nothing to subscribe to. */
+function subscribeNever() {
+  return () => {};
+}
+
 export default function LocalizationForm({
   countries,
   email,
@@ -57,6 +62,17 @@ export default function LocalizationForm({
   const languageOptions = useMemo(() => uniqueCountryLanguages(countries), [countries]);
   const currencyOptions = useMemo(() => uniqueCountryCurrencies(countries), [countries]);
   const timeZoneOptions = useMemo(() => browserTimeZones(), []);
+
+  // Intl.DisplayNames coverage for less-common language/currency codes (e.g.
+  // "bi" / Bislama) can differ between the server's Node runtime and the
+  // browser's ICU data, which made this render "Bislama" during SSR and "bi"
+  // once React hydrated on the client -- a hydration mismatch. Rendering the
+  // raw code until after mount guarantees the server and first client render
+  // agree; the friendlier label swaps in immediately after. useSyncExternalStore
+  // rather than an effect plus useState, same as useNarrowViewport in
+  // live-guest-launcher.tsx: it renders correctly on the server instead of
+  // flashing, with no setState-in-effect render cascade.
+  const labelsReady = useSyncExternalStore(subscribeNever, () => true, () => false);
 
   const countryKnown = orderedCountries.some((country) => country.code === countryCode);
   const localeKnown = !locale || localeOptions.includes(locale);
@@ -140,7 +156,7 @@ export default function LocalizationForm({
             ) : null}
             {languageOptions.map((code) => (
               <option key={code} value={code}>
-                {languageLabel(code)}
+                {labelsReady ? languageLabel(code) : code}
               </option>
             ))}
           </select>
@@ -174,11 +190,13 @@ export default function LocalizationForm({
           >
             <option value="">{EMPTY}</option>
             {currency && !currencyKnown ? (
-              <option value={currency}>{currencyOptionLabel(currency)}</option>
+              <option value={currency}>
+                {labelsReady ? currencyOptionLabel(currency) : currency}
+              </option>
             ) : null}
             {currencyOptions.map((code) => (
               <option key={code} value={code}>
-                {currencyOptionLabel(code)}
+                {labelsReady ? currencyOptionLabel(code) : code}
               </option>
             ))}
           </select>

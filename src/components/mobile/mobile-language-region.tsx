@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, useSyncExternalStore } from "react";
 import type { Country } from "@/lib/countries/service";
 import {
   browserTimeZones,
@@ -27,6 +27,11 @@ const EMPTY = "Not specified";
 function currencyOptionLabel(code: string) {
   const label = currencyLabel(code);
   return label && label !== code ? `${code} — ${label}` : code;
+}
+
+/** The snapshot never changes after mount, so there is nothing to subscribe to. */
+function subscribeNever() {
+  return () => {};
 }
 
 /**
@@ -62,6 +67,11 @@ export default function MobileLanguageRegion({
   const languageOptions = useMemo(() => uniqueCountryLanguages(countries), [countries]);
   const currencyOptions = useMemo(() => uniqueCountryCurrencies(countries), [countries]);
   const timeZoneOptions = useMemo(() => browserTimeZones(), []);
+
+  // See src/components/localization-form.tsx for why: Intl.DisplayNames
+  // coverage for less-common codes can differ between the server's Node
+  // runtime and the browser's ICU data, causing a hydration mismatch.
+  const labelsReady = useSyncExternalStore(subscribeNever, () => true, () => false);
 
   const countryKnown = orderedCountries.some((country) => country.code === countryCode);
   const localeKnown = !locale || localeOptions.includes(locale);
@@ -141,7 +151,7 @@ export default function MobileLanguageRegion({
             ) : null}
             {languageOptions.map((code) => (
               <option key={code} value={code}>
-                {languageLabel(code)}
+                {labelsReady ? languageLabel(code) : code}
               </option>
             ))}
           </select>
@@ -175,11 +185,13 @@ export default function MobileLanguageRegion({
           >
             <option value="">{EMPTY}</option>
             {currency && !currencyKnown ? (
-              <option value={currency}>{currencyOptionLabel(currency)}</option>
+              <option value={currency}>
+                {labelsReady ? currencyOptionLabel(currency) : currency}
+              </option>
             ) : null}
             {currencyOptions.map((code) => (
               <option key={code} value={code}>
-                {currencyOptionLabel(code)}
+                {labelsReady ? currencyOptionLabel(code) : code}
               </option>
             ))}
           </select>
