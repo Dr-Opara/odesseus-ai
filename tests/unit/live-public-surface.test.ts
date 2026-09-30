@@ -204,7 +204,8 @@ describe("the applicant-only Live surface is preserved", () => {
   });
 
   it("carries the locked Live prices, and no retired Live SKU, in the billing catalogue", async () => {
-    const { billingCatalog, LIVE_SHARE_GUEST_LIMIT } = await import("@/lib/billing/catalog");
+    const catalogModule = await import("@/lib/billing/catalog");
+    const { billingCatalog } = catalogModule;
 
     // Integer minor units, exactly as locked. A float here would be a billing bug.
     expect(billingCatalog.live_single.amountCents).toBe(1499);
@@ -217,8 +218,18 @@ describe("the applicant-only Live surface is preserved", () => {
     expect(billingCatalog).not.toHaveProperty("interview_3");
     expect(billingCatalog).not.toHaveProperty("interview_annual");
 
-    // The guest cap is a hard ceiling, not marketing copy.
-    expect(LIVE_SHARE_GUEST_LIMIT).toBe(10);
+    // There is no guest allowance constant, and no copy implying one.
+    //
+    // The approved Live Share model has no guest cap: a holder generates secure
+    // Guest Live Access links and shares them. The constant that used to sit
+    // here was the TypeScript mirror of the database's enforcement, and both are
+    // gone. Asserting its absence is the point -- a constant that only displays
+    // a number nobody enforces is worse than no constant, because it looks
+    // authoritative.
+    expect(catalogModule).not.toHaveProperty("LIVE_SHARE_GUEST_LIMIT");
+    expect(
+      Object.values(billingCatalog).some((entry) => /guest\s+(places?|slots?)/i.test(entry.description))
+    ).toBe(false);
   });
 
   it("keeps the wallet and apply rates on the locked contract", async () => {

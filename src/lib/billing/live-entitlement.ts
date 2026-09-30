@@ -25,8 +25,13 @@
  *   period_end             when time-boxed access runs out; null for passes
  *   is_owner / is_guest    which side of a Live Share arrangement the caller is
  *   membership_id          the owner's membership, for both sides
- *   guest_limit            the plan's cap
- *   activated_guest_count  slots consumed in the current membership period
+ *
+ * The SQL also returns `guest_limit` and `activated_guest_count`. They are
+ * historical columns from a retired quota model, they are declared here only
+ * because the generated types carry them, and **nothing authorizes on them**.
+ * Live Share has no guest cap. They are not forwarded by the API route, not
+ * displayed, and not part of the decision to start a session. A caller that
+ * reads them is reading a number the product does not sell.
  *
  * Note what is NOT here: a `fair_use_count`, a `fair_use_reset`, or an
  * `unlimited_until`. Those described a rolling-window mechanism that the
@@ -75,7 +80,12 @@ export type LiveEntitlementRow = {
   is_owner: boolean;
   is_guest: boolean;
   membership_id: string | null;
+  /**
+   * HISTORICAL. From the retired guest quota. Never read for a decision and
+   * never forwarded to a client; see the module comment.
+   */
   guest_limit: number;
+  /** HISTORICAL, as `guest_limit`. */
   activated_guest_count: number;
 };
 

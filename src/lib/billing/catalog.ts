@@ -55,7 +55,7 @@ export const billingCatalog = {
   live_single: { label: "Live — single interview", description: "One Odesseus Live interview session", amountCents: 1499, creditType: "interview" as const, creditDelta: 1, billing: "one_time" as const },
   live_monthly: { label: "Live — monthly", description: "Personal Live access, billed monthly", amountCents: 1999, creditType: "interview" as const, creditDelta: 1, billing: "recurring" as const, planType: "monthly" as const },
   live_personal_annual: { label: "Live — personal annual", description: "Personal Live access for 12 months", amountCents: 9900, creditType: "interview" as const, creditDelta: 1, billing: "recurring" as const, planType: "personal_annual" as const },
-  live_share_annual: { label: "Live Share — annual", description: "Personal Live access for 12 months, plus 10 guest places each membership year", amountCents: 49900, creditType: "interview" as const, creditDelta: 1, billing: "recurring" as const, planType: "share_annual" as const },
+  live_share_annual: { label: "Live Share — annual", description: "Personal Live access for 12 months, plus secure Guest Live Access links you can share", amountCents: 49900, creditType: "interview" as const, creditDelta: 1, billing: "recurring" as const, planType: "share_annual" as const },
 } as const;
 
 /** Live SKUs, in the order the interview workflow presents them. */
@@ -68,16 +68,26 @@ export const liveSkus = [
 
 export type LiveSku = (typeof liveSkus)[number];
 
-/**
- * Guest places included in a Live Share membership year.
+/*
+ * There is deliberately no guest allowance constant here.
  *
- * The backend treats this as a hard ceiling, not a marketing number: the
- * database refuses an eleventh activation outright. It lives here as the
- * TypeScript mirror of live_memberships.guest_limit so the API can reject an
- * over-limit request before it reaches the database, and so the UI and the
- * enforcement can be checked against each other by a static test.
+ * An earlier `LIVE_SHARE_GUEST_LIMIT = 10` existed and was load-bearing: the
+ * database refused an eleventh activation, and this was the TypeScript mirror of
+ * `live_memberships.guest_limit` so the UI and the enforcement could be checked
+ * against each other. The approved Live Share model has no guest cap, so there
+ * is no ceiling to mirror and nothing for a static test to pin.
+ *
+ * What authorizes guest link generation is the entitlement, not a number:
+ *
+ *   canGenerateGuestLinks(row) => row.has_access
+ *                                  && row.is_owner
+ *                                  && row.plan === 'share_annual'
+ *
+ * and the per-token rate limits in the token-scoped guest routes are abuse
+ * protection, not a commercial quota. If a guest allowance is ever reintroduced,
+ * it needs a product decision and a database enforcement point -- not a constant
+ * in this file that the UI happens to display.
  */
-export const LIVE_SHARE_GUEST_LIMIT = 10;
 
 /**
  * Fair-use ceiling for time-boxed Live access.

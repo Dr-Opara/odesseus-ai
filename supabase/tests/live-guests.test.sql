@@ -47,7 +47,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(96);
+SELECT plan(97);
 
 -- ===========================================================================
 -- Fixtures
@@ -97,21 +97,24 @@ SELECT lives_ok(
 -- ===========================================================================
 -- 1. The catalog is the only place a price or a ceiling is written
 -- ===========================================================================
+-- The share plan used to advertise a guest limit of ten here. There is no guest
+-- cap, so the key is gone rather than zero: zero would read as "this plan
+-- includes no guests", which is as wrong as ten in the other direction. The
+-- plan still carries a fair-use ceiling, and that one is real.
 SELECT is(
-  (SELECT metadata->>'guest_limit' FROM pricing_products WHERE product_key = 'live_share_annual'),
-  '10', 'the share plan carries a guest limit of ten');
+  (SELECT metadata ? 'guest_limit' FROM pricing_products WHERE product_key = 'live_share_annual'),
+  false, 'the share plan advertises no guest limit');
 
 SELECT is(
   (SELECT metadata->>'fair_use_sessions' FROM pricing_products WHERE product_key = 'live_share_annual'),
   '20', 'the share plan carries a configured fair-use ceiling');
 
+-- Swept across every product rather than checked one at a time: the claim is
+-- that no catalog row advertises a guest limit, and a per-plan assertion would
+-- pass while a fourth plan quietly kept the key.
 SELECT is(
-  (SELECT metadata->>'guest_limit' FROM pricing_products WHERE product_key = 'live_personal_annual'),
-  '0', 'the personal plan carries no guest capacity');
-
-SELECT is(
-  (SELECT metadata->>'guest_limit' FROM pricing_products WHERE product_key = 'live_monthly'),
-  '0', 'the monthly plan carries no guest capacity');
+  (SELECT count(*)::int FROM pricing_products WHERE metadata ? 'guest_limit'),
+  0, 'no product in the display catalog advertises a guest limit');
 
 -- The retired annual has no membership row to read a ceiling from, so it is
 -- given the same catalog keys. This is the legacy path's only configuration,
@@ -159,19 +162,28 @@ SELECT is(
     WHERE user_id = '6a000001-0000-4000-8000-000000000001' AND credit_type = 'interview'),
   0, 'a subscription grants no disposable pass, so it cannot be spent down');
 
+-- At grant time the membership copies the plan's real configuration onto its own
+-- row: plan_type and the fair-use window. It used to also copy a `guest_limit` of
+-- ten from the catalog, which no longer exists as a concept -- and the fair-use
+-- ceiling is asserted here because that one *is* a real limit, which is what
+-- makes the absence of a guest limit a deliberate difference rather than an
+-- oversight.
 SELECT results_eq(
-  $$SELECT plan_type, guest_limit, guest_count, fair_use_sessions, fair_use_window_days
+  $$SELECT plan_type, fair_use_sessions, fair_use_window_days
       FROM live_memberships WHERE user_id = '6a000001-0000-4000-8000-000000000001'$$,
-  $$VALUES ('share_annual'::text, 10, 0, 20, 30)$$,
-  'the membership copies the catalog configuration onto its own row at grant time');
+  $$VALUES ('share_annual'::text, 20, 30)$$,
+  'the membership copies the plan configuration onto its own row at grant time');
 
+-- Entitlement is decided by the plan. Not by a guest count, and not by a guest
+-- allowance: the historical column is still readable and still zero, and the
+-- answer is unaffected.
 SELECT results_eq(
   $$SELECT has_access, source, plan, sessions_remaining, period_end,
            is_owner, guest_limit, activated_guest_count
       FROM odesseus_get_live_entitlement('6a000001-0000-4000-8000-000000000001')$$,
   $$VALUES (true, 'membership'::text, 'share_annual'::text, 20,
-                   '2027-01-01T00:00:00Z'::timestamptz, true, 10, 0)$$,
-  'the owner sees a membership with a full fair-use window and no guests yet');
+                   '2027-01-01T00:00:00Z'::timestamptz, true, 0, 0)$$,
+  'the owner sees a full fair-use window, whatever the retired allowance column holds');
 
 SELECT lives_ok(
   $$INSERT INTO billing_events (stripe_event_id, checkout_session_id, user_id,
@@ -494,10 +506,21 @@ SELECT results_eq(
   'a guest is served the owner''s fair-use window and identified as a guest');
 
 -- ===========================================================================
--- 8. The cap, at both layers
+-- 8. There is no guest cap
 -- ===========================================================================
--- Fill the remaining nine slots through the service functions an application
--- would actually call.
+-- The approved Live Share model has no guest cap: no slot count, no
+-- consumption, no concurrency accounting. A holder generates secure Guest Live
+-- Access links and shares them. The retired model capped activated guests at
+-- live_memberships.guest_limit in three places at once -- a service-layer
+-- result, a BEFORE INSERT trigger, and a CHECK on the membership row -- and all
+-- three are gone.
+--
+-- What is asserted here is the absence, which cannot be asserted by a value.
+-- The old suite proved a cap existed by filling it and being refused; the only
+-- honest inverse is to fill well past any former ceiling and succeed.
+--
+-- Guest 1-9 below are the same ones the retired suite used, so the fixtures
+-- around them still mean what they meant.
 SELECT lives_ok(
   $$SELECT odesseus_create_live_guest_invite(
          (SELECT id FROM live_memberships WHERE user_id = '6a000001-0000-4000-8000-000000000001'),
@@ -512,38 +535,36 @@ SELECT lives_ok(
          'tok_pgtap_' || lpad((g + 100)::text, 32, '0'),
          ('6c000000-0000-4000-8000-' || lpad(g::text, 12, '0'))::uuid)
        FROM generate_series(1, 9) g$$,
-  'nine more guests accept, reaching the cap of ten');
+  'nine more guests accept, with nothing rationed');
 
+-- The former ceiling was ten. Guest count is retained as bookkeeping, so it is
+-- still maintained accurately -- which is exactly why the assertions that follow
+-- are about the *cap* and not about this number.
 SELECT is(
   (SELECT guest_count FROM live_memberships
     WHERE user_id = '6a000001-0000-4000-8000-000000000001'),
-  10, 'ten guests are activated, which is the cap');
+  10, 'the retained guest_count still tracks activations accurately');
 
-SELECT results_eq(
-  $$SELECT has_access, source, plan, guest_limit, activated_guest_count
-      FROM odesseus_get_live_entitlement('6a000001-0000-4000-8000-000000000001')$$,
-  $$VALUES (true, 'membership'::text, 'share_annual'::text, 10, 10)$$,
-  'and the owner is told the cap is used up, not merely that it exists');
-
--- The eleventh, through the service function. This is the path the API takes,
--- and it answers in the guest's own words rather than raising.
+-- Eleventh and twelfth, through the service function. Previously the eleventh
+-- returned 'guest_limit_reached'.
 SELECT lives_ok(
   $$SELECT odesseus_create_live_guest_invite(
        (SELECT id FROM live_memberships WHERE user_id = '6a000001-0000-4000-8000-000000000001'),
        '6a000001-0000-4000-8000-000000000001',
        'bulk-guest-11@example.com',
        'tok_pgtap_' || repeat('0', 32) || '11')$$,
-  'the owner issues an eleventh invitation, which is allowed because invitations are free');
+  'an eleventh invitation is issued');
 
 SELECT is(
   (SELECT result FROM odesseus_accept_live_guest_invite(
      'tok_pgtap_' || repeat('0', 32) || '11', '6c000000-0000-4000-8000-000000000011')),
-  'guest_limit_reached', 'the eleventh guest is refused at the service layer');
+  'activated', 'the eleventh guest activates: past any former ceiling');
 
--- The eleventh, by writing the row directly. This is the assertion the trigger
--- exists for: a cap enforced only in the service layer is a cap somebody walks
--- around with an INSERT, and a browser session must not get that far either.
-SELECT throws_ok(
+-- Twelfth, by writing the row directly. The retired suite proved the trigger
+-- existed by asserting this INSERT raised. Asserting that it does not raise any
+-- more is the same assertion, inverted -- and it is the stronger one, because it
+-- covers a caller that never went through the service function at all.
+SELECT lives_ok(
   $$INSERT INTO live_guest_entitlements (
        membership_id, owner_user_id, guest_user_id, membership_period_start,
        membership_period_end, status)
@@ -556,22 +577,53 @@ SELECT throws_ok(
        (SELECT current_period_end FROM live_memberships
          WHERE user_id = '6a000001-0000-4000-8000-000000000001'),
        'active')$$,
-  'P0001', NULL, 'the eleventh activation is refused by the database itself');
+  'a twelfth activation is accepted by the database itself, not just the service layer');
 
+-- The membership-row CHECK was the third enforcement point and the one that
+-- would have bitten hardest: guest_limit defaults to 0, so on a membership
+-- created without an explicit limit the retained bookkeeping trigger could not
+-- have recorded a single guest. Twelve is well past the retired ceiling, which
+-- would have violated it.
 SELECT is(
   (SELECT guest_count FROM live_memberships
     WHERE user_id = '6a000001-0000-4000-8000-000000000001'),
-  10, 'and the refused activation consumed nothing');
+  12, 'and the count is free to exceed the retired ceiling');
+
+-- The entitlement answer must not depend on any of it. Same access, same plan,
+-- same source, whatever guest_count happens to be.
+SELECT results_eq(
+  $$SELECT has_access, source, plan
+      FROM odesseus_get_live_entitlement('6a000001-0000-4000-8000-000000000001')$$,
+  $$VALUES (true, 'membership'::text, 'share_annual'::text)$$,
+  'entitlement is decided by the plan, not by a guest count');
+
+-- The retired result vocabulary is gone from the function's contract, not merely
+-- unreachable. A caller keeping a status code mapped to a refusal nobody can
+-- produce is the same staleness this section exists to remove.
+SELECT is(
+  (SELECT count(*)::int
+     FROM pg_proc p
+     JOIN pg_namespace n ON n.oid = p.pronamespace
+     JOIN pg_attribute a ON a.attrelid = p.oid
+    WHERE n.nspname = 'public'
+      AND p.proname = 'odesseus_accept_live_guest_invite'
+      AND a.attname = 'guest_remaining'),
+  0, 'the accept function no longer returns a remaining-guest figure');
 
 -- ===========================================================================
--- 9. Renewal resets the allocation and keeps the history
+-- 9. Renewal keeps the history
 -- ===========================================================================
--- The regression test. current_period_start is advanced by two independent
--- paths -- the subscription lifecycle webhook and purchase fulfillment -- and
--- only one of them used to recompute guest_count. A re-purchase through the
--- other path left last year's count on a row whose period had moved, so the cap
--- trigger refused every activation forever and the owner was shown 10 of 10
--- guests used in a year they had used none.
+-- The regression test, and it is about history rather than allocation.
+-- current_period_start is advanced by two independent paths -- the subscription
+-- lifecycle webhook and purchase fulfillment -- and only one of them used to
+-- recompute guest_count. A re-purchase through the other path left last year's
+-- count on a row whose period had moved.
+--
+-- That mattered when the count was a cap: a stale count meant the trigger
+-- refused every activation forever, and the owner was shown a full year they
+-- had never used. It no longer refuses anything, but the bookkeeping is still
+-- kept accurate -- an operator reading guest_count should not be misled -- and
+-- the historical rows are still expired rather than left looking active.
 SELECT lives_ok(
   $$INSERT INTO billing_events (stripe_event_id, checkout_session_id, user_id,
       credit_type, credit_delta, sku, amount_cents, currency, metadata)
@@ -585,44 +637,46 @@ SELECT lives_ok(
 SELECT is(
   (SELECT guest_count FROM live_memberships
     WHERE user_id = '6a000001-0000-4000-8000-000000000001'),
-  0, 'the new year starts with the full allocation again');
+  0, 'the retained count is recomputed for the new year, as bookkeeping');
 
--- Resetting the count is not the same as forgetting. A member's guest history
--- is their record of who they have given access to, and it is also the only
--- reason the count is what it is.
+-- Recomputing the count is not the same as forgetting. A member's guest history
+-- is their record of who they have given access to, and it is the only reason
+-- the count is what it is.
 SELECT is(
   (SELECT count(*)::int FROM live_guest_entitlements e
      JOIN live_memberships m ON m.id = e.membership_id
     WHERE m.user_id = '6a000001-0000-4000-8000-000000000001'),
-  10, 'every prior guest is retained, not deleted by the reset');
+  12, 'every prior guest is retained, not deleted by the reset');
 
 SELECT is(
   (SELECT count(*)::int FROM live_guest_entitlements e
      JOIN live_memberships m ON m.id = e.membership_id
     WHERE m.user_id = '6a000001-0000-4000-8000-000000000001'
       AND e.status = 'expired'),
-  10, 'and they are marked expired rather than left looking active');
+  12, 'and they are marked expired rather than left looking active');
 
--- And the new year really does have ten slots, not one. Guest 12, who has never
--- been invited, is the honest subject here: the point is that the year's
--- allocation is available again, not that one particular guest got through.
+-- A guest who has never been invited, in the new year. Guest 10 specifically:
+-- this file seeds guests 1..12, and 1-9, 11 and 12 have all been used above, so
+-- 10 is the one seeded account with no entitlement -- which is the property
+-- being asserted. Reusing an id that already has an entitlement would answer
+-- 'already_active' and prove nothing about renewal.
 SELECT lives_ok(
   $$SELECT odesseus_create_live_guest_invite(
        (SELECT id FROM live_memberships WHERE user_id = '6a000001-0000-4000-8000-000000000001'),
        '6a000001-0000-4000-8000-000000000001',
-       'bulk-guest-12@example.com',
+       'bulk-guest-10@example.com',
        'tok_pgtap_' || repeat('0', 31) || '21')$$,
   'the owner issues a fresh invitation in the new year');
 
 SELECT is(
   (SELECT result FROM odesseus_accept_live_guest_invite(
-     'tok_pgtap_' || repeat('0', 31) || '21', '6c000000-0000-4000-8000-000000000012')),
-  'activated', 'a guest is activated in the new year, where the old count said it was impossible');
+     'tok_pgtap_' || repeat('0', 31) || '21', '6c000000-0000-4000-8000-000000000010')),
+  'activated', 'a never-invited guest activates in the new year');
 
 SELECT is(
   (SELECT guest_count FROM live_memberships
     WHERE user_id = '6a000001-0000-4000-8000-000000000001'),
-  1, 'and the new year counts from one, not eleven');
+  1, 'and the count is one, not the previous year''s twelve');
 
 -- ---------------------------------------------------------------------------
 -- 9b. An invitation expires with the year it was issued in
@@ -636,35 +690,46 @@ SELECT is(
 -- compares membership_period_end against now(), and moving the row's own period
 -- end is the same comparison with the clock left alone.
 --
--- Before the guard, redeeming this wrote a row that was status 'active', carried
--- no access (its period had closed), and consumed no counted slot (the count is
--- scoped to the membership's *current* period) -- so the owner saw a live guest
--- in a year they had never used and the row was reachable by nothing.
+-- Before the guard, redeeming this wrote a row that was status 'active' and
+-- carried no access, because its period had closed -- so the owner saw a live
+-- guest in a year they had never used, and the row was reachable by nothing.
+-- The invitation is created and abandoned here rather than inherited from an
+-- earlier section, so the test states its own precondition.
+SELECT lives_ok(
+  $$SELECT odesseus_create_live_guest_invite(
+       (SELECT id FROM live_memberships WHERE user_id = '6a000001-0000-4000-8000-000000000001'),
+       '6a000001-0000-4000-8000-000000000001',
+       'stale-year-guest@example.com',
+       'tok_pgtap_' || repeat('0', 30) || '41')$$,
+  'the owner issues an invitation for the year that is about to close');
+
+-- Issued, then left pending, then the year it belongs to is moved into the past
+-- -- the single input the guard reads.
 SELECT lives_ok(
   $$UPDATE live_guest_invites
       SET membership_period_start = '2025-01-01T00:00:00Z'::timestamptz,
           membership_period_end   = '2026-01-01T00:00:00Z'::timestamptz
      WHERE membership_id = (SELECT id FROM live_memberships
                               WHERE user_id = '6a000001-0000-4000-8000-000000000001')
-       AND guest_email_normalized = 'bulk-guest-11@example.com'
+       AND guest_email_normalized = 'stale-year-guest@example.com'
        AND status = 'pending'$$,
-  'the eleventh invitation is left pending, from the year that has closed');
+  'that invitation is left pending, from the year that has closed');
 
 SELECT is(
   (SELECT result FROM odesseus_accept_live_guest_invite(
-     'tok_pgtap_' || repeat('0', 32) || '11', '6c000000-0000-4000-8000-000000000011')),
+     'tok_pgtap_' || repeat('0', 30) || '41', '6c000000-0000-4000-8000-000000000041')),
   'expired', 'an invitation from the closed year is declined rather than redeemed');
 
 SELECT is(
   (SELECT count(*)::int FROM live_guest_entitlements
-    WHERE guest_user_id = '6c000000-0000-4000-8000-000000000011'),
+    WHERE guest_user_id = '6c000000-0000-4000-8000-000000000041'),
   0, 'and no entitlement is written for it');
 
 SELECT is(
   (SELECT status FROM live_guest_invites
     WHERE membership_id = (SELECT id FROM live_memberships
                              WHERE user_id = '6a000001-0000-4000-8000-000000000001')
-      AND guest_email_normalized = 'bulk-guest-11@example.com'),
+      AND guest_email_normalized = 'stale-year-guest@example.com'),
   'expired', 'so the invitation is marked expired rather than left looking live');
 
 -- ===========================================================================
@@ -757,7 +822,7 @@ SELECT is(
   (SELECT count(*)::int FROM live_guest_entitlements e
      JOIN live_memberships m ON m.id = e.membership_id
     WHERE m.user_id = '6a000001-0000-4000-8000-000000000001'),
-  11, 'an owner can see every guest in their arrangement, across both years');
+  13, 'an owner can see every guest in their arrangement, across both years');
 
 -- ===========================================================================
 -- 11. Nothing else in the catalog moved

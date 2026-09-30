@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createCheckoutSession } from "@/app/actions/billing";
-import { billingCatalog, applyRates, liveSkus, LIVE_FAIR_USE, LIVE_SHARE_GUEST_LIMIT } from "@/lib/billing/catalog";
+import { billingCatalog, applyRates, liveSkus, LIVE_FAIR_USE } from "@/lib/billing/catalog";
 import AppShell from "@/components/app-shell";
 
 /** Formats integer minor units as a USD string (e.g. 39 -> "$0.39"). */
@@ -257,9 +257,8 @@ export default async function BillingPage({
             </div>
             <p className="bundle-fine-print">
               Each plan covers up to {LIVE_FAIR_USE.sessions} Live sessions in a rolling{" "}
-              {LIVE_FAIR_USE.windowDays}-day window. Live Share Annual includes {LIVE_SHARE_GUEST_LIMIT} guest
-              places for the membership year. Cancelling keeps your access until the period you have already paid
-              for ends.
+              {LIVE_FAIR_USE.windowDays}-day window. Live Share Annual also lets you create and share secure guest
+              access links. Cancelling keeps your access until the period you have already paid for ends.
             </p>
           </div>
         </section>

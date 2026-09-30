@@ -4,7 +4,6 @@ import { randomBytes } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { logLiveEvent } from "@/lib/observability/events";
-import { LIVE_SHARE_GUEST_LIMIT } from "@/lib/billing/catalog";
 
 export const runtime = "nodejs";
 
@@ -16,13 +15,18 @@ const inviteSchema = z.object({
 /** How long a guest link stays usable, absent an explicit request. */
 const DEFAULT_INVITE_DAYS = 14;
 
+/**
+ * The membership fields this route needs.
+ *
+ * `guest_limit` and `guest_count` are not selected. They are historical columns
+ * from the retired quota model, and leaving them out of the read is the
+ * cheapest way to keep them from quietly reappearing in a decision.
+ */
 type MembershipRow = {
   id: string;
   plan_type: string;
   status: string;
   current_period_end: string | null;
-  guest_limit: number;
-  guest_count: number;
 };
 
 /**
@@ -38,7 +42,7 @@ async function requireOwnShareMembership(userId: string): Promise<
 
   const { data, error } = await service
     .from("live_memberships")
-    .select("id,plan_type,status,current_period_end,guest_limit,guest_count")
+    .select("id,plan_type,status,current_period_end")
     .eq("user_id", userId)
     .eq("plan_type", "share_annual")
     .maybeSingle();
@@ -79,12 +83,18 @@ async function requireOwnShareMembership(userId: string): Promise<
 }
 
 /**
- * Owner view of the guest list: how many places are used and which
- * invitations are still outstanding.
+ * Owner view of the guest list: the membership and which invitations are still
+ * outstanding.
  *
- * Returns counts and invitation state only. It never returns a guest's resume,
+ * Counts and invitation state only. It never returns a guest's resume,
  * interview, transcript or any other private workspace content, and it is
  * scoped to the caller's own membership.
+ *
+ * It deliberately reports no guest allowance, no used count and nothing
+ * remaining. The approved Live Share model has no guest cap -- a holder
+ * generates links and shares them -- so a "3 of 10 places used" figure would
+ * describe a limit the product does not sell, and its absence from here is the
+ * honest shape rather than a gap.
  */
 export async function GET() {
   const supabase = await createClient();
@@ -128,13 +138,7 @@ export async function GET() {
     plan_type: membership.plan_type,
     status: membership.status,
     period_end: membership.current_period_end,
-    // The database column is authoritative and the table's own CHECK keeps it
-    // within guest_limit; the catalog constant is the display mirror.
-    guest_limit: membership.guest_limit,
-    activated_guest_count: membership.guest_count,
     pending_invite_count: pending,
-    guest_places_remaining: Math.max(membership.guest_limit - membership.guest_count, 0),
-    max_guests_per_year: LIVE_SHARE_GUEST_LIMIT,
     // Email addresses are intentionally omitted. The owner invited them, but
     // this response is the surface a client renders and forwards around.
     invites: rows.map((r) => ({
@@ -179,27 +183,12 @@ export async function POST(request: Request) {
   if ("error" in resolved) return resolved.error;
   const { membership, service } = resolved;
 
-  if (membership.guest_count >= membership.guest_limit) {
-    await logLiveEvent({
-      eventName: "live.guest_cap_reached",
-      userId,
-      properties: {
-        membership_id: membership.id,
-        guest_limit: membership.guest_limit,
-        activated_guest_count: membership.guest_count,
-        stage: "invite_refused",
-      },
-    });
-    return NextResponse.json(
-      {
-        error: `You have used all ${membership.guest_limit} guest places for this membership year.`,
-        guest_limit: membership.guest_limit,
-        activated_guest_count: membership.guest_count,
-      },
-      { status: 409 }
-    );
-  }
-
+  // No allowance check, and none is wanted. The approved Live Share model has
+  // no guest cap: an invitation consumes nothing, nothing expires it after the
+  // interview, and an owner is not rationed. The retired model refused here once
+  // `guest_count >= guest_limit` and told the caller to buy a larger plan; that
+  // was a limit the product does not sell.
+  //
   // The token is generated here with node:crypto and handed to the database as
   // a hash only. It is returned exactly once, here, and never persisted in
   // clear text or written to a log.

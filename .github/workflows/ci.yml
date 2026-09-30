@@ -60,7 +60,12 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # The version in package.json's devDependencies, not `latest`. The
+          # local stack is a set of images, and the storage-api binary and the
+          # Postgres image that seeds storage.objects must come from the same
+          # CLI release -- a drift between them is invisible in the schema and
+          # surfaces only as a runtime provider failure. See scripts/README.md.
+          version: 2.118.0
 
       - uses: actions/setup-node@v4
         with:
@@ -71,16 +76,16 @@ jobs:
         run: npm ci
 
       - name: Start the local database
-        run: supabase start
+        run: npm run db:start
 
       - name: Apply every migration from zero
-        run: supabase db reset --local
+        run: npm run db:reset
 
       # Lint before the suite: a policy or constraint Postgres will not accept
       # is a finding in its own right, and running it first means the suite only
       # ever reports behavioural failures.
       - name: Schema lint
-        run: supabase db lint --local --level warning
+        run: npm run db:lint
 
       - name: Database tests (pgTAP)
-        run: supabase test db --local
+        run: npm run db:test

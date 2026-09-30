@@ -280,57 +280,169 @@ deployment state, not a fault in the request.
 
 ## Findings reported but not fixed
 
-### Live share links are not drawn against the guest-place allowance
+### ~~Live share links are not drawn against the guest-place allowance~~ — **not a defect; finding retracted**
 
-`guest_count` is a trigger-maintained count of active `live_guest_entitlements`,
-and entitlements are created when a guest **accepts an emailed invitation**. A
-share link is a `guest_access_records` row, and nothing counts those — no cap,
-no trigger, no constraint. So the "10 guest places per membership year" bound
-applies to the invitation path and not the link path: a Share Annual member can
-mint links (rate limited to 20/hour) and each can run a full Live session
-without consuming any of the ten.
+The Task 8 report read this as a revenue-bound bypass. It is not. The approved
+Live Share model has **no guest cap**: no allowance, no slot consumption, no
+concurrency accounting, no activation window, no post-interview expiry. A Share
+Annual holder generates secure links and shares them, so "a link does not consume
+one of ten places" is the product working, not a hole in it.
 
-Reproduced: two usable link records against an allowance still reporting 10
-places remaining, `activated_guest_count` 0 after a completed activation.
+Reconciled in `supabase/migrations/20261121000000_retire_live_guest_quota.sql`,
+which removes five enforcement points that a stale model had left behind. The
+audit for it was worth doing regardless, because it found that the retired column
+was still deciding authorization — see below.
 
-Not fixed because it is a commercial decision, not a defect with one right
-answer. Either reading changes what a $499 membership delivers: if links should
-count, the allowance is a real cap and needs enforcing; if they should not, the
-pricing page overstates. Guessing either way would change revenue behaviour
-silently.
+### What the reconciliation actually found
 
-### Resume upload cannot be exercised against this local stack
+`guest_limit` was not inert. Five separate places still depended on it, and one of
+them was an authorization gate:
 
-Every Storage API upload fails with `42P10: there is no unique or exclusion
-constraint matching the ON CONFLICT specification`.
+| # | Place | What it did |
+| --- | --- | --- |
+| 1 | `odesseus_create_live_guest_invite` | **`v_membership.guest_limit < 1` → raise** |
+| 2 | `enforce_live_guest_cap` trigger | raise 'guest limit reached' past the cap |
+| 3 | `live_memberships_guest_count_within_limit` | `CHECK (guest_count <= guest_limit)` |
+| 4 | `live_memberships_personal_has_no_guests` | `CHECK (plan_type = 'share_annual' OR guest_limit = 0)` |
+| 5 | three bookkeeping functions | did nothing at all when `guest_limit` was 0 |
 
-The storage-api image issues
-`INSERT INTO storage.objects (...) ON CONFLICT (name, bucket_id) DO UPDATE`.
-Postgres needs a unique index on exactly that column set. The CLI's database
-baseline has only partial and version-scoped ones
-(`idx_objects_current_version` WHERE archived_at IS NULL,
-`idx_objects_null_version` WHERE NOT is_versioned), and a partial index cannot
-serve as an arbiter without a matching `WHERE`. Our migrations only insert
-buckets and add policies; they never touch `storage.objects`.
+#1 is the serious one. `guest_limit` defaults to 0, so a Share Annual membership
+created without an explicit limit could not issue a single emailed invitation —
+a paying customer silently denied, inside the database, where no API-level test
+reaches. It would not have been caught by a test that sets `guest_limit = 10`,
+which is what the Task 8 harness did and what therefore masked it.
 
-Causation proven, not inferred: creating
-`CREATE UNIQUE INDEX objects_bucket_id_name_key ON storage.objects (bucket_id, name)`
-as the table's owner makes the upload succeed immediately, and the whole flow
-then passes 7/7 — own path 200, another user's path refused by RLS with 403,
-anonymous refused with 400, master resume registered, and tailor then reaching
-the provider rather than stopping on its precondition.
+#5 is the quiet one. Each of the three read `guest_limit` and skipped its work
+when it was zero: the counter stopped maintaining `guest_count`, prior-period
+entitlements stopped being expired on renewal, and the rollover stopped running.
+Removing the catalog's `guest_limit` key without decoupling them would have made
+history and counters go quietly stale — no error, just wrong numbers.
 
-Not fixed because `storage` is Supabase's schema, not the product's, and a
-plain unique index on `(bucket_id, name)` would forbid the row-per-version
-layout the platform uses if bucket versioning is ever enabled — both buckets
-are `versioning_status = 'DISABLED'` today, so it does not bite now, but that
-is a latent constraint on someone else's feature. The right remedy is pinning
-compatible Supabase CLI and storage-image versions. Production Supabase is
-managed and its storage schema is not this baseline.
+Authorization is now plan-only everywhere, and
+`tests/unit/live-guest-no-quota.test.ts` asserts that structurally.
 
-What *was* proven about the bucket, because it does not depend on the defect:
-a candidate can write only under their own `auth.uid()` folder, another user's
-path is refused by RLS, and an anonymous upload is refused outright.
+### ~~Resume upload cannot be exercised against this local stack~~ — **resolved: local toolchain drift**
+
+Every Storage API upload failed with
+`42P10: there is no unique or exclusion constraint matching the ON CONFLICT specification`.
+The cause was **not** the application and **not** the schema, and no Supabase-owned
+object was modified to work around it.
+
+The local stack is a set of container images. The **storage-api binary** issues
+
+```sql
+INSERT INTO storage.objects (...) ON CONFLICT (name, bucket_id) DO UPDATE
+```
+
+and the **Postgres image** seeds `storage.objects`. Postgres needs a unique index
+on exactly that column pair for the `ON CONFLICT` to resolve, and the image's
+baseline carries only partial and version-scoped indexes, which cannot serve as
+an arbiter. Our migrations insert buckets and add policies; they never touch
+`storage.objects`, so the schema was never wrong.
+
+What was wrong was the pair of images:
+
+| Component | Running | CLI 2.118.0 expects |
+| --- | --- | --- |
+| `storage-api` | **v1.73.1** (3 weeks old, left over from an earlier pull) | v1.77.0 |
+| `postgres` | 17.6.1.171 (2 weeks old) | 17.6.1.171 |
+
+A v1.73.1 binary against a newer database baseline. Reconciling the pair with
+`supabase stop && supabase start` moved storage-api to v1.77.0, and uploads
+succeeded with **no schema change at all** — own path 200, another user's path
+refused by RLS with 403, anonymous refused with 400, master resume registered,
+and tailor then reaching the provider instead of stopping on its precondition.
+`scripts/local-flow-6-resume.mjs` now passes 7/7.
+
+**The structural cause is that nothing pinned the CLI.** It was not a
+devDependency, not referenced by any npm script, and CI asked
+`supabase/setup-cli` for `latest`. Every developer and every run got whatever
+version npm happened to serve, and `supabase start` would happily leave an older
+image in place. A drift like this is invisible: not in the schema, not in
+`db lint`, not in any project file. It surfaces only as a runtime failure deep
+inside a provider, with an error naming an index the project never created.
+
+Fixed by pinning rather than by patching:
+
+- `supabase` is now a **devDependency at 2.118.0**, with the lockfile committed
+- every entry point is an npm script — `npm run db:start`, `db:reset`, `db:test`,
+  `db:lint` — so the pinned binary is the only one anyone runs
+- CI requests that exact version instead of `latest`
+
+Do not `npx supabase@latest`. That reintroduces exactly this.
+
+**Still required before production merge:** verify resume upload against the
+Vercel Preview environment and its non-production Supabase project. The local
+stack is now sound, but "the local stack works" is not the same as "the hosted
+storage path works", and the hosted project has a different storage schema and a
+different storage-api build. That check belongs where the real thing is.
+
+### Guest Live commercial model reconciled
+
+Live Share has **no guest cap**: no allowance, no slot consumption, no concurrency
+accounting, no activation window, no post-interview expiry. A Share Annual
+holder generates secure Guest Live Access links and shares them. The retracted
+finding above was this product working, not a hole in it.
+
+What the audit for it found is worth recording on its own, because the retired
+model had five enforcement points left behind and one of them was an
+authorization gate:
+
+| # | Where | What it did |
+| --- | --- | --- |
+| 1 | `odesseus_create_live_guest_invite` | **`v_membership.guest_limit < 1` → raise** |
+| 2 | `enforce_live_guest_cap` trigger | raise 'guest limit reached' past the cap |
+| 3 | `live_memberships_guest_count_within_limit` | `CHECK (guest_count <= guest_limit)` |
+| 4 | `live_memberships_personal_has_no_guests` | `CHECK (plan_type = 'share_annual' OR guest_limit = 0)` |
+| 5 | three bookkeeping functions | silently did nothing when `guest_limit` was 0 |
+
+#1 is the serious one. `guest_limit` defaults to 0, so a Share Annual membership
+created without an explicit limit could not issue a single emailed invitation —
+a paying customer silently denied, inside the database, where no API-level test
+reaches it.
+
+It survived this long because **the Task 8 harness set `guest_limit: 10`**. A
+fixture that fills a retired column makes the gate it guards invisible. The
+harness now leaves the column at zero, so the whole flow is the proof:
+
+```
+[PASS] the retired column is still zero and access is unaffected
+       -- guest_limit=0 while the owner can still mint links
+```
+
+#5 is the quiet one. Removing the catalog's `guest_limit` key without first
+decoupling those three would have left counters and history silently stale: each
+read the column and skipped its work when it was zero. They now run on the event,
+not on a number.
+
+Removed: the service-layer refusal, the trigger, both CHECK constraints, the
+`guest_limit` metadata key on the reference catalog, the `guest_limit`-gated
+branches in three functions, the `guest_limit` gate in the invitation RPC, the
+API fields and UI copy that displayed a remaining count, `LIVE_SHARE_GUEST_LIMIT`,
+and the `guest_limit_reached` status mapping.
+
+Retained: `live_memberships.guest_limit` / `guest_count`, and the
+`live_guest_entitlements` table. They have real rows and foreign keys, both
+bookkeeping triggers, and `COMMENT`s saying they are historical and gate
+nothing. No `DROP TABLE`, no `DROP COLUMN`.
+
+Access is now plan-only:
+
+```ts
+canGenerateGuestLinks(row) =>
+  row.has_access && row.is_owner && row.plan === "share_annual";
+```
+
+plus the security of the token itself and the per-token rate limits, which are
+**abuse protection, not a commercial quota** — they bound how fast one token can
+be hammered, not how many guests a member may have.
+
+`tests/unit/live-guest-no-quota.test.ts` (17 assertions) pins this structurally.
+It is a code-vs-comment sweep rather than a behavioural test, because the failure
+mode being guarded against is a *reintroduction*, and a reintroduction looks like
+code that reads the retired column rather than like a test that fails. Two files
+may name the columns and the exception is named in the test: the RPC result type
+(declared `HISTORICAL`) and the generated schema types.
 
 ---
 
@@ -345,7 +457,7 @@ path is refused by RLS, and an anonymous upload is refused outright.
 | `supabase test db --local` | 34 files, 1354 tests, 0 failures |
 | `supabase db lint --local --level warning` | No schema errors found |
 | `npm run build` | clean, 120 routes |
-| live local flows | 285 of 286 assertions pass; the one failure is the storage defect below |
+| live local flows | 288 assertions across seven flows, 0 failures |
 
 Two test files gained assertions rather than losing them:
 `employer-provisioning` now runs the org PATCH and the publish path through the
@@ -366,4 +478,4 @@ New: `tests/integration/final-rc-integration-regressions.test.ts` (8) and
 | `OPENAI_API_KEY` | Match Score, resume tailoring, job discovery, post-interview analysis, Live guidance, the realtime answer |
 | `BROWSERBASE_API_KEY`, `BROWSERBASE_PROJECT_ID` | Odesseus Apply end to end |
 | `RESEND_API_KEY` | notification email delivery |
-| Supabase CLI ↔ storage-image version skew | resume upload on the local stack (diagnosed above; one index, not shipped) |
+| Vercel Preview + non-production Supabase | resume upload against the hosted storage path — the local stack is now sound, but the hosted project has its own schema and storage-api build, so the real check belongs there |

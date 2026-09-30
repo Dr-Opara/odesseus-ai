@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { LIVE_FAIR_USE, LIVE_SHARE_GUEST_LIMIT } from "@/lib/billing/catalog";
+import { LIVE_FAIR_USE } from "@/lib/billing/catalog";
 import { readLiveEntitlement } from "@/lib/billing/live-entitlement";
 
 export const runtime = "nodejs";
@@ -58,12 +58,15 @@ export async function GET() {
     isOwner: row.is_owner,
     isGuest: row.is_guest,
     membershipId: row.membership_id,
-    guestLimit: row.guest_limit,
-    activatedGuestCount: row.activated_guest_count,
+    // No guest allowance, no guest count, no "places remaining". Live Share has
+    // no guest cap: a holder generates Guest Live Access links and shares them.
+    // The underlying function still returns the two historical columns, and
+    // nothing authorizes on them -- they are simply not forwarded, so no client
+    // can read a limit the product does not sell.
+    //
     // The database is the authority for the cap and the fair-use ceiling; the
     // catalog mirrors are only echoed for display. When they disagree the
     // database value above is what this route returns.
     fairUse: LIVE_FAIR_USE,
-    maxGuestsPerYear: LIVE_SHARE_GUEST_LIMIT,
   });
 }

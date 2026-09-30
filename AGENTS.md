@@ -53,7 +53,8 @@ Upload Resume -> Paste JD -> Match & Qualify -> Improve Existing Resume -> Revie
 - Wallet top-ups: $10, $20, $50.
 - Failed/unsupported/paused/cancelled application attempts, closed jobs, incomplete CAPTCHA/MFA/verification, and unconfirmed submissions must not deduct wallet funds.
 - Interview preparation is free.\n- Odesseus does not require email inbox access to detect interviews; users return when they receive an interview invitation.
-- Odesseus Live pricing: Single $14.99, Monthly $19.99, Personal Annual $99, Share Annual $499 (10 guest places per membership year).
+- Odesseus Live pricing: Single $14.99, Monthly $19.99, Personal Annual $99, Share Annual $499.
+- Odesseus Live Share has **no guest cap**: no allowance, no slot consumption, no concurrency accounting, no activation window, no post-interview expiry. A Share Annual applicant generates secure Guest Live Access links and shares them. Per-token rate limits on the guest routes are abuse protection, not a commercial quota. Do not reintroduce a guest/session cap, and do not authorize on `guest_limit` or `guest_count` — those columns are historical.
 - Odesseus Live is private to signed-in applicants and token-scoped guest links. It must never be advertised on a public marketing, pricing, or employer surface. Correcting these figures does not make Live publicly marketable; the SKUs live in the auth-gated billing catalogue and are deliberately absent from the public display catalogue.
 - Interview pass should be consumed only when the live session actually starts.
 - Employer plans: Starter $79 / 3 jobs, Growth $149 / 10 jobs, Business $299 / 25 jobs (recurring).

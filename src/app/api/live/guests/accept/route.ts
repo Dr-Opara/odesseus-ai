@@ -10,11 +10,19 @@ const acceptSchema = z.object({
   token: z.string().trim().min(32).max(256),
 });
 
-/** The database function's result vocabulary, mapped to HTTP status. */
+/**
+ * The database function's result vocabulary, mapped to HTTP status.
+ *
+ * `guest_limit_reached` is absent, and its absence is the point. The function
+ * can no longer return it -- the trigger that raised 'guest limit reached' has
+ * been dropped along with the quota -- and leaving a mapping for a result
+ * nothing produces would invite a caller to keep handling a limit the product
+ * does not sell. A retired refusal should not have a status code waiting for
+ * it here.
+ */
 const RESULT_STATUS: Record<string, number> = {
   activated: 200,
   already_active: 200,
-  guest_limit_reached: 409,
   inactive: 409,
   expired: 410,
   invalid: 400,
@@ -23,12 +31,16 @@ const RESULT_STATUS: Record<string, number> = {
 /**
  * Redeems a Live Share invitation.
  *
- * Two separate things are being proven here, and the database does both:
- * that the caller is signed in as the invited address, and that this
- * activation does not exceed the owner's places for the year. An invitation
- * on its own never consumed a place; this call is where a place is consumed,
- * and retrying it is answered "already active" rather than taking a second
- * one.
+ * The database proves the one thing worth proving here: that the caller is
+ * signed in as the invited address. It used to prove a second thing -- that the
+ * activation did not exceed the owner's places for the year -- and an
+ * activation was where a place was consumed. Neither is true of the current
+ * model: Live Share has no guest cap, no slot consumption, and no concurrency
+ * accounting, so there is nothing to exceed and nothing to consume.
+ *
+ * Retrying is still answered "already active" rather than activating twice,
+ * which is a property of the invitation being single-use rather than of any
+ * quota.
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -68,7 +80,6 @@ export async function POST(request: Request) {
         message: string;
         membership_id: string | null;
         period_end: string | null;
-        guest_remaining: number;
       }
     | null;
 
@@ -93,25 +104,12 @@ export async function POST(request: Request) {
     });
   }
 
-  if (row.result === "guest_limit_reached") {
-    await logLiveEvent({
-      eventName: "live.guest_cap_reached",
-      userId,
-      properties: {
-        membership_id: row.membership_id,
-        result: row.result,
-        stage: "activation_refused",
-      },
-    });
-  }
-
   return NextResponse.json(
     {
       result: row.result,
       message: row.message,
       membership_id: row.membership_id,
       period_end: row.period_end,
-      guest_remaining: row.guest_remaining,
     },
     { status }
   );

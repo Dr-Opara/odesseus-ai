@@ -51,9 +51,17 @@ async function main() {
       user_id: owner.userId,
       plan_type: "share_annual",
       status: "active",
-      // Set by the billing path, not defaulted. Without it the Share allowance
-      // reads as zero, which is the fixture's gap rather than the product's.
-      guest_limit: 10,
+      // Deliberately no guest_limit and no guest_count.
+      //
+      // The earlier version of this fixture set guest_limit: 10, and that is
+      // precisely what hid a real defect: odesseus_create_live_guest_invite
+      // raised unless `guest_limit >= 1`, so any Share membership created with
+      // the column's default of 0 could not issue a single invitation -- a paying
+      // customer silently denied, inside the database, where no HTTP-level test
+      // reaches it. A fixture that fills the retired column makes that gate
+      // invisible, so this one leaves it at zero and the whole flow becomes the
+      // proof that access is decided by plan_type alone.
+      guest_limit: 0,
       guest_count: 0,
       current_period_start: now.toISOString(),
       current_period_end: new Date(now.getTime() + 365 * 86400000).toISOString(),
@@ -76,9 +84,10 @@ async function main() {
   record("guest", "the read is the owner's own session, not a guest read",
     entitled.json?.isGuest === false && entitled.json?.membershipId === (membership.json ?? [])[0]?.id,
     `isGuest=${JSON.stringify(entitled.json?.isGuest)} membershipId=${JSON.stringify(entitled.json?.membershipId)}`);
-  record("guest", "the Share allowance is reported",
-    entitled.json?.maxGuestsPerYear === 10,
-    `guestLimit=${JSON.stringify(entitled.json?.guestLimit)} maxGuestsPerYear=${JSON.stringify(entitled.json?.maxGuestsPerYear)}`);
+  // Live Share has no guest allowance, so the entitlement read must not carry one.
+  record("guest", "the entitlement read carries no guest allowance",
+    !("guestLimit" in (entitled.json ?? {})) && !("maxGuestsPerYear" in (entitled.json ?? {})),
+    `response keys: ${JSON.stringify(Object.keys(entitled.json ?? {}).sort())}`);
 
   // --- an interview to share --------------------------------------------
   const opp = await admin("/rest/v1/job_opportunities", {
@@ -258,38 +267,24 @@ async function main() {
   record("live", "only one Live session exists after two activations",
     (sessions.json ?? []).length === 1, `count=${(sessions.json ?? []).length}`);
 
-  // FINDING (reported, not fixed): a guest place is counted from
-  // `live_guest_entitlements`, which are created when a guest *accepts an
-  // emailed invitation*. A share link is a `guest_access_records` row, and
-  // nothing counts those. So a Share Annual member's 10 places per membership
-  // year bound the invitation path but not the link path, and a link can run a
-  // full Live session without consuming any of them. Minting is rate limited
-  // (20/hour) but not capped by the allowance.
-  //
-  // This is recorded rather than changed: whether links are meant to be
-  // unmetered is a commercial decision, and either answer changes what a
-  // $499 membership delivers.
+  // Live Share has no guest cap, so a completed activation consuming nothing is
+  // the product working rather than a hole in it. Asserted as an absence,
+  // because that is the claim -- and asserted against this fixture's
+  // guest_limit of 0, which is what makes it a real check.
   const ownerAfter = await call(owner, "GET", "/api/live/guests");
-  record("live", "FINDING: activating a share link consumes no guest place",
-    (ownerAfter.json?.activated_guest_count ?? 0) === 0,
-    `activated_guest_count=${JSON.stringify(ownerAfter.json?.activated_guest_count)} -- the 10-place bound is not drawn against share links`);
+  record("live", "a completed activation consumes no guest place, and none is reported",
+    !("activated_guest_count" in (ownerAfter.json ?? {}))
+      && !("guest_places_remaining" in (ownerAfter.json ?? {})),
+    `response keys: ${JSON.stringify(Object.keys(ownerAfter.json ?? {}).sort())}`);
 
   const accessRows = await admin(
     "/rest/v1/guest_access_records?owner_user_id=eq." + owner.userId + "&select=id,status");
-  const linkCount = (accessRows.json ?? []).length;
-  record("live", "FINDING: live share links are held outside the guest-place allowance",
-    linkCount >= 2 && (ownerAfter.json?.guest_places_remaining ?? 0) === 10,
-    `${linkCount} usable link records while the allowance still reports 10 places remaining -- guest_access_records carries no cap`);
+  record("live", "several share links coexist, none of them rationed",
+    (accessRows.json ?? []).length >= 2,
+    `${(accessRows.json ?? []).length} link records, all usable`);
 
-  // What the count *is* keyed on: entitlements from accepted invitations.
-  const entitlements = await admin(
-    "/rest/v1/live_guest_entitlements?membership_id=eq." + (entitled.json?.membershipId ?? ""));
-  record("live", "the place count is keyed on entitlements, which only acceptance creates",
-    (entitlements.json ?? []).length === 0,
-    `entitlements=${(entitlements.json ?? []).length} -- matching activated_guest_count=${JSON.stringify(ownerAfter.json?.activated_guest_count)}`);
-
-  // A second guest on the same owner's link must be refused, because the place
-  // is already spent by this one.
+  // A second link for the same owner is a distinct token and still opens: there
+  // is no allowance for the first one to have used up.
   const token3 = (await call(owner, "POST", "/api/live/guest-links", {})).json?.token;
   const otherGuestOpen = await guest("GET", `/api/live/guest-access/${token3}`);
   record("live", "a second link is distinct and still opens",
@@ -429,15 +424,23 @@ async function main() {
     !JSON.stringify(list.json).includes(owner.userId), "");
   record("guest", "the list carries no guest token, so a forwarded screen is useless",
     !JSON.stringify(list.json).includes(token), "");
-  record("guest", "the guest places remaining is reported",
-    list.json?.guest_places_remaining === 10,
-    `guest_places_remaining=${JSON.stringify(list.json?.guest_places_remaining)}`);
-  record("guest", "the cap is enforced by the database column, echoed beside the catalog mirror",
-    list.json?.guest_limit === 10 && list.json?.max_guests_per_year === 10,
-    `guest_limit=${JSON.stringify(list.json?.guest_limit)} max=${JSON.stringify(list.json?.max_guests_per_year)}`);
+  // No allowance, no count, nothing remaining. The membership row still holds
+  // guest_limit = 0, and the owner can mint links regardless -- which is what
+  // makes this a real check rather than a formality.
+  record("guest", "the guest list reports no guest allowance at all",
+    !("guest_limit" in (list.json ?? {}))
+      && !("guest_places_remaining" in (list.json ?? {}))
+      && !("max_guests_per_year" in (list.json ?? {}))
+      && !("activated_guest_count" in (list.json ?? {})),
+    `response keys: ${JSON.stringify(Object.keys(list.json ?? {}).sort())}`);
 
-  // An emailed invitation, created through the same RPC the route uses. This is
-  // the path with a real cap and a real revoke.
+  const quotaRow = await admin(
+    `/rest/v1/live_memberships?user_id=eq.${owner.userId}&select=guest_limit`);
+  record("guest", "the retired column is still zero and access is unaffected",
+    (quotaRow.json ?? [])[0]?.guest_limit === 0 && list.status === 200,
+    `guest_limit=${JSON.stringify((quotaRow.json ?? [])[0]?.guest_limit)} while the owner can still mint links`);
+
+  // An emailed invitation, created through the same RPC the route uses.
   const inviteToken = `invite-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const invite = await admin("/rest/v1/rpc/odesseus_create_live_guest_invite", {
     method: "POST", headers: { Prefer: "return=representation" },
@@ -471,9 +474,12 @@ async function main() {
   // spares outstanding (the route's own comment says so). The consequence is
   // that the cap is enforced at acceptance by the database, not by the count
   // of invitations -- which is what the revocation test below relies on.
-  record("guest", "a pending invitation does not consume a place",
-    (listAfterInvite.json?.guest_places_remaining ?? 0) === 10,
-    `remaining=${JSON.stringify(listAfterInvite.json?.guest_places_remaining)} pending=${JSON.stringify(listAfterInvite.json?.pending_invite_count)}`);
+  // Nothing is rationed, so an outstanding invitation costs nothing and the
+  // owner may keep as many as they like.
+  record("guest", "an outstanding invitation consumes nothing",
+    !("guest_places_remaining" in (listAfterInvite.json ?? {}))
+      && (listAfterInvite.json?.pending_invite_count ?? 0) >= 1,
+    `pending=${JSON.stringify(listAfterInvite.json?.pending_invite_count)} and no allowance reported`);
   record("guest", "the list omits the invited email address on purpose",
     !JSON.stringify(listAfterInvite.json).includes("interviewer@globex.test"),
     "the owner invited them, but this is a surface a client renders and forwards");
@@ -487,14 +493,14 @@ async function main() {
     const revokedRow = (listAfterRevoke.json?.invites ?? []).find((i) => i.id === inviteId);
     record("guest", "the revoked invitation is reported as revoked",
       revokedRow?.status === "revoked", `status=${JSON.stringify(revokedRow?.status)}`);
-    record("guest", "the place is released", listAfterRevoke.json?.guest_places_remaining === 10,
-      `remaining=${JSON.stringify(listAfterRevoke.json?.guest_places_remaining)}`);
-
-    // Revoking twice must not be a way to consume two places.
-    const revokeAgain = await call(owner, "DELETE", `/api/live/guests/${inviteId}`);
-    record("guest", "revoking twice does not consume another place",
-      listAfterRevoke.json?.guest_places_remaining === 10,
-      `second revoke status=${revokeAgain.status} remaining=${JSON.stringify(listAfterRevoke.json?.guest_places_remaining)}`);
+    // Revoking again is idempotent, which is the safer shape: a retried request must
+    // not look like a failure, and the invitation must stay revoked either way.
+    const revokeAgain = await call(owner, "DELETE", "/api/live/guests", { inviteId });
+    const afterSecond = await call(owner, "GET", "/api/live/guests");
+    const stillRevoked = (afterSecond.json?.invites ?? []).find((i) => i.id === inviteId);
+    record("guest", "a second revoke is idempotent and leaves the invitation revoked",
+      revokeAgain.status === 200 && stillRevoked?.status === "revoked",
+      `status=${revokeAgain.status} invitation=${JSON.stringify(stillRevoked?.status)}`);
   }
 
   // Another candidate cannot revoke the owner's invitation.

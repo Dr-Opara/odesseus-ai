@@ -86,8 +86,10 @@ export async function GET(
       isOwner: e.is_owner,
       isGuest: e.is_guest,
       membershipId: e.membership_id,
-      guestLimit: e.guest_limit,
-      activatedGuestCount: e.activated_guest_count,
+      // No guest allowance and no guest count. Live Share has no guest cap, so a
+      // figure here would describe a limit the product does not sell. What does
+      // bound Live access is `passesRemaining` and `unlimitedUntil` above, and
+      // those are real.
     },
     existingSession: existing
       ? {

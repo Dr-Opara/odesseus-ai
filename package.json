@@ -12,7 +12,11 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "countries:check": "node scripts/generate-country-seed.ts --check",
-    "countries:generate": "node scripts/generate-country-seed.ts --write"
+    "countries:generate": "node scripts/generate-country-seed.ts --write",
+    "db:reset": "supabase db reset --local",
+    "db:test": "supabase test db --local",
+    "db:lint": "supabase db lint --local --level warning",
+    "db:start": "supabase start"
   },
   "overrides": {
     "nanoid": "5.1.16"
@@ -43,6 +47,7 @@
     "@vitest/coverage-v8": "5.0.1",
     "eslint": "9.35.0",
     "eslint-config-next": "16.3.5",
+    "supabase": "^2.118.0",
     "tailwindcss": "4.1.18",
     "typescript": "5.9.2",
     "vitest": "5.0.1"
