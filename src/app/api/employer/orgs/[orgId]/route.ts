@@ -143,10 +143,17 @@ export async function PATCH(
     return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
   }
 
-  const { data: org, error } = await supabase
+  // The write runs with a service client, obtained only after the owner check
+  // above has passed on the session client. `authenticated` is SELECT-only on
+  // `employer_organizations`, so this update could not use the session client
+  // even for the correct owner. The `.eq("id", orgId)` below is the same org the
+  // check ran against, so a cross-org write stays impossible.
+  const { createServiceClient } = await import("@/lib/supabase/service");
+  const { data: org, error } = await createServiceClient()
     .from("employer_organizations")
     .update(updates)
     .eq("id", orgId)
+    .eq("owner_user_id", userId)
     .select("id,name,owner_user_id,website,industry,company_size,description,created_at")
     .single();
 

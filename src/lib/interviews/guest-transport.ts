@@ -131,6 +131,9 @@ export function guestLiveTransport(token: string): LiveTransport {
         isQuestion: Boolean(data.isQuestion),
         questionText: (data.questionText as string | null) ?? null,
         guidance: (data.guidance as LiveGuidanceResponse["guidance"]) ?? null,
+        // Same distinction as the applicant transport: the turn was recorded,
+        // only the answer could not be produced.
+        guidanceUnavailable: Boolean(data.guidanceUnavailable),
       };
     },
 

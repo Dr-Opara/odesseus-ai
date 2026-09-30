@@ -27,6 +27,14 @@ export async function GET(
     return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
   }
 
+  // A malformed org id is refused here rather than reaching the database,
+  // where it surfaces as a 500 from an unhandled query error. Same answer as
+  // a well-formed id that names nothing, which is what it is.
+
+  if (!z.string().uuid().safeParse(orgId).success) {
+    return NextResponse.json({ error: "That team could not be found." }, { status: 404 });
+  }
+
   const { data: membership } = await supabase
     .from("employer_members")
     .select("role")

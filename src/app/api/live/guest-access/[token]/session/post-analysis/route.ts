@@ -229,14 +229,12 @@ export async function POST(
       versionNumber,
     });
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Odesseus could not analyze this guest session.",
-      },
-      { status: 500 }
-    );
+    // The thrown message is logged, not returned. It is the last thing the
+    // model, the database, or the provider said, so it carries a PostgREST code
+    // or a constraint name as readily as anything useful -- and the response is
+    // the one place it must not appear. The candidate gets the sentence below,
+    // which is the same one every other failure on this surface uses.
+    console.error("[ODESSEUS_GUEST_POST_ANALYSIS] could not analyze this guest session:", error);
+    return NextResponse.json({ error: "Odesseus could not analyze this guest session." }, { status: 500 });
   }
 }

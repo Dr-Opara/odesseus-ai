@@ -42,3 +42,45 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  database:
+    # The database suite is the strongest evidence in the repository: the RLS
+    # audit, the cross-actor authorization audit, the wallet ledger, the seat
+    # policy and the Live guest-access tests all run as real Postgres roles
+    # against a real database, and none of them can be expressed as a unit test
+    # with a mocked client.
+    #
+    # It was not wired into CI, which meant a change to a GRANT, a policy or a
+    # SECURITY DEFINER function could merge having passed only the tests that
+    # mock the database. Kept as its own job because it needs the Supabase CLI
+    # and a container, not just Node.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start the local database
+        run: supabase start
+
+      - name: Apply every migration from zero
+        run: supabase db reset --local
+
+      # Lint before the suite: a policy or constraint Postgres will not accept
+      # is a finding in its own right, and running it first means the suite only
+      # ever reports behavioural failures.
+      - name: Schema lint
+        run: supabase db lint --local --level warning
+
+      - name: Database tests (pgTAP)
+        run: supabase test db --local

@@ -172,25 +172,41 @@ describe("employer organization profile", () => {
 
   it("lets the owner update the company profile", async () => {
     const updated = { ...ORG_ROW, website: "https://acme.test", industry: "Software" };
+
+    // The update runs on a service client, because `authenticated` is
+    // SELECT-only on `employer_organizations` and could not perform the write
+    // even for the correct owner. The owner check itself still runs on the
+    // session client, where RLS decides membership.
+    const update = vi.fn();
+    const eq = vi.fn((_column: string, _value: string) => eqChain);
+    const eqChain: {
+      eq: (column: string, value: string) => typeof eqChain;
+      select: () => { single: () => Promise<{ data: unknown; error: null }> };
+    } = {
+      eq,
+      select: () => ({
+        single: async () => ({ data: updated, error: null }),
+      }),
+    };
+    update.mockReturnValue(eqChain);
+
     createClientMock.mockResolvedValue(
       fakeAuthedClient({
         userId: OWNER_ID,
         from: (table: string) => {
-          if (table === "employer_organizations") {
-            return {
-              ...fakeQueryResult(ORG_ROW),
-              update: vi.fn(() => ({
-                eq: () => ({
-                  select: () => ({
-                    single: async () => ({ data: updated, error: null }),
-                  }),
-                }),
-              })),
-            };
+          if (table === "employer_organizations") return fakeQueryResult(ORG_ROW);
+          if (table === "employer_members") {
+            return fakeQueryResult({ org_id: ORG_ID, user_id: OWNER_ID, role: "owner" });
           }
-          if (table === "employer_members") return fakeQueryResult(null);
           return fakeQueryResult(null);
         },
+      })
+    );
+    serviceClientMock.mockReturnValue(
+      fakeAuthedClient({
+        userId: "service",
+        from: (table: string) =>
+          table === "employer_organizations" ? { update } : fakeQueryResult(null),
       })
     );
 
@@ -206,6 +222,57 @@ describe("employer organization profile", () => {
 
     expect(response.status).toBe(200);
     expect(body.org).toMatchObject({ website: "https://acme.test", industry: "Software" });
+
+    // A service client bypasses RLS, so the write is bounded only by the filters
+    // below. They are the org boundary for this route now, and they are asserted
+    // rather than assumed: the id being patched, and the owner it belongs to.
+    expect(update).toHaveBeenCalledWith({
+      website: "https://acme.test",
+      industry: "Software",
+    });
+    expect(eq).toHaveBeenCalledTimes(2);
+    expect(eq.mock.calls[0][0]).toBe("id");
+    expect(eq.mock.calls[0][1]).toBe(ORG_ID);
+    expect(eq.mock.calls[1][0]).toBe("owner_user_id");
+    expect(eq.mock.calls[1][1]).toBe(OWNER_ID);
+  });
+
+  it("never reaches the service client when the caller is not the owner", async () => {
+    const update = vi.fn();
+    createClientMock.mockResolvedValue(
+      fakeAuthedClient({
+        userId: "52222222-2222-4222-8222-333333333333",
+        from: (table: string) => {
+          if (table === "employer_organizations") return fakeQueryResult(ORG_ROW);
+          if (table === "employer_members") {
+            return fakeQueryResult({
+              org_id: ORG_ID,
+              user_id: "52222222-2222-4222-8222-333333333333",
+              role: "admin",
+            });
+          }
+          return fakeQueryResult(null);
+        },
+      })
+    );
+    serviceClientMock.mockReturnValue(
+      fakeAuthedClient({ userId: "service", from: () => ({ update }) })
+    );
+
+    const { PATCH } = await import("@/app/api/employer/orgs/[orgId]/route");
+    const response = await PATCH(
+      new Request("http://localhost/x", {
+        method: "PATCH",
+        body: JSON.stringify({ website: "https://intruder.test" }),
+      }),
+      orgParams
+    );
+
+    // The point of the grant shape: a refused caller cannot obtain a privileged
+    // client at all, so there is nothing to assert about the write -- there was
+    // never a write.
+    expect(response.status).toBe(403);
+    expect(update).not.toHaveBeenCalled();
   });
 
   it("refuses profile edits from non-owner admins", async () => {
@@ -315,10 +382,12 @@ describe("PATCH publish maps at_capacity to 402 with the reason", () => {
     createClientMock.mockReset();
     createClientMock.mockResolvedValue(fakeAuthedClient({ userId: OWNER }));
 
-    // Ordered maybeSingle answers: org row, owner check needs no member row,
-    // draft job, growth subscription. The published-count query answers 10.
+    // Ordered maybeSingle answers for the *service* client, in the order
+    // `publishJob` asks for them: the draft job, then the subscription. The
+    // published-count query answers 10. The organization's own row is not in
+    // this queue -- it was answered by the session client, which is where the
+    // role check happens.
     const answers: unknown[] = [
-      { id: ORG, owner_user_id: OWNER },
       { status: "draft" },
       {
         tier: "growth",
@@ -348,14 +417,27 @@ describe("PATCH publish maps at_capacity to 402 with the reason", () => {
     });
     serviceClientMock.mockReset();
 
-    // NOTE: the jobs PATCH route uses the session client for everything, so
-    // point createClient at the queued mock. serviceClient is unused here.
+    // The role check runs on the session client, where RLS decides membership.
+    // Everything after it -- the draft read, the subscription, the published
+    // count, and the update -- runs on the granted service client, because
+    // `authenticated` is SELECT-only on `employer_jobs` and could not perform
+    // the write even for the correct owner. So the session client answers only
+    // the membership lookup, and the service client answers the queue.
     createClientMock.mockResolvedValue({
       auth: {
         getClaims: async () => ({ data: { claims: { sub: OWNER } } }),
       },
-      from,
+      from: (table: string) => {
+        if (table === "employer_organizations") {
+          return fakeQueryResult({ id: ORG, owner_user_id: OWNER });
+        }
+        if (table === "employer_members") {
+          return fakeQueryResult({ org_id: ORG, user_id: OWNER, role: "owner" });
+        }
+        return fakeQueryResult(null);
+      },
     });
+    serviceClientMock.mockReturnValue({ auth: { getClaims: async () => ({ data: { claims: null } }) }, from });
 
     const { PATCH } = await import("@/app/api/employer/orgs/[orgId]/jobs/[jobId]/route");
     const response = await PATCH(
@@ -369,6 +451,56 @@ describe("PATCH publish maps at_capacity to 402 with the reason", () => {
 
     expect(response.status).toBe(402);
     expect(body.reason).toBe("at_capacity");
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it("refuses to publish for a caller who is not an org admin, without a service client", async () => {
+    const ORG = "52222222-2222-4222-8222-222222222222";
+    const OUTSIDER = "59999999-9999-4999-8999-999999999999";
+    createClientMock.mockReset();
+    serviceClientMock.mockReset();
+
+    const updateSpy = vi.fn();
+    const from = vi.fn(() => {
+      const builder: Record<string, unknown> = {};
+      builder.select = () => builder;
+      builder.eq = () => builder;
+      builder.update = (...args: unknown[]) => {
+        updateSpy(...args);
+        return builder;
+      };
+      builder.maybeSingle = async () => ({ data: null, error: null });
+      return builder;
+    });
+
+    // A viewer: a real member of a real org, but not an admin.
+    // `getOrgRole` reads the organization first and only then the membership, so
+    // both rows have to be present for the role to resolve to "viewer" -- a
+    // missing org row would answer 404 and never reach the role comparison.
+    createClientMock.mockResolvedValue({
+      auth: { getClaims: async () => ({ data: { claims: { sub: OUTSIDER } } }) },
+      from: (table: string) => {
+        if (table === "employer_organizations") {
+          return fakeQueryResult({ id: ORG, owner_user_id: "51111111-1111-4111-8111-111111111111" });
+        }
+        if (table === "employer_members") {
+          return fakeQueryResult({ org_id: ORG, user_id: OUTSIDER, role: "viewer" });
+        }
+        return fakeQueryResult(null);
+      },
+    });
+    serviceClientMock.mockReturnValue({ from });
+
+    const { PATCH } = await import("@/app/api/employer/orgs/[orgId]/jobs/[jobId]/route");
+    const response = await PATCH(
+      new Request("http://localhost/x", {
+        method: "PATCH",
+        body: JSON.stringify({ action: "publish" }),
+      }),
+      { params: Promise.resolve({ orgId: ORG, jobId: "job-1" }) }
+    );
+
+    expect(response.status).toBe(403);
     expect(updateSpy).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,24 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Database } from "@/types/database";
 
+/**
+ * The interview is not this user's, or does not exist.
+ *
+ * A distinct type rather than a message, because the caller has to be able to
+ * tell "there is nothing here for you" from "the read broke". Both are possible
+ * outcomes of a lookup on a service client, and collapsing them means a
+ * candidate asking about an interview that is not theirs gets a 500 -- which
+ * reads as our fault, invites a retry, and says nothing useful. The two cases
+ * are also not equally sensitive: a not-found is the safe answer to give
+ * verbatim, a load failure is not.
+ */
+export class InterviewNotFoundError extends Error {
+  constructor() {
+    super("Interview not found.");
+    this.name = "InterviewNotFoundError";
+  }
+}
+
 export type InterviewWorkspaceContext = {
   interview: {
     id: string;
@@ -134,7 +152,7 @@ async function buildInterviewContext(
   }
 
   if (!interview) {
-    throw new Error("Interview not found.");
+    throw new InterviewNotFoundError();
   }
 
   // 2. Readiness (latest version)

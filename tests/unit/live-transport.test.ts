@@ -233,7 +233,49 @@ describe("applicantLiveTransport", () => {
       mode: "default",
       forceGuidance: false,
     });
-    expect(result).toEqual({ isQuestion: false, questionText: null, guidance: null });
+    expect(result).toEqual({
+      isQuestion: false,
+      questionText: null,
+      guidance: null,
+      guidanceUnavailable: false,
+    });
+  });
+
+  it("carries guidanceUnavailable so a failed answer is not read as no question", async () => {
+    // The turn was saved but the provider produced nothing. `isQuestion` is
+    // false here for the same reason it is false for a remark, so without this
+    // flag the two are indistinguishable and the panel goes quiet mid-interview.
+    respondWith({
+      transcriptItemId: "t9",
+      isQuestion: false,
+      guidance: null,
+      guidanceUnavailable: true,
+    });
+
+    const result = await transport().transcript({
+      sessionId: "s1",
+      itemId: "i9",
+      transcript: "Walk me through that decision.",
+      mode: "default",
+      forceGuidance: false,
+    });
+
+    expect(result.guidanceUnavailable).toBe(true);
+    expect(result.guidance).toBeNull();
+    // And it is not confused with the ordinary no-question case, which must
+    // leave the flag false.
+  });
+
+  it("leaves guidanceUnavailable false when the turn simply was not a question", async () => {
+    respondWith({ isQuestion: false, guidance: null });
+    const result = await transport().transcript({
+      sessionId: "s1",
+      itemId: "i10",
+      transcript: "Mm-hmm, right.",
+      mode: "default",
+      forceGuidance: false,
+    });
+    expect(result.guidanceUnavailable).toBe(false);
   });
 });
 

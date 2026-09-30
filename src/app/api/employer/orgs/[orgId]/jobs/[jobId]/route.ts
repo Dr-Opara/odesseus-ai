@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import {
@@ -24,6 +25,14 @@ export async function GET(
 
   if (!userId) {
     return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
+  }
+
+  // A malformed org id is refused here rather than reaching the database,
+  // where it surfaces as a 500 from an unhandled query error. Same answer as
+  // a well-formed id that names nothing, which is what it is.
+
+  if (!z.string().uuid().safeParse(orgId).success) {
+    return NextResponse.json({ error: "That team could not be found." }, { status: 404 });
   }
 
   // Check org membership
@@ -74,6 +83,14 @@ export async function PATCH(
     return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
   }
 
+  // A malformed org id is refused here rather than reaching the database,
+  // where it surfaces as a 500 from an unhandled query error. Same answer as
+  // a well-formed id that names nothing, which is what it is.
+
+  if (!z.string().uuid().safeParse(orgId).success) {
+    return NextResponse.json({ error: "That team could not be found." }, { status: 404 });
+  }
+
   const rate = checkRateLimit(`employer:jobs:update:${userId}`, 60, 60 * 1000);
   if (!rate.allowed) {
     return NextResponse.json(
@@ -82,11 +99,18 @@ export async function PATCH(
     );
   }
 
-  // Check admin authorization
-  const { requireOrgAdmin } = await import("@/lib/employer/service");
-  const authz = await requireOrgAdmin(supabase, orgId, userId);
-  if (!authz.ok) {
-    return NextResponse.json({ error: "Admin access required." }, { status: 403 });
+  // Authorization, then the write client.
+  //
+  // `authenticated` is SELECT-only on employer tables, so the session client
+  // cannot perform this write even when the role is correct. The grant proves
+  // the role on the *session* client -- where RLS decides membership -- and
+  // hands back a service client only once that has passed. `orgId` is the same
+  // value the check ran against, and the mutations below still filter on it, so
+  // a cross-org write stays impossible.
+  const { grantOrgAdminWrite } = await import("@/lib/employer/authorized-write");
+  const grant = await grantOrgAdminWrite(supabase, { orgId, userId });
+  if (!grant.ok) {
+    return NextResponse.json({ error: grant.error }, { status: grant.status });
   }
 
   let body: unknown;
@@ -101,7 +125,7 @@ export async function PATCH(
   if (typeof action === "string" && ["publish", "close", "delete"].includes(action)) {
     if (action === "publish") {
       const { publishJob } = await import("@/lib/employer/service");
-      const result = await publishJob(supabase, orgId, jobId);
+      const result = await publishJob(grant.client, orgId, jobId);
       if (!result.ok) {
         const status = result.reason === "not_found" ? 404 : result.reason === "wrong_status" ? 409 : 402;
         return NextResponse.json(
@@ -122,7 +146,7 @@ export async function PATCH(
 
     if (action === "close") {
       const { closeJob } = await import("@/lib/employer/service");
-      const result = await closeJob(supabase, orgId, jobId);
+      const result = await closeJob(grant.client, orgId, jobId);
       if (!result.ok) {
         const status = result.reason === "not_found" ? 404 : 409;
         return NextResponse.json({ error: "Job cannot be closed." }, { status });
@@ -132,7 +156,7 @@ export async function PATCH(
 
     if (action === "delete") {
       const { deleteJob } = await import("@/lib/employer/service");
-      const result = await deleteJob(supabase, orgId, jobId);
+      const result = await deleteJob(grant.client, orgId, jobId);
       if (!result.ok) {
         const status = result.reason === "not_found" ? 404 : 409;
         return NextResponse.json({ error: "Job cannot be deleted." }, { status });
@@ -213,7 +237,7 @@ export async function PATCH(
   }
 
   const { updateJob } = await import("@/lib/employer/service");
-  const result = await updateJob(supabase, orgId, jobId, {
+  const result = await updateJob(grant.client, orgId, jobId, {
     title: title?.trim(),
     description: description?.trim() ?? null,
     location: location?.trim() ?? null,

@@ -104,11 +104,38 @@ export async function appendTranscriptItem(
     })
     .eq("id", item.sessionId);
 
-  const guidance = await generateLiveGuidance({
-    transcript: item.transcript,
-    mode: item.mode,
-    context: liveSession.context_snapshot,
-  });
+  // The transcript turn is already durable by this point, so a failure to
+  // generate guidance is not a failure of the append. It used to propagate: the
+  // provider call throws, the route has no handler for it, and the caller got a
+  // bare non-JSON 500 -- which loses the confirmation that the turn was
+  // recorded and, worse, breaks the session for a person who is mid-interview.
+  //
+  // Reported as a successful append with `guidanceUnavailable`, which is a
+  // distinct thing from `isQuestion: false`. Silence there means "that was not
+  // a question"; here it means "we could not answer", and the panel should be
+  // able to tell the difference. The turn is kept either way.
+  let guidance: Awaited<ReturnType<typeof generateLiveGuidance>>;
+  try {
+    guidance = await generateLiveGuidance({
+      transcript: item.transcript,
+      mode: item.mode,
+      context: liveSession.context_snapshot,
+    });
+  } catch (error) {
+    console.error(
+      "[ODESSEUS_LIVE] could not generate guidance for a transcript turn:",
+      error
+    );
+    return {
+      ok: true,
+      body: {
+        transcriptItemId,
+        isQuestion: false,
+        guidance: null,
+        guidanceUnavailable: true,
+      },
+    };
+  }
 
   if (!guidance.isQuestion && !item.forceGuidance) {
     return {

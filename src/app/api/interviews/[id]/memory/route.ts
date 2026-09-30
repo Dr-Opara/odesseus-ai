@@ -125,14 +125,12 @@ export async function POST(
 
     return NextResponse.json({ ok: true, roundNumber });
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Odesseus could not save round memory.",
-      },
-      { status: 500 }
-    );
+    // The thrown message is logged, not returned. It is the last thing the
+    // model, the database, or the provider said, so it carries a PostgREST code
+    // or a constraint name as readily as anything useful -- and the response is
+    // the one place it must not appear. The candidate gets the sentence below,
+    // which is the same one every other failure on this surface uses.
+    console.error("[ODESSEUS_INTERVIEW_MEMORY] could not save round memory:", error);
+    return NextResponse.json({ error: "Odesseus could not save round memory." }, { status: 500 });
   }
 }

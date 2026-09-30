@@ -211,6 +211,9 @@ export default function OdesseusLiveClient({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [transcripts, setTranscripts] = useState<TranscriptItem[]>([]);
   const [guidance, setGuidance] = useState<Guidance | null>(null);
+  // The last turn was recorded but no guidance came back. Kept apart from
+  // "there was nothing to answer" so the panel can say which happened.
+  const [guidanceUnavailable, setGuidanceUnavailable] = useState(false);
   const [lastQuestion, setLastQuestion] = useState("");
   const [busyMode, setBusyMode] = useState<GuidanceMode | null>(null);
   const [error, setError] = useState("");
@@ -286,6 +289,7 @@ export default function OdesseusLiveClient({
           isQuestion?: boolean;
           questionText?: string | null;
           guidance?: Guidance | null;
+          guidanceUnavailable?: boolean;
         });
 
       const item: TranscriptItem = {
@@ -306,6 +310,14 @@ export default function OdesseusLiveClient({
       if (data.guidance) {
         setGuidance(data.guidance);
         setLastQuestion(data.questionText || transcript);
+        setGuidanceUnavailable(false);
+      } else if (data.guidanceUnavailable) {
+        // The turn was recorded; only the answer could not be produced. Say so
+        // rather than leaving the panel empty, which reads as "Odesseus has
+        // stopped listening" to somebody who is in an interview right now.
+        setGuidance(null);
+        setLastQuestion(transcript);
+        setGuidanceUnavailable(true);
       }
 
       return data;
@@ -775,7 +787,9 @@ export default function OdesseusLiveClient({
          */ !guidance ? (
           <div className="live-waiting">
             <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
-              Odesseus only surfaces guidance when it identifies a question or clear request for you to respond.
+              {guidanceUnavailable
+                ? "Your transcript is being recorded. Odesseus could not prepare a response for that one — keep going."
+                : "Odesseus only surfaces guidance when it identifies a question or clear request for you to respond."}
             </p>
           </div>
         ) : null}

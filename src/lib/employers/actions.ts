@@ -285,7 +285,12 @@ export async function startSeatCheckoutAction(
     const response = await fetch(`/api/employer/orgs/${orgId}/seats/checkout`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seats }),
+            // `seatCount`, not `seats`: the endpoint's schema, its response, and the
+      // Stripe metadata key `odesseus_seat_count` that the webhook
+      // re-verifies all name it that. This mismatch meant every seat purchase
+      // from this caller was refused with a 400 before reaching Stripe, so no
+      // seat was ever purchasable.
+      body: JSON.stringify({ seatCount: seats }),
     });
     if (!response.ok) return toFailure(response, "Could not start seat checkout.");
     const payload = (await response.json().catch(() => ({}))) as { url?: string };

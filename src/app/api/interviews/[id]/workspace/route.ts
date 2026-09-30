@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { buildInterviewContext } from "@/lib/interviews/context";
+import { buildInterviewContext, InterviewNotFoundError } from "@/lib/interviews/context";
 import type { InterviewWorkspaceContext } from "@/lib/interviews/context";
 import { createNotificationOnce } from "@/lib/notifications/records";
 import { GUEST_SHARE_SOURCE } from "@/lib/interviews/guest-share";
@@ -49,9 +49,21 @@ export async function GET(
 
     return NextResponse.json(context);
   } catch (err) {
+    // "Not this interview" and "the read broke" are different answers and were
+    // being reported the same way: a 500 carrying the raw thrown message, which
+    // includes the underlying PostgREST error text. The not-found case is the
+    // normal outcome of asking about an interview that belongs to someone else,
+    // so it gets a 404 with a message that is safe to show. A genuine failure
+    // keeps the 500 but loses the internal text -- the detail goes to the log,
+    // where it is useful, instead of to the response, where it is not.
+    if (err instanceof InterviewNotFoundError) {
+      return NextResponse.json({ error: "Interview not found." }, { status: 404 });
+    }
+
     console.error("Failed to build interview workspace:", err);
-    const message =
-      err instanceof Error ? err.message : "Failed to build interview workspace.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Could not load this interview." },
+      { status: 500 }
+    );
   }
 }

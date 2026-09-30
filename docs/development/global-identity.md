@@ -130,10 +130,22 @@ never parsed or migrated into `country_code`.
 
 ## API
 
-### `GET /api/countries` (public)
+### `GET /api/countries` (authenticated)
 
 Returns `{ countries: Country[] }` sorted by name, active rows only, with a
-one-hour public cache. No session required.
+one-hour cache.
+
+**Not public, despite the catalog being public data.** The country list is not
+sensitive, but nothing fetches it from a browser: the country pickers are React
+Server Components that read `lib/countries/service` directly, so the route has
+no signed-out consumer. The request proxy therefore requires a session, and
+this documents that rather than an aspiration — a signed-out request is
+redirected to `/login`, not served. Widening the proxy for an endpoint with no
+signed-out caller would enlarge the reachable surface for nothing.
+
+If a future client genuinely needs this before sign-in, the change is to add the
+path to `publicPrefixPaths` in `src/lib/supabase/proxy.ts` and change this
+heading; it is not a database grant.
 
 ### `GET` / `PATCH /api/profile/localization` (authenticated)
 

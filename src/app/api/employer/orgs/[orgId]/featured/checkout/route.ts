@@ -134,8 +134,14 @@ export async function POST(
     );
   }
 
+  // The whole billing configuration, not just the site URL. Checking
+  // NEXT_PUBLIC_SITE_URL alone was checking the wrong variable: with the site
+  // URL set but STRIPE_SECRET_KEY absent, `getStripe()` below throws and the
+  // caller gets a 500 from an unhandled configuration error, where the route
+  // clearly meant to answer 503. A missing key is a deployment state, not a
+  // fault in the request, and it should be reported as one.
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (!siteUrl) {
+  if (!siteUrl || !process.env.STRIPE_SECRET_KEY) {
     return NextResponse.json(
       { error: "Billing is not configured." },
       { status: 503 }

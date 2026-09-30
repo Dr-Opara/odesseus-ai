@@ -23,6 +23,13 @@ GET /api/pricing
 GET /api/pricing/:productKey
 ```
 
+The *tables* are readable by `anon` and the *routes* are not. The route resolves
+the market from the caller's own `profiles.country_code`, so it needs a session
+and is not in `publicPrefixPaths` — a signed-out request is redirected rather
+than served. Nothing fetches it from a browser today; the pricing surfaces are
+server components. The public `anon` grant is what the *catalog* needs, not
+evidence that the endpoint is public, and the two are easy to conflate.
+
 resolve the authenticated user's market from their **profile country**
 (`profiles.country_code`), look up the configured price, and return:
 

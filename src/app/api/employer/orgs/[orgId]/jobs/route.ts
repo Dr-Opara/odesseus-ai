@@ -52,6 +52,14 @@ export async function GET(
     return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
   }
 
+  // A malformed org id is refused here rather than reaching the database,
+  // where it surfaces as a 500 from an unhandled query error. Same answer as
+  // a well-formed id that names nothing, which is what it is.
+
+  if (!z.string().uuid().safeParse(orgId).success) {
+    return NextResponse.json({ error: "That team could not be found." }, { status: 404 });
+  }
+
   // Check org membership
   const { data: membership } = await supabase
     .from("employer_members")
@@ -102,6 +110,14 @@ export async function POST(
     return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
   }
 
+  // A malformed org id is refused here rather than reaching the database,
+  // where it surfaces as a 500 from an unhandled query error. Same answer as
+  // a well-formed id that names nothing, which is what it is.
+
+  if (!z.string().uuid().safeParse(orgId).success) {
+    return NextResponse.json({ error: "That team could not be found." }, { status: 404 });
+  }
+
   const rate = checkRateLimit(`employer:jobs:create:${userId}`, 30, 60 * 1000);
   if (!rate.allowed) {
     return NextResponse.json(
@@ -110,10 +126,15 @@ export async function POST(
     );
   }
 
-  // Check admin authorization
-  const authz = await requireOrgAdmin(supabase, orgId, userId);
-  if (!authz.ok) {
-    return NextResponse.json({ error: "Admin access required." }, { status: 403 });
+  // Authorization, then the write client. See
+  // `@/lib/employer/authorized-write`: the role is proved on the session
+  // client, where RLS decides membership, and only then is a service client
+  // handed back. `authenticated` is SELECT-only on employer tables, so this
+  // write cannot use the session client even with a correct role.
+  const { grantOrgAdminWrite } = await import("@/lib/employer/authorized-write");
+  const grant = await grantOrgAdminWrite(supabase, { orgId, userId });
+  if (!grant.ok) {
+    return NextResponse.json({ error: grant.error }, { status: grant.status });
   }
 
   // The body type is the service's own `CreateJobInput`, imported rather than
@@ -196,7 +217,7 @@ export async function POST(
     );
   }
 
-  const job = await createJob(supabase, orgId, {
+  const job = await createJob(grant.client, orgId, {
     title: title.trim(),
     description: description?.trim() ?? null,
     location: location?.trim() ?? null,

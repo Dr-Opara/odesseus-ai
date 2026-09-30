@@ -56,6 +56,22 @@ export async function POST(request: Request) {
   const roundNumber =
     parsedRound !== null && Number.isFinite(parsedRound) ? parsedRound : null;
 
+  // Named columns rather than `select()`.
+  //
+  // The row is the caller's own, so nothing in it belongs to another person --
+  // but the full row also carries internal bookkeeping the client has no use
+  // for, and two of those are worth not handing out: `transcript_storage_path`
+  // is a pointer into a private bucket, and `source_external_id` /
+  // `source_signal_id` are the ingestion system's own identifiers. Narrowing
+  // here is safe because nothing in the app posts to this route -- the four
+  // `/api/interviews/[id]/*` routes are the ones with callers -- so there is no
+  // consumer shape to preserve.
+  const CREATED_INTERVIEW_COLUMNS =
+    "id,application_id,stage,status,scheduled_at,timezone,round_number," +
+    "company,role_title,location,notes,source,meeting_provider,meeting_url," +
+    "application_url,interview_type,response_style,response_length," +
+    "duration_minutes,readiness_generated_at,live_pass_status,created_at";
+
   const { data: interview, error } = await service
     .from("interviews")
     .insert({
@@ -74,7 +90,7 @@ export async function POST(request: Request) {
       meeting_url: input.meetingUrl,
       application_url: input.applicationUrl,
     })
-    .select()
+    .select(CREATED_INTERVIEW_COLUMNS)
     .single();
 
   if (error) {

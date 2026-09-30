@@ -77,6 +77,15 @@ export type LiveGuidanceResponse = {
   isQuestion: boolean;
   questionText: string | null;
   guidance: LiveGuidance | null;
+  /**
+   * The turn was saved but no guidance could be produced.
+   *
+   * Distinct from `isQuestion: false`, which means there was nothing to answer.
+   * Both leave `guidance` null, so without this the panel cannot tell a turn
+   * that needed no answer from one we failed to answer -- and a candidate mid
+   * interview would see silence and assume the product had stopped listening.
+   */
+  guidanceUnavailable: boolean;
 };
 
 /** A prepared-but-not-yet-activated session. */
@@ -251,6 +260,10 @@ export function applicantLiveTransport(interviewId: string): LiveTransport {
         questionText: (data.questionText as string | null) ?? null,
         guidance:
           (data.guidance as LiveGuidanceResponse["guidance"]) ?? null,
+        // The turn was recorded; only the answer could not be produced. Carried
+        // so the panel can say so, rather than showing an empty answer that
+        // reads as "nothing to answer".
+        guidanceUnavailable: Boolean(data.guidanceUnavailable),
       };
     },
 

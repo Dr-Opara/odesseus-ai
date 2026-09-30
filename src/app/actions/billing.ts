@@ -34,8 +34,13 @@ export async function createCheckoutSession(sku: string) {
 
   if (!userId) redirect("/login");
 
+  // Both halves of the billing configuration, not just the site URL: with the
+  // site URL set but STRIPE_SECRET_KEY absent, `getStripe()` below throws and
+  // the candidate sees a server error rather than the "billing is not
+  // configured" they were redirected to expect. A missing key is a deployment
+  // state, not a fault in the request.
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (!siteUrl) redirect("/billing?error=Billing%20is%20not%20configured");
+  if (!siteUrl || !process.env.STRIPE_SECRET_KEY) redirect("/billing?error=Billing%20is%20not%20configured");
 
   const interval = recurringIntervalFor(item);
 

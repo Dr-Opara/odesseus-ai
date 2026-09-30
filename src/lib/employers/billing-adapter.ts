@@ -196,7 +196,12 @@ export async function purchaseRecruiterSeat(
     const response = await fetch(`/api/employer/orgs/${resolved.context.orgId}/seats/checkout`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seats }),
+            // `seatCount`, not `seats`: the endpoint's schema, its response, and the
+      // Stripe metadata key `odesseus_seat_count` that the webhook
+      // re-verifies all name it that. This mismatch meant every seat purchase
+      // from this caller was refused with a 400 before reaching Stripe, so no
+      // seat was ever purchasable.
+      body: JSON.stringify({ seatCount: seats }),
     });
     const payload = (await response.json().catch(() => ({}))) as { url?: string; error?: string };
     if (!response.ok || !payload.url) {
