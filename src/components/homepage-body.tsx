@@ -1,5 +1,6 @@
 import Link from "next/link";
 import HomepageJobFeed from "@/components/homepage-job-feed";
+import HomepageFeatureShowcase from "@/components/homepage-feature-showcase";
 import {
   APPLY_TIERS,
   FAILED_SUBMISSION_LABEL,
@@ -164,6 +165,8 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
           </div>
         ))}
       </div>
+
+      <HomepageFeatureShowcase />
 
       <div className="oh-logo-strip">
         <span className="oh-logo-strip-label">GLOBAL COMPANIES</span>
