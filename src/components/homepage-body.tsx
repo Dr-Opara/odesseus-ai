@@ -23,30 +23,45 @@ const trustStats = [
   { value: "Free", label: "Prep" },
 ];
 
-const globalCompanies = [
-  "Amazon",
-  "Microsoft",
-  "Google",
-  "Shopify",
-  "Mercado Libre",
-  "Nubank",
-  "SAP",
-  "Spotify",
-  "ASML",
-  "Revolut",
-  "Airbus",
-  "Canva",
-  "Samsung",
-  "Sony",
-  "Alibaba",
-  "Grab",
-  "TCS",
-  "Infosys",
-  "Flutterwave",
-  "MTN",
-  "Safaricom",
-  "Careem",
-  "Aramco",
+const trustAvatars = [
+  "https://randomuser.me/api/portraits/women/44.jpg",
+  "https://randomuser.me/api/portraits/men/32.jpg",
+  "https://randomuser.me/api/portraits/women/68.jpg",
+  "https://randomuser.me/api/portraits/men/46.jpg",
+];
+
+type GlobalCompany = {
+  name: string;
+  domain: string;
+};
+
+const globalCompanies: GlobalCompany[] = [
+  { name: "Amazon", domain: "amazon.com" },
+  { name: "Microsoft", domain: "microsoft.com" },
+  { name: "Google", domain: "google.com" },
+  { name: "Apple", domain: "apple.com" },
+  { name: "Shopify", domain: "shopify.com" },
+  { name: "Mercado Libre", domain: "mercadolibre.com" },
+  { name: "Nubank", domain: "nubank.com.br" },
+  { name: "SAP", domain: "sap.com" },
+  { name: "Siemens", domain: "siemens.com" },
+  { name: "Spotify", domain: "spotify.com" },
+  { name: "ASML", domain: "asml.com" },
+  { name: "Revolut", domain: "revolut.com" },
+  { name: "Airbus", domain: "airbus.com" },
+  { name: "Canva", domain: "canva.com" },
+  { name: "Samsung", domain: "samsung.com" },
+  { name: "Sony", domain: "sony.com" },
+  { name: "Alibaba", domain: "alibaba.com" },
+  { name: "Tencent", domain: "tencent.com" },
+  { name: "Grab", domain: "grab.com" },
+  { name: "TCS", domain: "tcs.com" },
+  { name: "Infosys", domain: "infosys.com" },
+  { name: "Flutterwave", domain: "flutterwave.com" },
+  { name: "MTN", domain: "mtn.com" },
+  { name: "Safaricom", domain: "safaricom.co.ke" },
+  { name: "Careem", domain: "careem.com" },
+  { name: "Aramco", domain: "aramco.com" },
 ];
 
 function GlobalCompanyMarquee() {
@@ -60,11 +75,15 @@ function GlobalCompanyMarquee() {
             aria-hidden={copy === 1 ? "true" : undefined}
           >
             {globalCompanies.map((company) => (
-              <span className="oh-company-chip" key={company}>
-                <span className="oh-company-monogram" aria-hidden="true">
-                  {company.charAt(0)}
-                </span>
-                <strong>{company}</strong>
+              <span className="oh-company-chip" key={company.name}>
+                <span
+                  className="oh-company-logo"
+                  aria-hidden="true"
+                  style={{
+                    backgroundImage: `url("https://www.google.com/s2/favicons?domain=${company.domain}&sz=64")`,
+                  }}
+                />
+                <strong>{company.name}</strong>
               </span>
             ))}
           </div>
@@ -114,12 +133,15 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
       <div className="oh-trust-band">
         <div className="oh-trust-intro">
           <div className="oh-trust-avatars" aria-hidden="true">
-            <span>J</span>
-            <span>A</span>
-            <span>M</span>
-            <span>K</span>
+            {trustAvatars.map((avatar, index) => (
+              <span
+                key={avatar}
+                className="oh-trust-avatar"
+                style={{ backgroundImage: `url("${avatar}")`, zIndex: trustAvatars.length - index }}
+              />
+            ))}
           </div>
-          <span className="oh-trust-label">Built for job seekers worldwide</span>
+          <span className="oh-trust-label">Trusted by job seekers worldwide</span>
         </div>
         <div className="oh-trust-metrics">
           {trustStats.map((stat) => (
