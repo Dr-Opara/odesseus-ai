@@ -8,23 +8,11 @@ const links = [
   { href: "/how-it-works", label: "Job Seekers" },
   { href: "/employers", label: "Employers" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/careers", label: "Careers" },
-  { href: "/about", label: "About" },
 ];
 
-// Signed-out mobile public navigation is intentionally minimal.
-//
-// On a phone the splash (screen 00) owns the public calls to action \u2014
-// Get Started -> /signup, Business Login -> /employers/login, and
-// See Pricing -> /pricing. Repeating Sign In and Get Started inside a
-// collapsible phone menu was duplicating those exact actions, so the header
-// carries no hamburger at all below the desktop breakpoint. What remains at
-// phone width is the wordmark (a link home) plus the shared MarketingFooter,
-// which already lists every public route: How it works, Pricing, Agents,
-// About, Partner Program, FAQ, For Employers and Employer Pricing.
-//
-// The desktop navigation is unchanged: the same links, the same Sign In and
-// Get Started actions, and no hamburger at any width.
+// Keep the homepage header focused on the primary conversion paths.
+// Company/support links (About, Careers, FAQ, Partner Program) live in the
+// footer on both desktop and mobile.
 export default function MarketingNav({ inverse = false }: { inverse?: boolean }) {
   const pathname = usePathname();
 
@@ -38,7 +26,6 @@ export default function MarketingNav({ inverse = false }: { inverse?: boolean })
               {link.label}
             </Link>
           ))}
-          <Link href="/about#faq">FAQ</Link>
         </nav>
         <div className="figma-nav-actions">
           <Link className={`figma-text-link ${inverse ? "is-inverse" : ""}`} href="/signin">Sign In</Link>
