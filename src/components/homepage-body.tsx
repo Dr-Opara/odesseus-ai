@@ -23,11 +23,87 @@ const trustStats = [
   { value: "Free", label: "Interview preparation" },
 ];
 
-const topCompanies = ["amazon", "Microsoft", "Google", "NVIDIA", "Meta"];
+type GlobalCompany = {
+  name: string;
+  country: string;
+};
+
+const globalCompaniesTop: GlobalCompany[] = [
+  { name: "Amazon", country: "🇺🇸" },
+  { name: "Microsoft", country: "🇺🇸" },
+  { name: "Google", country: "🇺🇸" },
+  { name: "NVIDIA", country: "🇺🇸" },
+  { name: "Shopify", country: "🇨🇦" },
+  { name: "Mercado Libre", country: "🇦🇷" },
+  { name: "Nubank", country: "🇧🇷" },
+  { name: "SAP", country: "🇩🇪" },
+  { name: "Siemens", country: "🇩🇪" },
+  { name: "Spotify", country: "🇸🇪" },
+  { name: "Klarna", country: "🇸🇪" },
+  { name: "ASML", country: "🇳🇱" },
+  { name: "Booking.com", country: "🇳🇱" },
+  { name: "Revolut", country: "🇬🇧" },
+  { name: "Wise", country: "🇬🇧" },
+  { name: "Airbus", country: "🇫🇷" },
+  { name: "Atlassian", country: "🇦🇺" },
+  { name: "Canva", country: "🇦🇺" },
+];
+
+const globalCompaniesBottom: GlobalCompany[] = [
+  { name: "Samsung", country: "🇰🇷" },
+  { name: "Sony", country: "🇯🇵" },
+  { name: "Rakuten", country: "🇯🇵" },
+  { name: "Alibaba", country: "🇨🇳" },
+  { name: "Tencent", country: "🇨🇳" },
+  { name: "ByteDance", country: "🇨🇳" },
+  { name: "Grab", country: "🇸🇬" },
+  { name: "Sea", country: "🇸🇬" },
+  { name: "TCS", country: "🇮🇳" },
+  { name: "Infosys", country: "🇮🇳" },
+  { name: "Flutterwave", country: "🇳🇬" },
+  { name: "MTN", country: "🇿🇦" },
+  { name: "Safaricom", country: "🇰🇪" },
+  { name: "Naspers", country: "🇿🇦" },
+  { name: "Careem", country: "🇦🇪" },
+  { name: "Emirates Group", country: "🇦🇪" },
+  { name: "Aramco", country: "🇸🇦" },
+  { name: "Noon", country: "🇦🇪" },
+];
+
+function CompanyMarqueeLane({
+  companies,
+  direction,
+}: {
+  companies: GlobalCompany[];
+  direction: "left" | "right";
+}) {
+  return (
+    <div className="oh-company-marquee" data-direction={direction}>
+      <div className="oh-company-marquee-track">
+        {[0, 1].map((copy) => (
+          <div
+            className="oh-company-marquee-group"
+            key={copy}
+            aria-hidden={copy === 1 ? "true" : undefined}
+          >
+            {companies.map((company) => (
+              <span className="oh-company-chip" key={company.name}>
+                <span className="oh-company-country" aria-hidden="true">
+                  {company.country}
+                </span>
+                <strong>{company.name}</strong>
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * Shared homepage body (Figma screen 01 — Homepage): hero copy, employer CTA,
- * job carousel, trust band, capability tiles, top-companies strip. Used by
+ * job carousel, trust band, capability tiles, global-company marquee. Used by
  * both the desktop landing (`src/app/page.tsx`, server-fed via
  * `initialJobsResult`) and the mobile splash (`mobile-splash.tsx`, which lets
  * `HomepageJobFeed` self-fetch client-side). Only nav chrome and page
@@ -85,12 +161,18 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
       </div>
 
       <div className="oh-logo-strip">
-        <span className="oh-logo-strip-label">GET HIRED AT TOP COMPANIES</span>
-        <div className="oh-logo-strip-row">
-          {topCompanies.map((company) => (
-            <span key={company}>{company}</span>
-          ))}
+        <span className="oh-logo-strip-label">EXPLORE OPPORTUNITIES WORLDWIDE</span>
+        <p className="oh-logo-strip-subtitle">
+          A global view of leading employers across North America, Latin America, Europe, Africa,
+          the Middle East, Asia, and Australia.
+        </p>
+        <div className="oh-company-marquee-stack" aria-label="Examples of global employers">
+          <CompanyMarqueeLane companies={globalCompaniesTop} direction="left" />
+          <CompanyMarqueeLane companies={globalCompaniesBottom} direction="right" />
         </div>
+        <span className="oh-logo-strip-note">
+          Company names are illustrative; live job availability varies by source and region.
+        </span>
       </div>
     </>
   );
