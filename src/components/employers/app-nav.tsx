@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import OdesseusWordmark from "@/components/odesseus-wordmark";
+import { employerLogout } from "@/app/employers/actions";
 
 // Canonical employer routes. The employer portal is one app with one path per
 // feature, so these are the `/employers/dashboard/*` locations the backend
@@ -48,6 +49,11 @@ export default function EmployerAppNav() {
           <Link className="figma-btn figma-btn-orange" href="/employers/post-job">
             Post a Job
           </Link>
+          <form action={employerLogout}>
+            <button className="figma-text-link employer-signout" type="submit">
+              Sign out
+            </button>
+          </form>
         </div>
         <button className="figma-nav-toggle" type="button" aria-expanded={open} aria-label="Toggle menu" onClick={() => setOpen((v) => !v)}>
           {open ? "✕" : "☰"}
@@ -63,6 +69,11 @@ export default function EmployerAppNav() {
           <Link className="figma-btn figma-btn-orange" href="/employers/post-job" onClick={() => setOpen(false)}>
             Post a Job
           </Link>
+          <form action={employerLogout}>
+            <button className="figma-text-link employer-signout" type="submit">
+              Sign out
+            </button>
+          </form>
         </div>
       ) : null}
     </header>
