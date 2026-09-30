@@ -116,8 +116,10 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
             <em>Odesseus.ai</em>
           </h1>
           <p>
-            Find matched roles, optimize the resume you already have, choose Apply or Smart Apply,
-            track applications, and prepare for interviews.
+            Odesseus.ai finds high-match roles, shows why they fit, optimizes the resume you already
+            have for each job, and lets you choose Apply or Smart Apply to handle supported
+            applications. Then it tracks your progress, prepares you with role-specific interview
+            practice, and supports you through live interviews and post-interview follow-up.
           </p>
           <Link className="oh-employer-cta" href="/employers">
             <span className="oh-employer-cta-icon" aria-hidden="true">
