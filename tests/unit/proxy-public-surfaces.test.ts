@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -34,6 +34,19 @@ function publicPrefixes(): string[] {
 function publicExactPaths(): string[] {
   const block = source.match(/const publicExactPaths = \[([\s\S]*?)\]/);
   if (!block) throw new Error("publicExactPaths not found in the proxy");
+  return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+}
+
+/**
+ * The machine-to-machine list, parsed out of the module.
+ *
+ * Kept separate from the public list in the source on purpose, so it is parsed
+ * separately here: if the two are ever merged, the difference stops being
+ * visible in the tests as well as in the code.
+ */
+function machinePrefixes(): string[] {
+  const block = source.match(/const machineApiPrefixPaths = \[([\s\S]*?)\]/);
+  if (!block) throw new Error("machineApiPrefixPaths not found in the proxy");
   return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
 }
 
@@ -116,8 +129,84 @@ describe("proxy redirects", () => {
   });
 
   it("never redirects a public surface", () => {
-    // The guard is a single `if (!data?.claims && !isPublic)`, so anything in
-    // either list is exempt. A second, narrower check would be a bug.
-    expect(source).toMatch(/if \(!data\?\.claims && !isPublic\)/);
+    // The guard is a single `if`, so anything in any of the three lists is
+    // exempt. A second, narrower check would be a bug.
+    expect(source).toMatch(
+      /if \(!data\?\.claims && !isPublic && !isMachineApi\)/
+    );
+  });
+});
+
+describe("machine-to-machine API paths", () => {
+  /**
+   * Scheduled and provider-originated calls have no Supabase session, by
+   * design. The proxy redirecting them to `/login` meant every one of them was
+   * unreachable, which is indistinguishable from broken: no wallet top-ups, no
+   * subscription sync, no job discovery, no notification emails.
+   *
+   * They are exempt from the *session* check, not from authentication. These
+   * assertions exist so that exemption can never quietly become an exemption
+   * from the guard that actually protects them.
+   */
+  it("exempts cron and webhook prefixes from the session redirect", () => {
+    expect(machinePrefixes()).toEqual(["/api/cron", "/api/webhooks"]);
+  });
+
+  it("keeps the machine list separate from the public list", () => {
+    // A `publicPrefixPaths` entry means "a signed-out browser may fetch this
+    // and be served". These mean "authenticated by a shared secret, not by a
+    // session". Folding one into the other misdescribes it to the next reader.
+    for (const prefix of machinePrefixes()) {
+      expect(publicPrefixes(), prefix).not.toContain(prefix);
+      expect(publicExactPaths(), prefix).not.toContain(prefix);
+    }
+  });
+
+  it("does not exempt anything else", () => {
+    expect(machinePrefixes()).not.toContain("/api");
+    expect(machinePrefixes()).not.toContain("/api/live");
+    expect(machinePrefixes()).not.toContain("/api/employer");
+    expect(machinePrefixes()).not.toContain("/api/cron/../");
+  });
+
+  it("still requires the route's own shared secret or signature", () => {
+    // The proxy exemption is worthless if the route behind it is not guarded.
+    // Asserted on the source because this is the load-bearing pair: the proxy
+    // stops judging the caller, so the route must judge it instead.
+    const crons = ["job-discovery", "refresh-job-feed", "process-retry-jobs",
+                   "process-notification-emails", "process-interview-reminders",
+                   "expire-featured-listings"];
+    for (const name of crons) {
+      const p = join(ROOT, `src/app/api/cron/${name}/route.ts`);
+      const t = readFileSync(p, "utf8");
+      expect(t, name).toContain("CRON_SECRET");
+      // Fail-closed: an unset secret denies everyone rather than admitting all.
+      expect(t, name).toMatch(/!process\.env\.CRON_SECRET/);
+      expect(t, name).toMatch(/Bearer \$\{process\.env\.CRON_SECRET\}/);
+    }
+
+    const webhook = readFileSync(
+      join(ROOT, "src/app/api/webhooks/stripe/route.ts"),
+      "utf8"
+    );
+    expect(webhook).toContain("stripe-signature");
+    expect(webhook).toContain("constructEvent");
+    expect(webhook).toContain("STRIPE_WEBHOOK_SECRET");
+  });
+
+  it("keeps every scheduled cron reachable by the scheduler", () => {
+    // A cron listed in vercel.json but blocked by the proxy never runs, and
+    // nothing fails loudly -- the job simply never happens. So the two lists
+    // must agree.
+    const vercel = JSON.parse(readFileSync(join(ROOT, "vercel.json"), "utf8"));
+    const scheduled: string[] = (vercel.crons ?? []).map((c: { path: string }) => c.path);
+    expect(scheduled.length).toBeGreaterThan(0);
+    for (const path of scheduled) {
+      const exempted = machinePrefixes().some((prefix) => path.startsWith(prefix + "/"));
+      expect(exempted, `${path} is scheduled but the proxy would redirect it`).toBe(true);
+      // And the route it points at must actually exist.
+      const routePath = path.replace("/api/cron/", "src/app/api/cron/") + "/route.ts";
+      expect(existsSync(join(ROOT, routePath)), `${path} has no route file`).toBe(true);
+    }
   });
 });

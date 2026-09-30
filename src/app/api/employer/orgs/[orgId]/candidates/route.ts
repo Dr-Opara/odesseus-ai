@@ -60,15 +60,34 @@ export async function GET(
 
     const byApplication = new Map(identities.map((row) => [row.applicationId, row]));
 
+    // Projected, not spread.
+    //
+    // `listApplicants` is the service accessor and returns the full applicant
+    // payload, including `resumeSnapshot` and `verificationEvidence` -- the
+    // candidate's entire submitted resume and the machine's evidence bundle.
+    // A *list* endpoint spread all of that to any org member, which includes the
+    // read-only `viewer` role, and no consumer read either field. Spreading a
+    // wide service shape is the same mistake as `select("*")`: it hands the
+    // browser everything the query happened to fetch, so widening the service
+    // later silently widens the API with it.
+    //
+    // The detail endpoint is where a submitted resume belongs, and it is
+    // membership-gated the same way. This list needs the identity and the
+    // application facts a recruiter triages on, and nothing more.
     return NextResponse.json({
-      applicants: applicants.map((applicant) => {
-        const identity = byApplication.get(applicant.applicationId);
-        return {
-          ...applicant,
-          candidateName: identity?.candidateName ?? null,
-          candidateEmail: identity?.candidateEmail ?? null,
-        };
-      }),
+      applicants: applicants.map((applicant) => ({
+        applicationId: applicant.applicationId,
+        jobId: applicant.jobId,
+        jobTitle: applicant.jobTitle,
+        jobStatus: applicant.jobStatus,
+        applicationStatus: applicant.applicationStatus,
+        submittedAt: applicant.submittedAt,
+        companyName: applicant.companyName,
+        roleTitle: applicant.roleTitle,
+        matchScoreSnapshot: applicant.matchScoreSnapshot,
+        candidateName: byApplication.get(applicant.applicationId)?.candidateName ?? null,
+        candidateEmail: byApplication.get(applicant.applicationId)?.candidateEmail ?? null,
+      })),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

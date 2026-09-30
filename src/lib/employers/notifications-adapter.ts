@@ -22,7 +22,10 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
-import { listNotifications } from "@/lib/notifications/records";
+import {
+  listNotifications,
+  type NotificationFeedRow,
+} from "@/lib/notifications/records";
 import {
   getEmployerNotificationPreferences,
   type EmployerNotificationPreferences as BackendPreferences,
@@ -72,15 +75,20 @@ export {
   toChannels,
 } from "./preferences";
 
-/** A stored record, in the shape `listNotifications` returns. */
-type StoredNotification = {
-  id: string;
-  notification_type: string;
-  title: string;
-  body?: string | null;
-  created_at: string;
-  read_at?: string | null;
-};
+/**
+ * A stored record, in the shape `listNotifications` returns.
+ *
+ * This was a hand-written local type declaring an optional `body`. No such
+ * column exists -- the table stores the text in `message` -- so `detail` was
+ * always `undefined` and every employer notification rendered with an empty
+ * body. A local type was what hid it: an unknown key reads as "absent" rather
+ * than as a mistake.
+ *
+ * It is now the real `NotificationFeedRow`, so a projection that stops
+ * returning a field this adapter needs fails to compile here instead of
+ * silently rendering nothing.
+ */
+type StoredNotification = NotificationFeedRow;
 
 function toNotification(row: StoredNotification): EmployerNotification | null {
   const category = CATEGORY_BY_TYPE[row.notification_type];
@@ -89,7 +97,7 @@ function toNotification(row: StoredNotification): EmployerNotification | null {
     id: row.id,
     category,
     title: row.title,
-    detail: row.body ?? undefined,
+    detail: row.message ?? undefined,
     createdAt: row.created_at,
     read: Boolean(row.read_at),
   };
@@ -107,7 +115,10 @@ export async function getEmployerNotifications(): Promise<EmployerResult<Employe
       organizationId: resolved.context.orgId,
     });
 
-    const data = (items as unknown as StoredNotification[])
+    // No cast: `listNotifications` already returns `NotificationFeedRow`, so a
+    // projection that dropped a field this adapter needs is a compile error here
+    // rather than a silently empty notification.
+    const data = items
       .map(toNotification)
       .filter((item): item is EmployerNotification => item !== null);
 

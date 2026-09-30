@@ -22,6 +22,25 @@ import type { NotificationClient } from "./service";
 export type NotificationRow = Database["public"]["Tables"]["notifications"]["Row"];
 export type NotificationInsert = Database["public"]["Tables"]["notifications"]["Insert"];
 
+/**
+ * One row as a feed actually returns it: the render columns and nothing else.
+ *
+ * Distinct from {@link NotificationRow} on purpose. A feed that claims to
+ * return the whole row but silently omits dispatch-internal columns is a
+ * `select("*")` with extra steps, and it lets a consumer read a key that does
+ * not exist and get `undefined` instead of a type error.
+ */
+export type NotificationFeedRow = Pick<
+  NotificationRow,
+  | "id"
+  | "notification_type"
+  | "title"
+  | "message"
+  | "action_url"
+  | "created_at"
+  | "read_at"
+>;
+
 export type NotificationListOptions = {
   /** Page size; default 25, capped at 50. */
   limit?: number;
@@ -36,13 +55,38 @@ export type NotificationListOptions = {
 };
 
 export type NotificationListPage = {
-  items: NotificationRow[];
+  items: NotificationFeedRow[];
   /** Cursor for the next page, null when the feed is exhausted. */
   nextCursor: string | null;
 };
 
 const DEFAULT_PAGE_SIZE = 25;
 const MAX_PAGE_SIZE = 50;
+
+/**
+ * The columns a feed actually renders.
+ *
+ * This was `select("*")`, which shipped two dispatch-internal columns to both
+ * notification endpoints and both the candidate and the employer adapter:
+ *
+ *   - `dedupe_key` is the idempotency token the recorder dedupes on. It is
+ *     infrastructure, and a client holding it can reason about whether a
+ *     notification was suppressed rather than shown.
+ *   - `email_delivery_status` is the outbound queue's state. It belongs to
+ *     `process-notification-emails`, not to the person being notified.
+ *
+ * Also dropped: `recipient_user_id` and `organization_id`, which are scoping
+ * facts the feed already implies, and `priority` / `entity_type` / `entity_id`
+ * / `action_url` / `expires_at`, which no rendered surface reads.
+ *
+ * `message` is the column that holds the body. The employer adapter was reading
+ * `row.body`, which does not exist on this table, so its notification detail
+ * was always `undefined` -- a silent bug that a `select("*")` hides, because
+ * an unknown key reads as "absent" rather than as "wrong". Naming the columns
+ * is what makes that class of mistake fail at compile time instead.
+ */
+const FEED_COLUMNS =
+  "id,notification_type,title,message,action_url,created_at,read_at" as const;
 
 /**
  * The recipient's notification feed, newest first.
@@ -64,7 +108,7 @@ export async function listNotifications(
 
   let query = client
     .from("notifications")
-    .select("*")
+    .select(FEED_COLUMNS)
     .eq("recipient_user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit + 1); // fetch one extra row to learn whether a next page exists
@@ -79,7 +123,7 @@ export async function listNotifications(
     throw new Error(`Could not load notifications: ${error.message}`);
   }
 
-  const rows = (data ?? []) as NotificationRow[];
+  const rows = (data ?? []) as NotificationFeedRow[];
   const hasMore = rows.length > limit;
   const items = hasMore ? rows.slice(0, limit) : rows;
   const nextCursor = hasMore && items.length > 0 ? items[items.length - 1].created_at : null;

@@ -60,9 +60,25 @@ export async function GET(
     const identities = await listApplicantIdentities(supabase, orgId);
     const identity = identities.find((row) => row.applicationId === applicationId);
 
+    // Projected, not spread -- same reason as the list endpoint, and here the
+    // omission matters less because a recruiter is entitled to the submitted
+    // resume for an applicant on their own job. What they are not entitled to
+    // is anything keyed to the candidate rather than to this application, and
+    // the projection contains no user id, so there is nothing here to pivot on.
+    // `jobSnapshot` is retained: the detail surface renders the job the
+    // application was made against.
     return NextResponse.json({
       applicant: {
-        ...applicant,
+        applicationId: applicant.applicationId,
+        jobId: applicant.jobId,
+        jobTitle: applicant.jobTitle,
+        jobStatus: applicant.jobStatus,
+        applicationStatus: applicant.applicationStatus,
+        submittedAt: applicant.submittedAt,
+        companyName: applicant.companyName,
+        roleTitle: applicant.roleTitle,
+        matchScoreSnapshot: applicant.matchScoreSnapshot,
+        jobSnapshot: applicant.jobSnapshot,
         candidateName: identity?.candidateName ?? null,
         candidateEmail: identity?.candidateEmail ?? null,
       },
