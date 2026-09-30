@@ -33,6 +33,14 @@ const publicExactPaths = [
   "/licenses",
   "/faq",
   "/support",
+  "/careers",
+  "/first-100",
+  // Public homepage job feed (see src/app/api/jobs/home-feed/route.ts):
+  // anonymous callers are an explicit, documented part of its contract — the
+  // mobile splash reads it client-side with no server session. Without this
+  // entry every anonymous request is redirected to /login before the route
+  // handler ever runs, which silently breaks the public job carousel.
+  "/api/jobs/home-feed",
 ];
 const publicPrefixPaths = [
   "/auth",
