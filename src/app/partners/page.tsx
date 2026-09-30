@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function PartnersPage() {
   return (
-    <main className="marketing-page">
+    <main className="marketing">
       <MarketingNav />
       <section className="shell partner-hero">
         <div className="badge">Odesseus Partner Program</div>

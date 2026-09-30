@@ -11,7 +11,7 @@ export default async function PartnerApplyPage({
 }) {
   const { submitted } = await searchParams;
   return (
-    <main className="marketing-page">
+    <main className="marketing">
       <MarketingNav />
       <section className="shell partner-apply-shell">
         {submitted === "1" ? (

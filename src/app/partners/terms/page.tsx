@@ -5,7 +5,7 @@ export const metadata = { title: "Partner Program Terms — Odesseus" };
 
 export default function PartnerTermsPage() {
   return (
-    <main className="marketing-page">
+    <main className="marketing">
       <MarketingNav />
       <section className="shell partner-terms">
         <div className="badge">Partner Program Terms</div>

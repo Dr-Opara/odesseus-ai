@@ -64,7 +64,7 @@ const roles = [
 
 export default function CareersPage() {
   return (
-    <main className="marketing-page">
+    <main className="marketing">
       <MarketingNav />
       <section className="shell careers-hero">
         <div className="badge">We are hiring</div>
@@ -74,9 +74,9 @@ export default function CareersPage() {
           We are a small team shipping fast. No corporate theater.
         </p>
         <div className="careers-meta">
-          <span>\uD83C\uDFE0 Remote-first</span>
-          <span>\u26A1 Small team, high ownership</span>
-          <span>\uD83D\uDCE3 Equity + competitive salary</span>
+          <span>{"\uD83C\uDFE0 Remote-first"}</span>
+          <span>{"\u26A1 Small team, high ownership"}</span>
+          <span>{"\uD83D\uDCE3 Equity + competitive salary"}</span>
         </div>
       </section>
 

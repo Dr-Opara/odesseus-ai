@@ -10,7 +10,7 @@ export const metadata = {
 
 export default function First100Page() {
   return (
-    <main className="marketing-page">
+    <main className="marketing">
       <MarketingNav />
       <First100Content />
       <MarketingFooter />

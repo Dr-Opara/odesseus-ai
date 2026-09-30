@@ -15,7 +15,7 @@ export default function MarketingFooter() {
       </div>
       <div className="figma-footer-bottom">
         <span>Developed by ProcessPilot Technologies LLC</span>
-        <span>\u00A9 2026 Odesseus.ai</span>
+        <span>&copy; 2026 Odesseus.ai</span>
       </div>
     </footer>
   );
