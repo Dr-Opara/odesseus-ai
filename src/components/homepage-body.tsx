@@ -23,62 +23,35 @@ const trustStats = [
   { value: "Free", label: "Interview preparation" },
 ];
 
-type GlobalCompany = {
-  name: string;
-  country: string;
-};
-
-const globalCompaniesTop: GlobalCompany[] = [
-  { name: "Amazon", country: "🇺🇸" },
-  { name: "Microsoft", country: "🇺🇸" },
-  { name: "Google", country: "🇺🇸" },
-  { name: "NVIDIA", country: "🇺🇸" },
-  { name: "Shopify", country: "🇨🇦" },
-  { name: "Mercado Libre", country: "🇦🇷" },
-  { name: "Nubank", country: "🇧🇷" },
-  { name: "SAP", country: "🇩🇪" },
-  { name: "Siemens", country: "🇩🇪" },
-  { name: "Spotify", country: "🇸🇪" },
-  { name: "Klarna", country: "🇸🇪" },
-  { name: "ASML", country: "🇳🇱" },
-  { name: "Booking.com", country: "🇳🇱" },
-  { name: "Revolut", country: "🇬🇧" },
-  { name: "Wise", country: "🇬🇧" },
-  { name: "Airbus", country: "🇫🇷" },
-  { name: "Atlassian", country: "🇦🇺" },
-  { name: "Canva", country: "🇦🇺" },
+const globalCompanies = [
+  "Amazon",
+  "Microsoft",
+  "Google",
+  "Shopify",
+  "Mercado Libre",
+  "Nubank",
+  "SAP",
+  "Spotify",
+  "ASML",
+  "Revolut",
+  "Airbus",
+  "Canva",
+  "Samsung",
+  "Sony",
+  "Alibaba",
+  "Grab",
+  "TCS",
+  "Infosys",
+  "Flutterwave",
+  "MTN",
+  "Safaricom",
+  "Careem",
+  "Aramco",
 ];
 
-const globalCompaniesBottom: GlobalCompany[] = [
-  { name: "Samsung", country: "🇰🇷" },
-  { name: "Sony", country: "🇯🇵" },
-  { name: "Rakuten", country: "🇯🇵" },
-  { name: "Alibaba", country: "🇨🇳" },
-  { name: "Tencent", country: "🇨🇳" },
-  { name: "ByteDance", country: "🇨🇳" },
-  { name: "Grab", country: "🇸🇬" },
-  { name: "Sea", country: "🇸🇬" },
-  { name: "TCS", country: "🇮🇳" },
-  { name: "Infosys", country: "🇮🇳" },
-  { name: "Flutterwave", country: "🇳🇬" },
-  { name: "MTN", country: "🇿🇦" },
-  { name: "Safaricom", country: "🇰🇪" },
-  { name: "Naspers", country: "🇿🇦" },
-  { name: "Careem", country: "🇦🇪" },
-  { name: "Emirates Group", country: "🇦🇪" },
-  { name: "Aramco", country: "🇸🇦" },
-  { name: "Noon", country: "🇦🇪" },
-];
-
-function CompanyMarqueeLane({
-  companies,
-  direction,
-}: {
-  companies: GlobalCompany[];
-  direction: "left" | "right";
-}) {
+function GlobalCompanyMarquee() {
   return (
-    <div className="oh-company-marquee" data-direction={direction}>
+    <div className="oh-company-marquee" aria-label="Examples of companies across global markets">
       <div className="oh-company-marquee-track">
         {[0, 1].map((copy) => (
           <div
@@ -86,12 +59,12 @@ function CompanyMarqueeLane({
             key={copy}
             aria-hidden={copy === 1 ? "true" : undefined}
           >
-            {companies.map((company) => (
-              <span className="oh-company-chip" key={company.name}>
-                <span className="oh-company-country" aria-hidden="true">
-                  {company.country}
+            {globalCompanies.map((company) => (
+              <span className="oh-company-chip" key={company}>
+                <span className="oh-company-monogram" aria-hidden="true">
+                  {company.charAt(0)}
                 </span>
-                <strong>{company.name}</strong>
+                <strong>{company}</strong>
               </span>
             ))}
           </div>
@@ -161,17 +134,13 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
       </div>
 
       <div className="oh-logo-strip">
-        <span className="oh-logo-strip-label">EXPLORE OPPORTUNITIES WORLDWIDE</span>
+        <span className="oh-logo-strip-label">GLOBAL COMPANIES</span>
         <p className="oh-logo-strip-subtitle">
-          A global view of leading employers across North America, Latin America, Europe, Africa,
-          the Middle East, Asia, and Australia.
+          Explore opportunities across companies and markets around the world.
         </p>
-        <div className="oh-company-marquee-stack" aria-label="Examples of global employers">
-          <CompanyMarqueeLane companies={globalCompaniesTop} direction="left" />
-          <CompanyMarqueeLane companies={globalCompaniesBottom} direction="right" />
-        </div>
+        <GlobalCompanyMarquee />
         <span className="oh-logo-strip-note">
-          Company names are illustrative; live job availability varies by source and region.
+          Illustrative company list. Job availability varies by source and region.
         </span>
       </div>
     </>
