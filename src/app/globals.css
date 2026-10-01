@@ -4423,3 +4423,69 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .figma-footer-bottom{
   display:none!important;
 }
+
+
+/* Footer social + technology ecosystem */
+.figma-footer-grid-no-brand{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.figma-footer-brand-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:32px;
+  margin-top:38px;
+  padding-top:24px;
+  border-top:1px solid #292932;
+}
+.figma-footer-brand-group{
+  display:grid;
+  gap:12px;
+}
+.figma-footer-brand-group>strong{
+  font-size:12px;
+  color:#fff;
+}
+.figma-footer-icon-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.figma-footer-icon-chip,
+.figma-footer-tech-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:38px;
+  padding:8px 11px;
+  border:1px solid #292932;
+  border-radius:12px;
+  background:#111118;
+  color:#c8c8d2;
+  font-size:11px;
+}
+.figma-footer-brand-icon{
+  width:18px;
+  height:18px;
+  display:inline-block;
+  flex:0 0 18px;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+}
+@media(max-width:900px){
+  .figma-footer-grid-no-brand{
+    grid-template-columns:1fr 1fr;
+  }
+  .figma-footer-brand-row{
+    grid-template-columns:1fr;
+  }
+}
+@media(max-width:600px){
+  .figma-footer-grid-no-brand{
+    grid-template-columns:1fr;
+  }
+  .figma-footer-brand-row{
+    gap:22px;
+    margin-top:28px;
+  }
+}
