@@ -4489,3 +4489,57 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
     margin-top:28px;
   }
 }
+
+
+/* Footer columns: socials + technology ecosystem */
+.figma-footer-grid-expanded{
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  align-items:start;
+}
+.figma-footer-list-column{
+  display:grid;
+  align-content:start;
+  gap:12px;
+}
+.figma-footer-list-column>strong{
+  margin-bottom:6px;
+}
+.figma-footer-logo-link{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-height:24px;
+  color:#aaaabd;
+  font-size:13px;
+  line-height:1.35;
+}
+.figma-footer-logo-link .figma-footer-brand-icon{
+  width:17px;
+  height:17px;
+  flex:0 0 17px;
+}
+.figma-footer-brand-row{
+  display:none!important;
+}
+@media(max-width:1100px){
+  .figma-footer-grid-expanded{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  .figma-footer-locations{
+    grid-column:auto;
+    grid-template-columns:1fr;
+  }
+  .figma-footer-locations>strong{
+    grid-column:auto;
+  }
+}
+@media(max-width:700px){
+  .figma-footer-grid-expanded{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:480px){
+  .figma-footer-grid-expanded{
+    grid-template-columns:1fr;
+  }
+}
