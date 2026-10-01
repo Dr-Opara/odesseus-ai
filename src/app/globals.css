@@ -4137,3 +4137,17 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .emp-page-actions .figma-btn{min-height:44px}
 .emp-btn-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:999px;font-weight:650;font-size:13px;border:1px solid rgba(9,9,9,.15);background:#fff;color:#090909;text-decoration:none;cursor:pointer}
 .emp-btn-secondary.is-danger{border-color:rgba(194,43,15,.4);color:#c22b0f}
+
+/* Approved homepage hero refresh */
+.oh-hero-copy-refresh{display:flex;flex-direction:column;align-items:flex-start}
+.oh-hero-eyebrow-pill{display:inline-flex;align-items:center;gap:7px;width:max-content;background:#fff2eb;color:var(--od-orange);border-radius:999px;padding:7px 10px;letter-spacing:.04em;font-size:10px;font-weight:750}
+.oh-hero-title-refresh{display:grid;gap:0;margin:16px 0 14px!important;font-size:clamp(48px,5.2vw,72px)!important;line-height:.98!important;letter-spacing:-.045em!important}
+.oh-hero-title-refresh span{display:block}
+.oh-hero-title-refresh em{font-style:normal;color:var(--od-orange)}
+.oh-hero-description-refresh{max-width:620px!important;font-size:17px!important;line-height:1.45!important;margin:0!important;color:rgba(9,9,9,.62)!important}
+@media(max-width:640px){
+  .m-oh-body .oh-hero-copy-refresh{padding-top:22px}
+  .m-oh-body .oh-hero-eyebrow-pill{font-size:9px;padding:6px 9px}
+  .m-oh-body .oh-hero-title-refresh{font-size:41px!important;line-height:1.01!important;margin:14px 0 12px!important}
+  .m-oh-body .oh-hero-description-refresh{font-size:13px!important;line-height:1.45!important;max-width:354px!important}
+}
