@@ -4406,3 +4406,20 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
     animation-duration:68s;
   }
 }
+
+/* Footer legal consolidation */
+.figma-footer-legal-link{
+  color:#aaaabd!important;
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+.figma-footer-legal-link:hover{
+  color:#fff!important;
+}
+.figma-footer-copyright{
+  margin-top:12px!important;
+  color:#777786!important;
+}
+.figma-footer-bottom{
+  display:none!important;
+}
