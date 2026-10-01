@@ -79,8 +79,12 @@ test.describe("signed-out public surfaces never mention Odesseus Live", () => {
   test("the desktop nav and footer carry no Live entry", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/");
-    const header = (await page.locator("header").innerText()).toLowerCase();
-    const footer = (await page.locator(".figma-footer").innerText()).toLowerCase();
+    // Scoped to the desktop chrome. The phone presentation mounts its own
+    // header alongside it at every width (CSS decides which shows), so an
+    // unscoped `header` now matches two nodes and fails on ambiguity rather
+    // than on anything it is checking.
+    const header = (await page.locator("header.figma-nav").innerText()).toLowerCase();
+    const footer = (await page.locator("footer.figma-footer").first().innerText()).toLowerCase();
     const text = `${header} ${footer}`;
     for (const token of FORBIDDEN) {
       expect(text).not.toContain(token);

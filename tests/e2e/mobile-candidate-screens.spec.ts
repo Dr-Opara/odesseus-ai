@@ -22,9 +22,12 @@ test.describe("mobile landing splash (screen 00)", () => {
     await page.goto("/");
     const splash = page.locator(".m-oh-screen");
     await expect(splash).toBeVisible();
-    // Compact mobile chrome, and it is the only header on a phone.
-    await expect(splash.getByRole("link", { name: "Get Started" })).toBeVisible();
-    await expect(splash.getByRole("link", { name: "Sign in" })).toBeVisible();
+    // Compact mobile chrome, and it is the only header on a phone. Scoped to the
+    // nav: the showcase CTA further down the page is also labelled "Get
+    // Started", so an unscoped match is ambiguous rather than wrong.
+    const nav = splash.locator(".m-oh-nav");
+    await expect(nav.getByRole("link", { name: "Get Started", exact: true })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
     // Real rows from the feed, not a hardcoded stack of named companies.
     await expect(splash.locator(".m-job-carousel-track .oh-job-card").first()).toBeVisible();
     // The rebuilt design carries no invented figures anywhere.
@@ -69,11 +72,13 @@ test.describe("mobile landing layout (screen 00)", () => {
       );
       expect(overflowX, "the landing must never scroll horizontally").toBeLessThanOrEqual(0);
 
-      // 2. Mobile nav: wordmark plus the two entry actions, and no desktop nav.
+      // 2. Mobile nav: wordmark, the two entry actions, and the three primary
+      // links. Scoped to the nav because the showcase CTA further down is also
+      // labelled "Get Started".
       const nav = splash.locator(".m-oh-nav");
       await expect(nav).toBeVisible();
-      const signIn = nav.getByRole("link", { name: "Sign in" });
-      const getStarted = nav.getByRole("link", { name: "Get Started" });
+      const signIn = nav.getByRole("link", { name: "Sign in", exact: true });
+      const getStarted = nav.getByRole("link", { name: "Get Started", exact: true });
       await expect(signIn).toBeVisible();
       await expect(getStarted).toBeVisible();
       await expect(signIn).toHaveAttribute("href", "/signin");
@@ -84,6 +89,18 @@ test.describe("mobile landing layout (screen 00)", () => {
       // on a phone.
       for (const action of [signIn, getStarted]) {
         expect((await action.boundingBox())!.height).toBeGreaterThanOrEqual(24);
+      }
+
+      // The primary links row, which is how a phone visitor reaches the
+      // audience-specific sections without a menu.
+      const primary = splash.locator(".m-oh-primary-links");
+      await expect(primary).toBeVisible();
+      for (const [label, href] of [
+        ["Job Seekers", "/how-it-works"],
+        ["Employers", "/employers"],
+        ["Pricing", "/pricing"],
+      ] as const) {
+        await expect(primary.getByRole("link", { name: label })).toHaveAttribute("href", href);
       }
 
       // 3. Hero: eyebrow, headline, and copy.
@@ -130,18 +147,24 @@ test.describe("mobile landing layout (screen 00)", () => {
 
       // Two different things get confused here, and only one is a defect.
       //
-      // The job carousel is a deliberate horizontal scroller (scroll-snap), so
-      // its cards legitimately sit outside their container's right edge — that
-      // is the feature. What must never happen is the *page* scrolling
-      // sideways, which is what clips content on a phone. So this measures
-      // document overflow, and separately checks that no non-scrolling element
-      // pokes outside the viewport.
+      // Two horizontal scrollers are deliberate on this page: the job carousel
+      // (scroll-snap cards) and the global-company marquee (a continuously
+      // moving track far wider than its masked window). Their contents
+      // legitimately sit outside their container's right edge — that is what
+      // they are for. What must never happen is the *page* scrolling sideways,
+      // which is what clips content on a phone. So this measures document
+      // overflow, and separately checks that nothing outside a deliberate
+      // scroller pokes outside the viewport.
       const overflow = await page.evaluate(() => {
         const doc = document.documentElement;
         const hasScrollableAncestor = (el: HTMLElement) => {
           for (let node = el.parentElement; node; node = node.parentElement) {
             const overflowX = getComputedStyle(node).overflowX;
             if (overflowX === "auto" || overflowX === "scroll") return true;
+            // A masked, clipped window is also deliberate: the marquee hides
+            // its overflow behind a gradient mask, so the track is wider than
+            // the window on purpose.
+            if (getComputedStyle(node).maskImage !== "none") return true;
           }
           return false;
         };

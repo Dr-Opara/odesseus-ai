@@ -35,11 +35,14 @@ test.describe("shared marketing navigation", () => {
   // behaving the same under both Playwright projects.
   test.use({ viewport: { width: 1280, height: 800 } });
 
+  // The marketing header was narrowed to the three audience entry points, so
+  // the header carries Job Seekers / Employers / Pricing and the sign-in and
+  // sign-up actions. About, Careers, and FAQ are still public pages and still
+  // linked — from the footer, which is where they moved to.
   const navLinks = [
     ["Job Seekers", "/how-it-works"],
     ["Employers", "/employers"],
     ["Pricing", "/pricing"],
-    ["About", "/about"],
   ] as const;
 
   for (const { path } of pages) {
@@ -51,6 +54,9 @@ test.describe("shared marketing navigation", () => {
         await expect(link).toBeVisible();
         await expect(link).toHaveAttribute("href", href);
       }
+      // The header is a short list on purpose: every link here is a primary
+      // conversion path, and the rest of the site is reachable from the footer.
+      await expect(nav.getByRole("link")).toHaveCount(navLinks.length);
     });
   }
 
@@ -116,9 +122,12 @@ test.describe("shared marketing footer", () => {
     test(`${path} renders the Job Seekers/Employers/Company footer`, async ({ page }) => {
       await page.goto(path);
       const footer = page.locator(".figma-footer");
-      await expect(footer.getByText("Job Seekers")).toBeVisible();
-      await expect(footer.getByText("Employers", { exact: true })).toBeVisible();
-      await expect(footer.getByText("Company")).toBeVisible();
+      // Group headings, matched as headings rather than loose text: the nav
+      // header now also carries a "Job Seekers" link, so a plain text match
+      // finds two nodes and fails on ambiguity rather than on a real defect.
+      for (const group of ["Job Seekers", "Employers", "Company"]) {
+        await expect(footer.getByRole("strong").filter({ hasText: group }).first()).toBeVisible();
+      }
       await expect(footer.getByRole("link", { name: "How it works" })).toBeVisible();
       await expect(footer.getByRole("link", { name: "Pricing", exact: true })).toBeVisible();
       await expect(footer.getByRole("link", { name: "Agents" })).toBeVisible();

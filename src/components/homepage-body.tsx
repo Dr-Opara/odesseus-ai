@@ -18,6 +18,11 @@ const capabilityTiles = [
 ];
 
 const trustStats = [
+  // Deliberately not user counts. The homepage may show what is true about
+  // the product and where it operates, but a "trusted by N people" figure is a
+  // claim about real customers that no public surface can substantiate — and
+  // marketing-pages.spec.ts treats "trusted by" as an unverifiable trust
+  // signal for exactly that reason.
   { value: "7+", label: "Job sources" },
   { value: "Global", label: "Markets" },
   { value: "$0.39", label: "Apply" },
@@ -119,7 +124,7 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
             Odesseus.ai finds high-match roles, shows why they fit, optimizes the resume you already
             have for each job, and lets you choose Apply or Smart Apply to handle supported
             applications. Then it tracks your progress, prepares you with role-specific interview
-            practice, and supports you through live interviews and post-interview follow-up.
+            practice, and helps you through the interview itself and the follow-up after it.
           </p>
           <Link className="oh-employer-cta" href="/employers">
             <span className="oh-employer-cta-icon" aria-hidden="true">
@@ -144,7 +149,7 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
               />
             ))}
           </div>
-          <span className="oh-trust-label">Trusted by job seekers worldwide</span>
+          <span className="oh-trust-label">Built for job seekers worldwide</span>
         </div>
         <div className="oh-trust-metrics">
           {trustStats.map((stat) => (

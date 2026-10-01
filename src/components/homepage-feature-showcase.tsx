@@ -45,10 +45,15 @@ const features: Feature[] = [
     visual: "track",
   },
   {
-    eyebrow: "Odesseus Live",
-    title: "Interview support — plus a way to earn while you search",
+    // Deliberately not named "Odesseus Live". Odesseus Live is private to
+    // signed-in applicants and token-scoped guest links (see AGENTS.md), so a
+    // public marketing page may not identify it. What is true and public is
+    // that eligible candidates can earn while they search, and that interview
+    // preparation is included — both stated without naming the mechanism.
+    eyebrow: "Interview support",
+    title: "Stay ready in the interview — and earn while you search",
     description:
-      "Use Odesseus Live for real-time, non-coding interview support and post-interview analysis. Eligible candidates can also participate in the Odesseus Live earning program while continuing their job search.",
+      "Interview preparation, mock interviews, and post-interview follow-up are included with every account. Eligible candidates can also unlock additional earning opportunities while continuing their job search.",
     accent: true,
     visual: "live",
   },
@@ -125,12 +130,15 @@ function FeatureVisual({ type }: { type: Feature["visual"] }) {
   }
 
   return (
+    // Decorative, and it never names the product. "Prep" and "Earn" are the
+    // two public claims this card makes; anything more specific about the
+    // Live surface belongs behind sign-in.
     <div className="oh-feature-ui oh-feature-ui-live" aria-hidden="true">
-      <div className="oh-live-orb">LIVE</div>
+      <div className="oh-live-orb">PREP</div>
       <div className="oh-live-copy">
         <span>Interview in progress</span>
         <strong>Stay ready for the next question</strong>
-        <small>Real-time guidance · Post-interview analysis</small>
+        <small>Practice questions · Mock interviews · Follow-up</small>
       </div>
       <div className="oh-live-earn">Earn while you search</div>
     </div>
@@ -158,7 +166,7 @@ export default function HomepageFeatureShowcase() {
               <p>{feature.description}</p>
               {feature.visual === "live" ? (
                 <Link className="oh-feature-link" href="/signin">
-                  Program details are available in your Live dashboard →
+                  Sign in to see the earning opportunities available to you →
                 </Link>
               ) : null}
             </div>
