@@ -4147,3 +4147,411 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .emp-page-actions .figma-btn{min-height:44px}
 .emp-btn-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:999px;font-weight:650;font-size:13px;border:1px solid rgba(9,9,9,.15);background:#fff;color:#090909;text-decoration:none;cursor:pointer}
 .emp-btn-secondary.is-danger{border-color:rgba(194,43,15,.4);color:#c22b0f}
+
+
+/* Approved homepage hero refresh */
+.oh-hero-copy-refresh{display:flex;flex-direction:column;align-items:flex-start}
+.oh-hero-eyebrow-pill{display:inline-flex;align-items:center;gap:7px;width:max-content;background:#fff2eb;color:var(--od-orange);border-radius:999px;padding:7px 10px;letter-spacing:.04em;font-size:10px;font-weight:750}
+.oh-hero-title-refresh{display:grid;gap:0;margin:16px 0 14px!important;font-size:clamp(48px,5.2vw,72px)!important;line-height:.98!important;letter-spacing:-.045em!important}
+.oh-hero-title-refresh span{display:block}
+.oh-hero-title-refresh em{font-style:normal;color:var(--od-orange)}
+.oh-hero-description-refresh{max-width:620px!important;font-size:17px!important;line-height:1.45!important;margin:0!important;color:rgba(9,9,9,.62)!important}
+@media(max-width:640px){
+  .m-oh-body .oh-hero-copy-refresh{padding-top:22px}
+  .m-oh-body .oh-hero-eyebrow-pill{font-size:9px;padding:6px 9px}
+  .m-oh-body .oh-hero-title-refresh{font-size:41px!important;line-height:1.01!important;margin:14px 0 12px!important}
+  .m-oh-body .oh-hero-description-refresh{font-size:13px!important;line-height:1.45!important;max-width:354px!important}
+}
+
+
+/* Homepage world jobs replacement — approved screenshot composition */
+.oh-world-jobs-section{
+  margin:8px 0 44px;
+  padding:0;
+  overflow:hidden;
+}
+.oh-world-jobs-quicklinks{
+  display:flex;
+  align-items:center;
+  gap:30px;
+  min-height:42px;
+  padding:0 2px 10px;
+  border-bottom:1px solid rgba(9,9,9,.06);
+}
+.oh-world-jobs-quicklink{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  color:#6f7787;
+}
+.oh-world-jobs-quicklink>span{
+  display:grid;
+  place-items:center;
+  color:var(--od-orange);
+  font-size:14px;
+  line-height:1;
+}
+.oh-world-jobs-quicklink>strong{
+  font-size:11px;
+  line-height:1;
+  font-weight:600;
+  white-space:nowrap;
+}
+.oh-world-jobs-header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:24px;
+  padding:18px 2px 12px;
+}
+.oh-world-jobs-header>div:first-child{
+  display:grid;
+  gap:5px;
+}
+.oh-world-jobs-eyebrow{
+  font-size:9px;
+  line-height:1;
+  font-weight:800;
+  letter-spacing:.06em;
+  color:var(--od-orange);
+}
+.oh-world-jobs-header h2{
+  margin:0;
+  max-width:980px;
+  color:#202331;
+  font-size:17px;
+  line-height:1.25;
+  font-weight:750;
+  letter-spacing:-.015em;
+}
+.oh-world-jobs-arrows{
+  display:flex;
+  gap:8px;
+  flex:0 0 auto;
+}
+.oh-world-jobs-arrows span{
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(9,9,9,.08);
+  border-radius:50%;
+  background:#fff;
+  color:#7b8496;
+  font-size:18px;
+}
+.oh-world-job-marquee{
+  position:relative;
+  overflow:hidden;
+  margin-left:calc(50% - 50vw);
+  margin-right:calc(50% - 50vw);
+  padding:2px 0 4px 18px;
+}
+.oh-world-job-marquee-track{
+  display:flex;
+  width:max-content;
+  animation:oh-world-jobs-scroll 58s linear infinite;
+  will-change:transform;
+}
+.oh-world-job-marquee-group{
+  display:flex;
+  gap:10px;
+  padding-right:10px;
+}
+.oh-world-job-card{
+  width:174px;
+  min-height:142px;
+  flex:0 0 174px;
+  display:grid;
+  align-content:start;
+  gap:6px;
+  padding:13px 13px 11px;
+  border:1px solid rgba(9,9,9,.06);
+  border-radius:13px;
+  background:#fff;
+  box-shadow:0 6px 16px rgba(18,24,40,.035);
+}
+.oh-world-job-company-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+.oh-world-job-company-row strong{
+  overflow:hidden;
+  font-size:10px;
+  line-height:1.2;
+  font-weight:650;
+  color:#616b7e;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.oh-world-job-logo{
+  width:26px;
+  height:26px;
+  flex:0 0 26px;
+  display:grid;
+  place-items:center;
+  border-radius:7px;
+  background-color:#f7f7f8;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:22px 22px;
+  color:#111;
+  font-size:13px;
+  font-weight:800;
+}
+.oh-world-job-card h3{
+  margin:1px 0 0;
+  overflow:hidden;
+  color:#202331;
+  font-size:10.5px;
+  line-height:1.22;
+  font-weight:750;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.oh-world-job-card p{
+  margin:0;
+  overflow:hidden;
+  color:#8b94a5;
+  font-size:9px;
+  line-height:1.2;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.oh-world-job-card b{
+  color:#202331;
+  font-size:10.5px;
+  line-height:1.2;
+  font-weight:750;
+}
+.oh-world-job-freshness{
+  justify-self:start;
+  display:inline-flex;
+  align-items:center;
+  min-height:17px;
+  padding:2px 6px;
+  border-radius:999px;
+  background:#fff1e8;
+  color:var(--od-orange);
+  font-size:7.5px;
+  line-height:1;
+  font-weight:650;
+}
+.oh-world-jobs-loading{
+  display:flex;
+  gap:10px;
+  overflow:hidden;
+}
+.oh-world-jobs-loading span{
+  width:174px;
+  height:142px;
+  flex:0 0 174px;
+  border-radius:13px;
+  background:#f5f6f8;
+}
+.oh-world-jobs-refreshing{
+  min-height:60px;
+  display:flex;
+  align-items:center;
+  color:#7c8494;
+  font-size:12px;
+}
+@keyframes oh-world-jobs-scroll{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
+@media (hover:hover) and (pointer:fine){
+  .oh-world-job-marquee:hover .oh-world-job-marquee-track{
+    animation-play-state:paused;
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  .oh-world-job-marquee{
+    overflow-x:auto;
+    padding-bottom:8px;
+  }
+  .oh-world-job-marquee-track{
+    animation:none!important;
+    transform:none!important;
+  }
+}
+@media(max-width:640px){
+  .m-oh-body .oh-world-jobs-section{
+    margin:10px 18px 34px;
+  }
+  .m-oh-body .oh-world-jobs-quicklinks{
+    gap:13px;
+    overflow-x:auto;
+    padding-bottom:12px;
+    scrollbar-width:none;
+  }
+  .m-oh-body .oh-world-jobs-quicklinks::-webkit-scrollbar{display:none}
+  .m-oh-body .oh-world-jobs-quicklink>strong{
+    font-size:9.5px;
+  }
+  .m-oh-body .oh-world-jobs-header{
+    align-items:flex-start;
+    padding-top:16px;
+  }
+  .m-oh-body .oh-world-jobs-header h2{
+    max-width:320px;
+    font-size:15px;
+  }
+  .m-oh-body .oh-world-jobs-arrows{
+    display:none;
+  }
+  .m-oh-body .oh-world-job-marquee{
+    margin-left:-18px;
+    margin-right:-18px;
+    padding-left:18px;
+  }
+  .m-oh-body .oh-world-job-card{
+    width:164px;
+    flex-basis:164px;
+    min-height:138px;
+  }
+  .m-oh-body .oh-world-job-marquee-track{
+    animation-duration:68s;
+  }
+}
+
+
+/* Footer legal consolidation */
+.figma-footer-legal-link{
+  color:#aaaabd!important;
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+.figma-footer-legal-link:hover{
+  color:#fff!important;
+}
+.figma-footer-copyright{
+  margin-top:12px!important;
+  color:#777786!important;
+}
+.figma-footer-bottom{
+  display:none!important;
+}
+
+
+/* Footer social + technology ecosystem */
+.figma-footer-grid-no-brand{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.figma-footer-brand-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:32px;
+  margin-top:38px;
+  padding-top:24px;
+  border-top:1px solid #292932;
+}
+.figma-footer-brand-group{
+  display:grid;
+  gap:12px;
+}
+.figma-footer-brand-group>strong{
+  font-size:12px;
+  color:#fff;
+}
+.figma-footer-icon-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.figma-footer-icon-chip,
+.figma-footer-tech-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:38px;
+  padding:8px 11px;
+  border:1px solid #292932;
+  border-radius:12px;
+  background:#111118;
+  color:#c8c8d2;
+  font-size:11px;
+}
+.figma-footer-brand-icon{
+  width:18px;
+  height:18px;
+  display:inline-block;
+  flex:0 0 18px;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+}
+@media(max-width:900px){
+  .figma-footer-grid-no-brand{
+    grid-template-columns:1fr 1fr;
+  }
+  .figma-footer-brand-row{
+    grid-template-columns:1fr;
+  }
+}
+@media(max-width:600px){
+  .figma-footer-grid-no-brand{
+    grid-template-columns:1fr;
+  }
+  .figma-footer-brand-row{
+    gap:22px;
+    margin-top:28px;
+  }
+}
+
+
+/* Footer columns: socials + technology ecosystem */
+.figma-footer-grid-expanded{
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  align-items:start;
+}
+.figma-footer-list-column{
+  display:grid;
+  align-content:start;
+  gap:12px;
+}
+.figma-footer-list-column>strong{
+  margin-bottom:6px;
+}
+.figma-footer-logo-link{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-height:24px;
+  color:#aaaabd;
+  font-size:13px;
+  line-height:1.35;
+}
+.figma-footer-logo-link .figma-footer-brand-icon{
+  width:17px;
+  height:17px;
+  flex:0 0 17px;
+}
+.figma-footer-brand-row{
+  display:none!important;
+}
+@media(max-width:1100px){
+  .figma-footer-grid-expanded{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  .figma-footer-locations{
+    grid-column:auto;
+    grid-template-columns:1fr;
+  }
+  .figma-footer-locations>strong{
+    grid-column:auto;
+  }
+}
+@media(max-width:700px){
+  .figma-footer-grid-expanded{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:480px){
+  .figma-footer-grid-expanded{
+    grid-template-columns:1fr;
+  }
+}
