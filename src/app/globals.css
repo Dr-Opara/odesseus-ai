@@ -4543,3 +4543,315 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
     grid-template-columns:1fr;
   }
 }
+
+
+/* Homepage reference-match: compact live job strip + polished product preview */
+.oh-product-preview{
+  position:relative;
+  min-height:390px;
+  display:grid;
+  place-items:center;
+  padding:18px 30px 42px 0;
+}
+.oh-product-glow{
+  position:absolute;
+  inset:36px 8px 48px 54px;
+  border-radius:30px;
+  background:
+    linear-gradient(115deg,rgba(255,240,232,.95),rgba(255,215,203,.72) 46%,rgba(255,241,234,.92)),
+    radial-gradient(circle at 72% 30%,rgba(255,111,70,.2),transparent 40%);
+  transform:rotate(1deg);
+}
+.oh-product-shell{
+  position:relative;
+  z-index:2;
+  width:min(100%,560px);
+  min-height:300px;
+  display:grid;
+  grid-template-columns:42px 1fr;
+  overflow:hidden;
+  border:1px solid rgba(9,9,9,.06);
+  border-radius:22px;
+  background:#fff;
+  box-shadow:0 18px 46px rgba(9,9,9,.10);
+}
+.oh-product-sidebar{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:20px;
+  padding:16px 0;
+  background:#11111a;
+  color:#8f8f9a;
+  font-size:12px;
+}
+.oh-product-brand-mark{
+  width:24px;
+  height:24px;
+  display:grid;
+  place-items:center;
+  border-radius:7px;
+  background:var(--od-orange);
+  color:#fff;
+  font-size:11px;
+  font-weight:850;
+}
+.oh-product-main{padding:24px 22px 22px}
+.oh-product-search{
+  height:36px;
+  display:flex;
+  align-items:center;
+  padding:0 13px;
+  border-radius:999px;
+  background:#f7f7f9;
+  color:#a2a3ad;
+  font-size:10px;
+}
+.oh-product-job-card{
+  margin-top:16px;
+  padding:14px;
+  border:1px solid rgba(9,9,9,.06);
+  border-radius:16px;
+  background:#fff;
+}
+.oh-product-job-heading{
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr) auto;
+  gap:10px;
+  align-items:start;
+}
+.oh-product-job-heading>div{display:grid;gap:2px;min-width:0}
+.oh-product-job-heading strong{
+  overflow:hidden;
+  color:#101019;
+  font-size:11px;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.oh-product-job-heading span{color:#6f7280;font-size:9px}
+.oh-product-job-heading small{
+  overflow:hidden;
+  color:#9598a5;
+  font-size:8px;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.oh-product-job-heading b{
+  padding:5px 7px;
+  border-radius:999px;
+  background:#e7f8ea;
+  color:#26a154;
+  font-size:8px;
+  font-weight:800;
+}
+.oh-product-job-logo{
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border-radius:9px;
+  background:#f3f4f6 center/24px 24px no-repeat;
+  color:#111;
+  font-size:13px;
+  font-weight:850;
+}
+.oh-product-job-salary{
+  margin-top:14px;
+  color:#101019;
+  font-size:17px;
+  font-weight:850;
+}
+.oh-product-job-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:8px;
+}
+.oh-product-job-tags span{
+  padding:4px 7px;
+  border-radius:999px;
+  background:#f4f5f7;
+  color:#747783;
+  font-size:8px;
+}
+.oh-product-job-actions{
+  display:grid;
+  grid-template-columns:1fr .9fr;
+  gap:8px;
+  margin-top:12px;
+}
+.oh-product-job-actions span{
+  min-height:34px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(9,9,9,.07);
+  border-radius:9px;
+  color:#2a2b34;
+  font-size:9px;
+  font-weight:750;
+}
+.oh-product-job-actions .is-primary{
+  border-color:var(--od-orange);
+  background:var(--od-orange);
+  color:#fff;
+}
+.oh-product-status-card{
+  position:absolute;
+  z-index:3;
+  top:34px;
+  right:0;
+  width:168px;
+  display:grid;
+  gap:12px;
+  padding:14px 16px;
+  border:1px solid rgba(9,9,9,.05);
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 15px 32px rgba(9,9,9,.10);
+}
+.oh-product-status-card>div{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.oh-product-status-card span{
+  width:20px;
+  height:20px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  color:#fff;
+  font-size:8px;
+}
+.oh-product-status-card .is-orange{background:#ff8c3a}
+.oh-product-status-card .is-red{background:#ff655f}
+.oh-product-status-card .is-pink{background:#e64dd8}
+.oh-product-status-card strong{font-size:9px;color:#21222b}
+.oh-product-live-pill{
+  position:absolute;
+  z-index:4;
+  right:12px;
+  bottom:16px;
+  width:238px;
+  display:grid;
+  grid-template-columns:44px 1fr auto;
+  align-items:center;
+  gap:9px;
+  padding:9px 13px;
+  border:1px solid rgba(9,9,9,.05);
+  border-radius:999px;
+  background:#fff;
+  box-shadow:0 16px 34px rgba(9,9,9,.10);
+}
+.oh-product-live-orb{
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border:8px solid var(--od-orange);
+  border-radius:50%;
+  background:#12121b;
+  color:#fff;
+  font-size:9px;
+  font-weight:900;
+}
+.oh-product-live-pill>div{display:grid;gap:2px}
+.oh-product-live-pill strong{font-size:10px;color:#20212a}
+.oh-product-live-pill small{font-size:8px;line-height:1.35;color:#838692}
+.oh-product-live-pill>b{font-size:22px;color:#20212a}
+.oh-product-preview-state{
+  min-height:300px;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:8px;
+  padding:28px;
+  border:1px solid rgba(9,9,9,.06);
+  border-radius:22px;
+  background:#fff;
+  text-align:center;
+}
+.oh-product-preview-state strong{font-size:14px;color:#171821}
+.oh-product-preview-state span{max-width:320px;font-size:11px;line-height:1.45;color:#747783}
+.oh-product-preview-state a,.oh-product-preview-state button{
+  margin-top:4px;
+  border:0;
+  border-radius:999px;
+  padding:9px 14px;
+  background:#101019;
+  color:#fff;
+  font-size:10px;
+  font-weight:750;
+}
+.oh-product-loading-card{
+  width:72%;
+  height:150px;
+  margin:auto;
+  border-radius:18px;
+  background:#f5f6f8;
+}
+
+.oh-world-job-card{
+  width:166px;
+  min-height:118px;
+  flex-basis:166px;
+  gap:5px;
+  padding:11px 12px 10px;
+  border-radius:12px;
+}
+.oh-world-job-logo{
+  width:24px;
+  height:24px;
+  flex-basis:24px;
+  background-size:20px 20px;
+}
+.oh-world-job-company-row strong{font-size:9.5px}
+.oh-world-job-card h3{font-size:10px}
+.oh-world-job-card p{font-size:8.5px}
+.oh-world-job-card b{font-size:10px}
+.oh-world-job-freshness{
+  min-height:16px;
+  padding:2px 6px;
+  font-size:7px;
+}
+.oh-world-job-marquee-group{gap:9px;padding-right:9px}
+.oh-world-jobs-loading span{
+  width:166px;
+  height:118px;
+  flex-basis:166px;
+}
+
+@media(max-width:1050px){
+  .oh-product-preview{min-height:360px;padding-right:0}
+  .oh-product-status-card{right:8px}
+}
+@media(max-width:640px){
+  .oh-product-preview{
+    min-height:340px;
+    padding:4px 0 36px;
+  }
+  .oh-product-shell{
+    width:100%;
+    min-height:276px;
+    grid-template-columns:36px 1fr;
+    border-radius:18px;
+  }
+  .oh-product-main{padding:18px 14px}
+  .oh-product-status-card{
+    top:20px;
+    right:-4px;
+    width:145px;
+    padding:11px 12px;
+  }
+  .oh-product-status-card strong{font-size:8px}
+  .oh-product-live-pill{
+    right:0;
+    bottom:4px;
+    width:216px;
+  }
+  .m-oh-body .oh-world-job-card{
+    width:156px;
+    flex-basis:156px;
+    min-height:112px;
+  }
+}
