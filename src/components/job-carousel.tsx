@@ -1,93 +1,140 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import type { HomepageJob, HomepageJobsResult } from "@/lib/jobs/homepage-types";
 
-const DESKTOP_PAGE_SIZE = 3;
-const AUTO_ADVANCE_MS = 6000;
+const COMPANY_DOMAINS: Record<string, string> = {
+  amazon: "amazon.com",
+  google: "google.com",
+  microsoft: "microsoft.com",
+  meta: "meta.com",
+  spotify: "spotify.com",
+  samsung: "samsung.com",
+  apple: "apple.com",
+  nvidia: "nvidia.com",
+  salesforce: "salesforce.com",
+  oracle: "oracle.com",
+  adobe: "adobe.com",
+  netflix: "netflix.com",
+  ramp: "ramp.com",
+  numeric: "numeric.io",
+  linear: "linear.app",
+};
 
-function JobCardContent({ job }: { job: HomepageJob }) {
-  const badgeLabel =
-    typeof job.matchScore === "number" ? `${Math.round(job.matchScore)}% Match` : job.freshnessLabel;
+function companyDomain(name: string) {
+  return COMPANY_DOMAINS[name.trim().toLowerCase()];
+}
+
+function ProductLogo({ job }: { job: HomepageJob }) {
+  const domain = companyDomain(job.company);
+  return (
+    <span
+      className="oh-product-job-logo"
+      aria-hidden="true"
+      style={
+        domain
+          ? { backgroundImage: `url("https://www.google.com/s2/favicons?domain=${domain}&sz=64")` }
+          : undefined
+      }
+    >
+      {domain ? null : job.company.charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+function ProductPreview({ job }: { job: HomepageJob }) {
+  const match =
+    typeof job.matchScore === "number" ? `${Math.round(job.matchScore)}% Match` : "High Match";
 
   return (
-    <>
-      {badgeLabel ? (
-        <span className={`oh-job-badge${typeof job.matchScore === "number" ? " is-match" : ""}`}>
-          {badgeLabel}
-        </span>
-      ) : null}
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <span className="oh-job-logo" aria-hidden="true">
-          {job.companyLogoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={job.companyLogoUrl} alt="" width={44} height={44} style={{ borderRadius: 10 }} />
-          ) : (
-            job.company.charAt(0).toUpperCase()
-          )}
-        </span>
-        <span className="oh-job-company">{job.company}</span>
+    <div className="oh-product-preview" aria-label="Odesseus product preview">
+      <div className="oh-product-glow" aria-hidden="true" />
+
+      <div className="oh-product-shell">
+        <aside className="oh-product-sidebar" aria-hidden="true">
+          <span className="oh-product-brand-mark">O</span>
+          <span>☆</span>
+          <span>⌂</span>
+          <span>▱</span>
+          <span>♙</span>
+          <span>▣</span>
+        </aside>
+
+        <div className="oh-product-main">
+          <div className="oh-product-search">⌕&nbsp;&nbsp; Find your next opportunity...</div>
+
+          <div className="oh-product-job-card">
+            <div className="oh-product-job-heading">
+              <ProductLogo job={job} />
+              <div>
+                <strong>{job.title}</strong>
+                <span>{job.company}</span>
+                <small>
+                  {[job.location, job.workArrangement].filter(Boolean).join(" · ") || "Opportunity"}
+                </small>
+              </div>
+              <b>{match}</b>
+            </div>
+
+            <div className="oh-product-job-salary">
+              {job.salaryText || "Salary listed in job details"}
+            </div>
+
+            <div className="oh-product-job-tags">
+              {job.workArrangement ? <span>{job.workArrangement}</span> : null}
+              <span>{job.freshnessLabel || "Active"}</span>
+            </div>
+
+            <div className="oh-product-job-actions">
+              <span className="is-primary">Apply with Odesseus</span>
+              <span>View Details</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="oh-job-title">{job.title}</div>
-      {job.salaryText || job.location || job.workArrangement ? (
-        <div className="oh-job-meta">
-          {job.salaryText ? <span className="oh-job-salary">{job.salaryText}</span> : null}
-          {job.salaryText && (job.location || job.workArrangement) ? " · " : ""}
-          {[job.location, job.workArrangement].filter(Boolean).join(" · ")}
-        </div>
-      ) : null}
-      {job.tags && job.tags.length > 0 ? (
-        <div className="oh-job-tags">
-          {job.tags.map((tag) => (
-            <span className="oh-job-tag" key={tag}>
-              {tag}
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </>
-  );
-}
 
-function CarouselSkeleton({ count }: { count: number }) {
-  return (
-    <>
-      {Array.from({ length: count }).map((_, i) => (
-        <div className="oh-carousel-skeleton" key={i} aria-hidden="true" />
-      ))}
-    </>
-  );
-}
+      <div className="oh-product-status-card" aria-hidden="true">
+        <div>
+          <span className="is-orange">▤</span>
+          <strong>Resume Optimized</strong>
+        </div>
+        <div>
+          <span className="is-red">✓</span>
+          <strong>Application Submitted</strong>
+        </div>
+        <div>
+          <span className="is-pink">✧</span>
+          <strong>Interview Prep Ready</strong>
+        </div>
+      </div>
 
-function CarouselEmpty({ message }: { message: string }) {
-  return (
-    <div className="oh-carousel-empty">
-      <p>{message}</p>
-      <a className="oh-retry-btn" href="/jobs">
-        Browse jobs
-      </a>
+      <div className="oh-product-live-pill" aria-hidden="true">
+        <span className="oh-product-live-orb">O</span>
+        <div>
+          <strong>Odesseus Live</strong>
+          <small>
+            Get interview support
+            <br />
+            and earn while you search.
+          </small>
+        </div>
+        <b>›</b>
+      </div>
     </div>
   );
 }
 
-function CarouselError({ onRetry }: { onRetry: () => void }) {
+function ProductPreviewLoading() {
   return (
-    <div className="oh-carousel-error">
-      <p>We couldn&apos;t load jobs right now.</p>
-      <button className="oh-retry-btn" type="button" onClick={onRetry}>
-        Retry
-      </button>
+    <div className="oh-product-preview is-loading" aria-label="Loading Odesseus preview">
+      <div className="oh-product-glow" />
+      <div className="oh-product-shell">
+        <div className="oh-product-loading-card" />
+      </div>
     </div>
   );
 }
 
-/**
- * Homepage job carousel (F1-B/F1-C/F1-F). Data-only props, agnostic to where
- * the jobs came from — it renders whatever the reader returned and never
- * reaches for a data source of its own. Renders both a desktop (paged 3-up,
- * arrows, dots, auto-advance) and mobile (native scroll-snap, dots)
- * presentation; CSS shows only one per viewport.
- */
 export default function JobCarousel({
   result,
   onRetry,
@@ -95,147 +142,34 @@ export default function JobCarousel({
   result: HomepageJobsResult | { status: "loading" };
   onRetry: () => void;
 }) {
-  const jobs = useMemo(() => (result.status === "ok" ? result.data : []), [result]);
-  const [desktopPage, setDesktopPage] = useState(0);
-  const [mobileIndex, setMobileIndex] = useState(0);
-  const mobileTrackRef = useRef<HTMLDivElement | null>(null);
-  const mobileCardRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  const desktopPageCount = Math.max(1, Math.ceil(jobs.length / DESKTOP_PAGE_SIZE));
-  const currentPage = Math.min(desktopPage, desktopPageCount - 1);
-
-  useEffect(() => {
-    if (result.status !== "ok" || desktopPageCount <= 1) return;
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const id = setInterval(() => {
-      setDesktopPage((page) => (page + 1) % desktopPageCount);
-    }, AUTO_ADVANCE_MS);
-    return () => clearInterval(id);
-  }, [result.status, desktopPageCount]);
-
-  useEffect(() => {
-    const track = mobileTrackRef.current;
-    if (!track) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.find((entry) => entry.isIntersecting);
-        if (!visible) return;
-        const index = mobileCardRefs.current.findIndex((el) => el === visible.target);
-        if (index >= 0) setMobileIndex(index);
-      },
-      { root: track, threshold: 0.6 }
-    );
-
-    mobileCardRefs.current.forEach((el) => el && observer.observe(el));
-    return () => observer.disconnect();
-  }, [jobs]);
-
-  const desktopVisible = useMemo(
-    () => jobs.slice(currentPage * DESKTOP_PAGE_SIZE, currentPage * DESKTOP_PAGE_SIZE + DESKTOP_PAGE_SIZE),
-    [jobs, currentPage]
+  const job = useMemo(
+    () => (result.status === "ok" && result.data.length > 0 ? result.data[0] : null),
+    [result]
   );
 
-  if (result.status === "loading") {
-    return (
-      <div className="oh-carousel">
-        <div className="oh-carousel-track odesseus-desktop-only" style={{ display: "grid" }}>
-          <CarouselSkeleton count={DESKTOP_PAGE_SIZE} />
-        </div>
-        <div className="odesseus-mobile-only oh-carousel-skeleton" style={{ margin: "0 18px" }} />
-      </div>
-    );
-  }
+  if (result.status === "loading") return <ProductPreviewLoading />;
 
   if (result.status === "unavailable") {
     return (
-      <div className="oh-carousel">
-        <CarouselError onRetry={onRetry} />
+      <div className="oh-product-preview-state">
+        <strong>Jobs are refreshing.</strong>
+        <span>The homepage is ready, but the current feed could not be loaded.</span>
+        <button type="button" onClick={onRetry}>
+          Retry
+        </button>
       </div>
     );
   }
 
-  if (jobs.length === 0) {
+  if (!job) {
     return (
-      <div className="oh-carousel">
-        <CarouselEmpty message="No matched roles yet. Check back soon or browse open jobs." />
+      <div className="oh-product-preview-state">
+        <strong>New opportunities are on the way.</strong>
+        <span>Odesseus will surface a live role here as soon as the feed refreshes.</span>
+        <a href="/jobs">Browse jobs</a>
       </div>
     );
   }
 
-  return (
-    <div className="oh-carousel" aria-label="Job listings">
-      <div className="oh-carousel-track odesseus-desktop-only" style={{ display: "grid" }}>
-        {desktopVisible.map((job) => (
-          <a className="oh-job-card" href={job.applyUrl || "/jobs"} key={job.id}>
-            <JobCardContent job={job} />
-          </a>
-        ))}
-      </div>
-      {desktopPageCount > 1 ? (
-        <div className="oh-carousel-controls odesseus-desktop-only" style={{ display: "flex" }}>
-          <button
-            className="oh-carousel-arrow"
-            type="button"
-            aria-label="Previous jobs"
-            disabled={currentPage === 0}
-            onClick={() => setDesktopPage((p) => Math.max(0, p - 1))}
-          >
-            ‹
-          </button>
-          <div className="oh-carousel-dots">
-            {Array.from({ length: desktopPageCount }).map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                className={`oh-carousel-dot${i === currentPage ? " is-active" : ""}`}
-                aria-label={`Go to page ${i + 1}`}
-                onClick={() => setDesktopPage(i)}
-              />
-            ))}
-          </div>
-          <button
-            className="oh-carousel-arrow"
-            type="button"
-            aria-label="Next jobs"
-            disabled={currentPage === desktopPageCount - 1}
-            onClick={() => setDesktopPage((p) => Math.min(desktopPageCount - 1, p + 1))}
-          >
-            ›
-          </button>
-        </div>
-      ) : null}
-
-      <div
-        className="odesseus-mobile-only m-job-carousel-track"
-        ref={mobileTrackRef}
-        style={{ display: "flex", overflowX: "auto", scrollSnapType: "x mandatory", gap: 12, padding: "0 18px" }}
-      >
-        {jobs.map((job, i) => (
-          <div
-            className="oh-job-card"
-            key={job.id}
-            ref={(el) => {
-              mobileCardRefs.current[i] = el;
-            }}
-            style={{ scrollSnapAlign: "center", minWidth: "78vw", flexShrink: 0 }}
-          >
-            <a href={job.applyUrl || "/jobs"} style={{ textDecoration: "none", color: "inherit", display: "grid", gap: 10 }}>
-              <JobCardContent job={job} />
-            </a>
-          </div>
-        ))}
-      </div>
-      <div className="oh-carousel-dots odesseus-mobile-only" style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
-        {jobs.map((job, i) => (
-          <span
-            key={job.id}
-            className={`oh-carousel-dot${i === mobileIndex ? " is-active" : ""}`}
-            aria-hidden="true"
-          />
-        ))}
-      </div>
-    </div>
-  );
+  return <ProductPreview job={job} />;
 }
