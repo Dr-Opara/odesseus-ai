@@ -1,34 +1,7 @@
 import HomepageJobFeed from "@/components/homepage-job-feed";
+import HomepageWorldJobs from "@/components/homepage-world-jobs";
 import HomepageFeatureShowcase from "@/components/homepage-feature-showcase";
-import {
-  APPLY_TIERS,
-  FAILED_SUBMISSION_LABEL,
-  FAILED_SUBMISSION_PRICE_LABEL,
-  PREP_AGENT_LABEL,
-  PREP_AGENT_PRICE_LABEL,
-} from "@/lib/pricing/candidate-pricing";
 import type { HomepageJobsResult } from "@/lib/jobs/homepage-types";
-
-const capabilityTiles = [
-  { icon: "▣", label: APPLY_TIERS.standard.label, value: APPLY_TIERS.standard.priceLabel },
-  { icon: "⚡", label: APPLY_TIERS.smart.label, value: APPLY_TIERS.smart.priceLabel },
-  { icon: "◇", label: PREP_AGENT_LABEL, value: PREP_AGENT_PRICE_LABEL },
-  { icon: "♧", label: FAILED_SUBMISSION_LABEL, value: FAILED_SUBMISSION_PRICE_LABEL },
-];
-
-const trustStats = [
-  { value: "7+", label: "Job sources" },
-  { value: "Global", label: "Markets" },
-  { value: "$0.39", label: "Apply" },
-  { value: "Free", label: "Prep" },
-];
-
-const trustAvatars = [
-  "https://randomuser.me/api/portraits/women/44.jpg",
-  "https://randomuser.me/api/portraits/men/32.jpg",
-  "https://randomuser.me/api/portraits/women/68.jpg",
-  "https://randomuser.me/api/portraits/men/46.jpg",
-];
 
 type GlobalCompany = {
   name: string;
@@ -125,40 +98,7 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
         <HomepageJobFeed initialResult={initialJobsResult} />
       </section>
 
-      <div className="oh-trust-band">
-        <div className="oh-trust-intro">
-          <div className="oh-trust-avatars" aria-hidden="true">
-            {trustAvatars.map((avatar, index) => (
-              <span
-                key={avatar}
-                className="oh-trust-avatar"
-                style={{ backgroundImage: `url("${avatar}")`, zIndex: trustAvatars.length - index }}
-              />
-            ))}
-          </div>
-          <span className="oh-trust-label">Trusted by job seekers worldwide</span>
-        </div>
-        <div className="oh-trust-metrics">
-          {trustStats.map((stat) => (
-            <div className="oh-trust-stat" key={stat.label}>
-              <strong>{stat.value}</strong>
-              <span>{stat.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="oh-capability-tiles">
-        {capabilityTiles.map((tile) => (
-          <div className="oh-capability-tile" key={tile.label}>
-            <span className="oh-capability-tile-icon" aria-hidden="true">
-              {tile.icon}
-            </span>
-            <strong>{tile.label}</strong>
-            <span>{tile.value}</span>
-          </div>
-        ))}
-      </div>
+      <HomepageWorldJobs initialResult={initialJobsResult} />
 
       <HomepageFeatureShowcase />
 
