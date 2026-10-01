@@ -44,9 +44,22 @@ export default function MarketingFooter() {
           </div>
         </div>
       </div>
+
+      <div className="figma-footer-legal">
+        <p>
+          The names and logos of companies referenced on Odesseus.ai are trademarks of their
+          respective owners. Unless explicitly stated, these references do not indicate endorsement,
+          sponsorship, partnership, or affiliation with Odesseus.ai.
+        </p>
+        <p>
+          By continuing to use this website, you agree to the Terms and Conditions and acknowledge
+          the Privacy Policy.
+        </p>
+      </div>
+
       <div className="figma-footer-bottom">
-        <span>Developed by ProcessPilot Technologies LLC</span>
-        <span>&copy; 2026 Odesseus.ai</span>
+        <span>&copy; 2026 Odesseus.ai. All rights reserved.</span>
+        <span>Terms and Conditions · Privacy Policy</span>
       </div>
     </footer>
   );
