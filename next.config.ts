@@ -32,7 +32,7 @@ const supabasePublishableKey =
 if (process.env.VERCEL && process.env.VERCEL_ENV !== "production") {
   const required = [
     "NEXT_PUBLIC_SITE_URL",
-    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY_OR_SUPABASE_SECRET_KEY",
     "OPENAI_API_KEY",
     "STRIPE_SECRET_KEY",
     "STRIPE_WEBHOOK_SECRET",
@@ -42,7 +42,12 @@ if (process.env.VERCEL && process.env.VERCEL_ENV !== "production") {
     "ODESSEUS_CONNECT_YAHOO_CONNECTOR",
     "CRON_SECRET",
   ];
-  const missing = required.filter((key) => !process.env[key]);
+  const missing = required.filter((key) => {
+    if (key === "SUPABASE_SERVICE_ROLE_KEY_OR_SUPABASE_SECRET_KEY") {
+      return !process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.SUPABASE_SECRET_KEY;
+    }
+    return !process.env[key];
+  });
   console.log("[ODESSEUS_CONFIG_AUDIT]", JSON.stringify({
     environment: process.env.VERCEL_ENV ?? "unknown",
     missing,
