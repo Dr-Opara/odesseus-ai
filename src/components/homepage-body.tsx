@@ -1,40 +1,7 @@
-import Link from "next/link";
 import HomepageJobFeed from "@/components/homepage-job-feed";
+import HomepageWorldJobs from "@/components/homepage-world-jobs";
 import HomepageFeatureShowcase from "@/components/homepage-feature-showcase";
-import {
-  APPLY_TIERS,
-  FAILED_SUBMISSION_LABEL,
-  FAILED_SUBMISSION_PRICE_LABEL,
-  PREP_AGENT_LABEL,
-  PREP_AGENT_PRICE_LABEL,
-} from "@/lib/pricing/candidate-pricing";
 import type { HomepageJobsResult } from "@/lib/jobs/homepage-types";
-
-const capabilityTiles = [
-  { icon: "▣", label: APPLY_TIERS.standard.label, value: APPLY_TIERS.standard.priceLabel },
-  { icon: "⚡", label: APPLY_TIERS.smart.label, value: APPLY_TIERS.smart.priceLabel },
-  { icon: "◇", label: PREP_AGENT_LABEL, value: PREP_AGENT_PRICE_LABEL },
-  { icon: "♧", label: FAILED_SUBMISSION_LABEL, value: FAILED_SUBMISSION_PRICE_LABEL },
-];
-
-const trustStats = [
-  // Deliberately not user counts. The homepage may show what is true about
-  // the product and where it operates, but a "trusted by N people" figure is a
-  // claim about real customers that no public surface can substantiate — and
-  // marketing-pages.spec.ts treats "trusted by" as an unverifiable trust
-  // signal for exactly that reason.
-  { value: "7+", label: "Job sources" },
-  { value: "Global", label: "Markets" },
-  { value: "$0.39", label: "Apply" },
-  { value: "Free", label: "Prep" },
-];
-
-const trustAvatars = [
-  "https://randomuser.me/api/portraits/women/44.jpg",
-  "https://randomuser.me/api/portraits/men/32.jpg",
-  "https://randomuser.me/api/portraits/women/68.jpg",
-  "https://randomuser.me/api/portraits/men/46.jpg",
-];
 
 type GlobalCompany = {
   name: string;
@@ -111,67 +78,27 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
   return (
     <>
       <section className="oh-hero-grid">
-        <div className="oh-hero-copy">
-          <span className="oh-hero-eyebrow">A smarter way to get hired</span>
-          <h1>
-            Discover Your
-            <br />
-            Dream Job with
-            <br />
-            <em>Odesseus.ai</em>
-          </h1>
-          <p>
-            Odesseus.ai finds high-match roles, shows why they fit, optimizes the resume you already
-            have for each job, and lets you choose Apply or Smart Apply to handle supported
-            applications. Then it tracks your progress, prepares you with role-specific interview
-            practice, and helps you through the interview itself and the follow-up after it.
-          </p>
-          <Link className="oh-employer-cta" href="/employers">
-            <span className="oh-employer-cta-icon" aria-hidden="true">
-              ✥
+        <div className="oh-hero-copy oh-hero-copy-refresh">
+          <span className="oh-hero-eyebrow oh-hero-eyebrow-pill">
+            <span aria-hidden="true">⚡</span>
+            AI-POWERED JOB SEARCH
+          </span>
+          <h1 className="oh-hero-title-refresh">
+            <span>Find Your Next</span>
+            <span>
+              Opportunity <em>Faster</em>
             </span>
-            <strong>Hiring talent?</strong>
-            <span>Find matched candidates with Odesseus →</span>
-          </Link>
+          </h1>
+          <p className="oh-hero-description-refresh">
+            Odesseus finds matched roles, tailors your resume, auto-applies, helps you prepare for
+            interviews, and gives you another way to earn while you search.
+          </p>
         </div>
 
         <HomepageJobFeed initialResult={initialJobsResult} />
       </section>
 
-      <div className="oh-trust-band">
-        <div className="oh-trust-intro">
-          <div className="oh-trust-avatars" aria-hidden="true">
-            {trustAvatars.map((avatar, index) => (
-              <span
-                key={avatar}
-                className="oh-trust-avatar"
-                style={{ backgroundImage: `url("${avatar}")`, zIndex: trustAvatars.length - index }}
-              />
-            ))}
-          </div>
-          <span className="oh-trust-label">Built for job seekers worldwide</span>
-        </div>
-        <div className="oh-trust-metrics">
-          {trustStats.map((stat) => (
-            <div className="oh-trust-stat" key={stat.label}>
-              <strong>{stat.value}</strong>
-              <span>{stat.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="oh-capability-tiles">
-        {capabilityTiles.map((tile) => (
-          <div className="oh-capability-tile" key={tile.label}>
-            <span className="oh-capability-tile-icon" aria-hidden="true">
-              {tile.icon}
-            </span>
-            <strong>{tile.label}</strong>
-            <span>{tile.value}</span>
-          </div>
-        ))}
-      </div>
+      <HomepageWorldJobs initialResult={initialJobsResult} />
 
       <HomepageFeatureShowcase />
 
