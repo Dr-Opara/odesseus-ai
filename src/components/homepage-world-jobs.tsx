@@ -20,6 +20,9 @@ const COMPANY_DOMAINS: Record<string, string> = {
   oracle: "oracle.com",
   adobe: "adobe.com",
   netflix: "netflix.com",
+  ramp: "ramp.com",
+  numeric: "numeric.io",
+  linear: "linear.app",
 };
 
 const quickLinks = [
