@@ -1,5 +1,6 @@
 import Link from "next/link";
 import HomepageJobFeed from "@/components/homepage-job-feed";
+import HomepageFeatureShowcase from "@/components/homepage-feature-showcase";
 import {
   APPLY_TIERS,
   FAILED_SUBMISSION_LABEL,
@@ -17,17 +18,85 @@ const capabilityTiles = [
 ];
 
 const trustStats = [
-  { value: "Verified", label: "Employer profiles" },
-  { value: "AI-Matched", label: "Role recommendations" },
-  { value: "Wallet-based", label: "Pay only on success" },
-  { value: "Free", label: "Interview preparation" },
+  { value: "7+", label: "Job sources" },
+  { value: "Global", label: "Markets" },
+  { value: "$0.39", label: "Apply" },
+  { value: "Free", label: "Prep" },
 ];
 
-const topCompanies = ["amazon", "Microsoft", "Google", "NVIDIA", "Meta"];
+const trustAvatars = [
+  "https://randomuser.me/api/portraits/women/44.jpg",
+  "https://randomuser.me/api/portraits/men/32.jpg",
+  "https://randomuser.me/api/portraits/women/68.jpg",
+  "https://randomuser.me/api/portraits/men/46.jpg",
+];
+
+type GlobalCompany = {
+  name: string;
+  domain: string;
+};
+
+const globalCompanies: GlobalCompany[] = [
+  { name: "Amazon", domain: "amazon.com" },
+  { name: "Microsoft", domain: "microsoft.com" },
+  { name: "Google", domain: "google.com" },
+  { name: "Apple", domain: "apple.com" },
+  { name: "Shopify", domain: "shopify.com" },
+  { name: "Mercado Libre", domain: "mercadolibre.com" },
+  { name: "Nubank", domain: "nubank.com.br" },
+  { name: "SAP", domain: "sap.com" },
+  { name: "Siemens", domain: "siemens.com" },
+  { name: "Spotify", domain: "spotify.com" },
+  { name: "ASML", domain: "asml.com" },
+  { name: "Revolut", domain: "revolut.com" },
+  { name: "Airbus", domain: "airbus.com" },
+  { name: "Canva", domain: "canva.com" },
+  { name: "Samsung", domain: "samsung.com" },
+  { name: "Sony", domain: "sony.com" },
+  { name: "Alibaba", domain: "alibaba.com" },
+  { name: "Tencent", domain: "tencent.com" },
+  { name: "Grab", domain: "grab.com" },
+  { name: "TCS", domain: "tcs.com" },
+  { name: "Infosys", domain: "infosys.com" },
+  { name: "Flutterwave", domain: "flutterwave.com" },
+  { name: "MTN", domain: "mtn.com" },
+  { name: "Safaricom", domain: "safaricom.co.ke" },
+  { name: "Careem", domain: "careem.com" },
+  { name: "Aramco", domain: "aramco.com" },
+];
+
+function GlobalCompanyMarquee() {
+  return (
+    <div className="oh-company-marquee" aria-label="Examples of companies across global markets">
+      <div className="oh-company-marquee-track">
+        {[0, 1].map((copy) => (
+          <div
+            className="oh-company-marquee-group"
+            key={copy}
+            aria-hidden={copy === 1 ? "true" : undefined}
+          >
+            {globalCompanies.map((company) => (
+              <span className="oh-company-chip" key={company.name}>
+                <span
+                  className="oh-company-logo"
+                  aria-hidden="true"
+                  style={{
+                    backgroundImage: `url("https://www.google.com/s2/favicons?domain=${company.domain}&sz=64")`,
+                  }}
+                />
+                <strong>{company.name}</strong>
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * Shared homepage body (Figma screen 01 — Homepage): hero copy, employer CTA,
- * job carousel, trust band, capability tiles, top-companies strip. Used by
+ * job carousel, trust band, capability tiles, global-company marquee. Used by
  * both the desktop landing (`src/app/page.tsx`, server-fed via
  * `initialJobsResult`) and the mobile splash (`mobile-splash.tsx`, which lets
  * `HomepageJobFeed` self-fetch client-side). Only nav chrome and page
@@ -47,8 +116,10 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
             <em>Odesseus.ai</em>
           </h1>
           <p>
-            Find matched roles, optimize the resume you already have, choose Apply or Smart Apply,
-            track applications, and prepare for interviews.
+            Odesseus.ai finds high-match roles, shows why they fit, optimizes the resume you already
+            have for each job, and lets you choose Apply or Smart Apply to handle supported
+            applications. Then it tracks your progress, prepares you with role-specific interview
+            practice, and supports you through live interviews and post-interview follow-up.
           </p>
           <Link className="oh-employer-cta" href="/employers">
             <span className="oh-employer-cta-icon" aria-hidden="true">
@@ -63,13 +134,26 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
       </section>
 
       <div className="oh-trust-band">
-        <span className="oh-trust-label">Built for job seekers worldwide</span>
-        {trustStats.map((stat) => (
-          <div className="oh-trust-stat" key={stat.label}>
-            <strong>{stat.value}</strong>
-            <span>{stat.label}</span>
+        <div className="oh-trust-intro">
+          <div className="oh-trust-avatars" aria-hidden="true">
+            {trustAvatars.map((avatar, index) => (
+              <span
+                key={avatar}
+                className="oh-trust-avatar"
+                style={{ backgroundImage: `url("${avatar}")`, zIndex: trustAvatars.length - index }}
+              />
+            ))}
           </div>
-        ))}
+          <span className="oh-trust-label">Trusted by job seekers worldwide</span>
+        </div>
+        <div className="oh-trust-metrics">
+          {trustStats.map((stat) => (
+            <div className="oh-trust-stat" key={stat.label}>
+              <strong>{stat.value}</strong>
+              <span>{stat.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="oh-capability-tiles">
@@ -84,13 +168,17 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
         ))}
       </div>
 
+      <HomepageFeatureShowcase />
+
       <div className="oh-logo-strip">
-        <span className="oh-logo-strip-label">GET HIRED AT TOP COMPANIES</span>
-        <div className="oh-logo-strip-row">
-          {topCompanies.map((company) => (
-            <span key={company}>{company}</span>
-          ))}
-        </div>
+        <span className="oh-logo-strip-label">GLOBAL COMPANIES</span>
+        <p className="oh-logo-strip-subtitle">
+          Explore opportunities across companies and markets around the world.
+        </p>
+        <GlobalCompanyMarquee />
+        <span className="oh-logo-strip-note">
+          Illustrative company list. Job availability varies by source and region.
+        </span>
       </div>
     </>
   );
