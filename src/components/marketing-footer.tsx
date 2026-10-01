@@ -2,8 +2,8 @@ import Link from "next/link";
 
 const socialIcons = [
   { label: "X", slug: "x" },
-  { label: "TikTok", slug: "tiktok" },
   { label: "Instagram", slug: "instagram" },
+  { label: "TikTok", slug: "tiktok" },
   { label: "LinkedIn", slug: "linkedin" },
 ] as const;
 
@@ -29,7 +29,7 @@ function BrandIcon({ slug, label }: { slug: string; label: string }) {
 export default function MarketingFooter() {
   return (
     <footer className="figma-footer">
-      <div className="figma-footer-grid figma-footer-grid-no-brand">
+      <div className="figma-footer-grid figma-footer-grid-expanded">
         <div>
           <strong>Job Seekers</strong>
           <Link href="/how-it-works">How it works</Link>
@@ -37,11 +37,13 @@ export default function MarketingFooter() {
           <Link href="/agents">Agents</Link>
           <Link href="/first-100">First 100</Link>
         </div>
+
         <div>
           <strong>Employers</strong>
           <Link href="/employers">For Employers</Link>
           <Link href="/employers#pricing">Employer Pricing</Link>
         </div>
+
         <div>
           <strong>Company</strong>
           <Link href="/about">About</Link>
@@ -49,6 +51,7 @@ export default function MarketingFooter() {
           <Link href="/partners">Partner Program</Link>
           <Link href="/about#faq">FAQ</Link>
         </div>
+
         <div className="figma-footer-locations">
           <strong>Locations</strong>
           <div className="figma-footer-location">
@@ -64,31 +67,25 @@ export default function MarketingFooter() {
             <small className="is-coming">Coming soon</small>
           </div>
         </div>
-      </div>
 
-      <div className="figma-footer-brand-row">
-        <div className="figma-footer-brand-group">
-          <strong>Follow Odesseus</strong>
-          <div className="figma-footer-icon-list" aria-label="Odesseus social media">
-            {socialIcons.map((item) => (
-              <span className="figma-footer-icon-chip" key={item.label} title={item.label}>
-                <BrandIcon slug={item.slug} label={item.label} />
-                <span>{item.label}</span>
-              </span>
-            ))}
-          </div>
+        <div className="figma-footer-list-column">
+          <strong>Socials</strong>
+          {socialIcons.map((item) => (
+            <span className="figma-footer-logo-link" key={item.label}>
+              <BrandIcon slug={item.slug} label={item.label} />
+              <span>{item.label}</span>
+            </span>
+          ))}
         </div>
 
-        <div className="figma-footer-brand-group">
+        <div className="figma-footer-list-column">
           <strong>Technology ecosystem</strong>
-          <div className="figma-footer-icon-list" aria-label="Technology ecosystem">
-            {technologyBrands.map((item) => (
-              <span className="figma-footer-tech-chip" key={item.label} title={item.label}>
-                <BrandIcon slug={item.slug} label={item.label} />
-                <span>{item.label}</span>
-              </span>
-            ))}
-          </div>
+          {technologyBrands.map((item) => (
+            <span className="figma-footer-logo-link" key={item.label}>
+              <BrandIcon slug={item.slug} label={item.label} />
+              <span>{item.label}</span>
+            </span>
+          ))}
         </div>
       </div>
 
