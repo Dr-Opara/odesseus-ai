@@ -1,14 +1,35 @@
 import Link from "next/link";
-import OdesseusWordmark from "@/components/odesseus-wordmark";
+
+const socialIcons = [
+  { label: "X", slug: "x" },
+  { label: "TikTok", slug: "tiktok" },
+  { label: "Instagram", slug: "instagram" },
+  { label: "LinkedIn", slug: "linkedin" },
+] as const;
+
+const technologyBrands = [
+  { label: "Google Cloud", slug: "googlecloud" },
+  { label: "Anthropic", slug: "anthropic" },
+  { label: "Grok / xAI", slug: "xai" },
+] as const;
+
+function BrandIcon({ slug, label }: { slug: string; label: string }) {
+  return (
+    <span
+      className="figma-footer-brand-icon"
+      aria-hidden="true"
+      title={label}
+      style={{
+        backgroundImage: `url("https://cdn.simpleicons.org/${slug}/FFFFFF")`,
+      }}
+    />
+  );
+}
 
 export default function MarketingFooter() {
   return (
     <footer className="figma-footer">
-      <div className="figma-footer-grid">
-        <div>
-          <OdesseusWordmark size="md" inverse />
-          <p>AI-powered career support from discovery to interview.</p>
-        </div>
+      <div className="figma-footer-grid figma-footer-grid-no-brand">
         <div>
           <strong>Job Seekers</strong>
           <Link href="/how-it-works">How it works</Link>
@@ -41,6 +62,32 @@ export default function MarketingFooter() {
           <div className="figma-footer-location">
             <span>Dubai, UAE</span>
             <small className="is-coming">Coming soon</small>
+          </div>
+        </div>
+      </div>
+
+      <div className="figma-footer-brand-row">
+        <div className="figma-footer-brand-group">
+          <strong>Follow Odesseus</strong>
+          <div className="figma-footer-icon-list" aria-label="Odesseus social media">
+            {socialIcons.map((item) => (
+              <span className="figma-footer-icon-chip" key={item.label} title={item.label}>
+                <BrandIcon slug={item.slug} label={item.label} />
+                <span>{item.label}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="figma-footer-brand-group">
+          <strong>Technology ecosystem</strong>
+          <div className="figma-footer-icon-list" aria-label="Technology ecosystem">
+            {technologyBrands.map((item) => (
+              <span className="figma-footer-tech-chip" key={item.label} title={item.label}>
+                <BrandIcon slug={item.slug} label={item.label} />
+                <span>{item.label}</span>
+              </span>
+            ))}
           </div>
         </div>
       </div>
