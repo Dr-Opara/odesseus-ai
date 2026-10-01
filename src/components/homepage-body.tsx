@@ -1,4 +1,3 @@
-import Link from "next/link";
 import HomepageJobFeed from "@/components/homepage-job-feed";
 import HomepageFeatureShowcase from "@/components/homepage-feature-showcase";
 import {
@@ -106,28 +105,21 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
   return (
     <>
       <section className="oh-hero-grid">
-        <div className="oh-hero-copy">
-          <span className="oh-hero-eyebrow">A smarter way to get hired</span>
-          <h1>
-            Discover Your
-            <br />
-            Dream Job with
-            <br />
-            <em>Odesseus.ai</em>
-          </h1>
-          <p>
-            Odesseus.ai finds high-match roles, shows why they fit, optimizes the resume you already
-            have for each job, and lets you choose Apply or Smart Apply to handle supported
-            applications. Then it tracks your progress, prepares you with role-specific interview
-            practice, and supports you through live interviews and post-interview follow-up.
-          </p>
-          <Link className="oh-employer-cta" href="/employers">
-            <span className="oh-employer-cta-icon" aria-hidden="true">
-              ✥
+        <div className="oh-hero-copy oh-hero-copy-refresh">
+          <span className="oh-hero-eyebrow oh-hero-eyebrow-pill">
+            <span aria-hidden="true">⚡</span>
+            AI-POWERED JOB SEARCH
+          </span>
+          <h1 className="oh-hero-title-refresh">
+            <span>Find Your Next</span>
+            <span>
+              Opportunity <em>Faster</em>
             </span>
-            <strong>Hiring talent?</strong>
-            <span>Find matched candidates with Odesseus →</span>
-          </Link>
+          </h1>
+          <p className="oh-hero-description-refresh">
+            Odesseus finds matched roles, tailors your resume, auto-applies, helps you prepare for
+            interviews, and gives you another way to earn while you search.
+          </p>
         </div>
 
         <HomepageJobFeed initialResult={initialJobsResult} />
