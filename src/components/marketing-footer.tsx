@@ -52,14 +52,19 @@ export default function MarketingFooter() {
           sponsorship, partnership, or affiliation with Odesseus.ai.
         </p>
         <p>
-          By continuing to use this website, you agree to the Terms and Conditions and acknowledge
-          the Privacy Policy.
+          By continuing to use this website, you agree to the{" "}
+          <Link href="/terms" className="figma-footer-legal-link">
+            Terms and Conditions
+          </Link>{" "}
+          and acknowledge the{" "}
+          <Link href="/privacy" className="figma-footer-legal-link">
+            Privacy Policy
+          </Link>
+          .
         </p>
-      </div>
-
-      <div className="figma-footer-bottom">
-        <span>&copy; 2026 Odesseus.ai. All rights reserved.</span>
-        <span>Terms and Conditions · Privacy Policy</span>
+        <p className="figma-footer-copyright">
+          &copy; 2026 Odesseus.ai. All rights reserved.
+        </p>
       </div>
     </footer>
   );
