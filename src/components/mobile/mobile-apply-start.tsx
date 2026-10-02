@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { APPLY_TIERS, formatCents, MIN_APPLY_PRICE_CENTS } from "@/lib/pricing/candidate-pricing";
 import ApplyTierAndStart from "@/components/apply/apply-tier-and-start";
@@ -16,6 +18,13 @@ type Job = {
  * and apply tier + start flow (POST /api/apply/start) the desktop approval
  * page uses. No separate approval logic; eligibility is the wallet-based
  * per-tier check (Apply 39¢ / Smart 99¢), matching the desktop gate.
+ *
+ * A client component because the Back control is a real button with a click
+ * handler. It was a server component, which made the whole `/apply/start` page
+ * fail to render — React refuses to serialize an event handler out of a server
+ * component, and that error took down the desktop review surface too, not just
+ * the phone one. It takes only serializable props from the server (a plain
+ * job shape and three scalars), all of which cross the boundary unchanged.
  */
 export default function MobileApplyStart({
   job,

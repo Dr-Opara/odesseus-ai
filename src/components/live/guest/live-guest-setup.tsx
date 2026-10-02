@@ -221,6 +221,9 @@ export default function LiveGuestSetup({
           <input
             className="input"
             type="file"
+            // The visible "Resume (optional)" caption is a div, not a <label>,
+            // so without this the control reaches a screen reader unnamed.
+            aria-label="Resume"
             accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             onChange={(event) => {
               const file = event.target.files?.[0];

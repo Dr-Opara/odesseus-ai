@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { execSync } from "node:child_process";
+import { ensureCandidate, QA_PASSWORD, serviceClient } from "./support/qa-candidate";
 
 // Regression test for a bug found during local runtime QA: the dashboard
 // header rendered a plain, non-interactive avatar div with no logout
@@ -7,50 +7,44 @@ import { execSync } from "node:child_process";
 // already implemented — there was simply no way to sign out of Odesseus.
 // Requires a running local Supabase stack (see docs/development/*.md).
 //
+// The account is provisioned with the service role rather than by driving
+// /signup: the local stack meters sign-ins and sign-ups together across the
+// whole suite, and this test runs in all three Playwright projects. See
+// tests/e2e/support/qa-candidate.ts. The sign-up form itself is covered in
+// live-visibility.spec.ts and auth-boundary.spec.ts.
+//
 // Onboarding completion (which needs a real resume upload) is exercised
 // separately in manual/scripted QA — this test only needs a user who has
-// already completed it, so it marks the profile complete directly via SQL
-// rather than re-driving the upload flow.
+// already completed it, so it marks the profile complete directly against the
+// database rather than re-driving the upload flow. That write goes through
+// PostgREST instead of `docker exec psql`, which also removes this test's
+// dependency on a container name and on docker being on PATH.
 
-function dbContainer(): string {
-  try {
-    const lines = execSync(`docker ps --format "{{.Names}}"`, { encoding: "utf8" })
-      .split("\n")
-      .map((l) => l.trim());
-    const found = lines.find((l) => l.startsWith("supabase_db_"));
-    if (found) return found;
-  } catch {
-    // fall through to the default name
-  }
-  return "supabase_db_Odysseus-ai";
-}
+const LOGOUT_EMAIL = "qa.logout@odesseus-test.dev";
 
-test("a signed-up user can log out from the dashboard, and the session is really cleared server-side", async ({
-  page,
+test("a signed-in user can log out from the dashboard, and the session is really cleared server-side", async ({
+  browser,
 }) => {
-  const stamp = Date.now();
-  const email = `qa-logout-${stamp}@example.com`;
-  const password = "TestPassword123!";
+  const { userId } = await ensureCandidate(LOGOUT_EMAIL);
 
-  // The signup flow is two-step at phone width, so run the desktop
-  // single-page form for a deterministic sign-up (same as the wired
-  // settings screen spec).
+  const admin = serviceClient();
+  const { error: onboardingError } = await admin!
+    .from("profiles")
+    .update({ onboarding_completed: true })
+    .eq("id", userId);
+  if (onboardingError) throw new Error(`could not complete onboarding: ${onboardingError.message}`);
+
+  const context = await browser.newContext();
+  const page = await context.newPage();
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto("/signup");
-  await page.fill('input[name="first_name"]', "Grace");
-  await page.fill('input[name="last_name"]', "Hopper");
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', password);
-  await Promise.all([
-    page.waitForURL("**/onboarding", { timeout: 15000 }),
-    page.click('button.candidate-continue-button[type="submit"]'),
-  ]);
 
-  execSync(
-    `docker exec ${dbContainer()} psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c ` +
-      `"update public.profiles set onboarding_completed = true from auth.users where profiles.id = auth.users.id and auth.users.email = '${email}';"`,
-    { stdio: "inherit" }
-  );
+  await page.goto("/login");
+  await page.fill('input[name="email"]', LOGOUT_EMAIL);
+  await page.fill('input[name="password"]', QA_PASSWORD);
+  await Promise.all([
+    page.waitForURL("**/dashboard", { timeout: 15000 }),
+    page.click('button[type="submit"]'),
+  ]);
 
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -68,11 +62,14 @@ test("a signed-up user can log out from the dashboard, and the session is really
   await expect(page).toHaveURL(/\/login/);
 
   // And logging back in with the same credentials must still work.
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', password);
+  await page.goto("/login");
+  await page.fill('input[name="email"]', LOGOUT_EMAIL);
+  await page.fill('input[name="password"]', QA_PASSWORD);
   await Promise.all([
     page.waitForURL("**/dashboard", { timeout: 15000 }),
     page.click('button[type="submit"]'),
   ]);
   await expect(page).toHaveURL(/\/dashboard$/);
+
+  await context.close();
 });

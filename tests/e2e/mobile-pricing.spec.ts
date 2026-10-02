@@ -1,4 +1,8 @@
 import { test, expect } from "@playwright/test";
+import {
+  PREP_AGENT_LABEL,
+  PREP_AGENT_PRICE_LABEL,
+} from "@/lib/pricing/candidate-pricing";
 
 // /pricing is a public, mobile-friendly page split into two audience tabs
 // (Applicants | Business). Neither tab requires login. Coverage here runs the
@@ -36,10 +40,12 @@ test.describe("mobile /pricing audience tabs (signed out)", () => {
       for (const figure of ["$0.39", "$0.99", "$10", "$20", "$50"]) {
         await expect(page.getByText(figure).filter({ visible: true }).first()).toBeVisible();
       }
-      // `\u00B7` is the middle dot the pricing rows use as their separator
-      // (see src/components/mobile/mobile-pricing.tsx). Spelled as an escape
-      // so the matcher can never be corrupted by a file-write encoding pass.
-      await expect(page.getByText(/Interview preparation \u00B7 Free/i)).toBeVisible();
+      // Preparation is free and is one row on this tab. Asserted against the
+      // label constants the component actually renders rather than a copied
+      // literal, so a copy change fails here instead of silently losing the row.
+      await expect(
+        page.getByText(`${PREP_AGENT_LABEL} · ${PREP_AGENT_PRICE_LABEL}`)
+      ).toBeVisible();
       // Odesseus Live is private to signed-in applicants. The public mobile
       // pricing surface must not advertise session prices, passes, or annual.
       for (const figure of ["$24.99", "$59.99", "$499"]) {

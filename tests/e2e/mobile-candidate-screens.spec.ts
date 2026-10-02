@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+﻿import { test, expect } from "@playwright/test";
 
 // Phase 5 — mobile rendering boundary. These tests run against the real
 // routes with a phone viewport (the playwright "mobile-chrome" Pixel 7
@@ -8,34 +8,42 @@ import { test, expect } from "@playwright/test";
 // server backed by local Supabase (same requirement as the existing e2e
 // specs in this directory).
 
+// The mobile landing and the desktop landing are two presentations of one
+// `HomepageBody` (src/components/homepage-body.tsx). A previous Screen 00
+// splash was a separate hardcoded design; it was removed when the homepage was
+// rebuilt, together with the fabricated figures it carried ($247K salary,
+// 500K+/100K+/95% metrics). What is asserted here is the shared design that
+// replaced it — real job rows from the live feed, no invented numbers — plus
+// the mobile-only chrome that genuinely differs.
+
 test.describe("mobile landing splash (screen 00)", () => {
-  test("phone viewport renders the splash with the approved live-job stack", async ({ page }) => {
+  test("phone viewport renders the mobile landing with a real job carousel", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
-    await expect(page.locator(".m-splash")).toBeVisible();
-    // The desktop marketing landing must not leak in under the phone width.
-    await expect(page.locator(".m-splash").getByRole("link", { name: /Get Started/i })).toBeVisible();
-    // The Figma-approved job stack shows real company names as illustrative
-    // live-job examples (product decision, not a data claim about real
-    // openings) — verify the stack renders as designed.
-    await expect(page.locator(".m-splash").getByText("Microsoft", { exact: false })).toBeVisible();
-    await expect(page.locator(".m-splash").getByText("NVIDIA", { exact: false })).toBeVisible();
-    await expect(page.locator(".m-splash").getByText("Amazon", { exact: false })).toBeVisible();
-    await expect(page.locator(".m-splash").getByText("Google", { exact: false })).toBeVisible();
+    const splash = page.locator(".m-oh-screen");
+    await expect(splash).toBeVisible();
+    // Compact mobile chrome, and it is the only header on a phone.
+    await expect(splash.getByRole("link", { name: "Get Started" })).toBeVisible();
+    await expect(splash.getByRole("link", { name: "Sign in" })).toBeVisible();
+    // Real rows from the feed, not a hardcoded stack of named companies.
+    await expect(splash.locator(".m-job-carousel-track .oh-job-card").first()).toBeVisible();
+    // The rebuilt design carries no invented figures anywhere.
+    const body = await splash.innerText();
+    expect(body).not.toMatch(/\$247K|500K\+|100K\+|95%|Applicants|Hires|Satisfaction/);
   });
 
   test("desktop viewport renders the real marketing landing, not the splash", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/");
     // The splash shell is mobile-only.
-    await expect(page.locator(".m-splash")).toBeHidden();
+    await expect(page.locator(".m-oh-screen")).toBeHidden();
     // Desktop hero headline is present and instead a screen-reader-only h1.
     await page.getByRole("heading", { name: "Discover Your Dream Job with Odesseus.ai" }).waitFor();
     await expect(page.getByRole("heading", { name: "Discover Your Dream Job with Odesseus.ai" })).toBeVisible();
   });
 });
 
-test.describe("mobile splash CTA area (screen 00)", () => {
+test.describe("mobile landing layout (screen 00)", () => {
   const viewports = [
     { name: "375x812", width: 375, height: 812 },
     { name: "390x844", width: 390, height: 844 },
@@ -44,180 +52,117 @@ test.describe("mobile splash CTA area (screen 00)", () => {
   ] as const;
 
   for (const vp of viewports) {
-    test(`${vp.name}: pills sit side-by-side with a full-width See Pricing button below`, async ({ page }) => {
-      await page.setViewportSize({ width: vp.width, height: vp.height });
-      await page.goto("/");
-      const splash = page.locator(".m-splash");
-
-      const getStarted = splash.getByRole("link", { name: /Get Started/i });
-      const businessLogin = splash.getByRole("link", { name: "Business Login" });
-      const seePricing = splash.getByRole("link", { name: /See Pricing/i });
-
-      await expect(getStarted).toBeVisible();
-      await expect(businessLogin).toBeVisible();
-      await expect(seePricing).toBeVisible();
-      await expect(getStarted).toHaveAttribute("href", "/signup");
-      await expect(businessLogin).toHaveAttribute("href", "/employers/login");
-      await expect(seePricing).toHaveAttribute("href", "/pricing");
-
-      const a = await splash.locator(".m-splash-cta").nth(0).boundingBox();
-      const b = await splash.locator(".m-splash-cta").nth(1).boundingBox();
-      const w = await splash.locator(".m-splash-cta-wide").boundingBox();
-      expect(a).not.toBeNull();
-      expect(b).not.toBeNull();
-      expect(w).not.toBeNull();
-      // Both pills share one row on the ~390px canvas and stay touch-friendly.
-      expect(Math.abs(a!.y - b!.y)).toBeLessThanOrEqual(2);
-      expect(a!.height).toBeGreaterThanOrEqual(48);
-      // See Pricing sits on its own row below the pills and spans the column.
-      expect(w!.y).toBeGreaterThan(b!.y + b!.height - 1);
-      expect(w!.width).toBeGreaterThan(200);
-    });
-
-    test(`${vp.name}: splash CTAs route to signup, employer login, and pricing`, async ({ page }) => {
-      await page.setViewportSize({ width: vp.width, height: vp.height });
-      await page.goto("/");
-      const splash = page.locator(".m-splash");
-
-      await splash.getByRole("link", { name: /Get Started/i }).click();
-      await expect(page).toHaveURL(/\/signup$/);
-      await page.goto("/");
-      await splash.getByRole("link", { name: "Business Login" }).click();
-      await expect(page).toHaveURL(/\/employers\/login$/);
-      await page.goto("/");
-      await splash.getByRole("link", { name: /See Pricing/i }).click();
-      await expect(page).toHaveURL(/\/pricing$/);
-    });
-
-    // Full Screen 00 element audit at each QA width. Everything the approved
-    // Figma node 32:2 specifies has to be present, unclipped, and inside the
-    // viewport — the failure mode this catches is a card or CTA pushed off
+    // Full element audit at each QA width, at every element the rebuilt landing
+    // specifies. The failure mode this catches is a card or CTA pushed off
     // screen by a font or width change, which a single-width test misses.
-    test(`${vp.name}: every approved Screen 00 element is present and inside the canvas`, async ({ page }) => {
+    test(`${vp.name}: every approved element is present, unclipped, and inside the canvas`, async ({
+      page,
+    }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto("/");
-      const splash = page.locator(".m-splash");
+      const splash = page.locator(".m-oh-screen").filter({ visible: true });
 
-      // The whole mobile experience is on one non-scrolling canvas.
+      // 1. The mobile experience is on one canvas and never scrolls sideways.
       await expect(splash).toBeVisible();
       const overflowX = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
       );
-      expect(overflowX, "the splash must never scroll horizontally").toBeLessThanOrEqual(0);
+      expect(overflowX, "the landing must never scroll horizontally").toBeLessThanOrEqual(0);
 
-      // 1. Decorative orbs — two top-left, two bottom-right, behind content.
-      const orbs = splash.locator(".m-splash-orb");
-      await expect(orbs).toHaveCount(4);
-      for (const cls of ["tl-a", "tl-b", "br-a", "br-b"]) {
-        const orb = splash.locator(`.m-splash-orb-${cls}`);
-        await expect(orb).toHaveCount(1);
-        const box = (await orb.boundingBox())!;
-        expect(box.width).toBeGreaterThan(0);
-        expect(box.height).toBeGreaterThan(0);
+      // 2. Mobile nav: wordmark plus the two entry actions, and no desktop nav.
+      const nav = splash.locator(".m-oh-nav");
+      await expect(nav).toBeVisible();
+      const signIn = nav.getByRole("link", { name: "Sign in" });
+      const getStarted = nav.getByRole("link", { name: "Get Started" });
+      await expect(signIn).toBeVisible();
+      await expect(getStarted).toBeVisible();
+      await expect(signIn).toHaveAttribute("href", "/signin");
+      await expect(getStarted).toHaveAttribute("href", "/signup");
+
+      // Both actions stay tappable: WCAG 2.5.8 puts the minimum target at 24px,
+      // and a bare text link measured 18px tall here — the only way to sign in
+      // on a phone.
+      for (const action of [signIn, getStarted]) {
+        expect((await action.boundingBox())!.height).toBeGreaterThanOrEqual(24);
       }
 
-      // 2. Job card stack — three receding company cards plus the foreground
-      //    Microsoft card, each wider than the one behind it.
-      const stack = splash.locator(".m-stack-card");
-      await expect(stack).toHaveCount(4);
-      const widths: number[] = [];
-      for (let i = 0; i < 4; i += 1) {
-        widths.push((await stack.nth(i).boundingBox())!.width);
-      }
-      for (let i = 1; i < widths.length; i += 1) {
-        expect(widths[i], "the stack widens toward the foreground card").toBeGreaterThan(widths[i - 1]);
-      }
-      for (const company of ["NVIDIA", "Amazon", "Google", "Microsoft"]) {
-        await expect(stack.getByText(company, { exact: false })).toBeVisible();
-      }
-
-      // 3. Microsoft card — logo, role, salary, and both in-card actions.
-      const ms = splash.locator(".m-stack-ms");
-      await expect(ms).toHaveCount(1);
-      await expect(ms.locator(".m-stack-ms-logo")).toBeVisible();
-      await expect(ms.getByRole("heading")).toContainText("GenAI Security");
-      await expect(ms.getByText(/\$247K/)).toBeVisible();
-      await expect(ms.getByText(/See Details/)).toBeVisible();
-      await expect(ms.getByText(/Next Match/)).toBeVisible();
-      const msBox = (await ms.boundingBox())!;
-      const splashBox = (await splash.boundingBox())!;
-      expect(msBox.x).toBeGreaterThanOrEqual(splashBox.x);
-      expect(msBox.x + msBox.width).toBeLessThanOrEqual(splashBox.x + splashBox.width + 1);
-
-      // 4. Headline with its two accent spans.
-      const headline = splash.locator(".m-splash-card > h1");
+      // 3. Hero: eyebrow, headline, and copy.
+      await expect(splash.locator(".oh-hero-eyebrow")).toBeVisible();
+      const headline = splash.locator(".oh-hero-copy h1");
       await expect(headline).toBeVisible();
-      await expect(headline).toHaveText(/Discover Your\s*Dream Job\s*with\s*Odesseus\.ai/);
-      await expect(headline.locator("em")).toHaveCount(2);
-      await expect(headline.getByText("Dream Job")).toBeVisible();
-      await expect(headline.getByText("Odesseus.ai")).toBeVisible();
+      await expect(headline).toContainText("Dream Job");
+      await expect(headline.locator("em")).toContainText("Odesseus.ai");
 
-      // 5. Pagination — four dots with the first one active.
-      const dots = splash.locator(".m-dot");
-      await expect(dots).toHaveCount(4);
-      await expect(splash.locator(".m-dot.is-active")).toHaveCount(1);
-      expect((await splash.locator(".m-dot.is-active").boundingBox())!.width).toBeGreaterThan(
-        (await dots.nth(1).boundingBox())!.width,
-      );
+      // 4. Employer CTA, which is the phone route into the employer site.
+      const employerCta = splash.getByRole("link", { name: /hiring talent/i });
+      await expect(employerCta).toBeVisible();
+      await expect(employerCta).toHaveAttribute("href", "/employers");
 
-      // 6. Metrics — the four-up marketing figures.
-      const stats = splash.locator(".m-splash-stats span");
-      await expect(stats).toHaveCount(4);
-      for (const [value, label] of [
-        ["500K+", "Applicants"],
-        ["100K+", "Hires"],
-        ["10+", "Countries"],
-        ["95%", "Satisfaction"],
-      ] as const) {
-        await expect(splash.locator(".m-splash-stats")).toContainText(value);
-        await expect(splash.locator(".m-splash-stats")).toContainText(label);
-      }
+      // 5. Real job rows, with pagination dots matching them.
+      const track = splash.locator(".m-job-carousel-track");
+      await expect(track.locator(".oh-job-card").first()).toBeVisible();
+      const cards = await track.locator(".oh-job-card").count();
+      await expect(splash.locator(".oh-carousel-dots .oh-carousel-dot")).toHaveCount(cards);
+      await expect(splash.locator(".oh-carousel-dots .oh-carousel-dot.is-active")).toHaveCount(1);
 
-      // 7. Footer.
-      const footer = splash.locator(".m-splash-footer");
-      await expect(footer).toBeVisible();
-      await expect(footer.getByText("Odesseus.ai")).toBeVisible();
-      const footerBox = (await footer.boundingBox())!;
-      expect(footerBox.y).toBeGreaterThan((await stats.nth(3).boundingBox())!.y);
+      // 6. Trust band and capability tiles, with no invented figures.
+      await expect(splash.locator(".oh-trust-band")).toBeVisible();
+      await expect(splash.locator(".oh-capability-tile").first()).toBeVisible();
+      await expect(splash.locator(".oh-logo-strip")).toBeVisible();
 
-      // 8. No public navigation chrome duplicates the splash actions.
+      // 7. No public navigation chrome duplicates the splash actions.
       await expect(page.locator(".figma-nav-toggle")).toHaveCount(0);
       await expect(page.locator(".figma-nav-mobile")).toHaveCount(0);
     });
 
-    // Spacing: the approved artboard insets the dark card by 36px on the
-    // sides and 28px on top, with 26px of card padding, at every QA width.
-    test(`${vp.name}: canvas insets and card padding match the approved artboard`, async ({ page }) => {
+    // Layout: every element above stays inside the canvas at each QA width.
+    test(`${vp.name}: content stays inside the canvas with no clipped elements`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto("/");
+      const splash = page.locator(".m-oh-screen").filter({ visible: true });
 
-      const metrics = await page.evaluate(() => {
-        const rect = (sel: string) => {
-          const el = document.querySelector(sel);
-          if (!el) return null;
-          const r = el.getBoundingClientRect();
-          return { x: r.x, y: r.y, w: r.width, h: r.height };
+      // Measure the settled layout. The job feed is fetched client-side by the
+      // mobile splash, so measuring before the cards arrive reads a skeleton of
+      // different widths than the page users actually see — which is how a
+      // geometry assertion becomes flaky rather than useful.
+      await expect(splash.locator(".m-job-carousel-track .oh-job-card").first()).toBeVisible();
+      await page.waitForLoadState("networkidle");
+
+      // Two different things get confused here, and only one is a defect.
+      //
+      // The job carousel is a deliberate horizontal scroller (scroll-snap), so
+      // its cards legitimately sit outside their container's right edge — that
+      // is the feature. What must never happen is the *page* scrolling
+      // sideways, which is what clips content on a phone. So this measures
+      // document overflow, and separately checks that no non-scrolling element
+      // pokes outside the viewport.
+      const overflow = await page.evaluate(() => {
+        const doc = document.documentElement;
+        const hasScrollableAncestor = (el: HTMLElement) => {
+          for (let node = el.parentElement; node; node = node.parentElement) {
+            const overflowX = getComputedStyle(node).overflowX;
+            if (overflowX === "auto" || overflowX === "scroll") return true;
+          }
+          return false;
         };
-        const card = document.querySelector(".m-splash-card")!;
+
+        const escapes: string[] = [];
+        for (const el of Array.from(document.querySelectorAll<HTMLElement>("body *"))) {
+          if (el.offsetParent === null) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) continue;
+          if (r.right <= doc.clientWidth + 1 && r.left >= -1) continue;
+          if (hasScrollableAncestor(el)) continue;
+          escapes.push(`${el.tagName}.${el.className}`);
+        }
         return {
-          viewport: { w: window.innerWidth, h: window.innerHeight },
-          splash: rect(".m-splash"),
-          card: rect(".m-splash-card"),
-          cardPadLeft: parseFloat(getComputedStyle(card).paddingLeft),
-          headline: rect(".m-splash-card > h1"),
+          pageOverflowX: doc.scrollWidth - doc.clientWidth,
+          escapes: escapes.slice(0, 10),
         };
       });
 
-      expect(metrics.splash).not.toBeNull();
-      expect(metrics.card).not.toBeNull();
-      // The lavender gutter fills the viewport height — no bare strip below.
-      expect(metrics.splash!.h).toBeGreaterThanOrEqual(metrics.viewport.h);
-      // 36px side inset, centred canvas capped at 430px.
-      expect(metrics.card!.x).toBeCloseTo(36, 0);
-      expect(metrics.viewport.w - (metrics.card!.x + metrics.card!.w)).toBeCloseTo(36, 0);
-      // 26px of card padding puts the headline 62px from the canvas edge.
-      expect(metrics.cardPadLeft).toBeCloseTo(26, 0);
-      expect(metrics.headline!.x).toBeCloseTo(62, 0);
+      expect(overflow.pageOverflowX, "the page must never scroll horizontally").toBeLessThanOrEqual(0);
+      expect(overflow.escapes, "only a deliberate scroller may exceed the viewport").toEqual([]);
     });
   }
 });
