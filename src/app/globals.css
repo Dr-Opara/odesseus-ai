@@ -4056,7 +4056,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .m-oh-screen{background:#fdfdfd;min-height:100vh;padding-bottom:40px}
 .m-oh-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;gap:12px}
 .m-oh-nav-actions{display:flex;align-items:center;gap:14px}
-.m-oh-nav-signin{font-size:12px;font-weight:650;color:#090909;text-decoration:none}
+.m-oh-nav-signin{font-size:12px;font-weight:650;color:#090909;text-decoration:none;display:inline-flex;align-items:center;min-height:40px;padding:0 12px;border-radius:12px}
 .m-oh-nav-cta{background:#090909;color:#fff;font-size:12px;font-weight:650;padding:12px 18px;border-radius:14px;text-decoration:none}
 .m-oh-header{background:#fff;border-bottom:1px solid rgba(9,9,9,.06)}
 .m-oh-primary-links{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 18px 14px}
@@ -4076,7 +4076,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .m-oh-screen .figma-footer p,.m-oh-screen .figma-footer a{font-size:12px;line-height:1.5}
 .m-oh-screen .figma-footer-legal{margin-top:28px;padding-top:18px;text-align:left}.m-oh-screen .figma-footer-legal p{font-size:9px!important;line-height:1.45!important}.m-oh-screen .figma-footer-bottom{margin-top:16px;padding-top:16px;flex-direction:column;align-items:flex-start;gap:8px;font-size:10px}
 .m-oh-screen .figma-footer .odesseus-wordmark{font-size:24px}
-.m-oh-body .oh-hero-grid{padding:0 18px;grid-template-columns:1fr}
+.m-oh-body .oh-hero-grid{padding:0 18px;grid-template-columns:1fr}\n.m-oh-body .oh-hero-grid > *{min-width:0}
 .m-oh-body .oh-hero-copy p{font-size:14px}
 .m-oh-body .oh-hero-copy h1{font-size:34px}
 .m-oh-body .oh-trust-band,.m-oh-body .oh-capability-tiles,.m-oh-body .oh-logo-strip{margin-left:18px;margin-right:18px}
