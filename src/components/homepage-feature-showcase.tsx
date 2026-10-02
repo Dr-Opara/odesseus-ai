@@ -45,10 +45,10 @@ const features: Feature[] = [
     visual: "track",
   },
   {
-    eyebrow: "Odesseus Live",
+    eyebrow: "Interview Support",
     title: "Interview support — plus a way to earn while you search",
     description:
-      "Use Odesseus Live for real-time, non-coding interview support and post-interview analysis. Eligible candidates can also participate in the Odesseus Live earning program while continuing their job search.",
+      "Get real-time, non-coding interview support and post-interview analysis. Eligible candidates can also participate in the earning program while continuing their job search.",
     accent: true,
     visual: "live",
   },
@@ -126,7 +126,7 @@ function FeatureVisual({ type }: { type: Feature["visual"] }) {
 
   return (
     <div className="oh-feature-ui oh-feature-ui-live" aria-hidden="true">
-      <div className="oh-live-orb">LIVE</div>
+      <div className="oh-live-orb">AI</div>
       <div className="oh-live-copy">
         <span>Interview in progress</span>
         <strong>Stay ready for the next question</strong>
@@ -158,7 +158,7 @@ export default function HomepageFeatureShowcase() {
               <p>{feature.description}</p>
               {feature.visual === "live" ? (
                 <Link className="oh-feature-link" href="/signin">
-                  Program details are available in your Live dashboard →
+                  Program details are available after sign in →
                 </Link>
               ) : null}
             </div>
