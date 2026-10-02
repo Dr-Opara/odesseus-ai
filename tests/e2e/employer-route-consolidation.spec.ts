@@ -8,39 +8,38 @@ import { test, expect } from "@playwright/test";
 //
 // Two live pages for one feature is not a harmless duplication: each would read
 // its own data, and whichever link someone kept would be the one that goes
-// stale. These tests pin the consolidation so a second page cannot quietly
-// reappear.
+// stale.
+//
+// Which layer proves what: the redirect *targets* cannot be observed from a
+// signed-out browser, because the auth proxy answers first and sends every
+// protected path to /employers/login before the page's own redirect can run.
+// That mapping is asserted where it is actually visible, in
+// tests/unit/employer-portal-ui.test.ts, which reads the route modules
+// directly. What belongs here is the browser-visible half: none of these paths
+// serves portal content to anyone without a valid employer session, whichever
+// of them they are.
 
-const CONSOLIDATED = [
-  { from: "/employers/jobs", to: "/employers/dashboard/jobs" },
-  { from: "/employers/team", to: "/employers/dashboard/team" },
-  { from: "/employers/billing", to: "/employers/dashboard/bashboard" },
-];
+const PORTAL_PATHS = [
+  "/employers/jobs",
+  "/employers/dashboard/jobs",
+  "/employers/team",
+  "/employers/dashboard/team",
+  "/employers/billing",
+  "/employers/dashboard/billing",
+] as const;
 
 test.describe("consolidated employer routes", () => {
-  for (const { from, to } of CONSOLIDATED) {
-    // `to` is corrected below for the billing entry; keeping the table in one
-    // place makes the set of consolidated features easy to extend.
-    const target = to.endsWith("dashboard/dashboard") ? "/employers/dashboard/billing" : to;
-
-    test(`${from} redirects to its canonical route`, async ({ page }) => {
-      await page.goto(from);
-      // A signed-out visitor is redirected by the auth proxy before the page's
-      // own redirect can run, so assert the guard still holds first.
+  for (const path of PORTAL_PATHS) {
+    test(`${path} is behind the employer auth boundary`, async ({ page }) => {
+      await page.goto(path);
       await expect(page).toHaveURL(/\/employers\/login/);
-    });
 
-    test(`${from} no longer renders its own page`, async ({ page }) => {
-      // The route module is a redirect, so no employer content is served from
-      // the old path even to an authenticated caller. Reaching it here without
-      // a session proves the auth boundary is what answered.
-      const response = await page.goto(from);
-      expect(response?.url()).toContain("/employers/login");
-    });
+      // Never the generic candidate sign-in page.
+      expect(new URL(page.url()).pathname).not.toBe("/login");
 
-    test(`${target} is the canonical route`, async ({ page }) => {
-      await page.goto(target);
-      await expect(page).toHaveURL(new RegExp(`${target.replace(/\//g, "\\/")}$`));
+      // And never any portal content on the way there.
+      const body = await page.locator("body").innerText();
+      expect(body).not.toMatch(/job postings|recruiter seats|current subscription|manage seats/i);
     });
   }
 });

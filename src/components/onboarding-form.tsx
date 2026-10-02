@@ -85,15 +85,15 @@ export default function OnboardingForm({ fullName }: { fullName?: string | null 
       <div className="card" style={{ padding: 24, marginTop: 18 }}>
         <h3 style={{ margin: "0 0 16px" }}>What are you looking for?</h3>
         <div style={{ display: "grid", gap: 14 }}>
-          <input className="input" value={targetRole} onChange={(e) => setTargetRole(e.target.value)} required placeholder="Target role, e.g. GRC Manager" />
-          <input className="input" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location, e.g. Remote or Houston, TX" />
-          <select className="input" value={workPreference} onChange={(e) => setWorkPreference(e.target.value)}>
+          <input className="input" value={targetRole} onChange={(e) => setTargetRole(e.target.value)} required placeholder="Target role, e.g. GRC Manager" aria-label="Target role" />
+          <input className="input" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location, e.g. Remote or Houston, TX" aria-label="Location" />
+          <select className="input" value={workPreference} onChange={(e) => setWorkPreference(e.target.value)} aria-label="Work preference">
             <option value="remote">Remote</option>
             <option value="hybrid">Hybrid</option>
             <option value="onsite">On-site</option>
             <option value="flexible">Flexible</option>
           </select>
-          <input className="input" type="number" min="0" value={minimumSalary} onChange={(e) => setMinimumSalary(e.target.value)} placeholder="Minimum salary, optional" />
+          <input className="input" type="number" min="0" value={minimumSalary} onChange={(e) => setMinimumSalary(e.target.value)} placeholder="Minimum salary, optional" aria-label="Minimum salary" />
         </div>
       </div>
 

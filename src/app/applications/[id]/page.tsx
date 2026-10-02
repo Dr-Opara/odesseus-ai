@@ -19,7 +19,9 @@ export default async function ApplicationDetailPage({
   const [{ data: application }, { data: events }, { data: interviews }, { data: profile }, { data: credits }] = await Promise.all([
     supabase
       .from("applications")
-      .select("*,job_opportunities(match_score,location),resumes(file_name)")
+      .select(
+        "*,job_opportunities(match_score,location),resumes!applications_tailored_resume_id_fkey(file_name)"
+      )
       .eq("id", id)
       .eq("user_id", userId)
       .maybeSingle(),

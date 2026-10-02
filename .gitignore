@@ -1,5 +1,18 @@
 .next/
 node_modules/
+# QA session cache written by tests/e2e/support/session-cache.ts. Holds real
+# Supabase session cookies for local QA accounts, so it must never be committed.
+.qa-auth-cache/
+# Task 9C certification harness (page-by-page release certification). Local QA
+# tooling, not product code: it drives a browser over the local dev server and
+# writes session cookies for local QA accounts.
+.qa-certify.mjs
+.qa-login.mjs
+.qa-routes.json
+.qa-shot.mjs
+qa-*-auth.json
+qa-cert-*.json
+qa-screenshots/
 .env
 .env.local
 .env*.local

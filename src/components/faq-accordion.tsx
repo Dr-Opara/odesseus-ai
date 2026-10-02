@@ -37,6 +37,7 @@ export default function FaqAccordion({
           className="input"
           style={{ marginBottom: 20, maxWidth: 420 }}
           placeholder="Search questions"
+          aria-label="Search questions"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
@@ -57,6 +58,7 @@ export default function FaqAccordion({
       <div className="m-search">
         <input
           placeholder="⌕ Search questions"
+          aria-label="Search questions"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />

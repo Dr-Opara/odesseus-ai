@@ -19,7 +19,16 @@ test.describe("landing page", () => {
     await expect(
       page.getByRole("heading", { name: "Discover Your Dream Job with Odesseus.ai", level: 1 })
     ).toBeAttached();
-    await expect(page.getByText("Scored from your resume")).toBeVisible();
+    // The current hero (see src/components/homepage-body.tsx), which is mounted
+    // once per presentation, so the mobile copy is matched too. "Scored from
+    // your resume" was on the previous hero and was removed with it.
+    await expect(
+      page.locator(".oh-hero-eyebrow").filter({ visible: true })
+    ).toHaveText("A smarter way to get hired");
+    // The hero advertises the real price contract and no invented figures.
+    await expect(
+      page.getByText("$0.39").filter({ visible: true }).first()
+    ).toBeVisible();
     await expect(page.locator("header").getByRole("link", { name: "Sign In" })).toBeVisible();
     await expect(page.locator("header").getByRole("link", { name: "Get Started" })).toBeVisible();
   });

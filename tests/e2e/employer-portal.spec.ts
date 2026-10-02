@@ -55,9 +55,17 @@ test.describe("employer sign-up is desktop-only", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/employers/signup");
 
-    await expect(page.getByRole("heading", { name: "Create your employer account" })).toBeVisible();
-    await expect(page.getByLabel("Company name")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Create Account" })).toBeVisible();
+    // The page carries two headings reading "Create your employer account" — the
+    // hero h1 and an info-card h2 — plus a hidden mobile h1 for the phone
+    // screen. Pinned to level 1 and the visible copy so this asserts the actual
+    // page heading instead of failing on ambiguity.
+    await expect(
+      page.getByRole("heading", { name: "Create your employer account.", level: 1 })
+    ).toBeVisible();
+    await expect(page.getByLabel("Company name").filter({ visible: true })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Create Employer Account" }).filter({ visible: true })
+    ).toBeVisible();
   });
 
   for (const vp of mobileViewports) {
@@ -87,9 +95,15 @@ test.describe("employer phone entry point", () => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto("/");
 
-      const businessLogin = page.getByRole("link", { name: /Business Login/ });
-      await expect(businessLogin).toBeVisible();
-      await businessLogin.click();
+      // The phone entry point to employer sign-in is the "Sign in" action in the
+      // mobile hero, which opens the role chooser (/signin); the Employer card
+      // there is what reaches /employers/login. It replaced the former
+      // `Business Login` pill when the homepage was rebuilt. The destination is
+      // the same: an employer on a phone must be able to sign in without a
+      // desktop.
+      await page.getByRole("link", { name: "Sign in" }).filter({ visible: true }).first().click();
+      await expect(page).toHaveURL(/\/signin/);
+      await page.getByRole("link", { name: /employer/i }).first().click();
       await expect(page).toHaveURL(/\/employers\/login/);
     });
 
@@ -165,7 +179,10 @@ test.describe("no Odesseus Live on employer surfaces", () => {
       await page.setViewportSize({ width: 1280, height: 800 });
       // /employers/post-job redirects a signed-out visitor to sign-up; either
       // landing page is an employer surface, so the assertion holds either way.
-      await page.goto(route);
+      // `waitUntil: "load"` rather than the default: a client redirect out of
+      // post-job can land mid-`evaluate` and destroy the execution context,
+      // which surfaces as a harness error rather than a result.
+      await page.goto(route, { waitUntil: "load" });
 
       // One DOM read rather than a locator per figure. A `getByText` substring
       // scan per price is six round-trips whose only possible outcome is zero

@@ -86,12 +86,15 @@ export default function MobileReportJob({
         ))}
       </div>
 
-      <p className="m-report-question" style={{ marginTop: 16 }}>
+      <p className="m-report-question" style={{ marginTop: 16 }} id="report-details">
         Additional details (optional)
       </p>
       <textarea
         className="m-report-textarea"
         placeholder="Tell us more about what you noticed…"
+        // The caption above is a <p>, not a <label>, so without this the field
+        // reaches a screen reader with only a placeholder for a name.
+        aria-labelledby="report-details"
         value={details}
         onChange={(event) => setDetails(event.target.value)}
       />

@@ -22,8 +22,12 @@ test.describe("employer portal auth boundary (Checkpoint 4)", () => {
     test(`${route} redirects a signed-out visitor to /employers/login, never renders portal data`, async ({ page }) => {
       await page.goto(route);
       await expect(page).toHaveURL(/\/employers\/login/);
-      // Never the generic candidate sign-in page.
-      expect(page.url()).not.toMatch(/\/login(?!\/)/);
+      // Never the generic candidate sign-in page. The negative lookahead in
+      // the original matcher was `(?!\/)`, which reads "not `/login/`" — but
+      // the path *ends* in `/login`, so the lookahead succeeds and the
+      // assertion rejected the very redirect it was written to require. The
+      // check is that the path is not exactly the candidate sign-in.
+      expect(new URL(page.url()).pathname).not.toBe("/login");
     });
   }
 
