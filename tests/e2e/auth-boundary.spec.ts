@@ -13,21 +13,16 @@ test.describe("landing page", () => {
 
   test("loads and shows the primary calls to action", async ({ page }) => {
     await page.goto("/");
-    // The H1 is intentionally screen-reader-only (the hero is a visual
-    // job-search dashboard showcase with no visible headline) — check it's
-    // present for accessibility/SEO rather than visible.
+    // The refreshed homepage uses a visible, product-led hero.
     await expect(
-      page.getByRole("heading", { name: "Discover Your Dream Job with Odesseus.ai", level: 1 })
-    ).toBeAttached();
-    // The current hero (see src/components/homepage-body.tsx), which is mounted
-    // once per presentation, so the mobile copy is matched too. "Scored from
-    // your resume" was on the previous hero and was removed with it.
+      page.getByRole("heading", { name: "Find Your Next Opportunity Faster", level: 1 })
+    ).toBeVisible();
     await expect(
       page.locator(".oh-hero-eyebrow").filter({ visible: true })
-    ).toHaveText("A smarter way to get hired");
-    // The hero advertises the real price contract and no invented figures.
+    ).toHaveText("AI-POWERED JOB SEARCH");
+    // The hero's live product preview is the primary signed-out product proof.
     await expect(
-      page.getByText("$0.39").filter({ visible: true }).first()
+      page.locator(".oh-product-preview").filter({ visible: true })
     ).toBeVisible();
     await expect(page.locator("header").getByRole("link", { name: "Sign In" })).toBeVisible();
     await expect(page.locator("header").getByRole("link", { name: "Get Started" })).toBeVisible();
