@@ -20,10 +20,14 @@ test.describe("landing page", () => {
     await expect(
       page.locator(".oh-hero-eyebrow").filter({ visible: true })
     ).toHaveText("AI-POWERED JOB SEARCH");
-    // The hero's live product preview is the primary signed-out product proof.
-    await expect(
-      page.locator(".oh-product-preview").filter({ visible: true })
-    ).toBeVisible();
+    // A clean local database has no fabricated job fixtures. The hero must
+    // therefore show either a real job preview or the explicit empty/unavailable
+    // feed state; both are valid signed-out product surfaces.
+    const heroProductSurface = page
+      .locator(".oh-product-preview .oh-product-job-card, .oh-product-preview-state")
+      .filter({ visible: true });
+    await expect(heroProductSurface).toHaveCount(1);
+    await expect(heroProductSurface).toBeVisible();
     await expect(page.locator("header").getByRole("link", { name: "Sign In" })).toBeVisible();
     await expect(page.locator("header").getByRole("link", { name: "Get Started" })).toBeVisible();
   });
