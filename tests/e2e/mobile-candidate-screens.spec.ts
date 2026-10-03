@@ -22,9 +22,11 @@ test.describe("mobile landing splash (screen 00)", () => {
     await page.goto("/");
     const splash = page.locator(".m-oh-screen");
     await expect(splash).toBeVisible();
-    // Compact mobile chrome, and it is the only header on a phone.
-    await expect(splash.getByRole("link", { name: "Get Started" })).toBeVisible();
-    await expect(splash.getByRole("link", { name: "Sign in" })).toBeVisible();
+    // Compact mobile chrome, scoped to the header so the lower homepage CTA
+    // with similar copy cannot create a strict-mode duplicate.
+    const nav = splash.locator(".m-oh-nav");
+    await expect(nav.getByRole("link", { name: "Get Started", exact: true })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
     // Real job data is presented when available; a clean local database
     // instead renders the explicit empty/unavailable feed state.
     await expect(
