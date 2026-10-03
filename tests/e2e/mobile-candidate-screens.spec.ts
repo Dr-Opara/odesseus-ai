@@ -25,8 +25,8 @@ test.describe("mobile landing splash (screen 00)", () => {
     // Compact mobile chrome, and it is the only header on a phone.
     await expect(splash.getByRole("link", { name: "Get Started" })).toBeVisible();
     await expect(splash.getByRole("link", { name: "Sign in" })).toBeVisible();
-    // Real rows from the feed, not a hardcoded stack of named companies.
-    await expect(splash.locator(".m-job-carousel-track .oh-job-card").first()).toBeVisible();
+    // Real job data is presented in the product preview, not a hardcoded card.
+    await expect(splash.locator(".oh-product-preview .oh-product-job-card")).toBeVisible();
     // The rebuilt design carries no invented figures anywhere.
     const body = await splash.innerText();
     expect(body).not.toMatch(/\$247K|500K\+|100K\+|95%|Applicants|Hires|Satisfaction/);
@@ -37,9 +37,9 @@ test.describe("mobile landing splash (screen 00)", () => {
     await page.goto("/");
     // The splash shell is mobile-only.
     await expect(page.locator(".m-oh-screen")).toBeHidden();
-    // Desktop hero headline is present and instead a screen-reader-only h1.
-    await page.getByRole("heading", { name: "Discover Your Dream Job with Odesseus.ai" }).waitFor();
-    await expect(page.getByRole("heading", { name: "Discover Your Dream Job with Odesseus.ai" })).toBeVisible();
+    // Desktop hero headline is the refreshed product-led headline.
+    await page.getByRole("heading", { name: "Find Your Next Opportunity Faster" }).waitFor();
+    await expect(page.getByRole("heading", { name: "Find Your Next Opportunity Faster" })).toBeVisible();
   });
 });
 
@@ -90,24 +90,20 @@ test.describe("mobile landing layout (screen 00)", () => {
       await expect(splash.locator(".oh-hero-eyebrow")).toBeVisible();
       const headline = splash.locator(".oh-hero-copy h1");
       await expect(headline).toBeVisible();
-      await expect(headline).toContainText("Dream Job");
-      await expect(headline.locator("em")).toContainText("Odesseus.ai");
+      await expect(headline).toContainText("Find Your Next");
+      await expect(headline.locator("em")).toContainText("Faster");
 
-      // 4. Employer CTA, which is the phone route into the employer site.
-      const employerCta = splash.getByRole("link", { name: /hiring talent/i });
+      // 4. Employers remains a direct phone route into the employer site.
+      const employerCta = splash.locator(".m-oh-primary-links").getByRole("link", { name: "Employers" });
       await expect(employerCta).toBeVisible();
       await expect(employerCta).toHaveAttribute("href", "/employers");
 
-      // 5. Real job rows, with pagination dots matching them.
-      const track = splash.locator(".m-job-carousel-track");
-      await expect(track.locator(".oh-job-card").first()).toBeVisible();
-      const cards = await track.locator(".oh-job-card").count();
-      await expect(splash.locator(".oh-carousel-dots .oh-carousel-dot")).toHaveCount(cards);
-      await expect(splash.locator(".oh-carousel-dots .oh-carousel-dot.is-active")).toHaveCount(1);
+      // 5. Real job data appears in the current product preview.
+      await expect(splash.locator(".oh-product-preview .oh-product-job-card")).toBeVisible();
 
-      // 6. Trust band and capability tiles, with no invented figures.
-      await expect(splash.locator(".oh-trust-band")).toBeVisible();
-      await expect(splash.locator(".oh-capability-tile").first()).toBeVisible();
+      // 6. Current homepage sections render below the hero.
+      await expect(splash.locator(".oh-world-jobs-section")).toBeVisible();
+      await expect(splash.locator(".oh-feature-section")).toBeVisible();
       await expect(splash.locator(".oh-logo-strip")).toBeVisible();
 
       // 7. No public navigation chrome duplicates the splash actions.
@@ -125,7 +121,7 @@ test.describe("mobile landing layout (screen 00)", () => {
       // mobile splash, so measuring before the cards arrive reads a skeleton of
       // different widths than the page users actually see — which is how a
       // geometry assertion becomes flaky rather than useful.
-      await expect(splash.locator(".m-job-carousel-track .oh-job-card").first()).toBeVisible();
+      await expect(splash.locator(".oh-product-preview .oh-product-job-card")).toBeVisible();
       await page.waitForLoadState("networkidle");
 
       // Two different things get confused here, and only one is a defect.
