@@ -18,7 +18,7 @@ test.describe("homepage job carousel (desktop)", () => {
     if (await card.count()) {
       // Company names come from the real feed; the preview must not fabricate
       // popularity or applicant-count language.
-      await expect(card.locator(".oh-product-job-heading span").first()).not.toBeEmpty();
+      await expect(card.locator(".oh-product-job-heading > div > span")).not.toBeEmpty();
     } else {
       // Fresh local databases intentionally have no seeded job fixtures.
       await expect(surface).toContainText(/Jobs are refreshing|New opportunities are on the way/i);
