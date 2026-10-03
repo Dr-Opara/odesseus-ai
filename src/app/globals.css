@@ -3996,13 +3996,15 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .oh-feature-ui-track>div{background:#fff;border-radius:16px;padding:16px;display:grid;gap:4px;text-align:center}
 .oh-feature-ui-track span{font-size:10px;color:#666}
 .oh-feature-ui-track strong{font-size:24px;color:#090909}
-.oh-feature-ui-live{background:radial-gradient(circle at 20% 20%,#ff6b2c 0,transparent 32%),radial-gradient(circle at 82% 70%,#7737ff 0,transparent 35%),#17151f;color:#fff;display:grid;align-content:center;gap:14px}
-.oh-live-orb{width:70px;height:70px;border-radius:50%;display:grid;place-items:center;background:#ff4f12;color:#fff;font-size:14px;font-weight:900;box-shadow:0 0 0 12px rgba(255,79,18,.11)}
-.oh-live-copy{display:grid;gap:5px}
-.oh-live-copy span{font-size:10px;color:#d7d4e3;text-transform:uppercase;letter-spacing:.08em}
-.oh-live-copy strong{font-size:18px}
-.oh-live-copy small{font-size:10px;color:#b8b4c7}
-.oh-live-earn{justify-self:start;background:#fff;color:#0b0b12;border-radius:999px;padding:8px 12px;font-size:10px;font-weight:800}
+.oh-feature-ui-earn{background:radial-gradient(circle at 18% 16%,rgba(255,79,18,.48) 0,transparent 34%),radial-gradient(circle at 86% 78%,rgba(119,55,255,.45) 0,transparent 38%),#17151f;color:#fff;display:grid;align-content:center;gap:10px}
+.oh-earn-summary{background:rgba(18,17,27,.76);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px;display:grid;gap:7px;box-shadow:0 14px 32px rgba(0,0,0,.16)}
+.oh-earn-summary small{font-size:9px;color:#bdb9ca;text-transform:uppercase;letter-spacing:.08em}
+.oh-earn-summary strong{font-size:19px;line-height:1.1}
+.oh-earn-bars{height:64px;display:flex;align-items:end;gap:7px;margin-top:4px}
+.oh-earn-bars span{flex:1;min-height:10px;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,#ff7a43,#ff4f12)}
+.oh-earn-row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:11px 13px}
+.oh-earn-row span{font-size:9px;color:#b8b4c7}
+.oh-earn-row strong{font-size:10px;color:#fff;text-align:right}
 .oh-feature-cta{margin-top:18px;border-radius:20px;background:#fff1e9;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;gap:20px}
 .oh-feature-cta>div{display:grid;gap:4px}
 .oh-feature-cta span{font-size:11px;color:#8b5d47}
