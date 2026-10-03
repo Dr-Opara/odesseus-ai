@@ -7,16 +7,26 @@ import { test, expect } from "@playwright/test";
 test.describe("homepage job carousel (desktop)", () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test("renders a real job preview with no fabricated applicant counts", async ({ page }) => {
+  test("renders a real job preview or an honest feed state with no fabricated applicant counts", async ({ page }) => {
     await page.goto("/");
-    const preview = page.locator(".oh-product-preview").filter({ visible: true });
-    await expect(preview).toBeVisible();
-    await expect(preview.locator(".oh-product-job-card")).toBeVisible();
-    // Company names come from the real feed; the preview must not fabricate
-    // popularity or applicant-count language.
-    await expect(preview.locator(".oh-product-job-heading span").first()).not.toBeEmpty();
-    const cardText = (await preview.innerText()).toLowerCase();
-    expect(cardText).not.toMatch(/applicants?\s*applied|people applied|popular|urgent/);
+    const surface = page
+      .locator(".oh-product-preview .oh-product-job-card, .oh-product-preview-state")
+      .filter({ visible: true });
+    await expect(surface).toHaveCount(1);
+    await expect(surface).toBeVisible();
+
+    const card = page.locator(".oh-product-preview .oh-product-job-card").filter({ visible: true });
+    if (await card.count()) {
+      // Company names come from the real feed; the preview must not fabricate
+      // popularity or applicant-count language.
+      await expect(card.locator(".oh-product-job-heading span").first()).not.toBeEmpty();
+    } else {
+      // Fresh local databases intentionally have no seeded job fixtures.
+      await expect(surface).toContainText(/Jobs are refreshing|New opportunities are on the way/i);
+    }
+
+    const surfaceText = (await surface.innerText()).toLowerCase();
+    expect(surfaceText).not.toMatch(/applicants?\s*applied|people applied|popular|urgent/);
   });
 
   test("pages the desktop carousel only when there is more than one page", async ({ page }) => {
