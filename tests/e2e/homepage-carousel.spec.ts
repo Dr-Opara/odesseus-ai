@@ -7,19 +7,15 @@ import { test, expect } from "@playwright/test";
 test.describe("homepage job carousel (desktop)", () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test("renders real job cards with no fabricated salary or applicant counts", async ({ page }) => {
+  test("renders a real job preview with no fabricated applicant counts", async ({ page }) => {
     await page.goto("/");
-    // Two tracks are mounted (mobile splash + desktop landing); only the one for
-    // this width is visible, so every read is scoped to it.
-    const track = page.locator(".oh-carousel-track.odesseus-desktop-only").filter({ visible: true });
-    await expect(track.locator(".oh-job-card").first()).toBeVisible();
-    // Company names come from the real feed, so the assertion is about the
-    // card carrying a company at all rather than a fixture name: an earlier
-    // version hardcoded "Nova Cloud", which only ever passed against the
-    // dev-only fixture feed that has since been removed in favour of real rows.
-    await expect(track.locator(".oh-job-company").first()).not.toBeEmpty();
-    // No invented applicant-count/popularity language anywhere on the card.
-    const cardText = (await track.innerText()).toLowerCase();
+    const preview = page.locator(".oh-product-preview").filter({ visible: true });
+    await expect(preview).toBeVisible();
+    await expect(preview.locator(".oh-product-job-card")).toBeVisible();
+    // Company names come from the real feed; the preview must not fabricate
+    // popularity or applicant-count language.
+    await expect(preview.locator(".oh-product-job-heading span").first()).not.toBeEmpty();
+    const cardText = (await preview.innerText()).toLowerCase();
     expect(cardText).not.toMatch(/applicants?\s*applied|people applied|popular|urgent/);
   });
 
@@ -83,14 +79,12 @@ test.describe("homepage job carousel (desktop)", () => {
 test.describe("homepage job carousel (mobile)", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test("renders a swipeable single-card track with dots, no horizontal page overflow", async ({ page }) => {
+  test("renders the mobile product preview with no horizontal page overflow", async ({ page }) => {
     await page.goto("/");
-    // Two copies of the track are in the DOM at any width — the mobile splash
-    // renders one and the desktop landing (hidden by CSS) renders the other.
-    // Scope to the visible one rather than letting strict mode fail.
-    const track = page.locator(".m-job-carousel-track").filter({ visible: true });
-    await expect(track).toHaveCount(1);
-    await expect(track.locator(".oh-job-card").first()).toBeVisible();
+    const splash = page.locator(".m-oh-screen").filter({ visible: true });
+    const preview = splash.locator(".oh-product-preview");
+    await expect(preview).toBeVisible();
+    await expect(preview.locator(".oh-product-job-card")).toBeVisible();
 
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
