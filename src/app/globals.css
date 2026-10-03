@@ -4856,3 +4856,197 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
     min-height:112px;
   }
 }
+
+
+/* Pricing mobile reference redesign — applicants + business */
+@media (max-width:767px){
+  .m-screen-30{
+    background:
+      radial-gradient(circle at 92% 8%,rgba(255,70,5,.09),transparent 20%),
+      linear-gradient(180deg,#fbfcff 0%,#f8f9fd 100%);
+    padding-top:28px;
+  }
+  .m-screen-30 .m-screen-header,
+  .m-screen-30 .m-lead{
+    position:relative;
+    z-index:3;
+  }
+  .m-screen-30 .m-screen-header{margin-bottom:4px}
+  .m-screen-30 .m-screen-header h1{font-size:28px}
+  .m-screen-30 .m-lead{font-size:13px;margin-bottom:20px}
+  .pricing-mobile{position:relative;z-index:2}
+  .pricing-mobile [hidden]{display:none!important}
+  .pricing-tabs{
+    margin:0 0 18px;
+    padding:4px;
+    gap:4px;
+    border-radius:18px;
+    background:#eff0f6;
+    box-shadow:inset 0 1px 2px rgba(16,18,35,.03)
+  }
+  .pricing-tabs button{
+    height:46px;
+    border-radius:14px;
+    font-size:13px;
+    transition:background .18s ease,color .18s ease,box-shadow .18s ease
+  }
+  .pricing-tabs button.active{
+    background:var(--m-orange);
+    color:#fff;
+    box-shadow:0 7px 18px rgba(255,70,5,.24)
+  }
+  .pricing-panel{position:relative}
+  .pricing-section-label{
+    margin:0 4px 10px;
+    color:#6b7690;
+    font-size:10.5px;
+    line-height:1;
+    letter-spacing:.06em;
+    font-weight:800
+  }
+  .pricing-section-spaced{margin-top:24px}
+  .pricing-list{display:grid;gap:10px}
+  .pricing-card{
+    position:relative;
+    min-height:78px;
+    display:grid;
+    grid-template-columns:48px minmax(0,1fr) 20px;
+    align-items:center;
+    gap:12px;
+    padding:13px 14px;
+    border:1px solid #e3e6ef;
+    border-radius:18px;
+    background:#fff;
+    box-shadow:0 5px 18px rgba(17,21,39,.045)
+  }
+  .pricing-card-peach{
+    background:linear-gradient(90deg,#fff4ef 0%,#fffaf8 100%);
+    border-color:#ffdaca
+  }
+  .pricing-card-green{
+    background:linear-gradient(90deg,#f0fbf5 0%,#f8fdf9 100%);
+    border-color:#caefda
+  }
+  .pricing-card-purple{
+    background:linear-gradient(90deg,#faf5ff 0%,#fdfaff 100%);
+    border-color:#ead8ff
+  }
+  .pricing-card-blue{
+    background:linear-gradient(90deg,#f4f9ff 0%,#fbfdff 100%);
+    border-color:#dcecff
+  }
+  .pricing-card.is-recommended{
+    border-color:#ff6a2f;
+    box-shadow:0 0 0 1px rgba(255,70,5,.08),0 7px 18px rgba(17,21,39,.045)
+  }
+  .pricing-card-green.is-recommended{border-color:#62cf8d}
+  .pricing-icon{
+    width:44px;height:44px;border-radius:14px;
+    display:grid;place-items:center;
+    background:#f3f5f9;color:#63718c
+  }
+  .pricing-icon svg{width:22px;height:22px}
+  .pricing-icon-peach{background:#ffe9df;color:#ff4b0b}
+  .pricing-icon-green{background:#ddf7e8;color:#078a4c}
+  .pricing-icon-purple{background:#efe1ff;color:#7c2ee8}
+  .pricing-icon-blue{background:#e4f0ff;color:#1673e6}
+  .pricing-card-copy{min-width:0;display:grid;gap:5px}
+  .pricing-card-copy small{
+    color:#68758d;
+    font-size:10.5px;
+    line-height:1.45;
+    overflow-wrap:anywhere
+  }
+  .pricing-card-title{
+    display:flex;align-items:center;gap:8px;min-width:0
+  }
+  .pricing-card-title strong{
+    color:#121629;
+    font-size:13px;
+    line-height:1.25;
+    letter-spacing:-.01em
+  }
+  .pricing-recommended{
+    margin-left:auto;
+    flex:0 0 auto;
+    border-radius:999px;
+    background:var(--m-orange);
+    color:#fff;
+    padding:5px 8px;
+    font-size:8.5px;
+    line-height:1;
+    font-weight:800
+  }
+  .pricing-chevron{
+    color:#5d6a83;
+    font-size:26px;
+    font-weight:300;
+    line-height:1;
+    transform:translateY(-1px)
+  }
+  .pricing-info-row{
+    margin-top:14px;
+    min-height:64px;
+    display:grid;
+    grid-template-columns:36px minmax(0,1fr);
+    align-items:center;
+    gap:10px;
+    border-radius:16px;
+    background:#f3f4f8;
+    padding:11px 14px;
+    color:#67738b;
+    font-size:10.5px;
+    line-height:1.45
+  }
+  .pricing-info-row .pricing-icon{
+    width:34px;height:34px;border-radius:11px;background:transparent;color:#61708b
+  }
+  .pricing-info-row .pricing-icon svg{width:20px;height:20px}
+  .pricing-region-note{margin-top:14px}
+  .pricing-cta{
+    display:flex!important;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    margin:14px 0 0;
+    height:56px;
+    border-radius:18px;
+    background:linear-gradient(180deg,#ff540f 0%,#ff4200 100%);
+    box-shadow:0 8px 20px rgba(255,70,5,.2);
+    text-align:center;
+    text-decoration:none;
+    font-size:14px
+  }
+  .pricing-decor{
+    position:absolute;
+    top:-82px;
+    right:0;
+    width:74px;
+    height:68px;
+    pointer-events:none;
+    opacity:.9
+  }
+  .pricing-decor span{
+    position:absolute;inset:8px 8px 0 12px;
+    border-radius:18px;
+    background:linear-gradient(145deg,#fff0e9,#ffd8c8);
+    transform:rotate(-8deg)
+  }
+  .pricing-decor i{
+    position:absolute;
+    right:9px;
+    top:0;
+    width:8px;height:8px;
+    border-top:3px solid var(--m-orange);
+    border-right:3px solid var(--m-orange);
+    transform:rotate(-12deg)
+  }
+  .pricing-decor-business span{
+    border-radius:10px 10px 4px 4px;
+    background:
+      linear-gradient(90deg,transparent 0 18%,rgba(255,86,24,.18) 18% 30%,transparent 30% 45%,rgba(255,86,24,.18) 45% 57%,transparent 57% 72%,rgba(255,86,24,.18) 72% 84%,transparent 84%),
+      linear-gradient(145deg,#fff0e9,#ffd8c8)
+  }
+  .pricing-mobile-applicants .pricing-decor-business{display:none}
+  .pricing-mobile-business .pricing-decor-applicant{display:none}
+}
