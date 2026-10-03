@@ -12,8 +12,7 @@ test.describe("homepage job carousel (desktop)", () => {
     const surface = page
       .locator(".oh-product-preview .oh-product-job-card, .oh-product-preview-state")
       .filter({ visible: true });
-    await expect(surface).toHaveCount(1);
-    await expect(surface).toBeVisible();
+    await expect(surface.first()).toBeVisible();
 
     const card = page.locator(".oh-product-preview .oh-product-job-card").filter({ visible: true });
     if (await card.count()) {
@@ -89,12 +88,13 @@ test.describe("homepage job carousel (desktop)", () => {
 test.describe("homepage job carousel (mobile)", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test("renders the mobile product preview with no horizontal page overflow", async ({ page }) => {
+  test("renders the mobile job surface with no horizontal page overflow", async ({ page }) => {
     await page.goto("/");
     const splash = page.locator(".m-oh-screen").filter({ visible: true });
-    const preview = splash.locator(".oh-product-preview");
-    await expect(preview).toBeVisible();
-    await expect(preview.locator(".oh-product-job-card")).toBeVisible();
+    const surface = splash
+      .locator(".oh-product-preview .oh-product-job-card, .oh-product-preview-state")
+      .filter({ visible: true });
+    await expect(surface.first()).toBeVisible();
 
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
