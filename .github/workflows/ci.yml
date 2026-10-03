@@ -65,7 +65,7 @@ jobs:
           # Postgres image that seeds storage.objects must come from the same
           # CLI release -- a drift between them is invisible in the schema and
           # surfaces only as a runtime provider failure. See scripts/README.md.
-          version: 2.118.0
+          version: 2.119.0
 
       - uses: actions/setup-node@v4
         with:
