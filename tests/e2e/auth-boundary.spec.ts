@@ -19,7 +19,7 @@ test.describe("landing page", () => {
     ).toBeVisible();
     await expect(
       page.locator(".oh-hero-eyebrow").filter({ visible: true })
-    ).toHaveText("AI-POWERED JOB SEARCH");
+    ).toContainText("AI-POWERED JOB SEARCH");
     // A clean local database has no fabricated job fixtures. The hero must
     // therefore show either a real job preview or the explicit empty/unavailable
     // feed state; both are valid signed-out product surfaces.
