@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const next = url.searchParams.get("next") || "/onboarding";
 
   if (!code) {
-    return NextResponse.redirect(new URL("/signup?error=Google%20sign-in%20could%20not%20be%20completed.", request.url));
+    return NextResponse.redirect(new URL("/signup?error=Sign-in%20could%20not%20be%20completed.", request.url));
   }
 
   const supabase = await createClient();
