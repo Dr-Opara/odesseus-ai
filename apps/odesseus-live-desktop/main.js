@@ -9,6 +9,7 @@ const {
   net,
   session,
   desktopCapturer,
+  shell,
 } = require("electron");
 const path = require("node:path");
 
@@ -314,6 +315,17 @@ ipcMain.handle("odesseus:set-opacity", async (_event, value) => {
 ipcMain.handle("odesseus:set-click-through", async (_event, value) => {
   setClickThrough(Boolean(value));
   return clickThrough;
+});
+ipcMain.handle("odesseus:open-web-path", async (_event, webPath) => {
+  if (typeof webPath !== "string" || !webPath.startsWith("/interviews/")) {
+    throw new Error("That Odesseus web path is not allowed.");
+  }
+  const url = new URL(webPath, WEB_ORIGIN);
+  if (url.origin !== WEB_ORIGIN) {
+    throw new Error("That Odesseus web path is not allowed.");
+  }
+  await shell.openExternal(url.toString());
+  return true;
 });
 ipcMain.handle("odesseus:hide", async () => setOverlayVisible(false));
 ipcMain.handle("odesseus:quit", async () => app.quit());
