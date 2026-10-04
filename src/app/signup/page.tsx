@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signup } from "@/app/login/actions";
+import GoogleSignupButton from "@/components/google-signup-button";
 import MobileSignupWizard from "@/components/mobile/mobile-signup-wizard";
 
 export default async function SignupPage({
@@ -22,6 +23,14 @@ export default async function SignupPage({
 
         <div className="candidate-signup-card">
           {error ? <div className="candidate-signup-error">{error}</div> : null}
+
+          <GoogleSignupButton />
+
+          <div className="candidate-signup-divider">
+            <span />
+            <b>OR</b>
+            <span />
+          </div>
 
           <form action={signup}>
             <div className="candidate-name-grid">
