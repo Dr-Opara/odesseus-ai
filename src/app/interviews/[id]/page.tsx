@@ -11,6 +11,7 @@ import type {
   ResumeSnapshot,
 } from "@/types/json-fields";
 import AppShell from "@/components/app-shell";
+import DesktopLiveLaunchButton from "@/components/desktop-live-launch-button";
 
 export default async function InterviewWorkspacePage({
   params,
@@ -458,9 +459,7 @@ export default async function InterviewWorkspacePage({
                 {postAnalysis ? "View analysis" : "Analyze interview"}
               </Link>
             ) : (
-              <Link className="btn btn-primary" href={`/interviews/${interview.id}/live`}>
-                Start Odesseus Live
-              </Link>
+              <DesktopLiveLaunchButton interviewId={interview.id} />
             )}
           </div>
 
