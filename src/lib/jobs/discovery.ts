@@ -4,7 +4,7 @@ import { resumeProfileSchema } from "@/lib/ai/schemas";
 import { configuredJobSources, sourceKey } from "./sources";
 import { fetchSourceJobs } from "./providers";
 import { passesPreferencePrefilter } from "./prefilter";
-import type { DiscoverySummary, NormalizedJobPosting } from "./types";
+import type { DiscoverySummary, JobProvider, NormalizedJobPosting } from "./types";
 
 type UserContext = {
   userId: string;
@@ -51,9 +51,72 @@ export async function runAutomaticJobDiscovery(options?: {
     errors: [],
   };
 
-  if (!sources.length) return summary;
-
   const fetched = new Map<string, NormalizedJobPosting[]>();
+
+  if (!sources.length) {
+    const { data: publicJobs, error: publicJobsError } = await service
+      .from("public_job_posts")
+      .select("source_key,external_id,provider,company_name,title,location,work_arrangement,employment_type,salary_text,description,source_url,apply_url,published_at,updated_at")
+      .eq("is_active", true)
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .limit(500);
+
+    if (publicJobsError) {
+      summary.sourcesFailed += 1;
+      summary.errors.push({
+        source: "public-job-feed",
+        message: publicJobsError.message,
+      });
+      return summary;
+    }
+
+    const supportedProviders = new Set<JobProvider>([
+      "greenhouse",
+      "lever",
+      "ashby",
+      "workable",
+      "smartrecruiters",
+      "recruitee",
+      "workday",
+    ]);
+
+    const postings: NormalizedJobPosting[] = (publicJobs || [])
+      .filter(
+        (row) =>
+          supportedProviders.has(row.provider as JobProvider) &&
+          Boolean(row.source_key) &&
+          Boolean(row.external_id) &&
+          Boolean(row.company_name) &&
+          Boolean(row.title) &&
+          Boolean(row.description)
+      )
+      .map((row) => ({
+        provider: row.provider as JobProvider,
+        sourceKey: row.source_key,
+        companyName: row.company_name,
+        externalId: row.external_id,
+        title: row.title,
+        location: row.location,
+        workArrangement:
+          row.work_arrangement === "remote" ||
+          row.work_arrangement === "hybrid" ||
+          row.work_arrangement === "on-site"
+            ? row.work_arrangement
+            : null,
+        employmentType: row.employment_type,
+        salaryText: row.salary_text,
+        description: row.description,
+        sourceUrl: row.source_url || row.apply_url || "",
+        applyUrl: row.apply_url || row.source_url || "",
+        publishedAt: row.published_at,
+        updatedAt: row.updated_at,
+      }));
+
+    fetched.set("public-job-feed", postings);
+    summary.sourcesConfigured = 1;
+    summary.sourcesSucceeded = 1;
+    summary.postingsFetched = postings.length;
+  }
 
   for (const source of sources) {
     try {
