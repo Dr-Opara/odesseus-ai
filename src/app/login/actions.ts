@@ -35,6 +35,10 @@ export async function login(formData: FormData) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    const message = error.message?.toLowerCase() || "";
+    if (message.includes("email not confirmed") || message.includes("email_not_confirmed")) {
+      redirect(`/check-email?email=${encodeURIComponent(email)}&reason=unconfirmed`);
+    }
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
@@ -128,7 +132,44 @@ export async function signup(formData: FormData) {
     redirect("/onboarding");
   }
 
-  redirect("/check-email");
+  redirect(`/check-email?email=${encodeURIComponent(email)}`);
+}
+
+export async function resendVerification(formData: FormData) {
+  const email = clean(formData.get("email"));
+
+  if (!email) {
+    redirect("/check-email?error=Enter%20your%20email%20address.");
+  }
+
+  const ip = await requestIp();
+  const ipLimit = checkRateLimit(`verify-resend:ip:${ip}`, 8, 60 * 60 * 1000);
+  const emailLimit = checkRateLimit(
+    `verify-resend:email:${email.toLowerCase()}`,
+    3,
+    10 * 60 * 1000
+  );
+
+  if (!ipLimit.allowed || !emailLimit.allowed) {
+    redirect(
+      `/check-email?email=${encodeURIComponent(email)}&error=${encodeURIComponent(
+        "Please wait a few minutes before requesting another verification email."
+      )}`
+    );
+  }
+
+  const supabase = await createClient();
+
+  // Supabase deliberately avoids revealing whether an email belongs to an
+  // existing account. Keep the response generic for the same reason.
+  await supabase.auth.resend({
+    type: "signup",
+    email,
+  });
+
+  redirect(
+    `/check-email?email=${encodeURIComponent(email)}&resent=1`
+  );
 }
 
 export async function logout() {
