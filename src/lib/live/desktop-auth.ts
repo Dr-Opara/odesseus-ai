@@ -65,7 +65,7 @@ export async function authorizeDesktopRequest(
     .gt("access_expires_at", now)
     .maybeSingle();
 
-  if (!desktopSession) {
+  if (!desktopSession?.access_expires_at) {
     return { ok: false, status: 401, error: "Desktop session authorization expired." };
   }
 
