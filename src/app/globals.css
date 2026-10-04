@@ -4030,10 +4030,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .oh-logo-strip-subtitle{max-width:620px;margin:0 auto 18px;font-size:13px;line-height:1.5;color:rgba(9,9,9,.58)}
 .oh-company-marquee{overflow:hidden;position:relative;width:100%;max-width:100%;mask-image:linear-gradient(90deg,transparent 0,#000 5%,#000 95%,transparent 100%);-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 5%,#000 95%,transparent 100%)}
 .oh-company-marquee-track{display:flex;width:max-content;animation:oh-company-marquee-left 52s linear infinite;will-change:transform}
-.oh-company-marquee-group{display:flex;align-items:center;gap:10px;padding-right:10px}
-.oh-company-chip{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border:1px solid rgba(9,9,9,.08);border-radius:999px;background:#fff;color:#090909;white-space:nowrap}
-.oh-company-chip strong{font-size:12.5px;font-weight:650}
-.oh-company-logo{width:24px;height:24px;border-radius:6px;background-color:#f4f4f4;background-repeat:no-repeat;background-position:center;background-size:18px 18px;box-shadow:inset 0 0 0 1px rgba(9,9,9,.05)}
+.oh-company-marquee-group{display:flex;align-items:center;gap:18px;padding-right:18px}
+.oh-company-chip{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-width:170px;min-height:68px;padding:0 22px;border:1px solid rgba(9,9,9,.08);border-radius:999px;background:#fff;color:#090909;white-space:nowrap;box-shadow:0 8px 22px rgba(18,24,40,.045)}
+.oh-company-chip strong{font-size:16px;line-height:1;font-weight:750}
+.oh-company-logo{width:38px;height:38px;flex:0 0 38px;border-radius:10px;background-color:#f4f4f4;background-repeat:no-repeat;background-position:center;background-size:30px 30px;box-shadow:inset 0 0 0 1px rgba(9,9,9,.05)}
 .oh-logo-strip-note{display:block;margin-top:14px;font-size:10px;color:rgba(9,9,9,.42)}
 @keyframes oh-company-marquee-left{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 @media (hover:hover) and (pointer:fine){
@@ -4047,8 +4047,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 @media(max-width:640px){
   .oh-logo-strip{padding-top:20px}
   .oh-logo-strip-subtitle{font-size:12px;padding:0 8px}
-  .oh-company-chip{min-height:36px;padding:0 12px}
-  .oh-company-chip strong{font-size:12px}
+  .oh-company-chip{min-width:142px;min-height:54px;padding:0 16px;gap:10px}
+  .oh-company-chip strong{font-size:14px}
 }
 @media(max-width:900px){
   .oh-hero-grid{grid-template-columns:1fr}
