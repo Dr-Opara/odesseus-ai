@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
@@ -34,6 +35,24 @@ function configuredStripePriceId(sku: BillingSku): string | undefined {
   return envKey ? process.env[envKey] : undefined;
 }
 
+async function resolveSiteUrl(): Promise<string | null> {
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const proto = requestHeaders.get("x-forwarded-proto") ?? "https";
+
+  if (host) {
+    const allowed =
+      host === "odesseus.ai" ||
+      host === "www.odesseus.ai" ||
+      host.endsWith(".vercel.app") ||
+      host.startsWith("localhost:");
+
+    if (allowed) return `${proto}://${host}`;
+  }
+
+  return process.env.NEXT_PUBLIC_SITE_URL ?? null;
+}
+
 async function getOrCreateStripeCustomer(userId: string, email?: string) {
   const stripe = getStripe();
   const existing = await stripe.customers.search({
@@ -64,16 +83,21 @@ export async function createCheckoutSession(sku: string) {
 
   if (!userId) redirect("/login");
 
-  // Both halves of the billing configuration, not just the site URL: with the
-  // site URL set but STRIPE_SECRET_KEY absent, `getStripe()` below throws and
-  // the candidate sees a server error rather than the "billing is not
-  // configured" they were redirected to expect. A missing key is a deployment
-  // state, not a fault in the request.
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (!siteUrl || !process.env.STRIPE_SECRET_KEY) redirect("/billing?error=Billing%20is%20not%20configured");
+  const siteUrl = await resolveSiteUrl();
+  if (!siteUrl || !process.env.STRIPE_SECRET_KEY) {
+    redirect("/billing?error=Billing%20is%20not%20configured");
+  }
 
   const interval = recurringIntervalFor(item);
   const stripePriceId = configuredStripePriceId(sku as BillingSku);
+
+  // Preview and production must use pre-created Stripe Price objects so the
+  // Stripe catalog is the authority for what is sold. Dynamic price_data is a
+  // local-development convenience only.
+  if (!stripePriceId && process.env.NODE_ENV !== "development") {
+    redirect("/billing?error=Billing%20price%20is%20not%20configured");
+  }
+
   const customer = await getOrCreateStripeCustomer(userId, email);
 
   const lineItems = stripePriceId
@@ -83,8 +107,6 @@ export async function createCheckoutSession(sku: string) {
           currency: "usd",
           unit_amount: item.amountCents,
           product_data: { name: item.label, description: item.description },
-          // Local-development fallback when a pre-created Stripe Price ID has
-          // not been configured yet.
           ...(interval ? { recurring: { interval } } : {}),
         },
         quantity: 1,
@@ -101,9 +123,6 @@ export async function createCheckoutSession(sku: string) {
       sku,
       credit_type: item.creditType,
       credit_delta: String(item.creditDelta),
-      // plan_type is what the fulfillment trigger reads the Live membership
-      // configuration from; a subscription carries it on the session too so a
-      // replayed webhook resolves the same plan.
       ...("planType" in item ? { plan_type: item.planType } : {}),
     },
   });
