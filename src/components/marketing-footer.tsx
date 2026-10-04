@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 const socialIcons = [
-  { label: "X", slug: "x" },
-  { label: "Instagram", slug: "instagram" },
-  { label: "TikTok", slug: "tiktok" },
-  { label: "LinkedIn", slug: "linkedin" },
+  { label: "X", slug: "x", href: "https://x.com/odesseusai" },
+  { label: "Instagram", slug: "instagram", href: "https://instagram.com/odesseus.ai" },
+  { label: "TikTok", slug: "tiktok", href: "https://www.tiktok.com/@odesseus_ai" },
+  { label: "LinkedIn", slug: "linkedin", href: "https://linkedin.com/odesseus" },
 ] as const;
 
 const technologyBrands = [
@@ -50,31 +50,39 @@ export default function MarketingFooter() {
           <Link href="/careers">Careers</Link>
           <Link href="/partners">Partner Program</Link>
           <Link href="/about#faq">FAQ</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/terms">Terms and Conditions</Link>
         </div>
 
         <div className="figma-footer-locations">
-          <strong>Locations</strong>
+          <strong>Location</strong>
           <div className="figma-footer-location">
+            <small>N. America Headquarters</small>
             <span>Austin, Texas</span>
-            <small>Headquarters</small>
           </div>
           <div className="figma-footer-location">
+            <small>International Global Offices</small>
             <span>London, UK</span>
-            <small className="is-coming">Coming soon</small>
-          </div>
-          <div className="figma-footer-location">
             <span>Dubai, UAE</span>
-            <small className="is-coming">Coming soon</small>
+            <span>Berlin, Germany</span>
+            <span>Lagos, Nigeria</span>
+            <span>Nairobi, Kenya</span>
           </div>
         </div>
 
         <div className="figma-footer-list-column">
-          <strong>Socials</strong>
+          <strong>Social</strong>
           {socialIcons.map((item) => (
-            <span className="figma-footer-logo-link" key={item.label}>
+            <a
+              className="figma-footer-logo-link"
+              href={item.href}
+              target="_blank"
+              rel="noreferrer noopener"
+              key={item.label}
+            >
               <BrandIcon slug={item.slug} label={item.label} />
               <span>{item.label}</span>
-            </span>
+            </a>
           ))}
         </div>
 
