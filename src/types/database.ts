@@ -2361,6 +2361,66 @@ export type Database = {
           },
         ];
       };
+      live_desktop_sessions: {
+        Row: {
+          access_expires_at: string | null;
+          access_token_hash: string | null;
+          created_at: string;
+          id: string;
+          interview_id: string;
+          launch_expires_at: string;
+          launch_token_hash: string;
+          launch_used_at: string | null;
+          live_session_id: string;
+          revoked_at: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          access_expires_at?: string | null;
+          access_token_hash?: string | null;
+          created_at?: string;
+          id?: string;
+          interview_id: string;
+          launch_expires_at: string;
+          launch_token_hash: string;
+          launch_used_at?: string | null;
+          live_session_id: string;
+          revoked_at?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          access_expires_at?: string | null;
+          access_token_hash?: string | null;
+          created_at?: string;
+          id?: string;
+          interview_id?: string;
+          launch_expires_at?: string;
+          launch_token_hash?: string;
+          launch_used_at?: string | null;
+          live_session_id?: string;
+          revoked_at?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "live_desktop_sessions_interview_id_fkey";
+            columns: ["interview_id"];
+            isOneToOne: false;
+            referencedRelation: "interviews";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "live_desktop_sessions_live_session_id_fkey";
+            columns: ["live_session_id"];
+            isOneToOne: false;
+            referencedRelation: "live_interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       live_guest_invites: {
         Row: {
           accepted_at: string | null;

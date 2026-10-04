@@ -1,0 +1,34 @@
+{
+  "name": "odesseus-live-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Odesseus Live Windows interview companion",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "44.5.1",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "ai.odesseus.live",
+    "productName": "Odesseus Live",
+    "asar": true,
+    "artifactName": "OdesseusLiveSetup-${version}.${ext}",
+    "files": ["main.js", "preload.js", "renderer/**/*", "package.json"],
+    "protocols": [{"name": "Odesseus Live", "schemes": ["odesseus"]}],
+    "win": {
+      "target": [{"target": "nsis", "arch": ["x64"]}]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Odesseus Live"
+    }
+  }
+}
