@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src https://odesseus.ai" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Odesseus Live</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="overlay-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">O</span>
+          <div>
+            <strong>Odesseus Live</strong>
+            <span id="statusDot" class="status-dot">Waiting</span>
+          </div>
+        </div>
+        <div class="window-actions">
+          <button id="hideButton" title="Hide overlay">—</button>
+          <button id="quitButton" title="Quit Odesseus Live">×</button>
+        </div>
+      </header>
+
+      <section id="launchPanel" class="panel">
+        <p class="eyebrow">WINDOWS COMPANION</p>
+        <h1>Private guidance over your interview.</h1>
+        <p class="muted">Start from your Odesseus interview workspace. This app receives only a short-lived launch ticket, never your website password.</p>
+        <button id="connectButton" class="primary" disabled>Waiting for Odesseus…</button>
+      </section>
+
+      <section id="livePanel" class="panel hidden">
+        <div class="session-row">
+          <div>
+            <span class="eyebrow">INTERVIEW</span>
+            <strong id="sessionTitle">Ready</strong>
+          </div>
+          <span id="timer" class="timer">00:00</span>
+        </div>
+
+        <div class="answer-card">
+          <span class="eyebrow">GUIDANCE</span>
+          <p id="question" class="question">Listening for the interviewer…</p>
+          <div id="answer" class="answer">Odesseus will surface a concise answer when it confidently detects a question.</div>
+        </div>
+
+        <div class="quick-actions">
+          <button data-mode="star">STAR</button>
+          <button data-mode="shorter">Shorter</button>
+          <button data-mode="technical">More technical</button>
+          <button data-mode="follow_up">Follow-up</button>
+          <button id="generateButton">Generate</button>
+        </div>
+
+        <div class="controls">
+          <label>Opacity <input id="opacity" type="range" min="35" max="100" value="94" /></label>
+          <label class="toggle"><input id="clickThrough" type="checkbox" /> Click-through</label>
+        </div>
+
+        <div class="footer-actions">
+          <button id="startButton" class="primary">Start session</button>
+          <button id="endButton" class="danger" disabled>End</button>
+        </div>
+      </section>
+
+      <div id="errorBox" class="error hidden"></div>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
