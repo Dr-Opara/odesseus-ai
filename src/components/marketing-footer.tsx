@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 const socialIcons = [
-  { label: "X", slug: "x" },
-  { label: "Instagram", slug: "instagram" },
-  { label: "TikTok", slug: "tiktok" },
-  { label: "LinkedIn", slug: "linkedin" },
+  { label: "X", slug: "x", href: "https://x.com/odesseusai" },
+  { label: "Instagram", slug: "instagram", href: "https://instagram.com/odesseus.ai" },
+  { label: "TikTok", slug: "tiktok", href: "https://www.tiktok.com/@odesseus_ai" },
+  { label: "LinkedIn", slug: "linkedin", href: "https://linkedin.com/odesseus" },
 ] as const;
 
 const technologyBrands = [
@@ -69,12 +69,18 @@ export default function MarketingFooter() {
         </div>
 
         <div className="figma-footer-list-column">
-          <strong>Socials</strong>
+          <strong>Social</strong>
           {socialIcons.map((item) => (
-            <span className="figma-footer-logo-link" key={item.label}>
+            <a
+              className="figma-footer-logo-link"
+              href={item.href}
+              target="_blank"
+              rel="noreferrer noopener"
+              key={item.label}
+            >
               <BrandIcon slug={item.slug} label={item.label} />
               <span>{item.label}</span>
-            </span>
+            </a>
           ))}
         </div>
 
