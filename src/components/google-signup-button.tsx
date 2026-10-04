@@ -17,9 +17,9 @@ export default function GoogleSignupButton() {
       provider: "google",
       options: {
         redirectTo,
+        scopes: "openid email profile",
         queryParams: {
-          access_type: "offline",
-          prompt: "consent",
+          prompt: "select_account",
         },
       },
     });
