@@ -24,7 +24,16 @@ export async function POST() {
     );
   }
 
-  const missing = missingEnv(["SUPABASE_SERVICE_ROLE_KEY", "OPENAI_API_KEY"] as const);
+  const missing = missingEnv(["OPENAI_API_KEY"] as const);
+  const hasSupabaseServiceKey = Boolean(
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+      process.env.SUPABASE_SECRET_KEY?.trim()
+  );
+
+  if (!hasSupabaseServiceKey) {
+    missing.push("SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY");
+  }
+
   if (missing.length) {
     console.error("[ODESSEUS_JOB_DISCOVERY] missing configuration", missing);
     return NextResponse.json(
