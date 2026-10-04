@@ -149,10 +149,20 @@ test.describe("mobile landing layout (screen 00)", () => {
       // pokes outside the viewport.
       const overflow = await page.evaluate(() => {
         const doc = document.documentElement;
-        const hasScrollableAncestor = (el: HTMLElement) => {
+        const hasIntentionalOverflowAncestor = (el: HTMLElement) => {
           for (let node = el.parentElement; node; node = node.parentElement) {
             const overflowX = getComputedStyle(node).overflowX;
-            if (overflowX === "auto" || overflowX === "scroll") return true;
+            // Horizontal scrollers and clipped marquees deliberately contain
+            // children wider than the viewport. They are valid as long as the
+            // document itself does not gain horizontal scroll.
+            if (
+              overflowX === "auto" ||
+              overflowX === "scroll" ||
+              overflowX === "hidden" ||
+              overflowX === "clip"
+            ) {
+              return true;
+            }
           }
           return false;
         };
@@ -163,7 +173,7 @@ test.describe("mobile landing layout (screen 00)", () => {
           const r = el.getBoundingClientRect();
           if (r.width === 0 || r.height === 0) continue;
           if (r.right <= doc.clientWidth + 1 && r.left >= -1) continue;
-          if (hasScrollableAncestor(el)) continue;
+          if (hasIntentionalOverflowAncestor(el)) continue;
           escapes.push(`${el.tagName}.${el.className}`);
         }
         return {
