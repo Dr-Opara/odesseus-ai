@@ -4870,3 +4870,68 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   .oh-hero-flow::before{margin-right:5px}
   .m-oh-body .oh-hero-eyebrow-pill{font-size:inherit;padding:6px 8px}
 }
+
+
+/* Brand lockup refinement — compact, bold, icon/text visually balanced */
+.odesseus-brand-lockup{
+  --odesseus-lockup-size:30px;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  white-space:nowrap;
+  font-family:inherit;
+  font-weight:800;
+  line-height:1;
+  letter-spacing:-.055em;
+}
+.odesseus-wordmark-sm{--odesseus-lockup-size:30px}
+.odesseus-wordmark-md{--odesseus-lockup-size:34px}
+.odesseus-wordmark-lg{--odesseus-lockup-size:38px}
+.odesseus-wordmark-xl{--odesseus-lockup-size:42px}
+.odesseus-brand-lockup .odesseus-o-icon{
+  width:var(--odesseus-lockup-size);
+  height:var(--odesseus-lockup-size);
+  flex:0 0 var(--odesseus-lockup-size);
+  margin-right:0;
+  border-radius:calc(var(--odesseus-lockup-size) * .28);
+  background:var(--od-orange);
+  overflow:hidden;
+}
+.odesseus-brand-lockup .odesseus-o-icon:before{
+  width:calc(var(--odesseus-lockup-size) * .44);
+  height:calc(var(--odesseus-lockup-size) * .44);
+  right:calc(var(--odesseus-lockup-size) * -.10);
+  top:calc(var(--odesseus-lockup-size) * -.08);
+  background:var(--od-purple);
+}
+.odesseus-brand-lockup .odesseus-o-icon:after{
+  width:calc(var(--odesseus-lockup-size) * .40);
+  height:calc(var(--odesseus-lockup-size) * .40);
+  left:calc(var(--odesseus-lockup-size) * -.10);
+  bottom:calc(var(--odesseus-lockup-size) * -.10);
+  background:var(--od-navy);
+}
+.odesseus-brand-lockup .odesseus-o-icon span{
+  font-size:calc(var(--odesseus-lockup-size) * .54);
+  line-height:1;
+  font-weight:900;
+  letter-spacing:-.06em;
+}
+.odesseus-brand-lockup .odesseus-wordmark-name,
+.odesseus-brand-lockup .odesseus-wordmark-ai{
+  font-size:calc(var(--odesseus-lockup-size) * .82);
+  line-height:1;
+  font-weight:800;
+  letter-spacing:-.055em;
+}
+.odesseus-brand-lockup .odesseus-wordmark-name{color:var(--od-ink)}
+.odesseus-brand-lockup .odesseus-wordmark-ai{color:var(--od-orange)}
+.odesseus-brand-lockup.is-inverse .odesseus-wordmark-name{color:#fff}
+
+/* Keep the complete hero capability line visually unified */
+.oh-hero-kicker,
+.oh-hero-kicker .oh-hero-eyebrow-pill,
+.oh-hero-kicker .oh-hero-flow,
+.oh-hero-kicker .oh-hero-flow::before{
+  color:var(--od-orange);
+}
