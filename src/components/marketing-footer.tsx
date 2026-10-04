@@ -50,6 +50,8 @@ export default function MarketingFooter() {
           <Link href="/careers">Careers</Link>
           <Link href="/partners">Partner Program</Link>
           <Link href="/about#faq">FAQ</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/terms">Terms and Conditions</Link>
         </div>
 
         <div className="figma-footer-locations">
