@@ -512,7 +512,6 @@ export default function OdesseusLiveClient({
       setSessionDuration(0);
       setState("live");
       setStatusText("Odesseus Live is listening for interview questions.");
-      finishSession();
     } catch (err) {
       stream?.getTracks().forEach((track) => track.stop());
       dataChannel?.close();
