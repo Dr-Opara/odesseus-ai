@@ -19,6 +19,36 @@ function recurringIntervalFor(item: CatalogEntry): "month" | "year" | null {
   return item.planType === "monthly" ? "month" : "year";
 }
 
+const STRIPE_PRICE_ENV_BY_SKU: Partial<Record<BillingSku, string>> = {
+  wallet_10: "STRIPE_PRICE_WALLET_10",
+  wallet_20: "STRIPE_PRICE_WALLET_20",
+  wallet_50: "STRIPE_PRICE_WALLET_50",
+  live_single: "STRIPE_PRICE_LIVE_SINGLE",
+  live_monthly: "STRIPE_PRICE_LIVE_MONTHLY",
+  live_personal_annual: "STRIPE_PRICE_LIVE_PERSONAL_ANNUAL",
+  live_share_annual: "STRIPE_PRICE_LIVE_SHARE_ANNUAL",
+};
+
+function configuredStripePriceId(sku: BillingSku): string | undefined {
+  const envKey = STRIPE_PRICE_ENV_BY_SKU[sku];
+  return envKey ? process.env[envKey] : undefined;
+}
+
+async function getOrCreateStripeCustomer(userId: string, email?: string) {
+  const stripe = getStripe();
+  const existing = await stripe.customers.search({
+    query: `metadata['odesseus_user_id']:'${userId}'`,
+    limit: 1,
+  });
+
+  if (existing.data[0]) return existing.data[0];
+
+  return stripe.customers.create({
+    email,
+    metadata: { odesseus_user_id: userId },
+  });
+}
+
 // Accepts a plain string on purpose: pre-migration UI may still submit legacy
 // application-credit SKUs ("app_*"). Any SKU absent from the sellable catalog
 // fails closed with an "Invalid product" redirect — nothing can be charged for
@@ -43,21 +73,27 @@ export async function createCheckoutSession(sku: string) {
   if (!siteUrl || !process.env.STRIPE_SECRET_KEY) redirect("/billing?error=Billing%20is%20not%20configured");
 
   const interval = recurringIntervalFor(item);
+  const stripePriceId = configuredStripePriceId(sku as BillingSku);
+  const customer = await getOrCreateStripeCustomer(userId, email);
+
+  const lineItems = stripePriceId
+    ? [{ price: stripePriceId, quantity: 1 }]
+    : [{
+        price_data: {
+          currency: "usd",
+          unit_amount: item.amountCents,
+          product_data: { name: item.label, description: item.description },
+          // Local-development fallback when a pre-created Stripe Price ID has
+          // not been configured yet.
+          ...(interval ? { recurring: { interval } } : {}),
+        },
+        quantity: 1,
+      }];
 
   const session = await getStripe().checkout.sessions.create({
     mode: interval ? "subscription" : "payment",
-    customer_email: email,
-    line_items: [{
-      price_data: {
-        currency: "usd",
-        unit_amount: item.amountCents,
-        product_data: { name: item.label, description: item.description },
-        // Stripe rejects price_data without a recurring block in
-        // subscription mode, so the interval is attached per-SKU.
-        ...(interval ? { recurring: { interval } } : {}),
-      },
-      quantity: 1,
-    }],
+    customer: customer.id,
+    line_items: lineItems,
     success_url: `${siteUrl}/billing?status=success`,
     cancel_url: `${siteUrl}/billing?status=cancelled`,
     metadata: {
