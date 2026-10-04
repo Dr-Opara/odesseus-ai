@@ -4935,3 +4935,41 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .oh-hero-kicker .oh-hero-flow::before{
   color:var(--od-orange);
 }
+
+
+/* Final hero kicker + compact wordmark lockup */
+.oh-hero-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  width:max-content;
+  max-width:100%;
+  padding:7px 12px;
+  border-radius:999px;
+  background:#fff2eb;
+  color:var(--od-orange);
+  white-space:nowrap;
+  overflow:hidden;
+}
+.oh-hero-kicker .oh-hero-eyebrow-pill{
+  padding:0;
+  background:transparent;
+  border-radius:0;
+  color:inherit;
+  box-shadow:none;
+}
+.oh-hero-kicker .oh-hero-flow,
+.oh-hero-kicker .oh-hero-flow::before{
+  color:inherit;
+}
+.odesseus-brand-lockup{
+  gap:0;
+}
+.odesseus-brand-lockup .odesseus-o-icon{
+  margin-right:7px;
+}
+.odesseus-brand-lockup .odesseus-wordmark-name,
+.odesseus-brand-lockup .odesseus-wordmark-ai{
+  margin:0;
+  padding:0;
+}
