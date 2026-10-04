@@ -4861,9 +4861,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 
 
 /* Homepage hero capability flow */
-.oh-hero-kicker{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.oh-hero-flow{font-size:11px;font-weight:700;letter-spacing:.01em;color:rgba(9,9,9,.58)}
+.oh-hero-kicker{display:inline-flex;align-items:center;gap:8px;flex-wrap:nowrap;white-space:nowrap;width:max-content;max-width:100%}
+.oh-hero-flow{font-size:11px;font-weight:700;letter-spacing:.01em;color:rgba(9,9,9,.58);white-space:nowrap}
+.oh-hero-flow::before{content:"·";margin-right:8px;color:rgba(9,9,9,.34)}
 @media(max-width:767px){
-  .oh-hero-kicker{gap:7px}
-  .oh-hero-flow{font-size:9px;line-height:1.4;color:rgba(9,9,9,.56)}
+  .oh-hero-kicker{gap:5px}
+  .oh-hero-flow{font-size:clamp(7px,2.1vw,9px);line-height:1;color:rgba(9,9,9,.56)}
+  .oh-hero-flow::before{margin-right:5px}
+  .m-oh-body .oh-hero-eyebrow-pill{font-size:clamp(7px,2vw,9px);padding:6px 8px}
 }
