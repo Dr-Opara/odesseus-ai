@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("odesseusDesktop", {
   api: (path, options) => ipcRenderer.invoke("odesseus:api", path, options),
   setOpacity: (value) => ipcRenderer.invoke("odesseus:set-opacity", value),
   setClickThrough: (value) => ipcRenderer.invoke("odesseus:set-click-through", value),
+  openWebPath: (path) => ipcRenderer.invoke("odesseus:open-web-path", path),
   hide: () => ipcRenderer.invoke("odesseus:hide"),
   quit: () => ipcRenderer.invoke("odesseus:quit"),
   onState: (callback) => {
