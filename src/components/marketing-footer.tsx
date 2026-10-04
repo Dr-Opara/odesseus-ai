@@ -53,18 +53,18 @@ export default function MarketingFooter() {
         </div>
 
         <div className="figma-footer-locations">
-          <strong>Locations</strong>
+          <strong>Location</strong>
           <div className="figma-footer-location">
+            <small>N. America Headquarters</small>
             <span>Austin, Texas</span>
-            <small>Headquarters</small>
           </div>
           <div className="figma-footer-location">
+            <small>International Global Offices</small>
             <span>London, UK</span>
-            <small className="is-coming">Coming soon</small>
-          </div>
-          <div className="figma-footer-location">
             <span>Dubai, UAE</span>
-            <small className="is-coming">Coming soon</small>
+            <span>Berlin, Germany</span>
+            <span>Lagos, Nigeria</span>
+            <span>Nairobi, Kenya</span>
           </div>
         </div>
 
