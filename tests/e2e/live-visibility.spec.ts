@@ -79,8 +79,8 @@ test.describe("signed-out public surfaces never mention Odesseus Live", () => {
   test("the desktop nav and footer carry no Live entry", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/");
-    const header = (await page.locator("header").innerText()).toLowerCase();
-    const footer = (await page.locator(".figma-footer").innerText()).toLowerCase();
+    const header = (await page.locator("header").filter({ visible: true }).innerText()).toLowerCase();
+    const footer = (await page.locator(".figma-footer").filter({ visible: true }).innerText()).toLowerCase();
     const text = `${header} ${footer}`;
     for (const token of FORBIDDEN) {
       expect(text).not.toContain(token);
