@@ -171,6 +171,8 @@ async function exchangeTicket(ticket) {
   desktopAccessToken = payload.accessToken;
   desktopSession = {
     interviewId: payload.interviewId || null,
+    liveSessionId: payload.liveSessionId || null,
+    status: payload.status || null,
     expiresAt: payload.expiresAt || null,
     context: payload.context || null,
   };
