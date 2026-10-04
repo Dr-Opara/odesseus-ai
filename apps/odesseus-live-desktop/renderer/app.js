@@ -410,7 +410,7 @@ async function endSession() {
   await new Promise((resolve) => setTimeout(resolve, END_DRAIN_MS));
 
   try {
-    await bridge.api("/api/live/desktop/end", { body: {} });
+    const ended = await bridge.api("/api/live/desktop/end", { body: {} });
     live = false;
     stopTimer();
     cleanupConnection();
@@ -418,7 +418,12 @@ async function endSession() {
     startButton.disabled = true;
     startButton.textContent = "Session ended";
     question.textContent = "Interview captured";
-    answer.textContent = "Your transcript is saved to Odesseus. Return to the web app for post-interview analysis.";
+    answer.textContent = "Your transcript is saved to Odesseus. Opening post-interview analysis in your browser…";
+    if (ended?.analysisUrl) {
+      window.setTimeout(() => {
+        void bridge.openWebPath(ended.analysisUrl).catch((error) => showError(error.message));
+      }, 500);
+    }
   } catch (error) {
     endButton.disabled = false;
     setStatus("Live");
