@@ -5,7 +5,7 @@ type Feature = {
   title: string;
   description: string;
   accent?: boolean;
-  visual: "match" | "apply" | "resume" | "prep" | "track" | "live";
+  visual: "match" | "apply" | "resume" | "prep" | "track" | "earn";
 };
 
 const features: Feature[] = [
@@ -45,12 +45,12 @@ const features: Feature[] = [
     visual: "track",
   },
   {
-    eyebrow: "Interview Support",
-    title: "Interview support — plus a way to earn while you search",
+    eyebrow: "Earn While You Search",
+    title: "Your job search can work for you, too",
     description:
-      "Get real-time, non-coding interview support and post-interview analysis. Eligible candidates can also participate in the earning program while continuing their job search.",
+      "Eligible candidates can participate in the Odesseus earning program while continuing their job search. Program availability and participation details are provided after sign in.",
     accent: true,
-    visual: "live",
+    visual: "earn",
   },
 ];
 
@@ -125,14 +125,26 @@ function FeatureVisual({ type }: { type: Feature["visual"] }) {
   }
 
   return (
-    <div className="oh-feature-ui oh-feature-ui-live" aria-hidden="true">
-      <div className="oh-live-orb">AI</div>
-      <div className="oh-live-copy">
-        <span>Interview in progress</span>
-        <strong>Stay ready for the next question</strong>
-        <small>Real-time guidance · Post-interview analysis</small>
+    <div className="oh-feature-ui oh-feature-ui-earn" aria-hidden="true">
+      <div className="oh-earn-summary">
+        <small>Odesseus earning program</small>
+        <strong>Earn while you search</strong>
+        <div className="oh-earn-bars">
+          <span style={{ height: "28%" }} />
+          <span style={{ height: "42%" }} />
+          <span style={{ height: "58%" }} />
+          <span style={{ height: "72%" }} />
+          <span style={{ height: "88%" }} />
+        </div>
       </div>
-      <div className="oh-live-earn">Earn while you search</div>
+      <div className="oh-earn-row">
+        <span>Eligibility</span>
+        <strong>For eligible candidates</strong>
+      </div>
+      <div className="oh-earn-row">
+        <span>Program details</span>
+        <strong>Available after sign in</strong>
+      </div>
     </div>
   );
 }
@@ -142,7 +154,7 @@ export default function HomepageFeatureShowcase() {
     <section className="oh-feature-section" aria-labelledby="what-odesseus-does">
       <div className="oh-feature-heading">
         <span>YOUR AI CAREER AGENT</span>
-        <h2 id="what-odesseus-does">One place to search, apply, prepare, interview, and keep moving.</h2>
+        <h2 id="what-odesseus-does">One place to search, tailor, apply, prepare, and keep moving.</h2>
         <p>
           Odesseus helps you move through the entire job-search journey — from finding the right role
           to preparing for the interview — without turning the process into five different tools.
@@ -156,7 +168,7 @@ export default function HomepageFeatureShowcase() {
               <span className="oh-feature-eyebrow">{feature.eyebrow}</span>
               <h3>{feature.title}</h3>
               <p>{feature.description}</p>
-              {feature.visual === "live" ? (
+              {feature.visual === "earn" ? (
                 <Link className="oh-feature-link" href="/signin">
                   Program details are available after sign in →
                 </Link>
