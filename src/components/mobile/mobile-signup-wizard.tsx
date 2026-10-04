@@ -3,7 +3,6 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { signup } from "@/app/login/actions";
-import GoogleSignupButton from "@/components/google-signup-button";
 import MobileOnboardingProgress from "@/components/mobile/mobile-onboarding-progress";
 import { APPLY_TIERS } from "@/lib/pricing/candidate-pricing";
 
@@ -121,14 +120,6 @@ export default function MobileSignupWizard({ error }: { error?: string }) {
         </div>
       </div>
 
-      <GoogleSignupButton />
-
-      <div className="m-or-divider">
-        <span />
-        <b>OR</b>
-        <span />
-      </div>
-
       <form onSubmit={continueToName} className="m-signup-form">
         <label className="m-field">
           <span>Email</span>
@@ -160,7 +151,7 @@ export default function MobileSignupWizard({ error }: { error?: string }) {
           <p className="m-inline-error">{decodeURIComponent(error)}</p>
         ) : null}
         <button className="m-action" type="submit">
-          Continue with Email
+          Continue
         </button>
       </form>
 
