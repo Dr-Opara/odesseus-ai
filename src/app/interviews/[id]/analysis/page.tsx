@@ -73,7 +73,8 @@ export default async function PostInterviewPage({
 
   const company = interview.applications?.company_name || "Company";
   const role = interview.applications?.role_title || "Role";
-  const canAnalyze = liveSession?.status === "ended";
+  const canAnalyze =
+    liveSession?.status === "ended" || liveSession?.status === "completed";
 
   return (
     <AppShell
