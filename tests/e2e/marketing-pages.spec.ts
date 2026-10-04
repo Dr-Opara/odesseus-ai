@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
 // credentials — these are all public pages.
 
 const pages = [
-  { path: "/", heading: "Discover Your Dream Job with Odesseus.ai" },
+  { path: "/", heading: "Find Your Next Opportunity Faster" },
   { path: "/how-it-works", heading: "A smarter path from search to interview." },
   { path: "/apply", heading: "Apply anywhere your next opportunity lives." },
   // /live redirects to /agents as part of the three-core-agent simplification.
@@ -39,7 +39,6 @@ test.describe("shared marketing navigation", () => {
     ["Job Seekers", "/how-it-works"],
     ["Employers", "/employers"],
     ["Pricing", "/pricing"],
-    ["About", "/about"],
   ] as const;
 
   for (const { path } of pages) {
@@ -115,7 +114,7 @@ test.describe("shared marketing footer", () => {
   for (const { path } of pages) {
     test(`${path} renders the Job Seekers/Employers/Company footer`, async ({ page }) => {
       await page.goto(path);
-      const footer = page.locator(".figma-footer");
+      const footer = page.locator(".figma-footer").filter({ visible: true });
       await expect(footer.getByText("Job Seekers")).toBeVisible();
       await expect(footer.getByText("Employers", { exact: true })).toBeVisible();
       await expect(footer.getByText("Company")).toBeVisible();
@@ -236,9 +235,10 @@ test.describe("Partner Program public experience", () => {
     await page.goto("/partners");
     await expect(page).toHaveTitle(/Partner Program/);
     await expect(page.getByRole("heading", { name: "Partner with Odesseus." })).toBeVisible();
-    await expect(page.getByText("Instagram", { exact: true })).toBeVisible();
-    await expect(page.getByText("Facebook", { exact: true })).toBeVisible();
-    await expect(page.getByText("TikTok", { exact: true })).toBeVisible();
+    const hero = page.locator(".partner-hero");
+    await expect(hero.getByText("Instagram", { exact: true })).toBeVisible();
+    await expect(hero.getByText("Facebook", { exact: true })).toBeVisible();
+    await expect(hero.getByText("TikTok", { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Apply to partner" })).toHaveAttribute("href", "/partners/apply");
     const body = (await page.locator("body").innerText()).toLowerCase();
     expect(body).not.toContain("guaranteed commission");
