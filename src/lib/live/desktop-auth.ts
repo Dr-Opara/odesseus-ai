@@ -65,7 +65,8 @@ export async function authorizeDesktopRequest(
     .gt("access_expires_at", now)
     .maybeSingle();
 
-  if (!desktopSession?.access_expires_at) {
+  const accessExpiresAt = desktopSession?.access_expires_at;
+  if (!desktopSession || !accessExpiresAt) {
     return { ok: false, status: 401, error: "Desktop session authorization expired." };
   }
 
@@ -88,7 +89,13 @@ export async function authorizeDesktopRequest(
   return {
     ok: true,
     service,
-    desktopSession,
+    desktopSession: {
+      id: desktopSession.id,
+      live_session_id: desktopSession.live_session_id,
+      interview_id: desktopSession.interview_id,
+      user_id: desktopSession.user_id,
+      access_expires_at: accessExpiresAt,
+    },
     liveSession,
   };
 }
