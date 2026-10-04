@@ -30,7 +30,7 @@ export default async function EmployerSignupPage({ searchParams }: { searchParam
           <div className="figma-page-hero inverse" style={{ minHeight: 0, padding: 0, background: "transparent" }}>
             <span className="figma-eyebrow">FOR EMPLOYERS</span>
             <h1>Create your employer account.</h1>
-            <p>Use Google or your work email. Verified employers, simple transparent pricing.</p>
+            <p>Use your work email. Verified employers, simple transparent pricing.</p>
             <p style={{ marginTop: 24 }}>✓ Verified Employer program &nbsp;&nbsp; ✓ Applicant pipeline &nbsp;&nbsp; ✓ Employer dashboard</p>
           </div>
 
