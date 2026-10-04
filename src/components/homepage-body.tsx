@@ -79,10 +79,13 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
     <>
       <section className="oh-hero-grid">
         <div className="oh-hero-copy oh-hero-copy-refresh">
-          <span className="oh-hero-eyebrow oh-hero-eyebrow-pill">
-            <span aria-hidden="true">⚡</span>
-            AI-POWERED JOB SEARCH
-          </span>
+          <div className="oh-hero-kicker">
+            <span className="oh-hero-eyebrow oh-hero-eyebrow-pill">
+              <span aria-hidden="true">⚡</span>
+              AI-POWERED JOB SEARCH
+            </span>
+            <span className="oh-hero-flow">Find. Match. Optimize. Apply. Prepare.</span>
+          </div>
           <h1 className="oh-hero-title-refresh">
             <span>Find Your Next</span>
             <span>
