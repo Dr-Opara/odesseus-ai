@@ -67,6 +67,8 @@ export async function getHomepageJobs(): Promise<HomepageJobsResult> {
       id: item.id,
       title: item.title,
       company: item.company,
+      ...(item.companyLogoUrl ? { companyLogoUrl: item.companyLogoUrl } : {}),
+      ...(item.sourceUrl ? { sourceUrl: item.sourceUrl } : {}),
       location: item.location ?? undefined,
       workArrangement: workArrangement(item.workArrangement),
       // Absent when the source published none — never a default.
