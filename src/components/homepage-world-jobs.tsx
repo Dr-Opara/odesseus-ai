@@ -5,25 +5,8 @@ import {
   getHomepageJobsClient,
   withoutMatchScore,
 } from "@/lib/jobs/homepage-client";
+import CompanyLogo from "@/components/company-logo";
 import type { HomepageJob, HomepageJobsResult } from "@/lib/jobs/homepage-types";
-
-const COMPANY_DOMAINS: Record<string, string> = {
-  amazon: "amazon.com",
-  google: "google.com",
-  microsoft: "microsoft.com",
-  meta: "meta.com",
-  spotify: "spotify.com",
-  samsung: "samsung.com",
-  apple: "apple.com",
-  nvidia: "nvidia.com",
-  salesforce: "salesforce.com",
-  oracle: "oracle.com",
-  adobe: "adobe.com",
-  netflix: "netflix.com",
-  ramp: "ramp.com",
-  numeric: "numeric.io",
-  linear: "linear.app",
-};
 
 const quickLinks = [
   { icon: "⚡", label: "Find jobs" },
@@ -32,36 +15,16 @@ const quickLinks = [
   { icon: "$", label: "Earn while you search" },
 ];
 
-function companyDomain(name: string) {
-  return COMPANY_DOMAINS[name.trim().toLowerCase()];
-}
-
-function JobLogo({ job }: { job: HomepageJob }) {
-  const domain = companyDomain(job.company);
-  const initial = job.company.trim().charAt(0).toUpperCase() || "O";
-
-  return (
-    <span
-      className="oh-world-job-logo"
-      aria-hidden="true"
-      style={
-        domain
-          ? {
-              backgroundImage: `url("https://www.google.com/s2/favicons?domain=${domain}&sz=64")`,
-            }
-          : undefined
-      }
-    >
-      {domain ? null : initial}
-    </span>
-  );
-}
-
 function JobCard({ job }: { job: HomepageJob }) {
   return (
     <article className="oh-world-job-card">
       <div className="oh-world-job-company-row">
-        <JobLogo job={job} />
+        <CompanyLogo
+          company={job.company}
+          logoUrl={job.companyLogoUrl ?? null}
+          sourceUrl={job.sourceUrl ?? job.applyUrl ?? null}
+          className="oh-world-job-logo"
+        />
         <strong>{job.company}</strong>
       </div>
 
