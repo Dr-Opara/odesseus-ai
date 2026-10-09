@@ -1,46 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import CompanyLogo from "@/components/company-logo";
 import type { HomepageJob, HomepageJobsResult } from "@/lib/jobs/homepage-types";
-
-const COMPANY_DOMAINS: Record<string, string> = {
-  amazon: "amazon.com",
-  google: "google.com",
-  microsoft: "microsoft.com",
-  meta: "meta.com",
-  spotify: "spotify.com",
-  samsung: "samsung.com",
-  apple: "apple.com",
-  nvidia: "nvidia.com",
-  salesforce: "salesforce.com",
-  oracle: "oracle.com",
-  adobe: "adobe.com",
-  netflix: "netflix.com",
-  ramp: "ramp.com",
-  numeric: "numeric.io",
-  linear: "linear.app",
-};
-
-function companyDomain(name: string) {
-  return COMPANY_DOMAINS[name.trim().toLowerCase()];
-}
-
-function ProductLogo({ job }: { job: HomepageJob }) {
-  const domain = companyDomain(job.company);
-  return (
-    <span
-      className="oh-product-job-logo"
-      aria-hidden="true"
-      style={
-        domain
-          ? { backgroundImage: `url("https://www.google.com/s2/favicons?domain=${domain}&sz=64")` }
-          : undefined
-      }
-    >
-      {domain ? null : job.company.charAt(0).toUpperCase()}
-    </span>
-  );
-}
 
 function ProductPreview({ job }: { job: HomepageJob }) {
   const match =
@@ -65,7 +27,13 @@ function ProductPreview({ job }: { job: HomepageJob }) {
 
           <div className="oh-product-job-card">
             <div className="oh-product-job-heading">
-              <ProductLogo job={job} />
+              <CompanyLogo
+                company={job.company}
+                logoUrl={job.companyLogoUrl ?? null}
+                sourceUrl={job.sourceUrl ?? job.applyUrl ?? null}
+                className="oh-product-job-logo"
+                eager
+              />
               <div>
                 <strong>{job.title}</strong>
                 <span>{job.company}</span>
