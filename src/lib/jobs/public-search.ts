@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { jobMatchesMarket, type JobMarket } from "@/lib/jobs/location-market";
 
 export type PublicJobSearchItem = {
   id: string;
@@ -18,6 +19,7 @@ export type PublicJobSearchItem = {
 type SearchInput = {
   query?: string;
   location?: string;
+  market?: JobMarket | null;
   employmentType?: string;
   limit?: number;
 };
@@ -36,7 +38,8 @@ export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJ
     )
     .eq("is_active", true)
     .or(`published_at.gte.${cutoff},and(published_at.is.null,first_seen_at.gte.${cutoff})`)
-    .limit(limit);
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .limit(1000);
 
   const term = input.query?.trim().replace(/[,%()]/g, " ");
   if (term) {
@@ -46,7 +49,7 @@ export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJ
   }
 
   const location = input.location?.trim();
-  if (location) query = query.ilike("location", `%${location}%`);
+  if (location && !input.market) query = query.ilike("location", `%${location}%`);
 
   const employmentType = input.employmentType?.trim();
   if (employmentType) query = query.eq("employment_type", employmentType);
@@ -69,6 +72,7 @@ export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJ
     published_at: string | null;
     first_seen_at: string;
   }>)
+    .filter((row) => jobMatchesMarket(row.location, input.market ?? null))
     .map((row) => ({
       id: row.id,
       title: row.title,
@@ -83,7 +87,8 @@ export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJ
       applyUrl: row.apply_url,
       postedAt: row.published_at ?? row.first_seen_at,
     }))
-    .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
+    .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
+    .slice(0, limit);
 }
 
 export function jobAgeLabel(iso: string): string {
