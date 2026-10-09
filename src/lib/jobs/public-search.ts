@@ -5,6 +5,7 @@ export type PublicJobSearchItem = {
   id: string;
   title: string;
   company: string;
+  companyLogoUrl: string | null;
   location: string | null;
   employmentType: string | null;
   workArrangement: string | null;
@@ -36,7 +37,7 @@ export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJ
   let query = service
     .from("public_job_posts")
     .select(
-      "id,title,company_name,location,employment_type,work_arrangement,salary_text,description,provider,source_url,apply_url,published_at,first_seen_at"
+      "id,title,company_name,company_logo_url,location,employment_type,work_arrangement,salary_text,description,provider,source_url,apply_url,published_at,first_seen_at"
     )
     .eq("is_active", true)
     .or(`published_at.gte.${cutoff},and(published_at.is.null,first_seen_at.gte.${cutoff})`)
@@ -65,6 +66,7 @@ export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJ
     id: string;
     title: string;
     company_name: string;
+    company_logo_url: string | null;
     location: string | null;
     employment_type: string | null;
     work_arrangement: string | null;
@@ -86,6 +88,7 @@ export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJ
       id: row.id,
       title: row.title,
       company: row.company_name,
+      companyLogoUrl: row.company_logo_url,
       location: row.location,
       employmentType: row.employment_type,
       workArrangement: row.work_arrangement,
