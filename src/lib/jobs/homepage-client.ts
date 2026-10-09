@@ -25,6 +25,8 @@ type FeedResponse = {
     id: string;
     title: string;
     company: string;
+    companyLogoUrl?: string | null;
+    sourceUrl?: string | null;
     location?: string | null;
     workArrangement?: string | null;
     salaryText?: string | null;
@@ -71,6 +73,8 @@ export async function getHomepageJobsClient(): Promise<HomepageJobsResult> {
         id: item.id,
         title: item.title,
         company: item.company,
+        ...(item.companyLogoUrl ? { companyLogoUrl: item.companyLogoUrl } : {}),
+        ...(item.sourceUrl ? { sourceUrl: item.sourceUrl } : {}),
         ...(item.location ? { location: item.location } : {}),
         ...(workArrangement(item.workArrangement)
           ? { workArrangement: workArrangement(item.workArrangement) }
