@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createCheckoutSession } from "@/app/actions/billing";
 import { billingCatalog, applyRates, liveSkus, LIVE_FAIR_USE } from "@/lib/billing/catalog";
 import AppShell from "@/components/app-shell";
+import CandidateAutoCheckout from "@/components/pricing/candidate-auto-checkout";
 
 /** Formats integer minor units as a USD string (e.g. 39 -> "$0.39"). */
 const formatUsd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
@@ -47,9 +48,9 @@ function activityLabel(creditType: string, delta: number): string {
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; error?: string }>;
+  searchParams: Promise<{ status?: string; error?: string; purchase?: string }>;
 }) {
-  const { status, error } = await searchParams;
+  const { status, error, purchase } = await searchParams;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims?.sub;
@@ -83,6 +84,11 @@ export default async function BillingPage({
       .limit(8),
     supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
   ]);
+
+  const purchaseSku =
+    purchase && purchase in billingCatalog
+      ? (purchase as keyof typeof billingCatalog)
+      : null;
 
   const activity = [
     ...(transactions ?? []).map((t) => ({
@@ -126,6 +132,8 @@ export default async function BillingPage({
             No subscription. Pay when Odesseus works for you.
           </p>
         </div>
+
+        {purchaseSku ? <CandidateAutoCheckout sku={purchaseSku} /> : null}
 
         {status === "success" ? (
           <div className="billing-success">
@@ -205,7 +213,7 @@ export default async function BillingPage({
           </div>
         </section>
 
-        <section style={{ marginTop: 34 }}>
+        <section id="wallet-topups" style={{ marginTop: 34 }}>
           <div className="muted" style={{ fontSize: 13 }}>Add funds</div>
           <h2 style={{ fontSize: 24, margin: "7px 0 18px" }}>Wallet top-ups</h2>
           <div className="card bundle-band">
@@ -228,7 +236,7 @@ export default async function BillingPage({
           </div>
         </section>
 
-        <section style={{ marginTop: 34 }}>
+        <section id="interview-passes" style={{ marginTop: 34 }}>
           <h2 style={{ fontSize: 24, margin: "0 0 18px" }}>Interview passes</h2>
           <div className="card bundle-band">
             <p className="muted" style={{ margin: "0 0 4px" }}>
