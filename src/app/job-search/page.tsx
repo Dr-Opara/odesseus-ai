@@ -81,11 +81,11 @@ export default async function JobSearchPage({
 
           <select name="type" defaultValue={type} aria-label="Employment type">
             <option value="">All job types</option>
-            <option value="fulltime">Full-time</option>
-            <option value="parttime">Part-time</option>
-            <option value="contract">Contract</option>
-            <option value="internship">Internship</option>
-            <option value="temporary">Temporary</option>
+            <option value="Full Time">Full-time</option>
+            <option value="Part Time">Part-time</option>
+            <option value="Contract">Contract</option>
+            <option value="Internship">Internship</option>
+            <option value="Temporary">Temporary</option>
           </select>
 
           <button type="submit">Search</button>
@@ -127,9 +127,6 @@ export default async function JobSearchPage({
                         <p>{job.company}</p>
                       </div>
 
-                      <button className="public-job-save" type="button" aria-label="Save job">
-                        ♡
-                      </button>
                     </div>
 
                     <div className="public-job-meta">
