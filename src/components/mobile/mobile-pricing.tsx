@@ -177,19 +177,6 @@ export default function MobilePricing() {
             description={PREP_AGENT_DESCRIPTION}
             href={pricingGo({ audience: "candidate", action: "dashboard" })}
           />
-          <PricingCard
-            icon="shield"
-            title={<>{FAILED_SUBMISSION_LABEL} · {FAILED_SUBMISSION_PRICE_LABEL}</>}
-            description={FAILED_SUBMISSION_DESCRIPTION}
-            href={pricingGo({ audience: "candidate", action: "dashboard" })}
-          />
-          <PricingCard
-            icon="tracking"
-            tone="green"
-            title={<>Application tracking · Included</>}
-            description={<>Tracked with every account.</>}
-            href={pricingGo({ audience: "candidate", action: "dashboard" })}
-          />
         </div>
       </section>
 
