@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireEmployerOverview } from "@/app/employers/dashboard/overview";
-import EmployerPortalHeader from "@/components/employer/employer-portal-header";
+import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerMobilePortal from "@/components/employer/employer-mobile-portal";
 import {
   EmployerJobsList,
@@ -37,7 +37,9 @@ export default async function EmployerDashboardPage() {
   return (
     <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
-        <EmployerPortalHeader orgName={orgName} role={overview.yourRole} />
+        <div className="odesseus-desktop-only">
+          <EmployerAppNav orgName={orgName} role={overview.yourRole} />
+        </div>
 
         <section className="odesseus-desktop-only" style={{ padding: "54px 0 80px" }}>
           <div
