@@ -8,6 +8,7 @@ import { getCandidateUserId } from "@/lib/candidate/service";
 import type { CreditBalance } from "@/lib/candidate/types";
 import { MIN_APPLY_PRICE_CENTS, formatCents } from "@/lib/pricing/candidate-pricing";
 import LiveEntryCard from "@/components/live-entry-card";
+import CompanyLogo from "@/components/company-logo";
 
 function firstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "there";
@@ -180,6 +181,11 @@ export default async function DashboardPage() {
                     className="dashboard-list-row"
                     key={application.id}
                   >
+                    <CompanyLogo
+                      company={application.companyName}
+                      sourceUrl={application.applicationUrl}
+                      className="dashboard-company-logo"
+                    />
                     <div>
                       <strong>{application.roleTitle}</strong>
                       <span className="muted">{application.companyName}</span>
