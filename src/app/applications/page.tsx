@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { statusLabel } from "@/lib/applications/status";
 import AppShell from "@/components/app-shell";
 import MobileApplications from "@/components/mobile/mobile-applications";
+import CompanyLogo from "@/components/company-logo";
 
 const filterStatuses = [
   ["all", "All"],
@@ -28,7 +29,7 @@ export default async function ApplicationsPage({
 
   let query = supabase
     .from("applications")
-    .select("id,company_name,role_title,status,last_event_at,submitted_at,match_score_snapshot,job_opportunities(match_score)")
+    .select("id,company_name,role_title,status,application_url,last_event_at,submitted_at,match_score_snapshot,job_opportunities(match_score)")
     .eq("user_id", userId)
     .order("last_event_at", { ascending: false });
 
@@ -93,6 +94,11 @@ export default async function ApplicationsPage({
                 className="track-list-row"
                 style={{ borderTop: index ? "1px solid var(--line)" : "none" }}
               >
+                <CompanyLogo
+                  company={application.company_name}
+                  sourceUrl={application.application_url}
+                  className="track-company-logo"
+                />
                 <div>
                   <strong>{application.company_name}</strong>
                   <div className="muted" style={{ fontSize: 14, marginTop: 4 }}>
