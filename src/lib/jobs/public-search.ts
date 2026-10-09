@@ -26,6 +26,7 @@ type SearchInput = {
 };
 
 const DAY_MS = 86_400_000;
+const MAX_PER_COMPANY = 6;
 
 export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJobSearchItem[]> {
   const service = createServiceClient();
@@ -60,7 +61,7 @@ export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJ
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return ((data ?? []) as Array<{
+  const filtered = ((data ?? []) as Array<{
     id: string;
     title: string;
     company_name: string;
@@ -95,8 +96,20 @@ export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJ
       applyUrl: row.apply_url,
       postedAt: row.published_at ?? row.first_seen_at,
     }))
-    .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
-    .slice(0, limit);
+    .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
+
+  const companyCounts = new Map<string, number>();
+  const balanced: PublicJobSearchItem[] = [];
+  for (const job of filtered) {
+    const key = job.company.trim().toLowerCase();
+    const used = companyCounts.get(key) ?? 0;
+    if (used >= MAX_PER_COMPANY) continue;
+    companyCounts.set(key, used + 1);
+    balanced.push(job);
+    if (balanced.length >= limit) break;
+  }
+
+  return balanced;
 }
 
 export function jobAgeLabel(iso: string): string {
