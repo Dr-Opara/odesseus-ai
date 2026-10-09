@@ -5960,3 +5960,19 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--od-focus); }
     grid-template-columns:40px minmax(0,1fr);
   }
 }
+
+
+.interview-company-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+}
+.interview-company-row>div{
+  min-width:0;
+}
+.interview-company-logo{
+  width:46px;
+  height:46px;
+  border-radius:13px;
+}
