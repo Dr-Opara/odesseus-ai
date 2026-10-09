@@ -31,6 +31,7 @@ export default function MobileSplash() {
           <Link href="/how-it-works">Job Seekers</Link>
           <Link href="/employers">Employers</Link>
           <Link href="/pricing">Pricing</Link>
+          <Link href="/job-search">Job Search</Link>
         </div>
       </header>
 
