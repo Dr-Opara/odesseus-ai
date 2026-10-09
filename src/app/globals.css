@@ -5871,3 +5871,92 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--od-focus); }
   background:#f5f2fb;
   color:#686276;
 }
+
+
+/* Shared company logo system */
+.company-logo{
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  overflow:hidden;
+  background:#fff;
+  color:#7a8192;
+  border:1px solid #e4e7ee;
+}
+.company-logo img{
+  display:block;
+  width:72%;
+  height:72%;
+  object-fit:contain;
+}
+.company-logo svg{
+  display:block;
+  width:52%;
+  height:52%;
+}
+.oh-company-logo img,
+.oh-world-job-logo img,
+.oh-product-job-logo img{
+  width:76%;
+  height:76%;
+  object-fit:contain;
+}
+.oh-company-logo svg,
+.oh-world-job-logo svg,
+.oh-product-job-logo svg{
+  width:52%;
+  height:52%;
+}
+.company-logo-mobile{
+  background:#fff!important;
+  color:#778096!important;
+}
+.company-logo-mobile img{
+  width:76%;
+  height:76%;
+}
+.track-company-logo,
+.dashboard-company-logo,
+.job-match-company-logo,
+.match-result-company-logo,
+.track-detail-company-logo,
+.m-job-detail-company-logo{
+  width:44px;
+  height:44px;
+  border-radius:12px;
+}
+.dashboard-list-row{
+  grid-template-columns:44px minmax(0,1fr) auto;
+}
+.track-list-row{
+  grid-template-columns:44px minmax(0,1fr) auto auto auto;
+  align-items:center;
+}
+.job-match-brand-row,
+.match-result-company-wrap,
+.track-detail-company,
+.m-job-detail-company{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.job-match-brand-row>div,
+.match-result-company-wrap>div,
+.track-detail-company>div{
+  min-width:0;
+}
+.job-match-brand-row>div{
+  display:grid;
+  gap:3px;
+}
+.m-job-detail-company{
+  margin:4px 0 14px;
+  color:#667085;
+  font-size:13px;
+  font-weight:700;
+}
+@media(max-width:767px){
+  .track-list-row{
+    grid-template-columns:40px minmax(0,1fr);
+  }
+}
