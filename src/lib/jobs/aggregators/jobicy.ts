@@ -5,6 +5,7 @@ type JobicyJob = {
   url?: string;
   jobTitle?: string;
   companyName?: string;
+  companyLogo?: string;
   jobType?: string[];
   jobGeo?: string;
   jobDescription?: string;
@@ -27,6 +28,7 @@ export type AggregatedJob = {
   sourceKey: string;
   externalId: string;
   companyName: string;
+  companyLogoUrl: string | null;
   title: string;
   location: string | null;
   workArrangement: string | null;
@@ -64,6 +66,7 @@ export async function fetchJobicyJobs(maxJobs = 400): Promise<AggregatedJob[]> {
         sourceKey: "jobicy:public",
         externalId: String(job.id),
         companyName: job.companyName.trim(),
+        companyLogoUrl: job.companyLogo?.trim() || null,
         title: job.jobTitle.trim(),
         location: job.jobGeo?.trim() || "Remote",
         workArrangement: "remote",
