@@ -20,6 +20,7 @@ import { EmployerNotices } from "@/components/employer/employer-cards";
 import EmployerMobileScreen, {
   EmployerDesktopOnlyNotice,
 } from "@/components/employer/employer-mobile-screen";
+import EmployerAutoCheckout from "@/components/pricing/employer-auto-checkout";
 
 /**
  * Employer Billing (Figma screen 82) on the canonical
@@ -35,7 +36,12 @@ import EmployerMobileScreen, {
  * "you are not subscribed" and "you are on the cheapest plan" are different
  * statements, and only the first is true here.
  */
-export default async function EmployerBillingPage() {
+export default async function EmployerBillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ purchase?: string; plan?: string }>;
+}) {
+  const { purchase, plan: requestedPlan } = await searchParams;
   const [overview, billing, orgId] = await Promise.all([
     requireEmployerOverview("/employers/dashboard/billing"),
     getEmployerBilling(),
@@ -44,6 +50,15 @@ export default async function EmployerBillingPage() {
 
   const orgName = overview.organization?.name ?? overview.account.companyName;
   const plan = planForTier(overview.subscription?.tier);
+  const requestedPlanId =
+    requestedPlan === "growth"
+      ? "Growth"
+      : requestedPlan === "business"
+        ? "Business"
+        : requestedPlan === "starter"
+          ? "Starter"
+          : undefined;
+  const checkoutKind = purchase === "seat" ? "seat" : purchase === "plan" ? "plan" : null;
 
   return (
     <main className="figma-site figma-soft-page employer-portal">
@@ -64,6 +79,14 @@ export default async function EmployerBillingPage() {
           </div>
 
           <EmployerNotices notices={overview.notices} />
+
+          {checkoutKind && orgId ? (
+            <EmployerAutoCheckout
+              orgId={orgId}
+              kind={checkoutKind}
+              planId={checkoutKind === "plan" ? requestedPlanId : undefined}
+            />
+          ) : null}
 
           {overview.needsOrganization ? (
             <p className="muted" style={{ marginTop: 24 }}>
