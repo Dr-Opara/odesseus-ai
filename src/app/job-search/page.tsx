@@ -2,6 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
+import CompanyLogo from "@/components/company-logo";
 import {
   jobAgeLabel,
   jobSummary,
@@ -13,17 +14,6 @@ import {
 } from "@/lib/jobs/location-market";
 
 export const dynamic = "force-dynamic";
-
-function logoUrl(job: { applyUrl: string | null; sourceUrl: string | null }) {
-  const candidate = job.applyUrl ?? job.sourceUrl;
-  if (!candidate) return null;
-  try {
-    const domain = new URL(candidate).hostname;
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
-  } catch {
-    return null;
-  }
-}
 
 function typeLabel(value: string | null) {
   if (!value) return null;
@@ -129,7 +119,6 @@ export default async function JobSearchPage({
           {jobs.length ? (
             <div className="public-jobs-grid">
               {jobs.map((job) => {
-                const icon = logoUrl(job);
                 const applyHref =
                   job.applyUrl ??
                   job.sourceUrl ??
@@ -138,13 +127,11 @@ export default async function JobSearchPage({
                 return (
                   <article className="public-job-card" key={job.id}>
                     <div className="public-job-card-top">
-                      <span
-                        className="public-job-logo"
-                        style={icon ? { backgroundImage: `url("${icon}")` } : undefined}
-                        aria-hidden="true"
-                      >
-                        {icon ? null : job.company.charAt(0).toUpperCase()}
-                      </span>
+                      <CompanyLogo
+                        company={job.company}
+                        logoUrl={job.companyLogoUrl}
+                        sourceUrl={job.sourceUrl ?? job.applyUrl}
+                      />
 
                       <div className="public-job-title-block">
                         <h3>{job.title}</h3>
