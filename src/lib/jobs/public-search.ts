@@ -1,5 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
-import { jobMatchesMarket, type JobMarket } from "@/lib/jobs/location-market";
+import { jobMatchesMarket, locationMatchesTerms, type JobMarket } from "@/lib/jobs/location-market";
 
 export type PublicJobSearchItem = {
   id: string;
@@ -19,6 +19,7 @@ export type PublicJobSearchItem = {
 type SearchInput = {
   query?: string;
   location?: string;
+  locationTerms?: string[];
   market?: JobMarket | null;
   employmentType?: string;
   limit?: number;
@@ -49,7 +50,9 @@ export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJ
   }
 
   const location = input.location?.trim();
-  if (location && !input.market) query = query.ilike("location", `%${location}%`);
+  if (location && !input.market && !input.locationTerms?.length) {
+    query = query.ilike("location", `%${location}%`);
+  }
 
   const employmentType = input.employmentType?.trim();
   if (employmentType) query = query.eq("employment_type", employmentType);
@@ -72,7 +75,12 @@ export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJ
     published_at: string | null;
     first_seen_at: string;
   }>)
-    .filter((row) => jobMatchesMarket(row.location, input.market ?? null))
+    .filter((row) => {
+      if (input.locationTerms?.length) {
+        return locationMatchesTerms(row.location, input.locationTerms);
+      }
+      return jobMatchesMarket(row.location, input.market ?? null);
+    })
     .map((row) => ({
       id: row.id,
       title: row.title,
