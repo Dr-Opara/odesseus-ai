@@ -72,16 +72,22 @@ function PricingCard({
   tone = "neutral",
   title,
   description,
+  href,
   recommended = false,
 }: {
   icon: Parameters<typeof PricingIcon>[0]["type"];
   tone?: Tone;
   title: ReactNode;
   description: ReactNode;
+  href: string;
   recommended?: boolean;
 }) {
   return (
-    <div className={`pricing-card pricing-card-${tone}${recommended ? " is-recommended" : ""}`}>
+    <Link
+      className={`pricing-card pricing-card-${tone}${recommended ? " is-recommended" : ""}`}
+      href={href}
+      aria-label={typeof title === "string" ? title : undefined}
+    >
       <PricingIcon type={icon} tone={tone} />
       <span className="pricing-card-copy">
         <span className="pricing-card-title">
@@ -91,8 +97,15 @@ function PricingCard({
         <small>{description}</small>
       </span>
       <span className="pricing-chevron" aria-hidden="true">›</span>
-    </div>
+    </Link>
   );
+}
+
+const WALLET_SKUS = ["wallet_10", "wallet_20", "wallet_50"] as const;
+const PROMOTION_TIERS = ["featured_7d", "featured_14d", "ai_30d"] as const;
+
+function pricingGo(params: Record<string, string>) {
+  return `/pricing/go?${new URLSearchParams(params).toString()}`;
 }
 
 export default function MobilePricing() {
@@ -138,12 +151,14 @@ export default function MobilePricing() {
             tone="peach"
             title={<>{APPLY_TIERS.standard.label} · {APPLY_TIERS.standard.priceLabel}</>}
             description={APPLY_TIERS.standard.description}
+            href={pricingGo({ audience: "candidate", action: "apply" })}
           />
           <PricingCard
             icon="smart"
             tone="peach"
             title={<>{APPLY_TIERS.smart.label} · {APPLY_TIERS.smart.priceLabel}</>}
             description={APPLY_TIERS.smart.description}
+            href={pricingGo({ audience: "candidate", action: "apply" })}
             recommended
           />
           {WALLET_TOPUP_AMOUNTS_CENTS.map((amountCents, index) => (
@@ -153,23 +168,27 @@ export default function MobilePricing() {
               tone={index === 0 ? "green" : index === 1 ? "purple" : "blue"}
               title={<>Wallet top-up · {formatCents(amountCents)}</>}
               description={<>Spend on {APPLY_TIERS.standard.label} or {APPLY_TIERS.smart.label} as you go.</>}
+              href={pricingGo({ audience: "candidate", action: "wallet", sku: WALLET_SKUS[index] })}
             />
           ))}
           <PricingCard
             icon="prep"
             title={<>{PREP_AGENT_LABEL} · {PREP_AGENT_PRICE_LABEL}</>}
             description={PREP_AGENT_DESCRIPTION}
+            href={pricingGo({ audience: "candidate", action: "dashboard" })}
           />
           <PricingCard
             icon="shield"
             title={<>{FAILED_SUBMISSION_LABEL} · {FAILED_SUBMISSION_PRICE_LABEL}</>}
             description={FAILED_SUBMISSION_DESCRIPTION}
+            href={pricingGo({ audience: "candidate", action: "dashboard" })}
           />
           <PricingCard
             icon="tracking"
             tone="green"
             title={<>Application tracking · Included</>}
             description={<>Tracked with every account.</>}
+            href={pricingGo({ audience: "candidate", action: "dashboard" })}
           />
         </div>
       </section>
@@ -184,6 +203,7 @@ export default function MobilePricing() {
               tone={index === 1 ? "green" : "neutral"}
               title={<>{plan.name} · {plan.priceLabel}{plan.unit}</>}
               description={<>{plan.jobs}{index === 0 ? " · Great for getting started." : index === 1 ? " · Most popular for growing teams." : " · For larger teams with higher volume."}</>}
+              href={pricingGo({ audience: "employer", action: "plan", plan: plan.name.toLowerCase() })}
               recommended={index === 1}
             />
           ))}
@@ -198,6 +218,7 @@ export default function MobilePricing() {
               tone={index === 0 ? "peach" : index === 1 ? "purple" : "purple"}
               title={<>{plan.name} · {plan.priceLabel}</>}
               description={plan.unit.replace(/^\//, "").trim()}
+              href={pricingGo({ audience: "employer", action: "promotion", tier: PROMOTION_TIERS[index] })}
             />
           ))}
         </div>
@@ -209,6 +230,7 @@ export default function MobilePricing() {
             tone="peach"
             title={<>Recruiter seat · {RECRUITER_SEAT_PRICE_LABEL}/month</>}
             description={<>Per additional seat as your hiring team grows.</>}
+            href={pricingGo({ audience: "employer", action: "seat" })}
           />
         </div>
 
@@ -223,7 +245,7 @@ export default function MobilePricing() {
         <span>Localized market pricing can be shown based on account or billing region.</span>
       </div>
 
-      <Link className="m-action pricing-cta" href="/signup">Get Started →</Link>
+      <Link className="m-action pricing-cta" href={pricingGo({ audience: tab === "business" ? "employer" : "candidate", action: "signup" })}>Get Started →</Link>
     </div>
   );
 }
