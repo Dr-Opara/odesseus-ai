@@ -1,143 +1,85 @@
 "use client";
 
-import { useMemo } from "react";
-import CompanyLogo from "@/components/company-logo";
-import type { HomepageJob, HomepageJobsResult } from "@/lib/jobs/homepage-types";
+function ActivityIcon({ type }: { type: "scan" | "match" | "apply" }) {
+  if (type === "scan") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3.5" y="5" width="17" height="14" rx="3" fill="none" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M7 10h1M11.5 10h1M16 10h1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
 
-function ProductPreview({ job }: { job: HomepageJob }) {
-  const match =
-    typeof job.matchScore === "number" ? `${Math.round(job.matchScore)}% Match` : null;
+  if (type === "match") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m12 3 2.4 5 5.5.8-4 3.9.9 5.5L12 15.7 7.2 18.2l.9-5.5-4-3.9L9.6 8 12 3Z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      </svg>
+    );
+  }
 
   return (
-    <div className="oh-product-preview" aria-label="Odesseus product preview">
-      <div className="oh-product-glow" aria-hidden="true" />
-
-      <div className="oh-product-shell">
-        <aside className="oh-product-sidebar" aria-hidden="true">
-          <span className="oh-product-brand-mark">O</span>
-          <span>☆</span>
-          <span>⌂</span>
-          <span>▱</span>
-          <span>♙</span>
-          <span>▣</span>
-        </aside>
-
-        <div className="oh-product-main">
-          <div className="oh-product-search">⌕&nbsp;&nbsp; Find your next opportunity...</div>
-
-          <div className="oh-product-job-card">
-            <div className="oh-product-job-heading">
-              <CompanyLogo
-                company={job.company}
-                logoUrl={job.companyLogoUrl ?? null}
-                sourceUrl={job.sourceUrl ?? job.applyUrl ?? null}
-                className="oh-product-job-logo"
-                eager
-              />
-              <div>
-                <strong>{job.title}</strong>
-                <span>{job.company}</span>
-                <small>
-                  {[job.location, job.workArrangement].filter(Boolean).join(" · ") || "Opportunity"}
-                </small>
-              </div>
-              {match ? <b>{match}</b> : null}
-            </div>
-
-            <div className="oh-product-job-salary">
-              {job.salaryText || "Salary listed in job details"}
-            </div>
-
-            <div className="oh-product-job-tags">
-              {job.workArrangement ? <span>{job.workArrangement}</span> : null}
-              <span>{job.freshnessLabel || "Active"}</span>
-            </div>
-
-            <div className="oh-product-job-actions">
-              <span className="is-primary">Apply with Odesseus</span>
-              <span>View Details</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="oh-product-status-card" aria-hidden="true">
-        <div>
-          <span className="is-orange">▤</span>
-          <strong>Resume Optimized</strong>
-        </div>
-        <div>
-          <span className="is-red">✓</span>
-          <strong>Application Submitted</strong>
-        </div>
-        <div>
-          <span className="is-pink">✧</span>
-          <strong>Interview Prep Ready</strong>
-        </div>
-      </div>
-
-      <div className="oh-product-live-pill" aria-hidden="true">
-        <span className="oh-product-live-orb">O</span>
-        <div>
-          <strong>Interview support</strong>
-          <small>
-            Get interview support
-            <br />
-            and earn while you search.
-          </small>
-        </div>
-        <b>›</b>
-      </div>
-    </div>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m3.5 11.3 16.8-7.5-5.4 16.4-3.5-6.2-7.9-2.7Z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="m11.4 14 4.2-5.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
   );
 }
 
-function ProductPreviewLoading() {
+function Sparkline({ variant }: { variant: "scan" | "match" | "apply" }) {
+  const path =
+    variant === "scan"
+      ? "M2 18 C10 17 12 31 21 25 S31 9 40 17 S51 5 60 12 S71 26 80 11"
+      : variant === "match"
+        ? "M2 23 C10 22 10 7 18 7 S28 26 37 18 S45 10 53 18 S65 28 80 9"
+        : "M2 12 C11 9 17 5 24 11 S38 27 46 26 S55 9 63 18 S70 18 80 8";
+
   return (
-    <div className="oh-product-preview is-loading" aria-label="Loading Odesseus preview">
-      <div className="oh-product-glow" />
-      <div className="oh-product-shell">
-        <div className="oh-product-loading-card" />
+    <svg className="oh-live-activity-spark" viewBox="0 0 82 34" aria-hidden="true">
+      <path d={path} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LiveActivityPreview() {
+  const rows = [
+    { type: "scan" as const, label: "Jobs Scanned", value: "847,696" },
+    { type: "match" as const, label: "Matches Found", value: "1,322" },
+    { type: "apply" as const, label: "Jobs Applied", value: "110" },
+  ];
+
+  return (
+    <div className="oh-live-activity-card" aria-label="Odesseus live activity preview">
+      <div className="oh-live-activity-header">
+        <div>
+          <span className="oh-live-activity-dot" aria-hidden="true" />
+          <strong>Live Activity</strong>
+        </div>
+        <span>Updated just now</span>
+      </div>
+
+      <div className="oh-live-activity-list">
+        {rows.map((row) => (
+          <div className={`oh-live-activity-row is-${row.type}`} key={row.label}>
+            <span className="oh-live-activity-icon">
+              <ActivityIcon type={row.type} />
+            </span>
+            <strong>{row.label}</strong>
+            <Sparkline variant={row.type} />
+            <b>{row.value}</b>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
 export default function JobCarousel({
-  result,
-  onRetry,
+  result: _result,
+  onRetry: _onRetry,
 }: {
-  result: HomepageJobsResult | { status: "loading" };
+  result: unknown;
   onRetry: () => void;
 }) {
-  const job = useMemo(
-    () => (result.status === "ok" && result.data.length > 0 ? result.data[0] : null),
-    [result]
-  );
-
-  if (result.status === "loading") return <ProductPreviewLoading />;
-
-  if (result.status === "unavailable") {
-    return (
-      <div className="oh-product-preview-state">
-        <strong>Jobs are refreshing.</strong>
-        <span>The homepage is ready, but the current feed could not be loaded.</span>
-        <button type="button" onClick={onRetry}>
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  if (!job) {
-    return (
-      <div className="oh-product-preview-state">
-        <strong>New opportunities are on the way.</strong>
-        <span>Odesseus will surface a live role here as soon as the feed refreshes.</span>
-        <a href="/jobs">Browse jobs</a>
-      </div>
-    );
-  }
-
-  return <ProductPreview job={job} />;
+  return <LiveActivityPreview />;
 }
