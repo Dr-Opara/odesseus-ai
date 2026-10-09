@@ -4,6 +4,7 @@ import type { z } from "zod";
 import MobileScreen from "@/components/mobile/mobile-screen";
 import MobileSaveJob from "@/components/mobile/mobile-save-job";
 import MobileTailorButton from "@/components/mobile/mobile-tailor-button";
+import CompanyLogo from "@/components/company-logo";
 import { matchAssessmentSchema } from "@/lib/ai/schemas";
 import type { CandidateJob } from "@/lib/candidate/types";
 
@@ -55,6 +56,15 @@ export default function MobileJobDetail({
       lead={job.salary_text || "Salary not listed"}
       minHeight={844}
     >
+      <div className="m-job-detail-company">
+        <CompanyLogo
+          company={job.company_name}
+          sourceUrl={job.source_url}
+          className="m-job-detail-company-logo"
+        />
+        <span>{job.company_name}</span>
+      </div>
+
       <div className="m-chip-strip">
         {job.work_arrangement ? <span className="m-chip-pill">{job.work_arrangement}</span> : null}
         {job.employment_type ? <span className="m-chip-pill">{job.employment_type}</span> : null}
