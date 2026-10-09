@@ -6,6 +6,8 @@ import { planForTier, subscriptionStatusLabel } from "@/lib/employer/plans";
 import { EmployerNotices } from "@/components/employer/employer-cards";
 import PostJobForm from "@/components/employers/post-job-form";
 import { getEmployerOrgId } from "@/lib/employers/context";
+import EmployerAppNav from "@/components/employers/app-nav";
+import EmployerMobileScreen from "@/components/employer/employer-mobile-screen";
 
 /**
  * Post a Job (Figma screen 75, F13-E) on the real backend.
@@ -43,10 +45,15 @@ export default async function EmployerPostJobPage() {
   ]);
   const plan = planForTier(overview.subscription?.tier);
   const quota = overview.quota;
+  const orgName = overview.organization?.name ?? overview.account.companyName;
 
   return (
     <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
+        <div className="odesseus-desktop-only">
+          <EmployerAppNav orgName={orgName} role={overview.yourRole} />
+        </div>
+
         <section className="odesseus-desktop-only" style={{ width: "min(860px,100%)", margin: "54px auto 90px" }}>
           <span className="figma-eyebrow">FOR EMPLOYERS</span>
           <h1>Post a Job</h1>
@@ -95,16 +102,17 @@ export default async function EmployerPostJobPage() {
           )}
         </section>
 
-        <section className="odesseus-mobile-only" style={{ padding: "20px 20px 40px" }}>
-          <h1 style={{ fontSize: 26, margin: "0 0 8px" }}>Post a job</h1>
-          <p className="m-lead">
-            Employer accounts are created on a desktop browser, and posting a job is a desktop
-            action. On a phone you can review your jobs, plan and seats.
-          </p>
+        <EmployerMobileScreen
+          orgName={orgName}
+          eyebrow="Employer"
+          title="Post a job"
+          active="Jobs"
+          lead="Employer accounts are created on a desktop browser, and posting a job is a desktop action. On a phone you can review your jobs, plan and seats."
+        >
           <Link className="m-action" href="/employers/dashboard/jobs">
             View my jobs
           </Link>
-        </section>
+        </EmployerMobileScreen>
       </div>
     </main>
   );

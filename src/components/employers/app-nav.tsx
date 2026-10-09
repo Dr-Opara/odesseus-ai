@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import OdesseusWordmark from "@/components/odesseus-wordmark";
 import { employerLogout } from "@/app/employers/actions";
 
@@ -22,30 +23,58 @@ const links = [
 ];
 
 /**
- * Minimal authenticated employer app header (Figma screen 85 and beyond) —
+ * Canonical authenticated employer app header (Figma screen 85 and beyond) —
  * distinct from the public marketing `EmployerNav` (which shows "Sign In" /
  * a "Post a Job" marketing CTA and is desktop-only). This is the header for
- * screens an employer only sees once signed in. Reuses the same
+ * every screen an employer sees once signed in. Reuses the same
  * toggle/`.figma-nav-mobile` pattern as `MarketingNav`/`EmployerNav` — below
  * 900px the shared globals.css rule hides `.figma-nav-links` and expects a
  * toggle button to reveal a mobile menu; without one, these links would be
  * completely unreachable on phone widths.
+ *
+ * Phase 2 (frontend consistency pass): this absorbs the two features that
+ * previously only existed on the now-retired `EmployerPortalHeader` —
+ * active-route highlighting and organization identity display — so there is
+ * one authenticated employer navigation system instead of two. `orgName`/
+ * `role` are optional: every existing caller that doesn't pass them keeps
+ * working exactly as before, just without the identity line.
  */
-export default function EmployerAppNav() {
+export default function EmployerAppNav({
+  orgName,
+  role,
+}: {
+  orgName?: string | null;
+  role?: string | null;
+} = {}) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <header className="figma-nav emp-app-nav">
       <div className="figma-nav-inner">
         <OdesseusWordmark href="/employers/dashboard" size="sm" />
         <nav className="figma-nav-links" aria-label="Employer">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href}>
-              {link.label}
-            </Link>
-          ))}
+          {links.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={isActive ? "is-active" : undefined}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="figma-nav-actions">
+          {orgName ? (
+            <span className="employer-portal-identity">
+              {orgName}
+              {role ? <small>{role}</small> : null}
+            </span>
+          ) : null}
           <Link className="figma-btn figma-btn-orange" href="/employers/post-job">
             Post a Job
           </Link>
@@ -61,6 +90,12 @@ export default function EmployerAppNav() {
       </div>
       {open ? (
         <div className="figma-nav-mobile">
+          {orgName ? (
+            <span className="employer-portal-identity employer-portal-identity-mobile">
+              {orgName}
+              {role ? <small>{role}</small> : null}
+            </span>
+          ) : null}
           {links.map((link) => (
             <Link key={link.href} href={link.href} onClick={() => setOpen(false)}>
               {link.label}
