@@ -42,10 +42,11 @@ export default async function EmployerPipelinePage({ searchParams }: { searchPar
   ]);
 
   return (
-    <main className="figma-site figma-soft-page">
+    <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
         <EmployerAppNav />
         <section style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
+          <span className="figma-eyebrow">PIPELINE</span>
           <h1>Hiring Pipeline</h1>
           <p className="muted">{jobResult?.status === "ok" ? jobResult.data.title : "All jobs"}</p>
 

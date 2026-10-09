@@ -41,16 +41,8 @@ export default async function EmployerDashboardPage() {
           <EmployerAppNav orgName={orgName} role={overview.yourRole} />
         </div>
 
-        <section className="odesseus-desktop-only" style={{ padding: "54px 0 80px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 20,
-              alignItems: "end",
-              flexWrap: "wrap",
-            }}
-          >
+        <section className="odesseus-desktop-only" style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
+          <div className="emp-page-heading">
             <div>
               <span className="figma-eyebrow">FOR EMPLOYERS</span>
               <h1>{orgName || "Your company"}</h1>

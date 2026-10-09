@@ -66,9 +66,7 @@ export default async function EmployerJobsPage() {
         </div>
 
         <section className="odesseus-desktop-only" style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
-          <div
-            style={{ display: "flex", justifyContent: "space-between", gap: 20, alignItems: "end", flexWrap: "wrap" }}
-          >
+          <div className="emp-page-heading">
             <div>
               <span className="figma-eyebrow">JOBS</span>
               <h1>Your jobs</h1>

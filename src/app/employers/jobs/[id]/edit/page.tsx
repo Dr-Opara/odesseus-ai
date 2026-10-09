@@ -34,7 +34,7 @@ export default async function EmployerEditJobPage({
 
   if (jobResult.status !== "ok") {
     return (
-      <main className="figma-site figma-soft-page">
+      <main className="figma-site figma-soft-page employer-portal">
         <div className="figma-page-wrap">
           <EmployerAppNav />
           <section style={{ width: "min(860px,100%)", margin: "54px auto 90px" }}>

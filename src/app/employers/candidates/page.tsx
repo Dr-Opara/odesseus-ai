@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
 import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import { EmployerRow, EmployerRowList } from "@/components/employers/row-list";
+import PipelineStageBadge from "@/components/employers/pipeline-stage-badge";
 import { getCandidates } from "@/lib/employers/candidates-adapter";
 import { getEmployerJob } from "@/lib/employers/jobs-adapter";
 import type { CandidateListItem, PipelineStage } from "@/lib/employers/types";
-import { STAGE_LABELS } from "@/lib/employers/stages";
 
 const VALID_STAGES = new Set(["APPLIED", "REVIEWING", "SHORTLISTED", "INTERVIEW", "OFFER", "HIRED", "REJECTED"]);
 
@@ -18,15 +19,20 @@ const VALID_STAGES = new Set(["APPLIED", "REVIEWING", "SHORTLISTED", "INTERVIEW"
  * absent, not blank, when there is none, so the row never shows an empty
  * string that reads as "we tried and found nothing".
  */
-function rowValue(candidate: CandidateListItem): string {
-  const parts: string[] = [];
-  if (typeof candidate.fitScoreOverall === "number") {
-    parts.push(`${Math.round(candidate.fitScoreOverall)}% Fit`);
-  } else {
-    parts.push(STAGE_LABELS[candidate.stage]);
-  }
-  if (candidate.email) parts.push(candidate.email);
-  return parts.join(" · ");
+function rowValue(candidate: CandidateListItem): ReactNode {
+  const primary =
+    typeof candidate.fitScoreOverall === "number" ? (
+      `${Math.round(candidate.fitScoreOverall)}% Fit`
+    ) : (
+      <PipelineStageBadge stage={candidate.stage} />
+    );
+  return candidate.email ? (
+    <>
+      {primary} <span className="muted">· {candidate.email}</span>
+    </>
+  ) : (
+    primary
+  );
 }
 
 /** Applicants / Candidates list (Figma screen 78, F13-H). No protected demographic attributes are rendered — none exist on the type at all. */
@@ -53,10 +59,11 @@ export default async function EmployerCandidatesPage({
   ]);
 
   return (
-    <main className="figma-site figma-soft-page">
+    <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
         <EmployerAppNav />
         <section style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
+          <span className="figma-eyebrow">APPLICANTS</span>
           <h1>Applicants</h1>
           <p className="muted">{jobResult?.status === "ok" ? jobResult.data.title : "All jobs"}</p>
 

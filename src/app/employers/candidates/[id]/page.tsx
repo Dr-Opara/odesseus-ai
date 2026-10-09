@@ -3,12 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import { EmployerRow, EmployerRowList } from "@/components/employers/row-list";
+import PipelineStageBadge from "@/components/employers/pipeline-stage-badge";
 import FitScorePanel from "@/components/employers/fit-score-panel";
 import CandidateStageActions from "@/components/employers/candidate-stage-actions";
 import ScoreApplicantButton from "@/components/employers/score-applicant-button";
 import { getCandidateDetail } from "@/lib/employers/candidates-adapter";
 import { getEmployerOrgId } from "@/lib/employers/context";
-import { STAGE_LABELS } from "@/lib/employers/stages";
 
 /**
  * Candidate Detail (Figma screen 79, F13-J).
@@ -45,10 +45,11 @@ export default async function EmployerCandidateDetailPage({
 
   if (result.status === "unavailable") {
     return (
-      <main className="figma-site figma-soft-page">
+      <main className="figma-site figma-soft-page employer-portal">
         <div className="figma-page-wrap">
           <EmployerAppNav />
           <section style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
+            <span className="figma-eyebrow">APPLICANT</span>
             <h1>Applicant</h1>
             <div style={{ marginTop: 24 }}>
               <EmployerStatePanel
@@ -72,10 +73,11 @@ export default async function EmployerCandidateDetailPage({
     : 0;
 
   return (
-    <main className="figma-site figma-soft-page">
+    <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
         <EmployerAppNav />
         <section style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
+          <span className="figma-eyebrow">APPLICANT</span>
           <h1>{candidate.name}</h1>
           <p className="muted">
             {candidate.appliedJobTitle}
@@ -85,7 +87,7 @@ export default async function EmployerCandidateDetailPage({
           <div style={{ marginTop: 20 }}>
             <EmployerRowList>
               {candidate.email ? <EmployerRow label="Email" value={candidate.email} /> : null}
-              <EmployerRow label="Stage" value={STAGE_LABELS[candidate.stage]} />
+              <EmployerRow label="Stage" value={<PipelineStageBadge stage={candidate.stage} />} />
               <EmployerRow label="Applied" value={formatDate(candidate.appliedAt)} />
             </EmployerRowList>
           </div>

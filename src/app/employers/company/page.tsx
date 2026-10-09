@@ -27,10 +27,11 @@ export default async function EmployerCompanyProfilePage() {
   const [profile, orgId] = await Promise.all([getEmployerProfile(), getEmployerOrgId()]);
 
   return (
-    <main className="figma-site figma-soft-page">
+    <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
         <EmployerAppNav />
-        <section style={{ width: "min(1120px,100%)", margin: "54px auto 90px" }}>
+        <section style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
+          <span className="figma-eyebrow">COMPANY</span>
           <h1>Company Profile</h1>
           <p className="muted">Manage public employer information.</p>
 

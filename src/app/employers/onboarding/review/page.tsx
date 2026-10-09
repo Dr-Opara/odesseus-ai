@@ -24,7 +24,7 @@ export default async function EmployerOnboardingReviewPage({
   const plan = EMPLOYER_PLANS.find((p) => p.name === planId) ?? EMPLOYER_PLANS[0];
 
   return (
-    <main className="figma-site figma-soft-page">
+    <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
         <EmployerAppNav />
         <section style={{ width: "min(900px,100%)", margin: "54px auto 90px" }}>

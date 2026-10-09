@@ -110,7 +110,7 @@ export default function CompanyProfileForm({
         />
       ) : null}
       {saveStatus === "saved" ? (
-        <p style={{ color: "#1d9e4a", fontWeight: 650, fontSize: 13 }}>Saved.</p>
+        <p style={{ color: "var(--od-success)", fontWeight: 650, fontSize: 13 }}>Saved.</p>
       ) : null}
 
       <button

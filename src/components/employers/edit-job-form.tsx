@@ -158,7 +158,7 @@ export default function EditJobForm({
         </div>
       ) : null}
       {status === "saved" ? (
-        <p style={{ color: "#1d9e4a", fontWeight: 650, fontSize: 13, marginTop: 16 }}>Saved.</p>
+        <p style={{ color: "var(--od-success)", fontWeight: 650, fontSize: 13, marginTop: 16 }}>Saved.</p>
       ) : null}
 
       <button
