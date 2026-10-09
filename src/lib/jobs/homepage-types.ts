@@ -5,6 +5,7 @@ export type HomepageJob = {
   title: string;
   company: string;
   companyLogoUrl?: string;
+  sourceUrl?: string;
   location?: string;
   workArrangement?: "Remote" | "Hybrid" | "On-site";
   salaryText?: string;
