@@ -5185,7 +5185,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 /* Desktop pricing now mirrors the mobile pricing information architecture. */
 @media (min-width:768px){
   .pricing-desktop-shell{
-    max-width:980px;
+    max-width:1180px;
     margin:0 auto 72px;
     padding:0 20px;
   }
@@ -5466,12 +5466,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   }
 
   .pricing-desktop-shell .pricing-panel-candidate{
-    padding-right:30px;
+    padding-right:36px;
   }
 
   .pricing-desktop-shell .pricing-panel-employer{
-    padding-left:30px;
-    border-left:1px solid #d9dce7;
+    position:relative;
+    padding-left:36px;
+    border-left:2px solid #d9dce7;
   }
 
   .pricing-desktop-shell .pricing-column-title{
