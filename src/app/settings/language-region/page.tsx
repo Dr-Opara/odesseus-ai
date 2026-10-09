@@ -30,7 +30,7 @@ export default async function LanguageRegionSettingsPage() {
   return (
     <>
       <main
-        className="odesseus-desktop-only"
+        className="odesseus-desktop-only candidate-column"
         style={{ minHeight: "100vh", padding: "24px 16px 80px" }}
       >
         <LocalizationForm countries={countries} email={email} initial={profile ?? null} />

@@ -55,12 +55,12 @@ export default async function InterviewsPage() {
       active="interviews"
     >
       <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 90px" }}>
-      <div style={{ width: "min(820px,100%)", margin: "30px auto 0" }}>
-        <div className="muted" style={{ fontSize: 14 }}>Interviews</div>
-        <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: "10px 0 6px" }}>
+      <div className="candidate-column" style={{ marginTop: 30 }}>
+        <div className="page-eyebrow muted">Interviews</div>
+        <h1 className="page-title">
           Your interview workspace.
         </h1>
-        <p className="muted" style={{ fontSize: 18, lineHeight: 1.6 }}>
+        <p className="muted page-subtitle">
           Every interview stays connected to the exact application, submitted resume, and job context.
         </p>
 
@@ -115,7 +115,7 @@ export default async function InterviewsPage() {
       </section>
 
       <section className="shell odesseus-desktop-only" style={{ padding: "0 0 90px" }}>
-        <div style={{ width: "min(820px,100%)", margin: "0 auto" }}>
+        <div className="candidate-column">
           <LiveEntryCard
             interviewPasses={credits?.interview_passes ?? 0}
             liveUnlimitedUntil={credits?.live_unlimited_until ?? null}
@@ -135,13 +135,13 @@ export default async function InterviewsPage() {
       </section>
 
       <section className="shell odesseus-desktop-only" style={{ padding: "0 0 90px" }}>
-        <div style={{ width: "min(820px,100%)", margin: "0 auto" }}>
+        <div className="candidate-column">
           <GuestLinkCard canCreateLinks={canCreateGuestLinks} />
         </div>
       </section>
 
       <section className="shell odesseus-desktop-only" style={{ padding: "0 0 90px" }}>
-        <div style={{ width: "min(820px,100%)", margin: "0 auto" }}>
+        <div className="candidate-column">
           <Link href="/interviews/live-history" className="card live-history-link">
             <div>
               <div className="muted" style={{ fontSize: 13 }}>Odesseus Live</div>

@@ -55,8 +55,9 @@ export default async function ApplicationsPage({
       <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 90px" }}>
       <div className="page-heading" style={{ marginTop: 20 }}>
         <div>
-          <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: 0 }}>Applications</h1>
-          <p className="muted">Everything you have in motion.</p>
+          <div className="page-eyebrow muted">Your pipeline</div>
+          <h1 className="page-title">Applications</h1>
+          <p className="muted page-subtitle">Everything you have in motion.</p>
         </div>
         <Link className="btn btn-primary" href="/match">Check a job</Link>
       </div>

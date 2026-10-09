@@ -63,10 +63,10 @@ export default async function ApplicationDetailPage({
       <div className="track-detail-heading">
         <div>
           <div className="track-status-pill">{statusLabel(application.status)}</div>
-          <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: "14px 0 7px" }}>
+          <h1 className="page-title" style={{ margin: "14px 0 7px" }}>
             {application.role_title}
           </h1>
-          <p className="muted" style={{ fontSize: 18, margin: 0 }}>
+          <p className="muted page-subtitle" style={{ margin: 0 }}>
             {application.company_name}
             {application.job_opportunities?.location
               ? ` · ${application.job_opportunities.location}`

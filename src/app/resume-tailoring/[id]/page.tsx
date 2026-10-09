@@ -45,7 +45,7 @@ export default async function ResumeTailoringPage({
       interviewPasses={credits.interviewPasses}
     >
       <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 100px" }}>
-      <div style={{ width: "min(1040px,100%)", margin: "20px auto 0" }}>
+      <div className="candidate-column-wide" style={{ marginTop: 20 }}>
         <Link href={`/match/${tailoring.jobId}`} className="muted" style={{ fontSize: 14 }}>
           ← Back to match
         </Link>
@@ -53,10 +53,10 @@ export default async function ResumeTailoringPage({
         <div className="resume-review-heading">
           <div>
             <div className="badge">Resume review · v{tailoring.versionNumber}</div>
-            <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: "16px 0 8px" }}>
+            <h1 className="page-title">
               {job?.role_title || "Tailored resume"}
             </h1>
-            <p className="muted" style={{ fontSize: 18, margin: 0 }}>
+            <p className="muted page-subtitle">
               {job?.company_name || "Company"} · {tailoring.improvementCount} changes proposed
             </p>
           </div>

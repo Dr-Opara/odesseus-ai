@@ -40,12 +40,12 @@ export default async function DocumentsPage({
       interviewPasses={credits.interviewPasses}
     >
       <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 100px" }}>
-        <div style={{ width: "min(760px,100%)", margin: "20px auto 0" }}>
-          <div className="muted" style={{ fontSize: 14 }}>Settings</div>
-          <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: "10px 0 6px" }}>
+        <div className="candidate-column" style={{ marginTop: 20 }}>
+          <div className="page-eyebrow muted">Settings</div>
+          <h1 className="page-title">
             Documents.
           </h1>
-          <p className="muted" style={{ fontSize: 18, lineHeight: 1.6, marginBottom: 30 }}>
+          <p className="muted page-subtitle" style={{ marginBottom: 30 }}>
             Your master resume and any approved PDFs are kept here. Documents
             beyond resumes (cover letters, certificates) are not supported yet.
           </p>

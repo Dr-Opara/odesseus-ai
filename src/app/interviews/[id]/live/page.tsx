@@ -62,13 +62,7 @@ export default async function OdesseusLivePage({
             Odesseus Live
           </div>
 
-          <h1
-            style={{
-              fontSize: 42,
-              letterSpacing: "-0.05em",
-              margin: "14px 0 6px",
-            }}
-          >
+          <h1 className="page-title" style={{ margin: "14px 0 6px" }}>
             {interview.applications?.role_title || "Interview"}
           </h1>
 

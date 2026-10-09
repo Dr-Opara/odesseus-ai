@@ -95,16 +95,10 @@ export default async function PostInterviewPage({
       <div className="post-heading">
         <div>
           <div className="badge">Post-interview</div>
-          <h1
-            style={{
-              fontSize: 46,
-              letterSpacing: "-0.05em",
-              margin: "14px 0 7px",
-            }}
-          >
+          <h1 className="page-title" style={{ margin: "14px 0 7px" }}>
             {role}
           </h1>
-          <p className="muted" style={{ fontSize: 18, margin: 0 }}>
+          <p className="muted page-subtitle" style={{ margin: 0 }}>
             {company}
           </p>
         </div>
