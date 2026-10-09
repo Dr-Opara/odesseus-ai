@@ -600,6 +600,7 @@ export async function getCandidateDashboard(
     status: typeof a.status === "string" ? a.status : "unknown",
     matchScore:
       typeof a.match_score_snapshot === "number" ? a.match_score_snapshot : null,
+    applicationUrl: typeof a.application_url === "string" ? a.application_url : null,
     submittedAt: typeof a.submitted_at === "string" ? a.submitted_at : null,
     lastEventAt: typeof a.last_event_at === "string" ? a.last_event_at : null,
   }));
