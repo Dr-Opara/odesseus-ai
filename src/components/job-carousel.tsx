@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+
 function ActivityIcon({ type }: { type: "scan" | "match" | "apply" }) {
   if (type === "scan") {
     return (
@@ -41,12 +43,84 @@ function Sparkline({ variant }: { variant: "scan" | "match" | "apply" }) {
   );
 }
 
+type ActivityMetrics = {
+  jobsScanned: number;
+  matchesFound: number;
+  jobsApplied: number;
+  dataAsOf: string | null;
+};
+
+function updatedLabel(value: string | null) {
+  if (!value) return "No activity yet";
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) return "Latest available data";
+  const diff = Math.max(0, Date.now() - time);
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 2) return "Updated just now";
+  if (minutes < 60) return `Updated ${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Updated ${hours} hr${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `Updated ${days} day${days === 1 ? "" : "s"} ago`;
+  return `Data as of ${new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value))}`;
+}
+
 function LiveActivityPreview() {
-  const rows = [
-    { type: "scan" as const, label: "Jobs Scanned", value: "847,696" },
-    { type: "match" as const, label: "Matches Found", value: "1,322" },
-    { type: "apply" as const, label: "Jobs Applied", value: "110" },
-  ];
+  const [metrics, setMetrics] = useState<ActivityMetrics | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const response = await fetch("/api/home/activity", {
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error("activity request failed");
+        const data = (await response.json()) as ActivityMetrics;
+        if (!cancelled) {
+          setMetrics(data);
+          setUnavailable(false);
+        }
+      } catch {
+        if (!cancelled) setUnavailable(true);
+      }
+    }
+
+    void load();
+    const interval = window.setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const rows = useMemo(
+    () => [
+      {
+        type: "scan" as const,
+        label: "Jobs Scanned",
+        value: metrics ? metrics.jobsScanned.toLocaleString() : "—",
+      },
+      {
+        type: "match" as const,
+        label: "Matches Found",
+        value: metrics ? metrics.matchesFound.toLocaleString() : "—",
+      },
+      {
+        type: "apply" as const,
+        label: "Jobs Applied",
+        value: metrics ? metrics.jobsApplied.toLocaleString() : "—",
+      },
+    ],
+    [metrics]
+  );
 
   return (
     <div className="oh-live-activity-card" aria-label="Odesseus live activity preview">
@@ -55,7 +129,7 @@ function LiveActivityPreview() {
           <span className="oh-live-activity-dot" aria-hidden="true" />
           <strong>Live Activity</strong>
         </div>
-        <span>Updated just now</span>
+        <span>{unavailable ? "Activity unavailable" : updatedLabel(metrics?.dataAsOf ?? null)}</span>
       </div>
 
       <div className="oh-live-activity-list">
