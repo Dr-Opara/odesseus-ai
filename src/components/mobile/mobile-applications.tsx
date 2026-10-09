@@ -1,5 +1,6 @@
 import Link from "next/link";
 import MobileScreen from "@/components/mobile/mobile-screen";
+import CompanyLogo from "@/components/company-logo";
 import { statusLabel } from "@/lib/applications/status";
 
 type ApplicationRow = {
@@ -8,6 +9,7 @@ type ApplicationRow = {
   role_title: string;
   status: string;
   last_event_at: string | null;
+  application_url: string | null;
   submitted_at: string | null;
   match_score_snapshot: number | null;
   job_opportunities: { match_score: number | null } | null;
@@ -68,7 +70,11 @@ export default function MobileApplications({
                 href={`/applications/${application.id}`}
                 key={application.id}
               >
-                <span className="m-icon">{application.company_name.slice(0, 1)}</span>
+                <CompanyLogo
+                  company={application.company_name}
+                  sourceUrl={application.application_url}
+                  className="m-icon company-logo-mobile"
+                />
                 <span className="m-copy">
                   <strong>{application.company_name}</strong>
                   <small>
