@@ -141,7 +141,7 @@ export default function MobilePricing() {
       </div>
 
       <div className="pricing-audiences">
-      <section className="pricing-panel pricing-panel-candidate" role="tabpanel" hidden={tab !== "applicants"}>
+      <section className={`pricing-panel pricing-panel-candidate${tab !== "applicants" ? " pricing-panel-mobile-hidden" : ""}`} role="tabpanel">
         <p className="pricing-column-title">Candidate Pricing</p>
         <p className="pricing-section-label">CANDIDATE</p>
         <div className="pricing-list">
@@ -179,7 +179,7 @@ export default function MobilePricing() {
         </div>
       </section>
 
-      <section className="pricing-panel pricing-panel-employer" role="tabpanel" hidden={tab !== "business"}>
+      <section className={`pricing-panel pricing-panel-employer${tab !== "business" ? " pricing-panel-mobile-hidden" : ""}`} role="tabpanel">
         <p className="pricing-column-title">Employer Pricing</p>
         <p className="pricing-section-label">EMPLOYER PLANS</p>
         <div className="pricing-list">
