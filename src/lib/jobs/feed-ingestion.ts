@@ -139,6 +139,7 @@ export async function runPublicFeedIngestion(
         external_id: job.externalId,
         provider: job.provider,
         company_name: job.companyName,
+        company_logo_url: job.companyLogoUrl,
         title: job.title,
         location: job.location,
         work_arrangement: job.workArrangement,
