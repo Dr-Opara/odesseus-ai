@@ -36,6 +36,7 @@ const REFILL_EXTRA = 30;
 type FeedRow = {
   id: string;
   company_name: string;
+  company_logo_url: string | null;
   title: string;
   location: string | null;
   work_arrangement: string | null;
@@ -51,13 +52,14 @@ type FeedRow = {
 };
 
 const FEED_COLUMNS =
-  "id,company_name,title,location,work_arrangement,employment_type,salary_text,source_key,external_id,provider,source_url,apply_url,published_at,last_seen_at";
+  "id,company_name,company_logo_url,title,location,work_arrangement,employment_type,salary_text,source_key,external_id,provider,source_url,apply_url,published_at,last_seen_at";
 
 /** One feed item in the shape the public contract exposes. */
 export type PublicFeedItem = {
   id: string;
   title: string;
   company: string;
+  companyLogoUrl: string | null;
   location: string | null;
   workArrangement: string | null;
   employmentType: string | null;
@@ -152,6 +154,7 @@ export async function readPublicHomeFeed(
         id: item.id,
         title: item.title,
         company: item.company_name,
+        companyLogoUrl: item.company_logo_url,
         location: item.location,
         workArrangement: item.work_arrangement,
         employmentType: item.employment_type,
