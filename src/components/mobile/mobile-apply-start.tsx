@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { APPLY_TIERS, formatCents, MIN_APPLY_PRICE_CENTS } from "@/lib/pricing/candidate-pricing";
 import ApplyTierAndStart from "@/components/apply/apply-tier-and-start";
+import CompanyLogo from "@/components/company-logo";
 
 type Job = {
   id: string;
@@ -50,6 +51,11 @@ export default function MobileApplyStart({
       <p className="m-lead">You stay in control before submission.</p>
 
       <div className="m-card" style={{ marginBottom: 14 }}>
+        <CompanyLogo
+          company={job.company_name}
+          sourceUrl={job.source_url}
+          className="m-icon company-logo-mobile"
+        />
         <span className="m-copy">
           <strong>{job.role_title}</strong>
           <small>
