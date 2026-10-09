@@ -38,7 +38,7 @@ export async function searchPublicJobs(input: SearchInput = {}): Promise<PublicJ
     .or(`published_at.gte.${cutoff},and(published_at.is.null,first_seen_at.gte.${cutoff})`)
     .limit(limit);
 
-  const term = input.query?.trim();
+  const term = input.query?.trim().replace(/[,%()]/g, " ");
   if (term) {
     query = query.or(
       `title.ilike.%${term}%,company_name.ilike.%${term}%,description.ilike.%${term}%`
