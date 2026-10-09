@@ -41,7 +41,7 @@ const JOB_COLUMNS =
   "id,company_name,role_title,location,work_arrangement,employment_type,salary_text,description,match_score,status,source,source_url,discovered_at";
 
 const APP_COLUMNS =
-  "id,company_name,role_title,status,submitted_at,last_event_at,match_score_snapshot";
+  "id,company_name,role_title,status,application_url,submitted_at,last_event_at,match_score_snapshot";
 
 /** Resolves the signed-in user id from the auth claims, or null. */
 export async function getCandidateUserId(
