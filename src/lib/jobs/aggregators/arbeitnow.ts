@@ -41,6 +41,7 @@ export async function fetchArbeitnowJobs(maxJobs = 300): Promise<AggregatedJob[]
         sourceKey: "arbeitnow:public",
         externalId: job.slug,
         companyName: job.company_name.trim(),
+        companyLogoUrl: null,
         title: job.title.trim(),
         location: job.location?.trim() || (job.remote ? "Remote Europe" : null),
         workArrangement: job.remote ? "remote" : "on-site",
