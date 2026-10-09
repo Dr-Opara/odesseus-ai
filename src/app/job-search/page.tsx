@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import MarketingNav from "@/components/marketing-nav";
 import MarketingFooter from "@/components/marketing-footer";
 import {
@@ -6,6 +7,10 @@ import {
   jobSummary,
   searchPublicJobs,
 } from "@/lib/jobs/public-search";
+import {
+  marketForCountry,
+  marketFromLocationInput,
+} from "@/lib/jobs/location-market";
 
 export const dynamic = "force-dynamic";
 
@@ -38,9 +43,17 @@ export default async function JobSearchPage({
   searchParams: Promise<{ q?: string; location?: string; type?: string }>;
 }) {
   const { q = "", location = "", type = "" } = await searchParams;
+  const requestHeaders = await headers();
+  const visitorCountry = requestHeaders.get("x-vercel-ip-country");
+  const inferredMarket = marketForCountry(visitorCountry);
+  const typedMarket = marketFromLocationInput(location);
+  const activeMarket = location.trim() ? typedMarket : inferredMarket;
+  const displayLocation = location.trim() || activeMarket?.label || "";
+
   const jobs = await searchPublicJobs({
     query: q,
-    location,
+    location: typedMarket ? "" : location,
+    market: activeMarket,
     employmentType: type,
     limit: 100,
   });
@@ -73,7 +86,7 @@ export default async function JobSearchPage({
             <span aria-hidden="true">⌖</span>
             <input
               name="location"
-              defaultValue={location}
+              defaultValue={displayLocation}
               placeholder="Location"
               aria-label="Location"
             />
@@ -95,7 +108,10 @@ export default async function JobSearchPage({
           <div className="public-jobs-heading-row">
             <div>
               <h2>Latest Jobs</h2>
-              <p>{jobs.length} role{jobs.length === 1 ? "" : "s"} posted within the last 30 days</p>
+              <p>
+                {jobs.length} role{jobs.length === 1 ? "" : "s"} posted within the last 30 days
+                {activeMarket ? ` · Showing ${activeMarket.label}` : ""}
+              </p>
             </div>
             {(q || location || type) ? (
               <Link href="/job-search" className="public-jobs-clear">Clear filters</Link>
