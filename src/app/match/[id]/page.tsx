@@ -5,6 +5,7 @@ import { matchAssessmentSchema } from "@/lib/ai/schemas";
 import TailorButton from "@/components/tailor-button";
 import AppShell from "@/components/app-shell";
 import MobileJobDetail from "@/components/mobile/mobile-job-detail";
+import CompanyLogo from "@/components/company-logo";
 import {
   getCandidateProfile,
   getCandidateUserId,
@@ -69,7 +70,13 @@ export default async function MatchResultPage({
         <Link href="/match" className="muted" style={{ fontSize: 14 }}>← Check another role</Link>
 
         <div className="match-result-header">
-          <div>
+          <div className="match-result-company-wrap">
+            <CompanyLogo
+              company={job.company_name}
+              sourceUrl={job.source_url}
+              className="match-result-company-logo"
+            />
+            <div>
             <div className="badge">{scoreLabel(score)}</div>
             <h1 className="page-title">
               {job.role_title}
@@ -77,6 +84,7 @@ export default async function MatchResultPage({
             <p className="muted page-subtitle">
               {job.company_name}{job.location ? ` · ${job.location}` : ""}
             </p>
+            </div>
           </div>
 
           <div className="score-orb">
