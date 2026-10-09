@@ -173,6 +173,7 @@ export type CandidateDashboardApplication = {
   roleTitle: string;
   status: string;
   matchScore: number | null;
+  applicationUrl: string | null;
   submittedAt: string | null;
   lastEventAt: string | null;
 };
@@ -519,7 +520,7 @@ export async function getCandidateDashboard(
       client
         .from("applications")
         .select(
-          "id,company_name,role_title,status,match_score_snapshot,submitted_at,last_event_at"
+          "id,company_name,role_title,status,match_score_snapshot,application_url,submitted_at,last_event_at"
         )
         .eq("user_id", userId)
         .order("last_event_at", { ascending: false })
