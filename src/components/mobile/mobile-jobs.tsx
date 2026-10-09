@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import MobileScreen from "@/components/mobile/mobile-screen";
 import MobileSaveJob from "@/components/mobile/mobile-save-job";
-import { companyMarkColor, companyMarkInitial } from "@/lib/mobile/company-mark";
+import CompanyLogo from "@/components/company-logo";
 import type { CandidateJob } from "@/lib/candidate/types";
 
 function sourceLabel(source: string | null) {
@@ -73,9 +73,11 @@ export default function MobileJobs({
           {visible.map((job) => (
             <article className="m-job-card" key={job.id}>
               <Link className="m-job-card-main" href={`/match/${job.id}`}>
-                <span className={`m-icon m-icon-sm m-icon-${companyMarkColor(job.company_name)}`} aria-hidden="true">
-                  {companyMarkInitial(job.company_name)}
-                </span>
+                <CompanyLogo
+                  company={job.company_name}
+                  sourceUrl={job.source_url}
+                  className="m-icon m-icon-sm company-logo-mobile"
+                />
                 <span className="m-match-copy">
                   <span className="m-match-company">
                     {job.company_name}
