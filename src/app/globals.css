@@ -5035,6 +5035,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   .pricing-list{display:grid;gap:10px}
   .pricing-card{
     position:relative;
+    text-decoration:none;
+    color:inherit;
+    cursor:pointer;
     min-height:78px;
     display:grid;
     grid-template-columns:48px minmax(0,1fr) 20px;
@@ -5248,6 +5251,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 
   .pricing-desktop-shell .pricing-card{
     position:relative;
+    text-decoration:none;
+    color:inherit;
+    cursor:pointer;
     min-height:88px;
     display:grid;
     grid-template-columns:52px minmax(0,1fr) 24px;
@@ -5423,4 +5429,16 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   .pricing-desktop-shell .pricing-decor{
     display:none;
   }
+}
+
+
+@media (hover:hover) and (pointer:fine){
+  .pricing-card:hover{
+    transform:translateY(-1px);
+    box-shadow:0 8px 24px rgba(17,21,39,.075);
+  }
+}
+.pricing-card:focus-visible{
+  outline:3px solid rgba(255,70,5,.3);
+  outline-offset:3px;
 }
