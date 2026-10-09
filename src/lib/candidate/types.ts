@@ -80,6 +80,7 @@ export type CandidateApplication = {
   company_name: string;
   role_title: string;
   status: string;
+  application_url: string | null;
   submitted_at: string | null;
   last_event_at: string | null;
   match_score_snapshot: number | null;
