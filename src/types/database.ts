@@ -3716,6 +3716,7 @@ export type Database = {
         Row: {
           apply_url: string | null;
           company_name: string;
+          company_logo_url: string | null;
           created_at: string;
           description: string;
           employment_type: string | null;
@@ -3737,6 +3738,7 @@ export type Database = {
         Insert: {
           apply_url?: string | null;
           company_name: string;
+          company_logo_url?: string | null;
           created_at?: string;
           description: string;
           employment_type?: string | null;
@@ -3758,6 +3760,7 @@ export type Database = {
         Update: {
           apply_url?: string | null;
           company_name?: string;
+          company_logo_url?: string | null;
           created_at?: string;
           description?: string | null;
           employment_type?: string | null;
