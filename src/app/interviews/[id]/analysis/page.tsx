@@ -6,6 +6,7 @@ import FollowUpEditor from "@/components/follow-up-editor";
 import { postInterviewAnalysisSchema } from "@/lib/ai/schemas";
 import AppShell from "@/components/app-shell";
 import { deleteTranscript } from "@/app/actions/account";
+import CompanyLogo from "@/components/company-logo";
 
 export default async function PostInterviewPage({
   params,
@@ -93,7 +94,9 @@ export default async function PostInterviewPage({
       ) : null}
 
       <div className="post-heading">
-        <div>
+        <div className="interview-company-row">
+          <CompanyLogo company={company} className="interview-company-logo" />
+          <div>
           <div className="badge">Post-interview</div>
           <h1 className="page-title" style={{ margin: "14px 0 7px" }}>
             {role}
@@ -101,6 +104,7 @@ export default async function PostInterviewPage({
           <p className="muted page-subtitle" style={{ margin: 0 }}>
             {company}
           </p>
+          </div>
         </div>
 
         {canAnalyze ? (
