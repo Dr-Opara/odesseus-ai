@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { z } from "zod";
 import MobileScreen from "@/components/mobile/mobile-screen";
 import MobileTailoringActions from "@/components/mobile/mobile-tailoring-actions";
+import CompanyLogo from "@/components/company-logo";
 import { tailoredResumeSchema } from "@/lib/ai/schemas";
 import type { CandidateResumeTailoring } from "@/lib/candidate/types";
 
@@ -35,6 +36,16 @@ export default function MobileResumeReview({
       lead={`${tailoring.job?.company_name || "Company"} · v${tailoring.versionNumber} · ${tailoring.improvementCount} changes proposed`}
       minHeight={844}
     >
+      {tailoring.job?.company_name ? (
+        <div className="m-job-detail-company">
+          <CompanyLogo
+            company={tailoring.job.company_name}
+            className="m-job-detail-company-logo"
+          />
+          <span>{tailoring.job.company_name}</span>
+        </div>
+      ) : null}
+
       <div className="m-version-row">
         <span className="m-badge">
           {approved ? "Approved ✓" : `Draft · v${tailoring.versionNumber}`}
