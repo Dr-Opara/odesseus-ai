@@ -67,7 +67,10 @@ export default async function JobSearchPage({
           <div>
             <span className="figma-eyebrow">JOB SEARCH</span>
             <h1>Find your next opportunity</h1>
-            <p>Browse jobs posted or discovered within the last 30 days.</p>
+            <p>
+              Browse jobs across industries posted or discovered within the last 30 days.
+              Your location is selected automatically, and you can search another market anytime.
+            </p>
           </div>
         </section>
 
