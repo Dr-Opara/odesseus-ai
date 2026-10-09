@@ -1,6 +1,7 @@
 import HomepageJobFeed from "@/components/homepage-job-feed";
 import HomepageWorldJobs from "@/components/homepage-world-jobs";
 import HomepageFeatureShowcase from "@/components/homepage-feature-showcase";
+import CompanyLogo from "@/components/company-logo";
 import type { HomepageJobsResult } from "@/lib/jobs/homepage-types";
 
 type GlobalCompany = {
@@ -49,12 +50,10 @@ function GlobalCompanyMarquee() {
           >
             {globalCompanies.map((company) => (
               <span className="oh-company-chip" key={company.name}>
-                <span
+                <CompanyLogo
+                  company={company.name}
+                  sourceUrl={`https://${company.domain}`}
                   className="oh-company-logo"
-                  aria-hidden="true"
-                  style={{
-                    backgroundImage: `url("https://www.google.com/s2/favicons?domain=${company.domain}&sz=64")`,
-                  }}
                 />
                 <strong>{company.name}</strong>
               </span>
