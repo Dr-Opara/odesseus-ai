@@ -9,7 +9,7 @@ import {
 } from "@/lib/jobs/public-search";
 import {
   marketForCountry,
-  marketFromLocationInput,
+  resolveExplicitLocation,
 } from "@/lib/jobs/location-market";
 
 export const dynamic = "force-dynamic";
@@ -46,13 +46,14 @@ export default async function JobSearchPage({
   const requestHeaders = await headers();
   const visitorCountry = requestHeaders.get("x-vercel-ip-country");
   const inferredMarket = marketForCountry(visitorCountry);
-  const typedMarket = marketFromLocationInput(location);
-  const activeMarket = location.trim() ? typedMarket : inferredMarket;
+  const explicitLocation = resolveExplicitLocation(location);
+  const activeMarket = location.trim() ? null : inferredMarket;
   const displayLocation = location.trim() || activeMarket?.label || "";
 
   const jobs = await searchPublicJobs({
     query: q,
-    location: typedMarket ? "" : location,
+    location,
+    locationTerms: explicitLocation?.terms,
     market: activeMarket,
     employmentType: type,
     limit: 100,
@@ -113,7 +114,11 @@ export default async function JobSearchPage({
               <h2>Latest Jobs</h2>
               <p>
                 {jobs.length} role{jobs.length === 1 ? "" : "s"} posted within the last 30 days
-                {activeMarket ? ` · Showing ${activeMarket.label}` : ""}
+                {explicitLocation
+                  ? ` · Showing ${explicitLocation.label}`
+                  : activeMarket
+                    ? ` · Showing ${activeMarket.label}`
+                    : ""}
               </p>
             </div>
             {(q || location || type) ? (
