@@ -166,8 +166,8 @@ export async function POST(
         quantity: 1,
       },
     ],
-    success_url: `${siteUrl}/employer/featured?boost=success`,
-    cancel_url: `${siteUrl}/employer/featured?boost=cancelled`,
+    success_url: `${siteUrl}/employers/jobs/${input.jobId}/feature?boost=success`,
+    cancel_url: `${siteUrl}/employers/jobs/${input.jobId}/feature?boost=cancelled`,
     // The featured screen re-reads this once Stripe confirms.
     client_reference_id: orgId,
     metadata: {

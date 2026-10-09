@@ -135,8 +135,8 @@ export async function POST(
         quantity: input.seatCount,
       },
     ],
-    success_url: `${siteUrl}/employer/team?seats=success`,
-    cancel_url: `${siteUrl}/employer/team?seats=cancelled`,
+    success_url: `${siteUrl}/employers/dashboard/team?seats=success`,
+    cancel_url: `${siteUrl}/employers/dashboard/team?seats=cancelled`,
     // The team screen polls this to show the seat count once Stripe confirms.
     client_reference_id: orgId,
     metadata: {

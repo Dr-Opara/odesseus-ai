@@ -3,7 +3,6 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { signup } from "@/app/login/actions";
-import GoogleSignupButton from "@/components/google-signup-button";
 import MobileOnboardingProgress from "@/components/mobile/mobile-onboarding-progress";
 import { APPLY_TIERS } from "@/lib/pricing/candidate-pricing";
 
@@ -119,14 +118,6 @@ export default function MobileSignupWizard({ error }: { error?: string }) {
           <b>3</b>
           <span>Apply with confidence</span>
         </div>
-      </div>
-
-      <GoogleSignupButton />
-
-      <div className="m-or-divider">
-        <span />
-        <b>OR</b>
-        <span />
       </div>
 
       <form onSubmit={continueToName} className="m-signup-form">
