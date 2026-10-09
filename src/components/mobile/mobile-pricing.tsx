@@ -140,7 +140,9 @@ export default function MobilePricing() {
         </button>
       </div>
 
-      <section className="pricing-panel" role="tabpanel" hidden={tab !== "applicants"}>
+      <div className="pricing-audiences">
+      <section className="pricing-panel pricing-panel-candidate" role="tabpanel" hidden={tab !== "applicants"}>
+        <p className="pricing-column-title">Candidate Pricing</p>
         <p className="pricing-section-label">CANDIDATE</p>
         <div className="pricing-list">
           <PricingCard
@@ -177,7 +179,8 @@ export default function MobilePricing() {
         </div>
       </section>
 
-      <section className="pricing-panel" role="tabpanel" hidden={tab !== "business"}>
+      <section className="pricing-panel pricing-panel-employer" role="tabpanel" hidden={tab !== "business"}>
+        <p className="pricing-column-title">Employer Pricing</p>
         <p className="pricing-section-label">EMPLOYER PLANS</p>
         <div className="pricing-list">
           {EMPLOYER_PLANS.map((plan, index) => (
@@ -223,6 +226,7 @@ export default function MobilePricing() {
           <span>Business accounts are set up and managed through the desktop employer experience.</span>
         </div>
       </section>
+      </div>
 
       <div className="pricing-info-row pricing-region-note">
         <PricingIcon type="globe" />
