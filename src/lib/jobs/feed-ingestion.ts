@@ -20,6 +20,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { configuredJobSources } from "./sources";
 import type { JobSourceConfig, NormalizedJobPosting } from "./types";
 import { fetchSourceJobs } from "./providers";
+import { fetchPublicAggregators } from "./aggregators";
 
 
 type ServiceClient = ReturnType<typeof createServiceClient>;
@@ -33,6 +34,7 @@ export type FeedIngestionSummary = {
   sourcesSucceeded: number;
   sourcesFailed: number;
   postingsUpserted: number;
+  aggregatorUpserted: number;
   employerMirrored: number;
   employerDeactivated: number;
   deactivatedStale: number;
@@ -59,6 +61,7 @@ export async function runPublicFeedIngestion(
     sourcesSucceeded: 0,
     sourcesFailed: 0,
     postingsUpserted: 0,
+    aggregatorUpserted: 0,
     employerMirrored: 0,
     employerDeactivated: 0,
     deactivatedStale: 0,
@@ -118,6 +121,53 @@ export async function runPublicFeedIngestion(
         message: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+
+  // Public aggregators broaden coverage beyond the configured company catalog.
+  // They are best-effort and normalize into the same dedupe table as ATS and employer jobs.
+  try {
+    const aggregatorResults = await fetchPublicAggregators();
+    for (const result of aggregatorResults) {
+      if (result.error) {
+        summary.errors.push({ source: `aggregator:${result.source}`, message: result.error });
+        continue;
+      }
+      if (!result.jobs.length) continue;
+
+      const rows = result.jobs.map((job) => ({
+        source_key: job.sourceKey,
+        external_id: job.externalId,
+        provider: job.provider,
+        company_name: job.companyName,
+        title: job.title,
+        location: job.location,
+        work_arrangement: job.workArrangement,
+        employment_type: job.employmentType,
+        salary_text: job.salaryText,
+        description: job.description,
+        source_url: job.sourceUrl,
+        apply_url: job.applyUrl,
+        published_at: job.publishedAt,
+        last_seen_at: nowIso,
+        is_active: true,
+        updated_at: nowIso,
+      }));
+
+      const { error } = await service
+        .from("public_job_posts")
+        .upsert(rows, { onConflict: "source_key,external_id" });
+
+      if (error) {
+        summary.errors.push({ source: `aggregator:${result.source}`, message: error.message });
+        continue;
+      }
+      summary.aggregatorUpserted += rows.length;
+    }
+  } catch (error) {
+    summary.errors.push({
+      source: "aggregators",
+      message: error instanceof Error ? error.message : String(error),
+    });
   }
 
   // Employer mirror: every published posting is upserted active; employer
