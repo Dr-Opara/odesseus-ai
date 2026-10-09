@@ -1,6 +1,58 @@
 @import "tailwindcss";
 
 :root {
+  /* ====================================================================
+     CANONICAL ODESSEUS SEMANTIC TOKENS (Phase 2 foundation)
+     These resolve through the --od-* values already defined further down
+     this file (the figma/marketing/employer system) so there is one source
+     of truth for the brand palette. Custom-property resolution happens at
+     used-value time, not declaration order, so referencing --od-orange
+     etc. here before their own :root block later in the file is safe.
+
+     Brand primary  = --od-orange   (#ff4605) — CTAs, primary actions, active nav
+     Brand dark     = --od-navy     (#0e0e1f) — dominant dark neutral
+     Brand accent   = --od-purple   (#5c1fb8) — secondary accent, AND the
+                       canonical color for focus indicators and informational
+                       /score displays (explicit product decision: orange is
+                       reserved for actionable CTAs; purple marks "look here,
+                       don't click here" — focus rings and match-score data).
+     ==================================================================== */
+  --od-brand-primary: var(--od-orange);
+  --od-brand-primary-hover: #e63d00;
+  --od-brand-primary-soft: var(--od-peach);
+  --od-brand-dark: var(--od-navy);
+  --od-brand-accent: var(--od-purple);
+
+  --od-text-primary: var(--od-ink);
+  --od-text-secondary: var(--od-muted);
+  --od-surface-primary: #ffffff;
+  --od-surface-secondary: var(--od-soft);
+  --od-border: #e4e7ec;
+
+  /* Focus: deliberately NOT brand-primary orange, so a focus ring never
+     reads as a clickable CTA. */
+  --od-focus: var(--od-purple);
+  --od-focus-soft: var(--od-lavender);
+
+  /* Info / score: match-score values and progress fills are quantitative
+     information, not actions — kept off brand-primary orange for the same
+     reason as focus. No success/warning/error threshold logic exists on
+     these elements today (verified against job-discovery-showcase.tsx); if
+     that changes, semantic state colors below take precedence over this. */
+  --od-info: var(--od-purple);
+  --od-info-soft: var(--od-lavender);
+
+  /* Semantic states — new tokens, not yet wired to every consumer. Success
+     reuses the mobile system's existing green so "green = good" stays
+     consistent between the candidate desktop and mobile apps; warning
+     formalizes the color already used by .m-warning; error is new. */
+  --od-success: #26cc7a;
+  --od-success-soft: var(--od-green);
+  --od-warning: #a33a2b;
+  --od-warning-soft: #fff3ef;
+  --od-error: #c22b0f;
+  --od-error-soft: #fdeceb;
+
   /* Brand tokens — sampled directly from the Odesseus.ai logo (black + electric blue) */
   --brand-black: #000000;
   --brand-blue: #0060fc;
@@ -15,13 +67,21 @@
   --surface-subtle: #f7f9fc;
 
   /* Legacy names kept so every existing var(--x) reference in this file and
-     across components resolves to the new brand values without a mass rename. */
+     across components resolves to the new brand values without a mass rename.
+     --brand-blue/--accent now resolve to the canonical brand-primary orange
+     by default (Phase 2 button/badge/active-nav migration). Two specific
+     consumers — the focus ring and the match-score/progress display — are
+     intentionally NOT left on this default alias; they reference --od-focus
+     and --od-info directly at their own declaration sites instead, per the
+     approved decision that orange stays reserved for CTAs. See the specific
+     selectors below (:focus-visible, .input:focus, .jds-score-*) for those
+     carve-outs. */
   --bg: var(--surface-subtle);
   --text: var(--text-primary);
   --muted: var(--text-secondary);
   --line: #e4e7ec;
-  --accent: var(--brand-blue);
-  --accent-soft: var(--brand-blue-soft);
+  --accent: var(--od-brand-primary);
+  --accent-soft: var(--od-brand-primary-soft);
 }
 
 * { box-sizing: border-box; }
@@ -34,10 +94,10 @@ body {
 }
 a { color: inherit; text-decoration: none; }
 button, input, textarea { font: inherit; }
-input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
-:focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 2px; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--od-focus); }
+:focus-visible { outline: 2px solid var(--od-focus); outline-offset: 2px; }
 
-.link { color: var(--brand-blue); font-weight: 700; }
+.link { color: var(--od-brand-primary); font-weight: 700; }
 
 .sr-only {
   position: absolute;
@@ -50,23 +110,24 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   white-space: nowrap;
   border: 0;
 }
-.link:hover { color: var(--brand-blue-hover); }
+.link:hover { color: var(--od-brand-primary-hover); }
 
 .shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; }
 .muted { color: var(--muted); }
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
-  min-height: 46px; padding: 0 18px; border-radius: 12px;
-  border: 1px solid transparent; font-weight: 650; cursor: pointer;
+  min-height: 46px; padding: 0 20px; border-radius: 999px;
+  border: 1px solid transparent; font-weight: 700; cursor: pointer;
+  text-decoration: none;
 }
-.btn-primary { background: var(--text); color: white; }
-.btn-secondary { background: white; border-color: var(--line); }
+.btn-primary { background: var(--od-brand-primary); color: #fff; }
+.btn-secondary { background: white; border-color: var(--line); color: var(--od-text-primary); }
 .input {
   width: 100%; min-height: 48px; border: 1px solid var(--line);
   background: white; border-radius: 12px; padding: 0 14px; outline: none;
 }
-.input:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px var(--brand-blue-soft); }
+.input:focus { border-color: var(--od-focus); box-shadow: 0 0 0 3px var(--od-focus-soft); }
 .badge {
   display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px;
   border-radius: 999px; background: var(--accent-soft); color: var(--accent);
@@ -91,7 +152,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   white-space: nowrap;
 }
 .odesseus-wordmark-name { color: var(--brand-black); font-weight: 400; }
-.odesseus-wordmark-ai { color: var(--brand-blue); font-weight: 400; }
+.odesseus-wordmark-ai { color: var(--od-brand-primary); font-weight: 400; }
 .odesseus-wordmark-sm { font-size: 20px; }
 .odesseus-wordmark-md { font-size: 24px; }
 .odesseus-wordmark-lg { font-size: 30px; }
@@ -1248,8 +1309,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   background: #b7b7b0;
 }
 .live-status-dot-active {
-  background: var(--brand-blue);
-  box-shadow: 0 0 0 5px var(--brand-blue-soft);
+  background: var(--od-brand-primary);
+  box-shadow: 0 0 0 5px var(--od-brand-primary-soft);
 }
 .live-answer {
   font-size: 22px;
@@ -1332,7 +1393,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   background: var(--surface-subtle);
 }
 .live-interview-link:hover {
-  background: var(--brand-blue-soft);
+  background: var(--od-brand-primary-soft);
 }
 .live-blocked-reason {
   padding: 14px 16px;
@@ -1351,7 +1412,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   color: var(--muted);
 }
 .live-plans-link:hover {
-  color: var(--brand-blue);
+  color: var(--od-brand-primary);
 }
 .live-plan-item {
   font-weight: 650;
@@ -1415,8 +1476,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   font-size: 22px;
 }
 .live-completed-icon {
-  background: var(--brand-blue-soft);
-  color: var(--brand-blue);
+  background: var(--od-brand-primary-soft);
+  color: var(--od-brand-primary);
 }
 .live-error-icon {
   background: #fdeeee;
@@ -1700,13 +1761,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   font-weight: 800;
   letter-spacing: .04em;
   text-transform: uppercase;
-  color: var(--brand-blue);
+  color: var(--od-brand-primary);
 }
 .live-preview-eyebrow-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--brand-blue);
+  background: var(--od-brand-primary);
 }
 .live-preview-heading {
   font-size: clamp(34px, 3.6vw, 46px);
@@ -1727,8 +1788,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: var(--brand-blue-soft);
-  color: var(--brand-blue);
+  background: var(--od-brand-primary-soft);
+  color: var(--od-brand-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1781,17 +1842,17 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   color: var(--text-secondary);
 }
 .live-assistant-tab.is-active {
-  color: var(--brand-blue);
-  box-shadow: 0 2px 0 var(--brand-blue);
+  color: var(--od-brand-primary);
+  box-shadow: 0 2px 0 var(--od-brand-primary);
   padding-bottom: 12px;
   margin-bottom: -13px;
 }
 .live-suggestion-card {
   padding: 14px;
   border-radius: 14px;
-  background: var(--brand-blue-soft);
+  background: var(--od-brand-primary-soft);
 }
-.live-suggestion-card strong { color: var(--brand-blue); font-size: 13.5px; }
+.live-suggestion-card strong { color: var(--od-brand-primary); font-size: 13.5px; }
 .live-suggestion-card p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.5; }
 
 .live-quick-prompts { display: grid; gap: 8px; }
@@ -1802,7 +1863,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid var(--line);
-  color: var(--brand-blue);
+  color: var(--od-brand-primary);
   font-size: 13px;
   font-weight: 600;
 }
@@ -1823,7 +1884,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--brand-blue);
+  background: var(--od-brand-primary);
   color: #fff;
   display: flex;
   align-items: center;
@@ -1852,7 +1913,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   text-align: center;
 }
 .live-preview-trust-eyebrow {
-  color: var(--brand-blue);
+  color: var(--od-brand-primary);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: .14em;
@@ -1874,7 +1935,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 }
 .live-preview-trust-stat:first-child { border-left: 0; }
 .live-preview-trust-stat strong {
-  color: var(--brand-blue);
+  color: var(--od-brand-primary);
   font-size: clamp(20px, 2vw, 26px);
   line-height: 1;
   letter-spacing: -.025em;
@@ -1995,7 +2056,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   margin: 4px 0 14px;
 }
 
-.marketing-nav-links a.is-active { color: var(--brand-blue); }
+.marketing-nav-links a.is-active { color: var(--od-brand-primary); }
 
 .marketing-footer {
   padding: 50px 0 34px;
@@ -2163,7 +2224,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   font-size: 14px;
   font-weight: 650;
 }
-.billing-rule-item.is-charge { border-color: var(--brand-blue-border); background: var(--accent-soft); }
+.billing-rule-item.is-charge { border-color: var(--od-brand-primary-soft); background: var(--accent-soft); }
 .billing-rule-amount { font-weight: 800; }
 
 .belief-grid {
@@ -2253,7 +2314,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   background: var(--surface);
   text-align: center;
 }
-.bundle-option.is-featured { border-color: var(--brand-blue-border); background: var(--accent-soft); }
+.bundle-option.is-featured { border-color: var(--od-brand-primary-soft); background: var(--accent-soft); }
 .bundle-option-quantity { font-size: 15px; font-weight: 650; margin-bottom: 6px; }
 .bundle-option-price { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; }
 .bundle-option-unit { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
@@ -2372,7 +2433,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   font-size: 13px;
 }
 .app-logout:hover { color: var(--text); }
-.app-nav-active { color: var(--brand-blue) !important; font-weight: 750; }
+.app-nav-active { color: var(--od-brand-primary) !important; font-weight: 750; }
 
 .account-menu { position: relative; }
 .account-menu > summary.avatar {
@@ -2380,7 +2441,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   list-style: none;
 }
 .account-menu > summary.avatar::-webkit-details-marker { display: none; }
-.account-menu[open] > summary.avatar { outline: 2px solid var(--brand-blue); outline-offset: 2px; }
+.account-menu[open] > summary.avatar { outline: 2px solid var(--od-focus); outline-offset: 2px; }
 .account-menu-panel {
   position: absolute;
   top: calc(100% + 10px);
@@ -2660,7 +2721,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   font-weight: 700;
 }
 .partner-platform { cursor: pointer; }
-.partner-platform.active { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(32,94,255,.08); }
+.partner-platform.active { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,70,5,.1); }
 .partner-steps, .partner-types { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; margin-top: 26px; }
 .partner-step, .partner-type { padding: 24px; }
 .partner-step > span { font-size: 12px; font-weight: 800; letter-spacing: .08em; color: var(--accent); }
@@ -2859,12 +2920,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   margin-top: 16px;
   padding: 14px 16px;
   border-radius: 14px;
-  background: var(--brand-blue-soft);
+  background: var(--od-brand-primary-soft);
   display: grid;
   gap: 4px;
 }
 .jds-search-banner strong { font-size: 14px; }
-.jds-search-banner span { font-size: 12.5px; color: var(--brand-blue); font-weight: 700; }
+.jds-search-banner span { font-size: 12.5px; color: var(--od-brand-primary); font-weight: 700; }
 
 .jds-stat-grid {
   margin-top: 16px;
@@ -2904,8 +2965,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .jds-match-score {
   font-size: 11px;
   font-weight: 800;
-  color: var(--brand-blue);
-  background: var(--brand-blue-soft);
+  color: var(--od-info);
+  background: var(--od-info-soft);
   padding: 4px 8px;
   border-radius: 999px;
   white-space: nowrap;
@@ -2959,7 +3020,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   align-items: center;
   gap: 7px;
   font-size: 12.5px;
-  color: var(--brand-blue);
+  color: var(--od-brand-primary);
 }
 
 .jds-job-summary { margin: 16px 0 0; font-size: 12.5px; line-height: 1.55; }
@@ -2979,9 +3040,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   gap: 8px;
 }
 .jds-score-label { font-size: 12px; font-weight: 700; color: var(--text-secondary); }
-.jds-score-value { font-size: 32px; letter-spacing: -0.03em; color: var(--brand-blue); }
-.jds-score-bar { height: 6px; border-radius: 999px; background: var(--brand-blue-soft); overflow: hidden; }
-.jds-score-bar-fill { height: 100%; background: var(--brand-blue); border-radius: 999px; }
+.jds-score-value { font-size: 32px; letter-spacing: -0.03em; color: var(--od-info); }
+.jds-score-bar { height: 6px; border-radius: 999px; background: var(--od-info-soft); overflow: hidden; }
+.jds-score-bar-fill { height: 100%; background: var(--od-info); border-radius: 999px; }
 .jds-score-note { font-size: 12px; font-weight: 650; color: var(--text-secondary); }
 
 .jds-apply-card {
@@ -3001,8 +3062,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .jds-apply-match { font-size: 13px; font-weight: 800; }
 .jds-apply-actions { display: flex; gap: 8px; }
 .jds-apply-actions .btn { min-height: 38px; padding: 0 14px; font-size: 13px; flex: 1; }
-.jds-apply-actions .btn-primary { background: var(--brand-blue); }
-.jds-apply-actions .btn-primary:hover { background: var(--brand-blue-hover); }
 
 @media (max-width: 980px) {
   .jds-stage { padding: 48px 24px 60px; min-height: 0; }
@@ -3075,7 +3134,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   display: grid;
   gap: 4px;
 }
-.marketing-agents-dropdown a:hover { background: var(--brand-blue-soft); }
+.marketing-agents-dropdown a:hover { background: var(--od-brand-primary-soft); }
 .marketing-agents-dropdown strong { color: var(--text); font-size: 13px; }
 .marketing-agents-dropdown span { color: var(--muted); font-size: 12px; line-height: 1.4; font-weight: 500; }
 .marketing-nav-mobile-group { display: grid; gap: 10px; }
@@ -3093,11 +3152,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 }
 .agents-flow span {
   padding: 9px 13px;
-  border: 1px solid var(--brand-blue-border);
-  background: var(--brand-blue-soft);
+  border: 1px solid var(--od-brand-primary-soft);
+  background: var(--od-brand-primary-soft);
   border-radius: 999px;
 }
-.agents-flow b { color: var(--brand-blue); }
+.agents-flow b { color: var(--od-brand-primary); }
 .agents-list { display: grid; gap: 24px; padding: 8px 0 100px; }
 .agent-detail-card {
   scroll-margin-top: 120px;
@@ -3110,8 +3169,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   width: 48px;
   height: 48px;
   border-radius: 15px;
-  background: var(--brand-blue-soft);
-  color: var(--brand-blue);
+  background: var(--od-brand-primary-soft);
+  color: var(--od-brand-primary);
   display: grid;
   place-items: center;
   font-weight: 800;
@@ -3806,6 +3865,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
 .employer-portal-nav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:210}
 .employer-portal-identity{display:grid;justify-items:end;line-height:1.2;font-size:14px;font-weight:650}
 .employer-portal-identity small{font-size:11px;font-weight:600;opacity:.7;text-transform:capitalize}
+.employer-portal-identity-mobile{justify-items:start;padding-bottom:12px;margin-bottom:4px;border-bottom:1px solid var(--line)}
 .employer-signout{border:0;background:none;cursor:pointer;font:inherit;padding:0}
 .employer-card h2 small{font-size:15px;font-weight:600;color:var(--muted,#73819a);letter-spacing:0}
 .employer-plan-price{white-space:nowrap}
