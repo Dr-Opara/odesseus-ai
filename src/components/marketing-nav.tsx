@@ -8,6 +8,7 @@ const links = [
   { href: "/how-it-works", label: "Job Seekers" },
   { href: "/employers", label: "Employers" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/job-search", label: "Job Search" },
 ];
 
 // Keep the homepage header focused on the primary conversion paths.
