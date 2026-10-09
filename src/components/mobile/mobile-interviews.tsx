@@ -1,5 +1,6 @@
 import Link from "next/link";
 import MobileScreen from "@/components/mobile/mobile-screen";
+import CompanyLogo from "@/components/company-logo";
 
 type InterviewRow = {
   id: string;
@@ -53,7 +54,10 @@ export default function MobileInterviews({
 
         {nextInterview ? (
           <Link className="m-card" href={`/interviews/${nextInterview.id}`}>
-            <span className="m-icon">✦</span>
+            <CompanyLogo
+              company={nextInterview.applications?.company_name || "Company"}
+              className="m-icon company-logo-mobile"
+            />
             <span className="m-copy">
               <strong>{nextInterview.applications?.role_title || nextInterview.stage || "Interview"}</strong>
               <small>{nextInterview.applications?.company_name || nextInterview.meeting_provider || "Details pending"}</small>
