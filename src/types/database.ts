@@ -483,6 +483,7 @@ export type Database = {
           answers_snapshot: NonNullable<Json>;
           application_url: string | null;
           company_name: string;
+          company_logo_url: string | null;
           created_at: string;
           execution_mode: string | null;
           id: string;
@@ -505,6 +506,7 @@ export type Database = {
           answers_snapshot?: NonNullable<Json>;
           application_url?: string | null;
           company_name: string;
+          company_logo_url?: string | null;
           created_at?: string;
           execution_mode?: string | null;
           id?: string;
@@ -527,6 +529,7 @@ export type Database = {
           answers_snapshot?: NonNullable<Json>;
           application_url?: string | null;
           company_name?: string;
+          company_logo_url?: string | null;
           created_at?: string;
           execution_mode?: string | null;
           id?: string;
