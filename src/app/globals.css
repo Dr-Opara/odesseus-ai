@@ -5697,12 +5697,20 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--od-focus); }
   height:52px;
   display:grid;
   place-items:center;
+  overflow:hidden;
   border:1px solid #e7e9ef;
   border-radius:12px;
-  background:#f7f8fb center/28px 28px no-repeat;
+  background:#fff;
   color:#34405a;
   font-size:20px;
   font-weight:800;
+}
+.public-job-logo img{
+  display:block;
+  width:34px;
+  height:34px;
+  object-fit:contain;
+  border-radius:8px;
 }
 .public-job-title-block{
   min-width:0;
