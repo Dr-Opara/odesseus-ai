@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import ApplicationStatusForm from "@/components/application-status-form";
 import { statusLabel } from "@/lib/applications/status";
 import AppShell from "@/components/app-shell";
+import CompanyLogo from "@/components/company-logo";
 
 export default async function ApplicationDetailPage({
   params,
@@ -61,7 +62,13 @@ export default async function ApplicationDetailPage({
       </Link>
 
       <div className="track-detail-heading">
-        <div>
+        <div className="track-detail-company">
+          <CompanyLogo
+            company={application.company_name}
+            sourceUrl={application.application_url}
+            className="track-detail-company-logo"
+          />
+          <div>
           <div className="track-status-pill">{statusLabel(application.status)}</div>
           <h1 className="page-title" style={{ margin: "14px 0 7px" }}>
             {application.role_title}
@@ -72,6 +79,7 @@ export default async function ApplicationDetailPage({
               ? ` · ${application.job_opportunities.location}`
               : ""}
           </p>
+          </div>
         </div>
 
         {application.application_url ? (
