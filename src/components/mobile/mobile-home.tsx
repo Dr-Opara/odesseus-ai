@@ -1,6 +1,6 @@
 import Link from "next/link";
 import MobileScreen from "@/components/mobile/mobile-screen";
-import { companyMarkColor, companyMarkInitial } from "@/lib/mobile/company-mark";
+import CompanyLogo from "@/components/company-logo";
 import type {
   CandidateDashboardActivityItem,
   CandidateDashboardApplication,
@@ -119,9 +119,11 @@ export default function MobileHome({
           <div className="m-list">
             {matches.map((job) => (
               <Link className="m-match-card" href={`/match/${job.id}`} key={job.id}>
-                <span className={`m-icon m-icon-sm m-icon-${companyMarkColor(job.company_name)}`} aria-hidden="true">
-                  {companyMarkInitial(job.company_name)}
-                </span>
+                <CompanyLogo
+                  company={job.company_name}
+                  sourceUrl={job.source_url}
+                  className="m-icon m-icon-sm company-logo-mobile"
+                />
                 <span className="m-match-copy">
                   <span className="m-match-company">{job.company_name}</span>
                   <strong>{job.role_title}</strong>
@@ -156,7 +158,11 @@ export default function MobileHome({
                 href={`/applications/${application.id}`}
                 key={application.id}
               >
-                <span className="m-icon">{application.roleTitle.slice(0, 1)}</span>
+                <CompanyLogo
+                  company={application.companyName}
+                  sourceUrl={application.applicationUrl}
+                  className="m-icon company-logo-mobile"
+                />
                 <span className="m-copy">
                   <strong>{application.roleTitle}</strong>
                   <small>
