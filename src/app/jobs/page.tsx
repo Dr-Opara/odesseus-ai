@@ -5,6 +5,7 @@ import AppShell from "@/components/app-shell";
 import JobDiscoveryButton from "@/components/job-discovery-button";
 import JobDiscoveryActions from "@/components/job-discovery-actions";
 import MobileJobs from "@/components/mobile/mobile-jobs";
+import CompanyLogo from "@/components/company-logo";
 import {
   getCandidateProfile,
   getCandidateUserId,
@@ -83,12 +84,22 @@ export default async function JobsPage() {
           <div className="jobs-grid">
             {strongMatches.map((job) => (
               <article className="card job-match-card" key={job.id}>
+                <div className="job-match-brand-row">
+                  <CompanyLogo
+                    company={job.company_name}
+                    sourceUrl={job.source_url}
+                    className="job-match-company-logo"
+                  />
+                  <div>
+                    <strong>{job.company_name}</strong>
+                    {job.location ? <span className="muted">{job.location}</span> : null}
+                  </div>
+                </div>
                 <div className="job-match-topline">
                   <span className="badge">{job.match_score}% Match</span>
                   <span className="muted" style={{ fontSize: 13 }}>{sourceLabel(job.source)}</span>
                 </div>
                 <h2 style={{ fontSize: 24, margin: "16px 0 5px" }}>{job.role_title}</h2>
-                <div className="muted">{job.company_name}</div>
 
                 <div className="job-match-meta">
                   {job.location ? <span>{job.location}</span> : null}
