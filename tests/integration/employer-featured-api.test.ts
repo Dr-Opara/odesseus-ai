@@ -340,8 +340,8 @@ describe("POST /api/employer/orgs/[orgId]/featured/checkout", () => {
       odesseus_job_id: JOB_ID,
       odesseus_featured_tier: "featured_14d",
     });
-    expect(session.success_url).toContain("/employer/featured?boost=success");
-    expect(session.cancel_url).toContain("/employer/featured?boost=cancelled");
+    expect(session.success_url).toContain(`/employers/jobs/${JOB_ID}/feature?boost=success`);
+    expect(session.cancel_url).toContain(`/employers/jobs/${JOB_ID}/feature?boost=cancelled`);
   });
 
   it("prices the AI tier from the catalog, not from the request", async () => {
