@@ -5442,3 +5442,96 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand-blue); }
   outline:3px solid rgba(255,70,5,.3);
   outline-offset:3px;
 }
+
+
+/* Desktop pricing comparison: candidate and employer visible together. */
+@media (min-width:768px){
+  .pricing-desktop-shell .pricing-tabs{
+    display:none;
+  }
+
+  .pricing-desktop-shell .pricing-audiences{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    align-items:start;
+    gap:0;
+  }
+
+  .pricing-desktop-shell .pricing-panel[hidden]{
+    display:block!important;
+  }
+
+  .pricing-desktop-shell .pricing-panel{
+    min-width:0;
+  }
+
+  .pricing-desktop-shell .pricing-panel-candidate{
+    padding-right:30px;
+  }
+
+  .pricing-desktop-shell .pricing-panel-employer{
+    padding-left:30px;
+    border-left:1px solid #d9dce7;
+  }
+
+  .pricing-desktop-shell .pricing-column-title{
+    margin:0 0 18px;
+    color:#121629;
+    font-size:22px;
+    line-height:1.2;
+    font-weight:800;
+    letter-spacing:-.025em;
+  }
+
+  .pricing-desktop-shell .pricing-card{
+    min-height:82px;
+    grid-template-columns:46px minmax(0,1fr) 20px;
+    gap:12px;
+    padding:14px 15px;
+  }
+
+  .pricing-desktop-shell .pricing-icon{
+    width:44px;
+    height:44px;
+  }
+
+  .pricing-desktop-shell .pricing-card-title{
+    align-items:flex-start;
+  }
+
+  .pricing-desktop-shell .pricing-recommended{
+    margin-left:auto;
+  }
+
+  .pricing-desktop-shell .pricing-region-note{
+    margin-top:24px;
+  }
+
+  .pricing-desktop-shell .pricing-cta{
+    display:none!important;
+  }
+}
+
+@media (min-width:768px) and (max-width:980px){
+  .pricing-desktop-shell .pricing-panel-candidate{
+    padding-right:20px;
+  }
+
+  .pricing-desktop-shell .pricing-panel-employer{
+    padding-left:20px;
+  }
+
+  .pricing-desktop-shell .pricing-card-title strong{
+    font-size:14px;
+  }
+
+  .pricing-desktop-shell .pricing-card-copy small{
+    font-size:11px;
+  }
+}
+
+@media (max-width:767px){
+  .pricing-column-title{
+    display:none;
+  }
+}
