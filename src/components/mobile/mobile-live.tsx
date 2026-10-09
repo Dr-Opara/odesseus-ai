@@ -4,6 +4,7 @@ import Link from "next/link";
 import MobileScreen from "@/components/mobile/mobile-screen";
 import { billingCatalog, liveSkus } from "@/lib/billing/catalog";
 import GuestLinkButton from "@/components/live/guest-link-button";
+import CompanyLogo from "@/components/company-logo";
 
 // Same derivation as src/app/billing/page.tsx / live-entry-card.tsx — kept
 // out of the shared candidate-pricing module by design; only ever renders
@@ -92,7 +93,10 @@ export default function MobileLive({
               <h2>Linked interview</h2>
             </div>
             <Link className="m-card" href={`/interviews/${interview.id}`}>
-              <span className="m-icon">✦</span>
+              <CompanyLogo
+                company={interview.applications?.company_name || "Company"}
+                className="m-icon company-logo-mobile"
+              />
               <span className="m-copy">
                 <strong>{interview.applications?.role_title || "Interview"}</strong>
                 <small>{interview.applications?.company_name || "Company"}</small>
