@@ -12,6 +12,7 @@ import type {
 } from "@/types/json-fields";
 import AppShell from "@/components/app-shell";
 import DesktopLiveLaunchButton from "@/components/desktop-live-launch-button";
+import CompanyLogo from "@/components/company-logo";
 
 export default async function InterviewWorkspacePage({
   params,
@@ -140,7 +141,9 @@ export default async function InterviewWorkspacePage({
       </Link>
 
       <div className="interview-workspace-heading">
-        <div>
+        <div className="interview-company-row">
+          <CompanyLogo company={application.company_name} sourceUrl={application.application_url} className="interview-company-logo" />
+          <div>
           <div className="badge">
             {interview.stage || "Interview"}
           </div>
@@ -150,6 +153,7 @@ export default async function InterviewWorkspacePage({
           <p className="muted page-subtitle" style={{ margin: 0 }}>
             {application.company_name}
           </p>
+          </div>
         </div>
 
         <ReadinessButton
