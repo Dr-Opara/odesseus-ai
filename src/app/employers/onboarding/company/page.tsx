@@ -22,7 +22,7 @@ export default async function EmployerOnboardingCompanyPage() {
   const defaultCompanyName = typeof user.user_metadata?.company_name === "string" ? user.user_metadata.company_name : "";
 
   return (
-    <main className="figma-site figma-soft-page">
+    <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
         <EmployerAppNav />
         <section style={{ width: "min(900px,100%)", margin: "54px auto 90px" }}>

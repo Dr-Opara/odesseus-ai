@@ -39,10 +39,11 @@ export default async function EmployerAnalyticsPage() {
 
   if (entitlement.status === "ok" && !entitlement.data.isGrowthOrAbove) {
     return (
-      <main className="figma-site figma-soft-page">
+      <main className="figma-site figma-soft-page employer-portal">
         <div className="figma-page-wrap">
           <EmployerAppNav />
           <section style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
+            <span className="figma-eyebrow">ANALYTICS</span>
             <h1>Hiring Analytics</h1>
             <div style={{ marginTop: 24 }}>
               <EmployerStatePanel

@@ -50,10 +50,11 @@ export default async function EmployerJobDetailPage({
 
   if (jobResult.status === "unavailable") {
     return (
-      <main className="figma-site figma-soft-page">
+      <main className="figma-site figma-soft-page employer-portal">
         <div className="figma-page-wrap">
           <EmployerAppNav />
           <section style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
+            <span className="figma-eyebrow">JOBS</span>
             <h1>Job</h1>
             <div style={{ marginTop: 24 }}>
               <EmployerStatePanel
@@ -87,10 +88,11 @@ export default async function EmployerJobDetailPage({
   const inInterviews = stageCounts ? stageCounts.INTERVIEW : null;
 
   return (
-    <main className="figma-site figma-soft-page">
+    <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
         <EmployerAppNav />
         <section style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
+          <span className="figma-eyebrow">JOBS</span>
           <h1>{job.title}</h1>
           <p className="muted">
             {job.location ?? "Location not set"}

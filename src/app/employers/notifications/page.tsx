@@ -36,10 +36,11 @@ export default async function EmployerNotificationsPage() {
   ]);
 
   return (
-    <main className="figma-site figma-soft-page">
+    <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
         <EmployerAppNav />
         <section style={{ width: "min(1160px,100%)", margin: "54px auto 90px" }}>
+          <span className="figma-eyebrow">NOTIFICATIONS</span>
           <h1>Employer Notifications</h1>
           <p className="muted">Choose hiring alerts and review what has come in.</p>
 

@@ -33,10 +33,11 @@ export default async function EmployerFeatureJobPage({
   const packages = getFeaturedJobPackages();
 
   return (
-    <main className="figma-site figma-soft-page">
+    <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
         <EmployerAppNav />
         <section style={{ width: "min(900px,100%)", margin: "54px auto 90px" }}>
+          <span className="figma-eyebrow">JOBS</span>
           <h1>Job Add-ons</h1>
           <p className="muted">Promote a specific job post.</p>
 

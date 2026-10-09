@@ -21,7 +21,7 @@ export default async function EmployerOnboardingPlanPage({
   const carried = await searchParams;
 
   return (
-    <main className="figma-site figma-soft-page">
+    <main className="figma-site figma-soft-page employer-portal">
       <div className="figma-page-wrap">
         <EmployerAppNav />
         <section style={{ width: "min(900px,100%)", margin: "54px auto 90px" }}>
