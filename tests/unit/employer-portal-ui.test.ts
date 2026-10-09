@@ -243,7 +243,7 @@ describe("Odesseus Live is never exposed to employers", () => {
 
   it("keeps the portal navigation to employer sections only", () => {
     const header = readFileSync(
-      join(process.cwd(), "src", "components", "employer", "employer-portal-header.tsx"),
+      join(process.cwd(), "src", "components", "employers", "app-nav.tsx"),
       "utf8"
     );
     const hrefs = [...header.matchAll(/href:\s*"([^"]+)"/g)].map((match) => match[1]);
