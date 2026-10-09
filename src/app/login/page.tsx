@@ -11,31 +11,31 @@ export default async function LoginPage({
 
   return (
     <main className="shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "50px 0" }}>
-      <div style={{ width: "min(430px,100%)" }}>
+      <div className="candidate-auth-wrap">
         <OdesseusWordmark href="/" size="lg" />
         <div style={{ marginTop: 60 }}>
           <div className="badge">CANDIDATE SIGN IN ONLY</div>
           <h1 style={{ fontSize: 42, letterSpacing: "-0.045em", marginBottom: 10, marginTop: 18 }}>Welcome back.</h1>
           <p className="muted" style={{ marginBottom: 30 }}>Sign in to your candidate account and pick up where you left off.</p>
 
-          <form className="card" style={{ padding: 24 }} action={login}>
+          <form className="candidate-auth-card" action={login}>
             {error ? (
-              <div style={{ marginBottom: 18, padding: 12, borderRadius: 12, background: "#fff1ef", fontSize: 14 }}>
+              <div className="candidate-auth-error">
                 {error}
               </div>
             ) : null}
 
-            <label style={{ display: "grid", gap: 8, fontSize: 14, fontWeight: 650 }}>
+            <label className="candidate-field">
               Email
               <input className="input" name="email" type="email" autoComplete="email" required placeholder="you@example.com" />
             </label>
 
-            <label style={{ display: "grid", gap: 8, fontSize: 14, fontWeight: 650, marginTop: 18 }}>
+            <label className="candidate-field">
               Password
               <input className="input" name="password" type="password" autoComplete="current-password" required placeholder="••••••••" />
             </label>
 
-            <button className="btn btn-primary" type="submit" style={{ width: "100%", marginTop: 22 }}>
+            <button className="candidate-auth-submit" type="submit">
               Sign in
             </button>
           </form>

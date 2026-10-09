@@ -51,10 +51,10 @@ export default async function JobsPage() {
         <div className="jobs-heading">
           <div>
             <div className="badge">Job Discovery</div>
-            <h1 style={{ fontSize: 48, letterSpacing: "-0.05em", margin: "14px 0 8px" }}>
+            <h1 className="page-title">
               Roles worth looking at.
             </h1>
-            <p className="muted" style={{ fontSize: 17, lineHeight: 1.6, maxWidth: 680 }}>
+            <p className="muted page-subtitle" style={{ maxWidth: 680 }}>
               Odesseus checks configured employer job feeds against your verified profile and keeps roles that clear your {threshold}% match target.
             </p>
           </div>

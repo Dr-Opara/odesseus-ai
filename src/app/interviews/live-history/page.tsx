@@ -30,16 +30,16 @@ export default async function LiveHistoryPage() {
       active="interviews"
     >
       <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 100px" }}>
-      <div style={{ width: "min(820px,100%)", margin: "30px auto 0" }}>
+      <div className="candidate-column" style={{ marginTop: 30 }}>
         <Link href="/interviews" className="muted" style={{ fontSize: 14 }}>
           ← Interviews
         </Link>
 
-        <div className="muted" style={{ fontSize: 14, marginTop: 30 }}>Odesseus Live</div>
-        <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: "10px 0 6px" }}>
+        <div className="page-eyebrow muted" style={{ marginTop: 30 }}>Odesseus Live</div>
+        <h1 className="page-title">
           Live session history
         </h1>
-        <p className="muted" style={{ fontSize: 18, lineHeight: 1.6 }}>
+        <p className="muted page-subtitle">
           Every completed Live session, its transcript status, and the interview it was linked to.
         </p>
 

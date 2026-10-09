@@ -51,12 +51,12 @@ export default async function SettingsPage({
       interviewPasses={credits?.interview_passes ?? 0}
     >
       <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 100px" }}>
-        <div style={{ width: "min(760px,100%)", margin: "20px auto 0" }}>
-          <div className="muted" style={{ fontSize: 14 }}>Settings</div>
-          <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", margin: "10px 0 6px" }}>
+        <div className="candidate-column" style={{ marginTop: 20 }}>
+          <div className="page-eyebrow muted">Settings</div>
+          <h1 className="page-title">
             Account &amp; preferences.
           </h1>
-          <p className="muted" style={{ fontSize: 18, lineHeight: 1.6, marginBottom: 30 }}>
+          <p className="muted page-subtitle" style={{ marginBottom: 30 }}>
             Manage your account, security, and how Odesseus searches on your behalf.
           </p>
 

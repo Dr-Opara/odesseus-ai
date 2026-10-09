@@ -57,9 +57,10 @@ export default async function ProfilePage({
       active="profile"
     >
       <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 90px" }}>
-      <div style={{ width: "min(760px,100%)", margin: "20px auto 0" }}>
-        <h1 style={{ fontSize: 46, letterSpacing: "-0.05em", marginBottom: 10 }}>Profile</h1>
-        <p className="muted">The verified information Odesseus uses on your behalf.</p>
+      <div className="candidate-column" style={{ marginTop: 20 }}>
+        <div className="page-eyebrow muted">Your profile</div>
+        <h1 className="page-title">Profile</h1>
+        <p className="muted page-subtitle">The verified information Odesseus uses on your behalf.</p>
 
         {status === "resume_deleted" ? (
           <div className="billing-success" style={{ marginTop: 18 }}>Resume deleted.</div>

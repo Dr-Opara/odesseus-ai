@@ -27,7 +27,7 @@ export default async function JobPreferencesSettingsPage() {
   return (
     <>
       <main
-        className="odesseus-desktop-only"
+        className="odesseus-desktop-only candidate-column"
         style={{ minHeight: "100vh", padding: "24px 16px 80px" }}
       >
         <JobPreferencesForm userId={userId} initial={jobPreferences} />

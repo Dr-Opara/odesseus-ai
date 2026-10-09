@@ -28,12 +28,12 @@ export default async function MatchPage() {
       interviewPasses={credits?.interview_passes ?? 0}
     >
       <section className="shell" style={{ padding: "54px 0 90px" }}>
-      <div style={{ width: "min(820px,100%)", margin: "30px auto 0" }}>
+      <div className="candidate-column" style={{ marginTop: 30 }}>
         <div className="badge">Odesseus Match</div>
-        <h1 style={{ fontSize: 50, letterSpacing: "-0.05em", margin: "16px 0 10px" }}>
+        <h1 className="page-title">
           Is this role worth your time?
         </h1>
-        <p className="muted" style={{ fontSize: 18, lineHeight: 1.6, maxWidth: 680, marginBottom: 30 }}>
+        <p className="muted page-subtitle" style={{ maxWidth: 680, marginBottom: 30 }}>
           Paste the job description. Odesseus will compare it with the experience you already verified.
         </p>
 

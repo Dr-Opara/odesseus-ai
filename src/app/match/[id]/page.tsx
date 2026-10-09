@@ -65,16 +65,16 @@ export default async function MatchResultPage({
       interviewPasses={credits.interviewPasses}
     >
       <section className="shell odesseus-desktop-only" style={{ padding: "54px 0 90px" }}>
-      <div style={{ width: "min(900px,100%)", margin: "20px auto 0" }}>
+      <div className="candidate-column-wide" style={{ marginTop: 20 }}>
         <Link href="/match" className="muted" style={{ fontSize: 14 }}>← Check another role</Link>
 
         <div className="match-result-header">
           <div>
             <div className="badge">{scoreLabel(score)}</div>
-            <h1 style={{ fontSize: 48, letterSpacing: "-0.05em", margin: "16px 0 8px" }}>
+            <h1 className="page-title">
               {job.role_title}
             </h1>
-            <p className="muted" style={{ fontSize: 18, margin: 0 }}>
+            <p className="muted page-subtitle">
               {job.company_name}{job.location ? ` · ${job.location}` : ""}
             </p>
           </div>

@@ -122,13 +122,13 @@ export default async function BillingPage({
       interviewPasses={credits?.interview_passes ?? 0}
     >
       <section className="shell" style={{ padding: "54px 0 100px" }}>
-      <div style={{ width: "min(980px,100%)", margin: "20px auto 0" }}>
+      <div className="candidate-column-wide" style={{ marginTop: 20 }}>
         <div>
           <div className="badge">Billing</div>
-          <h1 style={{ fontSize: 48, letterSpacing: "-0.05em", margin: "16px 0 8px" }}>
+          <h1 className="page-title">
             Pay for progress, not access.
           </h1>
-          <p className="muted" style={{ fontSize: 18, lineHeight: 1.6, maxWidth: 650 }}>
+          <p className="muted page-subtitle" style={{ maxWidth: 650 }}>
             No subscription. Pay when Odesseus works for you.
           </p>
         </div>
