@@ -5821,3 +5821,42 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--od-focus); }
     flex-direction:column;
   }
 }
+
+
+/* Homepage Odesseus workflow preview — brand color lock */
+.oh-product-preview{
+  --oh-preview-orange:var(--od-orange);
+  --oh-preview-navy:var(--od-navy);
+  --oh-preview-purple:var(--od-purple);
+  --oh-preview-peach:var(--od-peach);
+}
+.oh-product-glow{
+  background:
+    linear-gradient(115deg,var(--oh-preview-peach),#ffe0d3 48%,#fff6f1),
+    radial-gradient(circle at 72% 30%,rgba(255,70,5,.18),transparent 42%);
+}
+.oh-product-sidebar{
+  background:var(--oh-preview-navy);
+}
+.oh-product-brand-mark,
+.oh-product-job-actions .is-primary,
+.oh-product-live-orb{
+  border-color:var(--oh-preview-orange);
+  background:var(--oh-preview-orange);
+}
+.oh-product-live-orb{
+  background:var(--oh-preview-navy);
+  box-shadow:0 0 0 8px var(--oh-preview-orange);
+  border:0;
+}
+.oh-product-status-card .is-orange{background:var(--oh-preview-orange)}
+.oh-product-status-card .is-red{background:#ff655f}
+.oh-product-status-card .is-pink{background:var(--oh-preview-purple)}
+.oh-product-search{
+  background:#f7f7fa;
+  color:#9295a3;
+}
+.oh-product-job-tags span{
+  background:#f5f2fb;
+  color:#686276;
+}
