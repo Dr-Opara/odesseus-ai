@@ -8,6 +8,7 @@ import LiveEntryCard from "@/components/live-entry-card";
 import GuestLinkCard from "@/components/live/guest-link-card";
 import { readLiveEntitlement } from "@/lib/billing/live-entitlement";
 import { canGenerateGuestLinks } from "@/lib/interviews/guest-share";
+import CompanyLogo from "@/components/company-logo";
 
 export default async function InterviewsPage() {
   const supabase = await createClient();
@@ -72,7 +73,12 @@ export default async function InterviewsPage() {
                 href={`/interviews/${interview.id}`}
                 key={interview.id}
               >
-                <div>
+                <div className="interview-company-row">
+                  <CompanyLogo
+                    company={interview.applications?.company_name || "Company"}
+                    className="interview-company-logo"
+                  />
+                  <div>
                   <div className="muted" style={{ fontSize: 13 }}>
                     {interview.stage || "Interview"}
                   </div>
@@ -81,6 +87,7 @@ export default async function InterviewsPage() {
                   </h2>
                   <div className="muted">
                     {interview.applications?.company_name || "Company"}
+                  </div>
                   </div>
                 </div>
 
