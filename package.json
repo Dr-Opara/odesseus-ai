@@ -29,7 +29,7 @@
     "@vercel/connect": "2.3.0",
     "ai": "7.0.105",
     "mammoth": "1.12.3",
-    "next": "16.3.8",
+    "next": "16.4.3",
     "pdf-lib": "1.17.1",
     "playwright-core": "1.63.0",
     "react": "19.2.0",
