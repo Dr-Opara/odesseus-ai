@@ -25,10 +25,6 @@
     {
       "path": "/api/cron/expire-featured-listings",
       "schedule": "17 */6 * * *"
-    },
-    {
-      "path": "/api/cron/google-sync",
-      "schedule": "*/15 * * * *"
     }
   ]
 }

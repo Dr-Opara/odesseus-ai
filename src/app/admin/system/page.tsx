@@ -21,8 +21,6 @@ const definitions = [
   ["BROWSERBASE_PROJECT_ID", "Browserbase project ID", "Apply"],
   ["ODESSEUS_JOB_SOURCES_JSON", "Job-source catalog", "Discovery"],
   ["CRON_SECRET", "Cron secret", "Discovery"],
-  ["ODESSEUS_CONNECT_GOOGLE_CONNECTOR", "Google connector", "Integrations"],
-  ["ODESSEUS_CONNECT_YAHOO_CONNECTOR", "Yahoo connector", "Integrations"],
   ["ODESSEUS_CONNECT_GOOGLE_SEND_CONNECTOR", "Google send connector", "Integrations"],
   ["ODESSEUS_ADMIN_EMAILS", "Admin email allowlist", "Operations"],
   ["RESEND_API_KEY", "Resend API key", "Operations"],
