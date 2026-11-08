@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import ProfileForm from "@/components/profile-form";
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
@@ -25,7 +24,6 @@ export default async function ProfilePage({
     { count: applicationCount },
     { count: interviewCount },
     { count: savedJobCount },
-    { data: googleConnection },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -41,12 +39,6 @@ export default async function ProfilePage({
     supabase.from("applications").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("interviews").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("job_opportunities").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "saved"),
-    supabase
-      .from("integration_connections")
-      .select("status")
-      .eq("user_id", userId)
-      .eq("provider", "google")
-      .maybeSingle(),
   ]);
 
   return (
@@ -103,25 +95,6 @@ export default async function ProfilePage({
           )}
         </div>
 
-        <div className="card profile-integration-card">
-          <div>
-            <div className="muted" style={{ fontSize: 13 }}>Integrations</div>
-            <h2 style={{ fontSize: 22, margin: "7px 0 6px" }}>Email + Calendar</h2>
-            <p className="muted" style={{ margin: 0, lineHeight: 1.55 }}>
-              Let Odesseus detect employer responses, assessments, interview invitations, and scheduled interviews.
-            </p>
-          </div>
-          <Link
-            href={
-              googleConnection?.status === "connected"
-                ? "/integrations/google"
-                : "/api/integrations/google/connect"
-            }
-            className="btn btn-secondary"
-          >
-            {googleConnection?.status === "connected" ? "Manage Google" : "Connect Google"}
-          </Link>
-        </div>
       </div>
       </section>
 
