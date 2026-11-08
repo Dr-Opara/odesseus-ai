@@ -4,6 +4,7 @@ const socialIcons = [
   { label: "X", slug: "x", href: "https://x.com/odesseusai" },
   { label: "Instagram", slug: "instagram", href: "https://instagram.com/odesseus.ai" },
   { label: "TikTok", slug: "tiktok", href: "https://www.tiktok.com/@odesseus_ai" },
+  { label: "LinkedIn", slug: "linkedin", href: "https://www.linkedin.com/company/odesseus/" },
 ] as const;
 
 const technologyBrands = [
