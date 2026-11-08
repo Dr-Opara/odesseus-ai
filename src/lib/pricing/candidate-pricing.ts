@@ -109,38 +109,36 @@ export function applicationsAvailable(balance: ApplyBalance): number {
 
 export const PREP_AGENT_PRICE_LABEL = "Free";
 
+/**
+ * Employer pricing for display. The AI Starter Bundle is the only plan sold:
+ * $100 USD every 30 days with 5 base job-post credits that must be used in
+ * that cycle (no rollover). Additional job posts are $10 each while the bundle
+ * is active, and each one is valid for 30 days from purchase.
+ *
+ * Positioned as AI-powered hiring infrastructure, not "cheap job posts".
+ */
 export const EMPLOYER_PLANS = [
   {
-    name: "Starter",
-    priceLabel: "$79",
-    unit: "/mo",
-    jobs: "3 active jobs",
-    activeJobLimit: 3,
-    features: ["3 active jobs", "Applicant pipeline", "Employer dashboard"],
-  },
-  {
-    name: "Growth",
-    priceLabel: "$149",
-    unit: "/mo",
-    jobs: "10 active jobs",
-    activeJobLimit: 10,
-    features: ["10 active jobs", "Basic analytics", "Applicant pipeline", "Employer dashboard"],
-  },
-  {
-    name: "Business",
-    priceLabel: "$299",
-    unit: "/mo",
-    jobs: "25 active jobs",
-    activeJobLimit: 25,
+    id: "ai_starter",
+    name: "AI Starter Bundle",
+    priceLabel: "$100",
+    unit: "/ 30 days",
+    jobs: "5 job-post credits every 30 days",
+    activeJobLimit: 5,
     features: [
-      "25 active jobs",
-      "AI candidate matching",
-      "Multiple recruiter seats",
-      "Applicant pipeline",
-      "Employer dashboard",
+      "5 job-post credits every 30 days",
+      "Each post stays live for 30 days",
+      "AI candidate matching and Fit Scores",
+      "Applicant pipeline and shortlists",
+      "Additional posts $10 each",
     ],
   },
 ] as const;
+
+export const ADDON_JOB_POST_PRICE_LABEL = "$10";
+export const ADDON_JOB_POST_UNIT = "per additional job post";
+export const EMPLOYER_PRICING_NOTE =
+  "Because Odesseus automates candidate matching and distribution, we pass the infrastructure savings directly to employers.";
 
 export const PROMOTION_PLANS = [
   { name: "Featured", priceLabel: "$29", unit: "/ 7 days" },

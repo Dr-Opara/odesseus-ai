@@ -140,6 +140,8 @@ type JobInput = {
   requiredQualifications?: string[];
   preferredQualifications?: string[];
   responsibilities?: string[];
+  /** Renew automatically with a credit when the 30-day window ends (create only). */
+  autoRenew?: boolean;
 };
 
 /**
@@ -172,6 +174,7 @@ function toJobBody(input: JobInput) {
     employmentType: toStoredEmploymentType(input.employmentType),
     compensationText: input.compensationText?.trim() || null,
     responsibilitiesText: (input.responsibilities ?? []).join("\n").trim() || null,
+    ...(input.autoRenew !== undefined ? { autoRenew: input.autoRenew } : {}),
   };
 }
 
@@ -212,8 +215,14 @@ export async function saveEmployerJobAction(
   }
 }
 
-/** A job status transition the backend defines: publish, close, or delete a draft. */
-export type JobTransition = "publish" | "close" | "delete";
+/**
+ * A job lifecycle transition the backend defines: publish (draft) / repost
+ * (expired) each use a credit and start a 30-day window; pause hides an active
+ * post without stopping its clock; resume reactivates a paused post for free
+ * inside its window; close / close_filled end it permanently; delete removes a
+ * draft.
+ */
+export type JobTransition = "publish" | "repost" | "pause" | "resume" | "close" | "close_filled" | "delete";
 
 /**
  * Applies one job transition.
@@ -232,7 +241,11 @@ export async function transitionJobAction(
     const response = await fetch(`/api/employer/orgs/${orgId}/jobs/${jobId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: transition }),
+      body: JSON.stringify(
+        transition === "close_filled"
+          ? { action: "close", reason: "filled" }
+          : { action: transition }
+      ),
     });
     if (!response.ok) return toFailure(response, "Could not update this job.");
 
@@ -251,16 +264,58 @@ export async function transitionJobAction(
   }
 }
 
+/** Turns automatic renewal on or off for one job. */
+export async function setJobAutoRenewAction(
+  orgId: string,
+  jobId: string,
+  enabled: boolean
+): Promise<EmployerActionResult<{ id: string }>> {
+  try {
+    const response = await fetch(`/api/employer/orgs/${orgId}/jobs/${jobId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "auto_renew", enabled }),
+    });
+    if (!response.ok) return toFailure(response, "Could not update auto-renew.");
+    await response.json().catch(() => ({}));
+    return { status: "ok", data: { id: jobId } };
+  } catch {
+    return { status: "unavailable", reason: "Could not update auto-renew." };
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Purchases — these open checkout and grant nothing
 // ---------------------------------------------------------------------------
+
+/** Starts a one-time checkout for additional job posts ($10 USD each). */
+export async function startAddonCheckoutAction(
+  orgId: string,
+  quantity: number
+): Promise<EmployerActionResult<{ url: string }>> {
+  try {
+    const response = await fetch(`/api/employer/orgs/${orgId}/addons/checkout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quantity }),
+    });
+    if (!response.ok) return toFailure(response, "Could not start checkout.");
+    const payload = (await response.json().catch(() => ({}))) as { url?: string };
+    if (!payload.url) return { status: "unavailable", reason: "Checkout could not start." };
+    return { status: "ok", data: { url: payload.url } };
+  } catch {
+    return { status: "unavailable", reason: "Could not start checkout." };
+  }
+}
 
 /** Starts a plan subscription checkout. */
 export async function startPlanCheckoutAction(
   orgId: string,
   planId: EmployerPlanId
 ): Promise<EmployerActionResult<{ url: string }>> {
-  const tier = planId === "Growth" ? "growth" : planId === "Business" ? "business" : "starter";
+  // The AI Starter Bundle is the only plan for sale.
+  void planId;
+  const tier = "ai_starter";
   try {
     const response = await fetch(`/api/employer/orgs/${orgId}/plans/checkout`, {
       method: "POST",

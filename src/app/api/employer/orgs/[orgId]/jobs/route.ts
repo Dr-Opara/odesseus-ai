@@ -32,6 +32,7 @@ const createSchema = z.object({
   requirementsText: z.string().max(10000).optional().nullable(),
   preferredText: z.string().max(10000).optional().nullable(),
   workArrangement: z.string().max(20).optional().nullable(),
+  autoRenew: z.boolean().optional(),
 });
 
 /**
@@ -160,6 +161,7 @@ export async function POST(
     employmentType,
     compensationText,
     responsibilitiesText,
+    autoRenew,
   } = input;
 
   if (!title || title.trim().length === 0 || title.length > 200) {
@@ -228,6 +230,7 @@ export async function POST(
     employmentType: (employmentType as JobEmploymentType | null) ?? null,
     compensationText: compensationText?.trim() || null,
     responsibilitiesText: responsibilitiesText?.trim() || null,
+    autoRenew: autoRenew ?? false,
   });
 
   return NextResponse.json(job, { status: 201 });

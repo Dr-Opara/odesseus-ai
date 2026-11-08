@@ -278,14 +278,13 @@ SELECT is(
     'candidate_live_annual',
     'candidate_live_pack_3',
     'candidate_live_single',
-    'employer_business',
-    'employer_growth',
-    'employer_starter',
+    'employer_addon_post',
+    'employer_starter_bundle',
     'featured_14d',
     'featured_7d',
     'recruiter_seat_month'
   ],
-  'exact active product key set (14) — application credits and one-time Live passes are for sale');
+  'exact active product key set (13) — application credits, one-time Live passes, the AI Starter Bundle and $10 add-ons are for sale');
 
 SELECT is(
   (SELECT array_agg(product_key ORDER BY product_key) FROM public.pricing_products
@@ -293,8 +292,9 @@ SELECT is(
   ARRAY[
     'candidate_smart_apply',
     'candidate_standard_apply',
-    'employer_addon_post',
-    'employer_starter_bundle',
+    'employer_business',
+    'employer_growth',
+    'employer_starter',
     'live_monthly',
     'live_personal_annual',
     'live_share_annual',
@@ -303,10 +303,10 @@ SELECT is(
     'wallet_topup_20',
     'wallet_topup_50'
   ],
-  'wallet, apply-rate and Live-subscription products are deactivated in place — exactly eleven, never deleted');
+  'wallet, apply-rate, Live-subscription and earlier employer plans are deactivated in place — exactly twelve, never deleted');
 
-SELECT is((SELECT count(*)::int FROM public.pricing_products WHERE NOT active), 11,
-  'eleven inactive products');
+SELECT is((SELECT count(*)::int FROM public.pricing_products WHERE NOT active), 12,
+  'twelve inactive products');
 
 SELECT is((SELECT count(DISTINCT family)::int FROM public.pricing_products), 2,
   'two product families (candidate, employer)');
@@ -414,11 +414,11 @@ SELECT is((SELECT count(*)::int FROM public.pricing_prices), 25,
 
 SELECT is((SELECT count(*)::int FROM public.pricing_prices
    WHERE active AND market_key = 'USD_US' AND currency = 'USD'),
-  14, 'fourteen active prices on the USD_US market');
+  13, 'thirteen active prices on the USD_US market');
 
 SELECT is((SELECT count(*)::int FROM public.pricing_prices
    WHERE NOT active AND market_key = 'USD_US' AND currency = 'USD'),
-  11, 'eleven retired prices deactivated alongside their products');
+  12, 'twelve retired prices deactivated alongside their products');
 
 SELECT is(
   (SELECT count(*)::int

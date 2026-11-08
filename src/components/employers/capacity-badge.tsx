@@ -35,8 +35,8 @@ export default function EmployerCapacityBadge({
           </span>
         </div>
         <p className="emp-capacity-message">
-          Your plan&rsquo;s active job limit is not available right now. Publishing will be
-          decided when you submit.
+          Your job-post credits are not available right now. Publishing will be decided when you
+          submit.
         </p>
         {rejectionReason ? (
           <p className="emp-capacity-message is-error">{rejectionReason}</p>
@@ -57,22 +57,22 @@ export default function EmployerCapacityBadge({
     >
       <div className="emp-capacity-badge-row">
         <span>
-          {capacity.activeJobCount} of {limit} active jobs used
-          {capacity.planId ? ` (${capacity.planId} plan)` : ""}
+          {capacity.activeJobCount} of {limit} job-post credits used
+          {capacity.planId ? ` (${capacity.planId})` : ""}
         </span>
         {isAtLimit || isNearLimit ? (
-          <Link href="/employers/pricing" className="emp-capacity-upgrade">
-            Upgrade plan →
+          <Link href="/employers/dashboard/billing" className="emp-capacity-upgrade">
+            Buy job posts →
           </Link>
         ) : null}
       </div>
       {isAtLimit ? (
         <p className="emp-capacity-message">
-          Active job limit reached. Close a job or upgrade to publish another.
+          No job-post credits left. Buy an additional post ($10 USD) or wait for your next AI Starter Bundle cycle.
         </p>
       ) : isNearLimit ? (
         <p className="emp-capacity-message">
-          {remaining} active job slot{remaining === 1 ? "" : "s"} remaining on this plan.
+          {remaining} job-post credit{remaining === 1 ? "" : "s"} left.
         </p>
       ) : null}
       {rejectionReason ? <p className="emp-capacity-message is-error">{rejectionReason}</p> : null}

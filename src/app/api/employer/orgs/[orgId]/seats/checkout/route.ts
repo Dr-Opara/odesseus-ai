@@ -119,6 +119,11 @@ export async function POST(
   // The amount is derived from the catalog, never from the request, so a client
   // cannot choose what it pays. The webhook independently re-verifies the same
   // figure before granting seats.
+  const seatMetadata = {
+    odesseus_org_id: orgId,
+    odesseus_recruiter_seats: "true",
+    odesseus_seat_count: String(input.seatCount),
+  };
   const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
     line_items: [
@@ -139,11 +144,10 @@ export async function POST(
     cancel_url: `${siteUrl}/employers/dashboard/team?seats=cancelled`,
     // The team screen polls this to show the seat count once Stripe confirms.
     client_reference_id: orgId,
-    metadata: {
-      odesseus_org_id: orgId,
-      odesseus_recruiter_seats: "true",
-      odesseus_seat_count: String(input.seatCount),
-    },
+    metadata: seatMetadata,
+    // invoice.paid reads the subscription's metadata; Stripe does not copy
+    // session metadata onto the subscription.
+    subscription_data: { metadata: seatMetadata },
   });
 
   if (!session.url) {

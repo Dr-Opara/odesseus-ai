@@ -102,18 +102,30 @@ export const LIVE_FAIR_USE = {
   windowDays: 30,
 } as const;
 
-// Employer plans are recurring subscriptions: the recurring plan price is the
-// monthly charge, and jobPostsIncluded is the per-cycle job-post credit grant
-// (Starter 3 / Growth 10 / Business 25). These are not one-time checkout SKUs:
-// they are sold through a subscription checkout, and the webhook verifies the
-// paid invoice amount against this catalog before granting a cycle's credits.
+// Employer plans are recurring subscriptions. The AI Starter Bundle is the
+// plan for sale: $100 every 30 days, 5 base job-post credits per cycle that
+// expire at the cycle end (no rollover). Starter / Growth / Business are the
+// earlier plans; they are no longer sold, but existing subscribers keep
+// renewing, so the webhook must still recognise their invoices.
+//
+// jobPostsIncluded is the per-cycle base-credit grant. The webhook verifies
+// the paid invoice amount against this catalog before granting a cycle.
 export const employerPlans = {
+  employer_ai_starter: {
+    label: "AI Starter Bundle",
+    description: "5 job-post credits every 30 days, with AI candidate matching",
+    amountCents: 10000,
+    tier: "ai_starter" as const,
+    jobPostsIncluded: 5,
+    sellable: true,
+  },
   employer_starter: {
     label: "Employer Starter",
     description: "3 active job postings per month",
     amountCents: 7900,
     tier: "starter" as const,
     jobPostsIncluded: 3,
+    sellable: false,
   },
   employer_growth: {
     label: "Employer Growth",
@@ -121,6 +133,7 @@ export const employerPlans = {
     amountCents: 14900,
     tier: "growth" as const,
     jobPostsIncluded: 10,
+    sellable: false,
   },
   employer_business: {
     label: "Employer Business",
@@ -128,7 +141,23 @@ export const employerPlans = {
     amountCents: 29900,
     tier: "business" as const,
     jobPostsIncluded: 25,
+    sellable: false,
   },
+} as const;
+
+/** Billing cadence of the AI Starter Bundle: every 30 days, not monthly. */
+export const AI_STARTER_BILLING_INTERVAL = { interval: "day" as const, intervalCount: 30 };
+
+/**
+ * Additional job posts: $10 each, one-time, sold only while the org has an
+ * active AI Starter Bundle. Each purchase gets its own 30-day credit clock.
+ */
+export const employerAddonPost = {
+  label: "Additional job post",
+  description: "One job-post credit, valid for 30 days from purchase",
+  amountCents: 1000,
+  maxQuantity: 50,
+  validDays: 30,
 } as const;
 
 export type EmployerPlanSku = keyof typeof employerPlans;

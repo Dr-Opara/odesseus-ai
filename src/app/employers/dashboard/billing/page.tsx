@@ -16,6 +16,7 @@ import EmployerAppNav from "@/components/employers/app-nav";
 import EmployerStatePanel from "@/components/employers/state-panel";
 import { EmployerRow, EmployerRowList } from "@/components/employers/row-list";
 import ManagePlanButton from "@/components/employers/manage-plan-button";
+import BuyAddonsButton from "@/components/employers/buy-addons-button";
 import { EmployerNotices } from "@/components/employer/employer-cards";
 import EmployerMobileScreen, {
   EmployerDesktopOnlyNotice,
@@ -50,14 +51,9 @@ export default async function EmployerBillingPage({
 
   const orgName = overview.organization?.name ?? overview.account.companyName;
   const plan = planForTier(overview.subscription?.tier);
-  const requestedPlanId =
-    requestedPlan === "growth"
-      ? "Growth"
-      : requestedPlan === "business"
-        ? "Business"
-        : requestedPlan === "starter"
-          ? "Starter"
-          : undefined;
+  // The AI Starter Bundle is the only plan for sale.
+  const requestedPlanId = requestedPlan ? ("AI Starter Bundle" as const) : undefined;
+  const allowance = overview.allowance;
   const checkoutKind = purchase === "seat" ? "seat" : purchase === "plan" ? "plan" : null;
 
   return (
@@ -102,15 +98,28 @@ export default async function EmployerBillingPage({
                     value={subscriptionStatusLabel(billing.data.subscriptionStatus)}
                   />
                   <EmployerRow
-                    label="Job posts"
+                    label="Base credits this cycle"
                     value={
-                      billing.data.jobPostsRemaining === null
-                        ? "Not available"
-                        : `${billing.data.jobPostsRemaining} of ${
-                            billing.data.jobPostsIncluded ?? billing.data.jobPostsRemaining
-                          } remaining`
+                      allowance
+                        ? `${allowance.baseRemaining} left · expire ${formatDate(allowance.expiresAt)} (no rollover)`
+                        : "None"
                     }
                   />
+                  <EmployerRow
+                    label="Add-on credits"
+                    value={
+                      allowance && allowance.addons.length
+                        ? allowance.addons
+                            .filter((addon) => addon.remaining > 0)
+                            .map(
+                              (addon) =>
+                                `${addon.remaining} · bought ${formatDate(addon.purchasedAt)}, expire ${formatDate(addon.expiresAt)}`
+                            )
+                            .join("; ") || "None left"
+                        : "None"
+                    }
+                  />
+                  <EmployerRow label="Additional job post" value="$10 USD each · valid 30 days from purchase" />
                   <EmployerRow
                     label="Recruiter seats"
                     value={`${billing.data.seatsUsed} of ${billing.data.seatLimit} included`}
@@ -139,13 +148,15 @@ export default async function EmployerBillingPage({
                 <div style={{ marginTop: 20 }}>
                   <EmployerStatePanel
                     kind="billing-required"
-                    title="Choose a plan to start hiring."
-                    message="Posting a job uses one of the job posts included in your subscription. Pick a plan to begin."
-                    actionHref="/employers/pricing"
-                    actionLabel="See plans"
+                    title="Start with the AI Starter Bundle."
+                    message="$100 USD every 30 days for 5 job-post credits, AI candidate matching and your applicant pipeline. Each published job stays live for 30 days."
+                    actionHref="/employers/dashboard/billing?purchase=plan&plan=ai_starter"
+                    actionLabel="Get the AI Starter Bundle"
                   />
                 </div>
               )}
+
+              <BuyAddonsButton orgId={orgId ?? ""} canBuy={Boolean(overview.quota?.canBuyAddons)} />
 
               <p className="muted" style={{ marginTop: 18, fontSize: 13 }}>
                 Billing details are handled by our payment provider. Card details are never stored
@@ -189,13 +200,11 @@ export default async function EmployerBillingPage({
 
           <div className="m-card employer-m-plan" style={{ margin: "10px 4px 0" }}>
             <div className="m-copy">
-              <small>Job posts</small>
+              <small>Job-post credits</small>
               <strong>
-                {overview.quota
-                  ? `${overview.quota.remaining} of ${overview.quota.included} left`
-                  : "Not available"}
+                {overview.quota ? `${overview.quota.remaining} usable` : "None"}
               </strong>
-              <small>Renews {formatDate(overview.subscription?.periodEnd)}</small>
+              <small>Base credits expire {formatDate(allowance?.expiresAt)}</small>
             </div>
           </div>
 
@@ -214,7 +223,7 @@ export default async function EmployerBillingPage({
           </div>
 
           <EmployerDesktopOnlyNotice>
-            Change your plan, add seats or buy a promotion from a desktop browser. This page shows
+            Change your plan, buy job posts, add seats or buy a promotion from a desktop browser. This page shows
             what you have; it does not take payment.
           </EmployerDesktopOnlyNotice>
           <div style={{ height: 84 }} aria-hidden="true" />

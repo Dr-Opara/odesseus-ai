@@ -70,7 +70,7 @@ export const CANDIDATE_NOTIFICATION_TYPES = [
   "PRODUCT_UPDATE",
 ] as const;
 
-/** The 11 employer notification types (spec 2K-B minimum). */
+/** The 14 employer notification types (spec 2K-B minimum + credit lifecycle emails). */
 export const EMPLOYER_NOTIFICATION_TYPES = [
   "EMPLOYER_NEW_APPLICANT",
   "EMPLOYER_STRONG_FIT",
@@ -83,6 +83,9 @@ export const EMPLOYER_NOTIFICATION_TYPES = [
   "EMPLOYER_PAYMENT_FAILED",
   "EMPLOYER_FEATURED_JOB_EXPIRING",
   "EMPLOYER_FEATURED_JOB_EXPIRED",
+  "EMPLOYER_BASE_CREDITS_EXPIRING",
+  "EMPLOYER_ADDON_CREDIT_EXPIRING",
+  "EMPLOYER_JOB_POST_EXPIRED",
 ] as const;
 
 export const NOTIFICATION_TYPES = [
@@ -344,6 +347,27 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, NotificationTypeMeta
     priority: "normal",
     email: true,
     phase: "wired: featured expiry cron (2S)",
+  },
+  EMPLOYER_BASE_CREDITS_EXPIRING: {
+    recipient: "employer_member",
+    channel: "billing",
+    priority: "high",
+    email: true,
+    phase: "wired: employer job lifecycle cron (5 days before base credits expire)",
+  },
+  EMPLOYER_ADDON_CREDIT_EXPIRING: {
+    recipient: "employer_member",
+    channel: "billing",
+    priority: "normal",
+    email: true,
+    phase: "wired: employer job lifecycle cron (5 days before an add-on credit expires)",
+  },
+  EMPLOYER_JOB_POST_EXPIRED: {
+    recipient: "employer_member",
+    channel: "capacity",
+    priority: "high",
+    email: true,
+    phase: "wired: employer job lifecycle cron (30-day post expiry)",
   },
 };
 

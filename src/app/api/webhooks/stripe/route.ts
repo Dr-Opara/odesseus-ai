@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
-import { billingCatalog, legacyLiveSubscriptions, type LegacyLiveSubscriptionSku, type BillingSku, employerPlans, type EmployerPlanSku, employerRecruiterSeat, employerFeaturedTiers, type EmployerFeaturedTier, employerPlanForAmount } from "@/lib/billing/catalog";
+import { billingCatalog, legacyLiveSubscriptions, type LegacyLiveSubscriptionSku, type BillingSku, employerPlans, type EmployerPlanSku, employerRecruiterSeat, employerFeaturedTiers, type EmployerFeaturedTier, employerPlanForAmount, employerAddonPost } from "@/lib/billing/catalog";
 import { createClient } from "@supabase/supabase-js";
 import { partnerService } from "@/lib/partners/service";
 import { logWebhookEvent } from "@/lib/observability/events";
@@ -20,7 +20,7 @@ import {
 
 export const runtime = "nodejs";
 
-const EMPLOYER_TIERS = ["starter", "growth", "business"] as const;
+const EMPLOYER_TIERS = ["ai_starter", "starter", "growth", "business"] as const;
 
 function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -887,6 +887,78 @@ async function handleFeaturedListingCheckout(session: Stripe.Checkout.Session, e
   }
 }
 
+/**
+ * Additional job posts ($10 each) are one-time purchases. The webhook
+ * re-verifies quantity x $10 against the charged amount and grants the
+ * credits with their own 30-day clock starting at the payment time. The grant
+ * is idempotent on the checkout session id.
+ */
+async function handleEmployerAddonCheckout(session: Stripe.Checkout.Session, event: Stripe.Event) {
+  const orgId = session.metadata?.odesseus_org_id;
+  const quantity = Number(session.metadata?.odesseus_addon_quantity);
+  if (!orgId || !Number.isInteger(quantity) || quantity < 1 || quantity > employerAddonPost.maxQuantity) {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "rejected",
+      httpStatus: 400,
+      orgId: orgId ?? null,
+      reason: "Invalid add-on checkout metadata.",
+    });
+    return NextResponse.json({ error: "Invalid add-on checkout metadata." }, { status: 400 });
+  }
+
+  const charged = session.amount_total;
+  const currency = session.currency ?? "usd";
+  if (charged !== quantity * employerAddonPost.amountCents || currency !== "usd") {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "rejected",
+      httpStatus: 400,
+      orgId,
+      reason: "Checkout amount or currency does not match the add-on price.",
+    });
+    return NextResponse.json(
+      { error: "Checkout amount or currency does not match the add-on price." },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const supabase = createServiceClient();
+    const purchasedAt = new Date((session.created ?? Math.floor(Date.now() / 1000)) * 1000).toISOString();
+    const { error } = await supabase.rpc("odesseus_grant_employer_addon_credits", {
+      p_org_id: orgId,
+      p_quantity: quantity,
+      p_reference: session.id,
+      p_purchased_at: purchasedAt,
+    });
+    if (error) throw error;
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "fulfilled",
+      httpStatus: 200,
+      orgId,
+      details: { addonQuantity: quantity },
+    });
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error("[ODESSEUS_EMPLOYER] add-on credit grant failed", error);
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "errored",
+      httpStatus: 500,
+      orgId,
+      reason: "Add-on credit grant failed.",
+    });
+    // A 500 makes Stripe retry; the grant is idempotent on the session id.
+    return NextResponse.json({ error: "Could not grant add-on credits." }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
@@ -1010,6 +1082,26 @@ export async function POST(request: Request) {
   // wallet/earner SKUs). Route them before the candidate catalog path.
   if (session.metadata?.odesseus_featured_tier) {
     return handleFeaturedListingCheckout(session, event);
+  }
+
+  if (session.metadata?.odesseus_employer_addon === "true") {
+    return handleEmployerAddonCheckout(session, event);
+  }
+
+  // Employer plan and recruiter-seat subscriptions are fulfilled by
+  // invoice.paid, which carries the money-verified period. Their checkout
+  // completion is acknowledged, not rejected: a 400 here would make Stripe
+  // retry forever and flag the endpoint as failing.
+  if (session.mode === "subscription" && session.metadata?.odesseus_org_id) {
+    await logWebhookEvent({
+      stripeEventId: event.id,
+      eventType: event.type,
+      outcome: "ignored",
+      httpStatus: 200,
+      orgId: session.metadata.odesseus_org_id,
+      reason: "Employer subscription is fulfilled on invoice.paid.",
+    });
+    return NextResponse.json({ received: true });
   }
 
   const userId = session.metadata?.odesseus_user_id;

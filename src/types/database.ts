@@ -927,24 +927,30 @@ export type Database = {
       employer_job_post_credits: {
         Row: {
           expires_at: string | null;
+          external_reference: string | null;
           granted_at: string;
           id: string;
+          kind: string;
           org_id: string;
           total: number;
           used: number;
         };
         Insert: {
           expires_at?: string | null;
+          external_reference?: string | null;
           granted_at?: string;
           id?: string;
+          kind?: string;
           org_id: string;
           total: number;
           used?: number;
         };
         Update: {
           expires_at?: string | null;
+          external_reference?: string | null;
           granted_at?: string;
           id?: string;
+          kind?: string;
           org_id?: string;
           total?: number;
           used?: number;
@@ -1040,6 +1046,11 @@ export type Database = {
       };
       employer_jobs: {
         Row: {
+          auto_renew: boolean;
+          closed_reason: string | null;
+          credit_grant_id: string | null;
+          expires_at: string | null;
+          post_cycle: number;
           compensation_text: string | null;
           created_at: string;
           department: string | null;
@@ -1058,6 +1069,11 @@ export type Database = {
           work_arrangement: string | null;
         };
         Insert: {
+          auto_renew?: boolean;
+          closed_reason?: string | null;
+          credit_grant_id?: string | null;
+          expires_at?: string | null;
+          post_cycle?: number;
           compensation_text?: string | null;
           created_at?: string;
           department?: string | null;
@@ -1076,6 +1092,11 @@ export type Database = {
           work_arrangement?: string | null;
         };
         Update: {
+          auto_renew?: boolean;
+          closed_reason?: string | null;
+          credit_grant_id?: string | null;
+          expires_at?: string | null;
+          post_cycle?: number;
           compensation_text?: string | null;
           created_at?: string;
           department?: string | null;
@@ -4741,6 +4762,33 @@ export type Database = {
       odesseus_store_integration_secret: {
         Args: { p_name: string; p_secret: string; p_user_id: string };
         Returns: string;
+      };
+      odesseus_employer_can_buy_addons: {
+        Args: { p_org_id: string };
+        Returns: boolean;
+      };
+      odesseus_grant_employer_addon_credits: {
+        Args: {
+          p_org_id: string;
+          p_purchased_at?: string;
+          p_quantity: number;
+          p_reference: string;
+        };
+        Returns: {
+          already_granted: boolean;
+          credits_granted: number;
+          expires_at: string;
+        }[];
+      };
+      odesseus_process_expired_employer_jobs: {
+        Args: { p_limit?: number };
+        Returns: {
+          expires_at: string;
+          job_id: string;
+          org_id: string;
+          outcome: string;
+          title: string;
+        }[];
       };
       odesseus_sync_employer_subscription: {
         Args: {

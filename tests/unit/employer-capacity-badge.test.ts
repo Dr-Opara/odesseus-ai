@@ -6,12 +6,8 @@ import { EMPLOYER_PLANS } from "@/lib/pricing/candidate-pricing";
 // reads from, so a regression in the source numbers is caught even without
 // a render harness. F13-G: frontend is display-only, never enforcement.
 
-describe("employer plan active-job limits feeding the capacity badge", () => {
-  it("locks Starter/Growth/Business to 3/10/25 active jobs", () => {
-    expect(EMPLOYER_PLANS.map((p) => [p.name, p.activeJobLimit])).toEqual([
-      ["Starter", 3],
-      ["Growth", 10],
-      ["Business", 25],
-    ]);
+describe("employer plan credit allowance feeding the capacity badge", () => {
+  it("locks the AI Starter Bundle to 5 base credits per 30-day cycle", () => {
+    expect(EMPLOYER_PLANS.map((p) => [p.name, p.activeJobLimit])).toEqual([["AI Starter Bundle", 5]]);
   });
 });

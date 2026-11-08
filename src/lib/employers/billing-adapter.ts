@@ -26,6 +26,7 @@ import type { EmployerResult } from "./result";
 /** The stored plan name mapped onto the Figma plan vocabulary. */
 function planIdFor(plan: EmployerPlan | null): EmployerPlanId | null {
   if (!plan) return null;
+  if (plan.tier === "ai_starter") return "AI Starter Bundle";
   if (plan.name === "Growth") return "Growth";
   if (plan.name === "Business") return "Business";
   return "Starter";
@@ -135,11 +136,10 @@ export async function getEmployerBilling(): Promise<EmployerResult<EmployerBilli
   }
 }
 
-/** The plan a checkout should start for, given a Figma plan name. */
-function tierForPlan(planId: EmployerPlanId): "starter" | "growth" | "business" {
-  if (planId === "Growth") return "growth";
-  if (planId === "Business") return "business";
-  return "starter";
+/** Only the AI Starter Bundle is sold; earlier plans cannot be bought again. */
+function tierForPlan(planId: EmployerPlanId): "ai_starter" {
+  void planId;
+  return "ai_starter";
 }
 
 /**

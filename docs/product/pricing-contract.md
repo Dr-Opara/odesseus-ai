@@ -41,14 +41,37 @@ Smart Apply bounds (product rule):
 
 ## Employer
 
-| Plan | Price | Included job posts | Billing |
-| --- | --- | --- | --- |
-| Starter | $79 | 3 jobs | Recurring |
-| Growth | $149 | 10 jobs | Recurring |
-| Business | $299 | 25 jobs | Recurring |
+Effective with `supabase/migrations/20261124000000_spec_employer_pricing.sql`.
 
-The previous "$100 / 30 days / 5 jobs" starter bundle and the "$10 per add-on post" product are
-**removed** from the current contract.
+| Product | Price (USD) | Credits | Billing |
+| --- | --- | --- | --- |
+| AI Starter Bundle | $100 every 30 days | 5 base job-post credits per cycle | Recurring (30-day interval) |
+| Additional job post | $10 each | 1 credit, valid 30 days from purchase | One-time, only while the bundle is active |
+
+Two independent clocks:
+
+- **Credit clock** (`employer_job_post_credits.expires_at`). Base credits expire at the end of
+  their billing cycle and never roll over. Each add-on purchase expires 30 days after its own
+  purchase timestamp and stays valid even if the bundle later lapses.
+- **Job post clock** (`employer_jobs.expires_at`). Consuming a credit to publish starts a fresh
+  30-day live window. The publish trigger spends the usable credit that expires soonest.
+
+Job states: **Active** (`published`), **Paused** (hidden; the original 30-day clock keeps
+running; free to reactivate inside the window; no refund), **Filled / Closed** (`closed`,
+permanent, applicant data archived, no refund, cannot be reopened), **Expired** (window ended;
+reposting uses a new credit). With auto-renew on, expiry consumes an available credit and
+relaunches for another 30 days; with no credit available the post expires and the team is told.
+
+Lifecycle emails (hourly `/api/cron/employer-job-lifecycle`):
+
+1. 5 days before a cycle's unused base credits expire — `EMPLOYER_BASE_CREDITS_EXPIRING`.
+2. When a post reaches its 30-day expiry — `EMPLOYER_JOB_POST_EXPIRED`.
+3. 5 days before an individual add-on credit expires — `EMPLOYER_ADDON_CREDIT_EXPIRING`.
+
+The earlier Starter $79 / Growth $149 / Business $299 plans are no longer sold. Existing
+subscribers keep renewing on their tier at their original price and keep their credits.
+
+Positioning: AI-powered hiring infrastructure ("The AI Multi-Post Bundle"), not cheap job posts.
 
 ## Promotion (featured listings)
 

@@ -58,7 +58,7 @@ Upload Resume -> Paste JD -> Match & Qualify -> Improve Existing Resume -> Revie
 - Odesseus Live Share has **no guest cap**: no allowance, no slot consumption, no concurrency accounting, no activation window, no post-interview expiry. A Share Annual applicant generates secure Guest Live Access links and shares them. Per-token rate limits on the guest routes are abuse protection, not a commercial quota. Do not reintroduce a guest/session cap, and do not authorize on `guest_limit` or `guest_count` — those columns are historical.
 - Odesseus Live is private to signed-in applicants and token-scoped guest links. It must never be advertised on a public marketing, pricing, or employer surface. Correcting these figures does not make Live publicly marketable; the SKUs live in the auth-gated billing catalogue and are deliberately absent from the public display catalogue.
 - Interview pass should be consumed only when the live session actually starts.
-- Employer plans: Starter $79 / 3 jobs, Growth $149 / 10 jobs, Business $299 / 25 jobs (recurring).
+- Employer pricing: AI Starter Bundle $100 every 30 days with 5 base job-post credits (expire at cycle end, no rollover). Additional job posts $10 each, only while the bundle is active, each valid 30 days from purchase. Publishing a job starts its own 30-day live window. Pause keeps the clock running; Filled/Closed is permanent with no refund; auto-renew consumes a credit at expiry. Earlier Starter/Growth/Business plans are no longer sold; existing subscribers keep renewing.
 - Featured listings: $29 / 7 days, $49 / 14 days, AI Featured $129 / 30 days.
 - Recruiter seat: $20/month per additional employer-team seat.
 

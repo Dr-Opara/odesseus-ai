@@ -95,11 +95,11 @@ describe("formatCents / formatUsd", () => {
 });
 
 describe("employer plans", () => {
-  it("advertises starter/growth/business monthly plans", () => {
-    expect(EMPLOYER_PLANS.map((p) => p.name)).toEqual(["Starter", "Growth", "Business"]);
-    expect(EMPLOYER_PLANS[0].priceLabel).toBe("$79");
-    expect(EMPLOYER_PLANS[1].priceLabel).toBe("$149");
-    expect(EMPLOYER_PLANS[2].priceLabel).toBe("$299");
+  it("advertises the AI Starter Bundle: $100 every 30 days, 5 credits", () => {
+    expect(EMPLOYER_PLANS.map((p) => p.name)).toEqual(["AI Starter Bundle"]);
+    expect(EMPLOYER_PLANS[0].priceLabel).toBe("$100");
+    expect(EMPLOYER_PLANS[0].unit).toBe("/ 30 days");
+    expect(EMPLOYER_PLANS[0].jobs).toBe("5 job-post credits every 30 days");
   });
 
   it("calls out a per-recruiter seat price", () => {

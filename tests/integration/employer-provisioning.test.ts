@@ -342,25 +342,40 @@ describe("POST /api/employer/orgs/[orgId]/plans/checkout", () => {
     expect(checkoutCreate).not.toHaveBeenCalled();
   });
 
-  it("creates a catalog-priced subscription checkout with fulfillment metadata", async () => {
+  it("refuses to sell an earlier plan", async () => {
+    adminClient();
+    const { POST } = await import("@/app/api/employer/orgs/[orgId]/plans/checkout/route");
+    const response = await POST(checkoutRequest({ tier: "growth" }), checkoutParams);
+    expect(response.status).toBe(400);
+    expect(checkoutCreate).not.toHaveBeenCalled();
+  });
+
+  it("creates a $100 / 30-day AI Starter Bundle checkout with fulfillment metadata on the subscription", async () => {
     adminClient();
     checkoutCreate.mockResolvedValue({ url: "https://checkout.test/s", id: "cs_test" });
 
     const { POST } = await import("@/app/api/employer/orgs/[orgId]/plans/checkout/route");
-    const response = await POST(checkoutRequest({ tier: "growth" }), checkoutParams);
+    const response = await POST(checkoutRequest({ tier: "ai_starter" }), checkoutParams);
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.tier).toBe("growth");
+    expect(body.tier).toBe("ai_starter");
     expect(checkoutCreate).toHaveBeenCalledOnce();
     const args = checkoutCreate.mock.calls[0][0] as {
       mode: string;
-      line_items: Array<{ price_data: { unit_amount: number }; quantity: number }>;
+      line_items: Array<{
+        price_data: { unit_amount: number; recurring: { interval: string; interval_count: number } };
+        quantity: number;
+      }>;
       metadata: Record<string, string>;
+      subscription_data: { metadata: Record<string, string> };
     };
     expect(args.mode).toBe("subscription");
-    expect(args.line_items[0].price_data.unit_amount).toBe(14900);
-    expect(args.metadata).toMatchObject({ odesseus_org_id: ORG_ID, odesseus_tier: "growth" });
+    expect(args.line_items[0].price_data.unit_amount).toBe(10000);
+    expect(args.line_items[0].price_data.recurring).toEqual({ interval: "day", interval_count: 30 });
+    expect(args.metadata).toMatchObject({ odesseus_org_id: ORG_ID, odesseus_tier: "ai_starter" });
+    // invoice.paid reads the subscription's metadata, so it must be set there.
+    expect(args.subscription_data.metadata).toMatchObject({ odesseus_org_id: ORG_ID, odesseus_tier: "ai_starter" });
   });
 
   it("hides the org from non-members with 404", async () => {
@@ -369,14 +384,14 @@ describe("POST /api/employer/orgs/[orgId]/plans/checkout", () => {
     );
 
     const { POST } = await import("@/app/api/employer/orgs/[orgId]/plans/checkout/route");
-    const response = await POST(checkoutRequest({ tier: "starter" }), checkoutParams);
+    const response = await POST(checkoutRequest({ tier: "ai_starter" }), checkoutParams);
     expect(response.status).toBe(404);
     expect(checkoutCreate).not.toHaveBeenCalled();
   });
 });
 
-describe("PATCH publish maps at_capacity to 402 with the reason", () => {
-  it("stops a Growth org at exactly 10 published jobs", async () => {
+describe("PATCH publish maps an empty credit balance to 402 with the reason", () => {
+  it("refuses to publish when the claim trigger finds no usable credit", async () => {
     const ORG = "52222222-2222-4222-8222-222222222222";
     const OWNER = "51111111-1111-4111-8111-111111111111";
     createClientMock.mockReset();
@@ -387,28 +402,25 @@ describe("PATCH publish maps at_capacity to 402 with the reason", () => {
     // published-count query answers 10. The organization's own row is not in
     // this queue -- it was answered by the session client, which is where the
     // role check happens.
-    const answers: unknown[] = [
-      { status: "draft" },
-      {
-        tier: "growth",
-        status: "active",
-        job_posts_included: 10,
-        period_start: "2026-01-01T00:00:00Z",
-        period_end: "2026-02-01T00:00:00Z",
-      },
-    ];
+    const answers: unknown[] = [{ status: "draft" }];
     const updateSpy = vi.fn();
     const from = vi.fn(() => {
       const builder: Record<string, unknown> = {};
+      let updating = false;
       builder.select = () => builder;
       builder.eq = () => builder;
       builder.order = () => builder;
       builder.limit = () => builder;
       builder.update = (...args: unknown[]) => {
         updateSpy(...args);
+        updating = true;
         return builder;
       };
-      builder.maybeSingle = async () => ({ data: answers.shift() ?? null, error: null });
+      // The publish UPDATE is refused by claim_job_post_credit.
+      builder.maybeSingle = async () =>
+        updating
+          ? { data: null, error: { message: "no job post credits available for this employer" } }
+          : { data: answers.shift() ?? null, error: null };
       builder.then = (resolve: (value: unknown) => unknown) =>
         Promise.resolve({ data: [], error: null, count: 10 }).then(
           resolve as (value: unknown) => unknown
@@ -450,8 +462,8 @@ describe("PATCH publish maps at_capacity to 402 with the reason", () => {
     const body = await response.json();
 
     expect(response.status).toBe(402);
-    expect(body.reason).toBe("at_capacity");
-    expect(updateSpy).not.toHaveBeenCalled();
+    expect(body.reason).toBe("no_credits");
+    expect(updateSpy).toHaveBeenCalledOnce();
   });
 
   it("refuses to publish for a caller who is not an org admin, without a service client", async () => {

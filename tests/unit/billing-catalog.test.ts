@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
+  AI_STARTER_BILLING_INTERVAL,
   APPLICATION_CREDIT_PRICE_CENTS,
   applicationCreditSkus,
   applyRates,
   billingCatalog,
   type BillingSku,
+  employerAddonPost,
   employerPlans,
   employerPlanForAmount,
   employerRecruiterSeat,
@@ -19,6 +21,7 @@ describe("employerPlanForAmount", () => {
     // The webhook uses this to learn which plan a subscription is on after a
     // customer changes it, because `odesseus_tier` metadata is written once and
     // does not follow a plan change.
+    expect(employerPlanForAmount(10000)?.tier).toBe("ai_starter");
     expect(employerPlanForAmount(7900)?.tier).toBe("starter");
     expect(employerPlanForAmount(14900)?.tier).toBe("growth");
     expect(employerPlanForAmount(29900)?.tier).toBe("business");
@@ -45,6 +48,16 @@ describe("employerPlanForAmount", () => {
     expect(employerPlanForAmount(2900)).toBeNull();
     expect(employerPlanForAmount(4900)).toBeNull();
     expect(employerPlanForAmount(12900)).toBeNull();
+    // A $10 add-on is a one-time purchase, never a plan.
+    expect(employerPlanForAmount(employerAddonPost.amountCents)).toBeNull();
+  });
+
+  it("sells only the AI Starter Bundle: $100 every 30 days with 5 base credits", () => {
+    const sellable = Object.values(employerPlans).filter((plan) => plan.sellable);
+    expect(sellable).toHaveLength(1);
+    expect(sellable[0]).toMatchObject({ tier: "ai_starter", amountCents: 10000, jobPostsIncluded: 5 });
+    expect(AI_STARTER_BILLING_INTERVAL).toEqual({ interval: "day", intervalCount: 30 });
+    expect(employerAddonPost).toMatchObject({ amountCents: 1000, validDays: 30 });
   });
 
   it("rejects non-integer and missing amounts instead of coercing them", () => {

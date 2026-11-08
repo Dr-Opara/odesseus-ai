@@ -120,22 +120,27 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  // Check if this is an action (publish, close, delete) or a detail update
-  const action = (body as Record<string, unknown>)?.action;
-  if (typeof action === "string" && ["publish", "close", "delete"].includes(action)) {
-    if (action === "publish") {
-      const { publishJob } = await import("@/lib/employer/service");
-      const result = await publishJob(grant.client, orgId, jobId);
+  // Lifecycle actions: publish (draft or expired → new 30-day window, uses a
+  // credit), pause, resume (free inside the original window), close
+  // (filled/closed, permanent), delete (drafts only), and auto-renew.
+  const bodyRecordForAction = body as Record<string, unknown>;
+  const action = bodyRecordForAction?.action;
+  if (
+    typeof action === "string" &&
+    ["publish", "repost", "pause", "resume", "close", "delete", "auto_renew"].includes(action)
+  ) {
+    const service = await import("@/lib/employer/service");
+
+    if (action === "publish" || action === "repost") {
+      const result = await service.publishJob(grant.client, orgId, jobId);
       if (!result.ok) {
         const status = result.reason === "not_found" ? 404 : result.reason === "wrong_status" ? 409 : 402;
         return NextResponse.json(
           {
             error:
               result.reason === "no_credits"
-                ? "No job post credits available."
-                : result.reason === "at_capacity"
-                  ? "Your plan's active job limit is reached. Close a job or upgrade to publish."
-                  : "Job cannot be published.",
+                ? "No job-post credits available. Buy an additional job post or renew your AI Starter Bundle."
+                : "Job cannot be published.",
             reason: result.reason,
           },
           { status }
@@ -144,9 +149,37 @@ export async function PATCH(
       return NextResponse.json(result.job);
     }
 
+    if (action === "pause") {
+      const result = await service.pauseJob(grant.client, orgId, jobId);
+      if (!result.ok) {
+        return NextResponse.json(
+          { error: "Only an active job can be paused.", reason: result.reason },
+          { status: result.reason === "not_found" ? 404 : 409 }
+        );
+      }
+      return NextResponse.json(result.job);
+    }
+
+    if (action === "resume") {
+      const result = await service.resumeJob(grant.client, orgId, jobId);
+      if (!result.ok) {
+        return NextResponse.json(
+          {
+            error:
+              result.reason === "window_ended"
+                ? "This post's 30-day window has ended. Repost it with a credit."
+                : "Only a paused job can be reactivated.",
+            reason: result.reason,
+          },
+          { status: result.reason === "not_found" ? 404 : 409 }
+        );
+      }
+      return NextResponse.json(result.job);
+    }
+
     if (action === "close") {
-      const { closeJob } = await import("@/lib/employer/service");
-      const result = await closeJob(grant.client, orgId, jobId);
+      const closeReason = bodyRecordForAction.reason === "filled" ? "filled" : "closed";
+      const result = await service.closeJob(grant.client, orgId, jobId, closeReason);
       if (!result.ok) {
         const status = result.reason === "not_found" ? 404 : 409;
         return NextResponse.json({ error: "Job cannot be closed." }, { status });
@@ -154,9 +187,22 @@ export async function PATCH(
       return NextResponse.json(result.job);
     }
 
+    if (action === "auto_renew") {
+      if (typeof bodyRecordForAction.enabled !== "boolean") {
+        return NextResponse.json({ error: "Send enabled: true or false." }, { status: 400 });
+      }
+      const result = await service.setJobAutoRenew(grant.client, orgId, jobId, bodyRecordForAction.enabled);
+      if (!result.ok) {
+        return NextResponse.json(
+          { error: "Auto-renew cannot be changed on a closed job." },
+          { status: result.reason === "not_found" ? 404 : 409 }
+        );
+      }
+      return NextResponse.json(result.job);
+    }
+
     if (action === "delete") {
-      const { deleteJob } = await import("@/lib/employer/service");
-      const result = await deleteJob(grant.client, orgId, jobId);
+      const result = await service.deleteJob(grant.client, orgId, jobId);
       if (!result.ok) {
         const status = result.reason === "not_found" ? 404 : 409;
         return NextResponse.json({ error: "Job cannot be deleted." }, { status });

@@ -4,9 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import { isTrustedOrigin } from "@/lib/security/origin-check";
 import { checkRateLimit } from "@/lib/security/rate-limit";
-import { employerPlans, type EmployerPlanSku } from "@/lib/billing/catalog";
+import { AI_STARTER_BILLING_INTERVAL, employerPlans } from "@/lib/billing/catalog";
 import { requireOrgAdmin } from "@/lib/employer/service";
-import type { EmployerTier } from "@/lib/employer/plans";
 
 export const runtime = "nodejs";
 
@@ -14,18 +13,15 @@ export const runtime = "nodejs";
 // admin cannot script concurrent subscription checkouts.
 const CHECKOUTS_PER_HOUR = 12;
 
-const TIER_TO_SKU: Record<EmployerTier, EmployerPlanSku> = {
-  starter: "employer_starter",
-  growth: "employer_growth",
-  business: "employer_business",
-};
-
+// The AI Starter Bundle is the only plan for sale. Earlier tiers are kept in
+// the catalog only so existing subscribers keep renewing.
 const schema = z.object({
-  tier: z.enum(["starter", "growth", "business"]),
+  tier: z.literal("ai_starter").default("ai_starter"),
 });
 
 /**
- * Starts a Stripe subscription checkout for an employer plan tier.
+ * Starts a Stripe subscription checkout for the AI Starter Bundle
+ * ($100 USD every 30 days, 5 base job-post credits per cycle).
  *
  * The amount comes from the billing catalog, never from the request, and
  * the webhook independently re-verifies the paid invoice amount against the
@@ -58,12 +54,11 @@ export async function POST(
     return NextResponse.json({ error: "That team could not be found." }, { status: 404 });
   }
 
-  let input: z.infer<typeof schema>;
   try {
-    input = schema.parse(await request.json());
+    schema.parse(await request.json().catch(() => ({})));
   } catch {
     return NextResponse.json(
-      { error: "Choose a plan: Starter, Growth, or Business." },
+      { error: "The AI Starter Bundle is the only plan available." },
       { status: 400 }
     );
   }
@@ -112,7 +107,11 @@ export async function POST(
     );
   }
 
-  const plan = employerPlans[TIER_TO_SKU[input.tier]];
+  const plan = employerPlans.employer_ai_starter;
+  const metadata = {
+    odesseus_org_id: orgId,
+    odesseus_tier: plan.tier,
+  };
   const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
     line_items: [
@@ -120,7 +119,10 @@ export async function POST(
         price_data: {
           currency: "usd",
           unit_amount: plan.amountCents,
-          recurring: { interval: "month" },
+          recurring: {
+            interval: AI_STARTER_BILLING_INTERVAL.interval,
+            interval_count: AI_STARTER_BILLING_INTERVAL.intervalCount,
+          },
           product_data: {
             name: plan.label,
             description: plan.description,
@@ -132,10 +134,11 @@ export async function POST(
     success_url: `${siteUrl}/employers/dashboard/billing?plan=success`,
     cancel_url: `${siteUrl}/employers/dashboard/billing?plan=cancelled`,
     client_reference_id: orgId,
-    metadata: {
-      odesseus_org_id: orgId,
-      odesseus_tier: plan.tier,
-    },
+    metadata,
+    // invoice.paid reads the *subscription's* metadata to find the org; Stripe
+    // does not copy session metadata onto the subscription, so it must be set
+    // here or no cycle would ever grant its base credits.
+    subscription_data: { metadata },
   });
 
   if (!session.url) {

@@ -12,7 +12,8 @@
  * feedback, or post-interview analysis. Do not add one.
  */
 
-export type EmployerPlanId = "Starter" | "Growth" | "Business";
+/** "AI Starter Bundle" is the plan for sale; the others are earlier plans existing subscribers keep. */
+export type EmployerPlanId = "AI Starter Bundle" | "Starter" | "Growth" | "Business";
 
 /** Locked hiring pipeline stages (F13-K) — do not add, remove, or reorder. */
 export const PIPELINE_STAGES = [
@@ -52,7 +53,7 @@ export type EmployerCapacity = {
   planId: EmployerPlanId | null;
 };
 
-export type EmployerJobStatus = "Draft" | "Published" | "Closed";
+export type EmployerJobStatus = "Draft" | "Published" | "Paused" | "Closed" | "Expired";
 
 /**
  * Work arrangement in the product vocabulary.
@@ -74,6 +75,9 @@ export type EmployerJob = {
   status: EmployerJobStatus;
   createdAt: string;
   publishedAt?: string;
+  /** The JOB POST clock: when this post's 30-day window ends. */
+  expiresAt?: string;
+  autoRenew?: boolean;
   applicantCount?: number;
   featured: boolean;
   featuredUntil?: string;

@@ -127,8 +127,8 @@ SELECT is(
   (SELECT delta FROM public.job_post_credit_ledger
    WHERE org_id = '22222222-2222-4222-8222-222222222222'
      AND reason = 'job_post'
-     AND external_reference = 'job_post:33333333-3333-4333-8333-333333333332'),
-  -1, 'publish is mirrored to the credit ledger with delta -1');
+     AND external_reference = 'job_post:33333333-3333-4333-8333-333333333332:1'),
+  -1, 'publish is mirrored to the credit ledger with delta -1, keyed by posting window');
 
 SELECT lives_ok(
   $$INSERT INTO public.employer_jobs
@@ -168,24 +168,25 @@ SELECT is(
    WHERE org_id = '22222222-2222-4222-8222-222222222222'),
   3, 'the over-quota posting is rolled back (no partial row)');
 
--- Closing then re-publishing the same job must never consume twice: the unique
--- ledger ref 'job_post:<job_id>' is the idempotency choke point.
+-- Filled / Closed is permanent: a closed job can never be reopened, so it can
+-- never consume a second credit either.
 SELECT lives_ok(
   $$UPDATE public.employer_jobs
    SET status = 'closed'
    WHERE id = '33333333-3333-4333-8333-333333333332'$$,
   'closing a job does not consume a credit');
 
-SELECT lives_ok(
+SELECT throws_ok(
   $$UPDATE public.employer_jobs
    SET status = 'published'
    WHERE id = '33333333-3333-4333-8333-333333333332'$$,
-  're-publishing a closed job succeeds (no credit available)');
+  NULL, 'a closed job cannot be reopened',
+  'a closed job cannot be republished');
 
 SELECT is(
   (SELECT used FROM public.employer_job_post_credits
    WHERE org_id = '22222222-2222-4222-8222-222222222222'),
-  3, 're-publishing consumes no additional credit (idempotent)');
+  3, 'the refused reopen consumes no credit');
 
 -- ---------------------------------------------------------------------------
 -- New billing period: the org renews and gets a fresh cycle
