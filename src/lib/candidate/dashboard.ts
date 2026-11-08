@@ -141,14 +141,11 @@ export type CandidateDashboardResume = {
 };
 
 export type CandidateDashboardWallet = {
-  /** The spendable applications balance, in cents. */
+  /** Prepaid application credits: 1 credit = 1 verified submission. */
+  applicationCredits: number;
+  /** Legacy prepaid wallet balance, in cents — still spendable at $0.99/application. */
   balanceCents: number;
-  /**
-   * A candidate with less than the cost of a Standard Apply cannot start one.
-   * The comparison is against the smallest chargeable amount in the catalogue
-   * rather than against zero, so "you have money" and "you can apply" stay
-   * different statements.
-   */
+  /** One credit, or the single-credit price in the legacy wallet. */
   canApply: boolean;
   /** Live passes are a separate balance, still drawn from the same row. */
   interviewPasses: number;
@@ -375,6 +372,7 @@ export function projectActivityItem(
 /** The empty wallet a candidate has before their first balance row exists. */
 function emptyWallet(): CandidateDashboardWallet {
   return {
+    applicationCredits: 0,
     balanceCents: 0,
     canApply: false,
     interviewPasses: 0,
@@ -508,7 +506,7 @@ export async function getCandidateDashboard(
         .maybeSingle(),
       client
         .from("credit_balances")
-        .select("wallet_balance_cents,interview_passes,live_unlimited_until")
+        .select("application_credits,wallet_balance_cents,interview_passes,live_unlimited_until")
         .eq("user_id", userId)
         .maybeSingle(),
       client
@@ -574,11 +572,13 @@ export async function getCandidateDashboard(
   } | null;
 
   const balanceRow = (balanceRes.data ?? null) as {
+    application_credits?: number | null;
     wallet_balance_cents?: number | null;
     interview_passes?: number | null;
     live_unlimited_until?: string | null;
   } | null;
   const walletBalanceCents = toCount(balanceRow?.wallet_balance_cents);
+  const applicationCredits = toCount(balanceRow?.application_credits);
 
   const recentWallet: CandidateWalletMovement[] = (
     (walletRes.data ?? []) as Array<Record<string, unknown>>
@@ -662,8 +662,9 @@ export async function getCandidateDashboard(
       primaryFileName: masterResume?.file_name ?? null,
     },
     wallet: {
+      applicationCredits,
       balanceCents: walletBalanceCents,
-      canApply: walletBalanceCents >= MINIMUM_APPLY_CHARGE_CENTS,
+      canApply: applicationCredits >= 1 || walletBalanceCents >= MINIMUM_APPLY_CHARGE_CENTS,
       interviewPasses: toCount(balanceRow?.interview_passes),
       liveUnlimitedUntil:
         typeof balanceRow?.live_unlimited_until === "string"

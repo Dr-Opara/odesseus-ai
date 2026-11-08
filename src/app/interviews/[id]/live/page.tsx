@@ -26,7 +26,7 @@ export default async function OdesseusLivePage({
         .maybeSingle(),
       supabase
         .from("credit_balances")
-        .select("wallet_balance_cents,interview_passes")
+        .select("application_credits,wallet_balance_cents,interview_passes")
         .eq("user_id", userId)
         .maybeSingle(),
       supabase
@@ -47,6 +47,7 @@ export default async function OdesseusLivePage({
   return (
     <AppShell
       fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
       walletBalanceCents={credits?.wallet_balance_cents ?? 0}
       interviewPasses={credits?.interview_passes ?? 0}
       active="interviews"

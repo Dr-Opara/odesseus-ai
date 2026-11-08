@@ -38,7 +38,7 @@ function checkoutCompletedEvent(overrides: {
   currency?: string;
 }) {
   const {
-    sku = "wallet_10",
+    sku = "app_25",
     userId = "user-1",
     paymentStatus = "paid",
     eventId = "evt_test_1",
@@ -137,10 +137,10 @@ describe("Stripe webhook fulfillment", () => {
   });
 
   it("fails closed when the charged amount does not match the catalog price", async () => {
-    // The metadata names wallet_10 ($10 top-up) but the session charged $15.
+    // The metadata names app_25 ($20 for 25 credits) but the session charged $15.
     // A tampered or mismatched amount must never credit the catalog delta.
     constructEventMock.mockReturnValue(
-      checkoutCompletedEvent({ sku: "wallet_10", amountTotal: 1500 })
+      checkoutCompletedEvent({ sku: "app_25", amountTotal: 1500 })
     );
 
     const { POST } = await import("@/app/api/webhooks/stripe/route");
@@ -152,7 +152,7 @@ describe("Stripe webhook fulfillment", () => {
 
   it("fails closed when the currency is not USD", async () => {
     constructEventMock.mockReturnValue(
-      checkoutCompletedEvent({ sku: "wallet_10", currency: "eur" })
+      checkoutCompletedEvent({ sku: "app_25", currency: "eur" })
     );
 
     const { POST } = await import("@/app/api/webhooks/stripe/route");
@@ -163,7 +163,7 @@ describe("Stripe webhook fulfillment", () => {
   });
 
   it("fails closed when the session carries no amount at all", async () => {
-    const event = checkoutCompletedEvent({ sku: "wallet_10" }) as {
+    const event = checkoutCompletedEvent({ sku: "app_25" }) as {
       data: { object: { amount_total: number | null } };
     };
     event.data.object.amount_total = null;
@@ -226,19 +226,27 @@ describe("Stripe webhook fulfillment", () => {
     expect(response.status).toBe(500);
   });
 
-  it("routes the personal annual plan's first billing_events row through the interview credit_type, distinguished by its dedicated sku", async () => {
-    constructEventMock.mockReturnValue(checkoutCompletedEvent({ sku: "live_personal_annual" }));
+  it("routes Odesseus Live Annual through the interview credit_type, distinguished by its dedicated sku", async () => {
+    constructEventMock.mockReturnValue(checkoutCompletedEvent({ sku: "interview_annual" }));
 
     const { POST } = await import("@/app/api/webhooks/stripe/route");
     await POST(webhookRequest("{}"));
 
     const inserted = billingInsertMock.mock.calls[0][0];
-    expect(inserted.sku).toBe("live_personal_annual");
-    // billing_events_credit_type_check admits only application/interview/
-    // wallet_topup; odesseus_private.fulfill_billing_event branches on `sku`
-    // (not credit_type) to grant a live_memberships row for this plan
-    // instead of a discrete interview_passes credit.
+    expect(inserted.sku).toBe("interview_annual");
+    // odesseus_private.fulfill_billing_event branches on sku = 'interview_annual'
+    // and grants a 12-month live_unlimited_until window instead of passes.
     expect(inserted.credit_type).toBe("interview");
-    expect(inserted.amount_cents).toBe(9900);
+    expect(inserted.amount_cents).toBe(49900);
+  });
+
+  it("does not fulfill a retired wallet top-up SKU", async () => {
+    constructEventMock.mockReturnValue(checkoutCompletedEvent({ sku: "wallet_10", amountTotal: 1000 }));
+
+    const { POST } = await import("@/app/api/webhooks/stripe/route");
+    const response = await POST(webhookRequest("{}"));
+
+    expect(response.status).toBe(400);
+    expect(billingInsertMock).not.toHaveBeenCalled();
   });
 });

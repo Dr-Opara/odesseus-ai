@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import {
+  APPLICATION_CREDIT_PACKS,
   APPLY_TIERS,
   EMPLOYER_PLANS,
   PREP_AGENT_DESCRIPTION,
@@ -10,8 +11,6 @@ import {
   PREP_AGENT_PRICE_LABEL,
   PROMOTION_PLANS,
   RECRUITER_SEAT_PRICE_LABEL,
-  WALLET_TOPUP_AMOUNTS_CENTS,
-  formatCents,
 } from "@/lib/pricing/candidate-pricing";
 
 type Tab = "applicants" | "business";
@@ -98,7 +97,6 @@ function PricingCard({
   );
 }
 
-const WALLET_SKUS = ["wallet_10", "wallet_20", "wallet_50"] as const;
 const PROMOTION_TIERS = ["featured_7d", "featured_14d", "ai_30d"] as const;
 
 function pricingGo(params: Record<string, string>) {
@@ -160,14 +158,14 @@ export default function MobilePricing() {
             href={pricingGo({ audience: "candidate", action: "apply" })}
             recommended
           />
-          {WALLET_TOPUP_AMOUNTS_CENTS.map((amountCents, index) => (
+          {APPLICATION_CREDIT_PACKS.filter((pack) => pack.credits > 1).map((pack, index) => (
             <PricingCard
-              key={amountCents}
+              key={pack.sku}
               icon="wallet"
               tone={index === 0 ? "green" : index === 1 ? "purple" : "blue"}
-              title={<>Wallet top-up · {formatCents(amountCents)}</>}
-              description={<>Spend on {APPLY_TIERS.standard.label} or {APPLY_TIERS.smart.label} as you go.</>}
-              href={pricingGo({ audience: "candidate", action: "wallet", sku: WALLET_SKUS[index] })}
+              title={<>{pack.credits} application credits · {pack.priceLabel}</>}
+              description={<>{pack.perCreditLabel} · Save {pack.savingsPercent}%. Credits are used only on successful submissions.</>}
+              href={pricingGo({ audience: "candidate", action: "credits", sku: pack.sku })}
             />
           ))}
           <PricingCard

@@ -83,11 +83,12 @@ function makeServiceClientMock() {
 }
 
 function makeAuthedClient(overrides: {
+  credits?: number;
   walletCents?: number;
   activeRun?: boolean;
   userId?: string | null;
 }) {
-  const { walletCents = 5000, activeRun = false, userId = "user-1" } = overrides;
+  const { credits = 10, walletCents = 0, activeRun = false, userId = "user-1" } = overrides;
   const from = vi.fn((table: string) => {
     if (table === "job_opportunities") {
       return fakeQueryResult({
@@ -98,7 +99,7 @@ function makeAuthedClient(overrides: {
       });
     }
     if (table === "credit_balances") {
-      return fakeQueryResult({ wallet_balance_cents: walletCents });
+      return fakeQueryResult({ application_credits: credits, wallet_balance_cents: walletCents });
     }
     if (table === "resume_tailorings") {
       return fakeQueryResult({
@@ -127,7 +128,7 @@ function makeAuthedClient(overrides: {
   };
 }
 
-describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
+describe("POST /api/apply/start (credit-gated, mode-aware start)", () => {
   beforeEach(() => {
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-key");
     vi.stubEnv("BROWSERBASE_API_KEY", "test-key");
@@ -196,8 +197,8 @@ describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
     expect(runInserts).toHaveLength(0);
   });
 
-  it("rejects Standard Apply when the wallet holds less than $0.39 — before any run is created", async () => {
-    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 38 }));
+  it("rejects a start with no application credit and no wallet balance — before any run is created", async () => {
+    createClientMock.mockResolvedValue(makeAuthedClient({ credits: 0, walletCents: 0 }));
     createServiceClientMock.mockReturnValue(makeServiceClientMock());
 
     const { POST } = await import("@/app/api/apply/start/route");
@@ -205,33 +206,13 @@ describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
 
     expect(response.status).toBe(402);
     const body = await response.json();
-    expect(body.error).toMatch(/\$0\.39/);
-    expect(body.error).toMatch(/Standard Apply/);
+    expect(body.error).toMatch(/1 application credit/);
+    expect(body.error).toMatch(/\$0\.99 USD/);
     expect(createServiceClientMock).not.toHaveBeenCalled();
   });
 
-  it("rejects Smart Apply when the wallet holds less than $0.99", async () => {
-    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 98 }));
-    createServiceClientMock.mockReturnValue(makeServiceClientMock());
-
-    const { POST } = await import("@/app/api/apply/start/route");
-    const response = await POST(
-      jsonRequest({ jobId: JOB_ID, targetUrl: "https://employer.example.com/apply", mode: "smart" })
-    );
-
-    expect(response.status).toBe(402);
-    const body = await response.json();
-    expect(body.error).toMatch(/\$0\.99/);
-    expect(body.error).toMatch(/Smart Apply/);
-  });
-
-  it("honours `applyTier`, the field the shipped client actually sends", async () => {
-    // ApplyStartForm posts `applyTier`, not `mode`. If the route reads only
-    // `mode`, the selected tier silently falls back to "standard" and a Smart
-    // Apply run is both gated and settled at the 39c Standard rate. 50c is
-    // above the Standard floor and below the Smart rate, so this only passes
-    // when the request's real field is read.
-    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 50 }));
+  it("gates Smart Apply on the same single credit as Apply", async () => {
+    createClientMock.mockResolvedValue(makeAuthedClient({ credits: 0, walletCents: 98 }));
     createServiceClientMock.mockReturnValue(makeServiceClientMock());
 
     const { POST } = await import("@/app/api/apply/start/route");
@@ -241,9 +222,20 @@ describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
 
     expect(response.status).toBe(402);
     const body = await response.json();
-    expect(body.error).toMatch(/\$0\.99/);
     expect(body.error).toMatch(/Smart Apply/);
     expect(createServiceClientMock).not.toHaveBeenCalled();
+  });
+
+  it("starts with exactly one application credit", async () => {
+    createClientMock.mockResolvedValue(makeAuthedClient({ credits: 1, walletCents: 0 }));
+    createServiceClientMock.mockReturnValue(makeServiceClientMock());
+
+    const { POST } = await import("@/app/api/apply/start/route");
+    const response = await POST(
+      jsonRequest({ jobId: JOB_ID, targetUrl: "https://employer.example.com/apply", applyTier: "smart" })
+    );
+
+    expect(response.status).toBe(200);
   });
 
   it("records execution_mode smart when the tier arrives as applyTier", async () => {
@@ -255,8 +247,8 @@ describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
       jsonRequest({ jobId: JOB_ID, targetUrl: "https://employer.example.com/apply", applyTier: "smart" })
     );
 
-    // execution_mode is what the finalization RPC reads to pick 39c vs 99c,
-    // so a mislabelled run debits the wrong amount on verified success.
+    // execution_mode is recorded on the application and its evidence, and the
+    // finalization RPC refuses a settlement whose mode contradicts it.
     expect(runInserts[0].execution_mode).toBe("smart");
   });
 
@@ -273,8 +265,8 @@ describe("POST /api/apply/start (wallet-gated, mode-aware start)", () => {
     expect(runInserts).toHaveLength(0);
   });
 
-  it("accepts a wallet that holds exactly the mode rate (39¢ for standard)", async () => {
-    createClientMock.mockResolvedValue(makeAuthedClient({ walletCents: 39 }));
+  it("keeps a legacy wallet balance of at least $0.99 spendable without credits", async () => {
+    createClientMock.mockResolvedValue(makeAuthedClient({ credits: 0, walletCents: 99 }));
     createServiceClientMock.mockReturnValue(makeServiceClientMock());
 
     const { POST } = await import("@/app/api/apply/start/route");

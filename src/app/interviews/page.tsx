@@ -30,7 +30,7 @@ export default async function InterviewsPage() {
       .or(NON_GUEST_INTERVIEW_FILTER)
       .order("scheduled_at", { ascending: true }),
     supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
-    supabase.from("credit_balances").select("wallet_balance_cents,interview_passes,live_unlimited_until").eq("user_id", userId).maybeSingle(),
+    supabase.from("credit_balances").select("application_credits,wallet_balance_cents,interview_passes,live_unlimited_until").eq("user_id", userId).maybeSingle(),
     // The authoritative Share Annual check, read server-side so the card's
     // initial state is real rather than a guess the click then contradicts.
     // `canGenerateGuestLinks` is the same predicate the mint route enforces, so
@@ -51,6 +51,7 @@ export default async function InterviewsPage() {
   return (
     <AppShell
       fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
       walletBalanceCents={credits?.wallet_balance_cents ?? 0}
       interviewPasses={credits?.interview_passes ?? 0}
       active="interviews"

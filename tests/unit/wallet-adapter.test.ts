@@ -126,14 +126,14 @@ describe("the adapter is not imported by a client component", () => {
   });
 });
 
-describe("the real wallet surface is the billing page", () => {
-  it("/billing reads the wallet from the database and starts real checkouts", () => {
-    // The orphan WalletPanel that duplicated this was removed. The billing
-    // page is the one candidate wallet surface: it reads the real balance and
-    // ledger, and its top-ups are the catalog's checkout SKUs.
+describe("the real balance surface is the billing page", () => {
+  it("/billing reads balances from the database and starts real checkouts", () => {
+    // The billing page is the one candidate balance surface: it reads the
+    // real balances and ledger, and its purchases are the catalog's SKUs.
     const source = readFileSync(join(process.cwd(), "src", "app", "billing", "page.tsx"), "utf8");
     expect(source).toContain("credit_balances");
     expect(source).toContain("createCheckoutSession");
-    expect(source).toContain("wallet_10");
+    expect(source).toContain("APPLICATION_CREDIT_PACKS");
+    expect(source).not.toContain("wallet_10");
   });
 });

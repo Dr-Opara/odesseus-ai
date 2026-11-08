@@ -271,28 +271,6 @@ SELECT is(
    WHERE active),
   ARRAY[
     'ai_30d',
-    'candidate_smart_apply',
-    'candidate_standard_apply',
-    'employer_business',
-    'employer_growth',
-    'employer_starter',
-    'featured_14d',
-    'featured_7d',
-    'live_monthly',
-    'live_personal_annual',
-    'live_share_annual',
-    'live_single',
-    'recruiter_seat_month',
-    'wallet_topup_10',
-    'wallet_topup_20',
-    'wallet_topup_50'
-  ],
-  'exact active product key set (16) — the retired candidate_live_* catalog is replaced by live_*');
-
-SELECT is(
-  (SELECT array_agg(product_key ORDER BY product_key) FROM public.pricing_products
-   WHERE NOT active),
-  ARRAY[
     'candidate_application_pack_100',
     'candidate_application_pack_25',
     'candidate_application_pack_50',
@@ -300,13 +278,35 @@ SELECT is(
     'candidate_live_annual',
     'candidate_live_pack_3',
     'candidate_live_single',
-    'employer_addon_post',
-    'employer_starter_bundle'
+    'employer_business',
+    'employer_growth',
+    'employer_starter',
+    'featured_14d',
+    'featured_7d',
+    'recruiter_seat_month'
   ],
-  'legacy credit products and the retired Live catalog are deactivated in place — exactly nine, never deleted');
+  'exact active product key set (14) — application credits and one-time Live passes are for sale');
 
-SELECT is((SELECT count(*)::int FROM public.pricing_products WHERE NOT active), 9,
-  'nine inactive products');
+SELECT is(
+  (SELECT array_agg(product_key ORDER BY product_key) FROM public.pricing_products
+   WHERE NOT active),
+  ARRAY[
+    'candidate_smart_apply',
+    'candidate_standard_apply',
+    'employer_addon_post',
+    'employer_starter_bundle',
+    'live_monthly',
+    'live_personal_annual',
+    'live_share_annual',
+    'live_single',
+    'wallet_topup_10',
+    'wallet_topup_20',
+    'wallet_topup_50'
+  ],
+  'wallet, apply-rate and Live-subscription products are deactivated in place — exactly eleven, never deleted');
+
+SELECT is((SELECT count(*)::int FROM public.pricing_products WHERE NOT active), 11,
+  'eleven inactive products');
 
 SELECT is((SELECT count(DISTINCT family)::int FROM public.pricing_products), 2,
   'two product families (candidate, employer)');
@@ -380,12 +380,12 @@ SELECT is(
 SELECT is(
   (SELECT count(*)::int FROM public.pricing_products
    WHERE product_key LIKE 'candidate_live\_%' AND active),
-  0, 'the legacy candidate_live_* catalog is retired (deactivated, not deleted)');
+  3, 'the one-time candidate_live_* passes (single / 3-pack / annual) are for sale again');
 
 SELECT is(
   (SELECT count(*)::int FROM public.pricing_products
    WHERE product_key LIKE 'live\_%' AND active),
-  4, 'the replacement live_* catalog (single/monthly/personal_annual/share_annual) is active');
+  0, 'the live_* subscription catalog is no longer sold (deactivated, not deleted)');
 
 -- ---------------------------------------------------------------------------
 -- Markets
@@ -414,11 +414,11 @@ SELECT is((SELECT count(*)::int FROM public.pricing_prices), 25,
 
 SELECT is((SELECT count(*)::int FROM public.pricing_prices
    WHERE active AND market_key = 'USD_US' AND currency = 'USD'),
-  16, 'sixteen active prices on the USD_US market');
+  14, 'fourteen active prices on the USD_US market');
 
 SELECT is((SELECT count(*)::int FROM public.pricing_prices
    WHERE NOT active AND market_key = 'USD_US' AND currency = 'USD'),
-  9, 'nine legacy prices (including the retired Live catalog) deactivated alongside their products');
+  11, 'eleven retired prices deactivated alongside their products');
 
 SELECT is(
   (SELECT count(*)::int
@@ -436,9 +436,8 @@ SELECT is(
      ('featured_14d', 4900),
      ('ai_30d', 12900),
      ('recruiter_seat_month', 2000)
-   ) AS e(product_key, amount_minor) USING (product_key, amount_minor)
-   WHERE p.active),
-  12, 'all twelve new approved reference USD prices stored exactly (minor units)');
+   ) AS e(product_key, amount_minor) USING (product_key, amount_minor)),
+  12, 'all twelve wallet-contract reference USD prices kept exactly (minor units), active or not');
 
 SELECT is(
   (SELECT count(*)::int
@@ -451,7 +450,7 @@ SELECT is(
      ('employer_starter_bundle', 10000),
      ('employer_addon_post', 1000)
    ) AS e(product_key, amount_minor) USING (product_key, amount_minor)),
-  6, 'legacy prices keep their original amounts (inactive, never deleted)');
+  6, 'application-credit and legacy employer prices keep their exact amounts');
 
 SELECT is(
   (SELECT count(*)::int
@@ -461,8 +460,8 @@ SELECT is(
      ('candidate_live_pack_3', 5999),
      ('candidate_live_annual', 49900)
    ) AS e(product_key, amount_minor) USING (product_key, amount_minor)
-   WHERE NOT p.active),
-  3, 'legacy Live prices are preserved byte-for-byte (2499/5999/49900), now inactive');
+   WHERE p.active),
+  3, 'Live passes sell at the spec prices exactly (2499/5999/49900)');
 
 SELECT is(
   (SELECT count(*)::int
@@ -473,8 +472,8 @@ SELECT is(
      ('live_personal_annual', 9900),
      ('live_share_annual', 49900)
    ) AS e(product_key, amount_minor) USING (product_key, amount_minor)
-   WHERE p.active),
-  4, 'the replacement Live catalog carries the locked prices exactly (1499/1999/9900/49900)');
+   WHERE NOT p.active),
+  4, 'the retired Live subscription prices keep their amounts (1499/1999/9900/49900), now inactive');
 
 SELECT ok(NOT EXISTS (
   SELECT 1 FROM public.pricing_prices p

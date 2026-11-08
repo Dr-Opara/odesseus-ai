@@ -8,9 +8,9 @@ export const FAQ_ITEMS = [
   ["How does job matching work?", "Odesseus compares your verified resume against a job description and scores fit before you apply."],
   ["Does Odesseus apply without my approval?", "No. You review and approve the tailored resume and application details before anything is submitted."],
   ["How does resume optimization work?", "Odesseus edits the resume you already have for a specific role — it never invents a resume from scratch."],
-  ["What does an application cost?", `${APPLY_TIERS.standard.label} is ${APPLY_TIERS.standard.priceLabel} and ${APPLY_TIERS.smart.label} is ${APPLY_TIERS.smart.priceLabel}, both charged from your wallet only after a verified successful submission. Interview preparation is free.`],
-  ["What's the difference between Apply and Smart Apply?", `${APPLY_TIERS.standard.label} tailors your resume and submits the application. ${APPLY_TIERS.smart.label} adds deeper role-specific tailoring and a closer pass on hard requirements before submission.`],
-  ["How does the wallet work?", "Add $10, $20, or $50 to your wallet, then Odesseus spends from it only when an application is successfully submitted. No more buying fixed credit packs upfront."],
+  ["What does an application cost?", `One application credit — ${APPLY_TIERS.standard.priceLabel} — per verified successful submission, for ${APPLY_TIERS.standard.label} or ${APPLY_TIERS.smart.label}. Packs bring it lower: 25 for $20, 50 for $35, 100 for $59 (USD). Failed or unconfirmed applications use nothing. Interview preparation is free.`],
+  ["What's the difference between Apply and Smart Apply?", `${APPLY_TIERS.standard.label} tailors your resume and submits the application. ${APPLY_TIERS.smart.label} adds deeper automation for multi-page applications. Both cost the same and both need your approval before submission.`],
+  ["How do application credits work?", "One application credit pays for one successfully submitted application. Buy them one at a time ($0.99 USD) or in packs of 25 ($20), 50 ($35) or 100 ($59). Credits don't expire, and failed, unsupported, cancelled, closed-role or unconfirmed applications never use one."],
   ["Is interview preparation free?", "Yes. Role-specific questions, STAR stories and technical prep are included at no cost."],
   ["How do I manage my documents?", "Upload, replace, or remove resumes from Documents in your account settings."],
 ] as const;

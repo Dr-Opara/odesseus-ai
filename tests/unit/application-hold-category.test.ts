@@ -51,6 +51,10 @@ const REAL_STOP_REASONS: Array<[string, ApplicationHoldCategory]> = [
     "Your wallet needs $0.39 to finish a Standard Apply. Top up your wallet, then continue.",
     "insufficient_funds",
   ],
+  [
+    "You need 1 application credit ($0.99 USD) to finish this Apply. Buy credits in Billing, then continue.",
+    "insufficient_funds",
+  ],
 ];
 
 describe("classifyHoldReason", () => {

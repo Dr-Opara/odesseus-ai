@@ -36,6 +36,7 @@ export default async function DocumentsPage({
   return (
     <AppShell
       fullName={profile?.full_name}
+      applicationCredits={credits.applicationCredits}
       walletBalanceCents={credits.walletBalanceCents}
       interviewPasses={credits.interviewPasses}
     >

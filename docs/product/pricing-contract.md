@@ -13,27 +13,29 @@ database price seeds, charging/fulfillment logic, and e2e/unit/db tests.
 
 ## Candidate
 
-| Product | Price | Charged when |
+Effective with `supabase/migrations/20261123000000_spec_candidate_pricing.sql`.
+
+| Product | Price (USD) | Charged when |
 | --- | --- | --- |
-| Standard Apply | $0.49 | Per **verified successful submission** |
-| Smart Apply | $1.99 | Per **verified successful submission** |
-| Wallet top-up | $10 / $20 / $50 | At purchase (funds the prepaid wallet) |
+| Application credit | $0.99 | 1 credit is used per **verified successful submission** |
+| 25 application credits | $20 | At purchase |
+| 50 application credits | $35 | At purchase |
+| 100 application credits | $59 | At purchase |
 
-Wallet model:
-
-- The wallet is a **server-controlled, cents-denominated balance** (`wallet_balance_cents`).
-- Browser users must never be able to grant themselves funds (server-side balance mutations only).
-- Standard Apply and Smart Apply draw from the wallet only after Odesseus verifies a successful
-  submission. Failed, unsupported, paused, cancelled, closed, incomplete-CAPTCHA/MFA, or
-  unconfirmed submissions never deduct wallet funds.
-- Top-ups do not auto-convert into an integer count of applies; the wallet is monetary.
+- 1 application credit = 1 successfully submitted application, Apply or Smart Apply (same price).
+- Failed, unsupported, cancelled, closed-role or unconfirmed applications consume 0 credits.
+- Credits never expire. No required subscription.
+- Balances are server-controlled (`credit_balances.application_credits`); browsers can never grant
+  themselves credits.
+- Legacy wallet: wallet top-ups are no longer sold. An existing `wallet_balance_cents` stays
+  spendable — `odesseus_finalize_application` spends a credit first and otherwise debits $0.99 from
+  the wallet.
 
 Smart Apply bounds (product rule):
 
-- Deeper automation than Standard Apply, built **on the existing assisted workflow engine**
-  (not a separate automation stack): account creation when required, multi-page ATS navigation,
-  question completion using known candidate data, resume tailoring, document attachment, form
-  completion, retry/recovery logic, application-package preparation.
+- Deeper automation than Apply, built **on the existing assisted workflow engine**: account
+  creation when required, multi-page ATS navigation, question completion using known candidate
+  data, document attachment, retry/recovery.
 - Must preserve: user approval before final submission, no silent submission, stop/escalate when
   answers are uncertain, charge only after a verified successful submission.
 
@@ -68,24 +70,23 @@ The previous "$100 / 30 days / 5 jobs" starter bundle and the "$10 per add-on po
 
 ## Odesseus Live (authenticated applicants only)
 
-| Product | Price |
+| Product | Price (USD) |
 | --- | --- |
-| Live Single | $14.99 per interview |
-| Live Monthly | $19.99 per month |
-| Live Personal Annual | $99 per year (12-month entitlement) |
-| Live Share Annual | $499 per year (12-month entitlement, plus shareable guest access links) |
+| Live — 1 interview | $24.99 |
+| Live — 3 interviews | $59.99 |
+| Odesseus Live Annual | $499 (12 months, one-time, fair use) |
 
 - Interview preparation is free.
-- A Live pass is consumed only when the live session actually starts, and a
-  recurring plan is fulfilled as a time-boxed entitlement rather than a
-  per-session credit.
-- **Odesseus Live is never advertised on a public surface.** It is private to
-  signed-in applicants and token-scoped guest links. Correcting these figures
-  in documentation does not make Live publicly marketable; the Live SKU prices
-  live in `src/lib/billing/catalog.ts`, which is auth-gated, and are
-  deliberately absent from the public display catalogue
-  `src/lib/pricing/candidate-pricing.ts`.
-  See `tests/unit/live-public-surface.test.ts` and
+- 1 Live pass = 1 successfully activated live interview round; a failed activation consumes nothing.
+- Annual grants a 12-month window subject to fair use (20 sessions per rolling 30 days). It is a
+  one-time purchase, not a subscription.
+- The earlier Live subscriptions (monthly $19.99, personal annual $99, Share annual $499) are no
+  longer sold. Existing subscribers keep renewing at their original price and keep access,
+  including Share's guest links.
+- **Odesseus Live is never advertised on a public surface.** It is private to signed-in applicants
+  and token-scoped guest links. Live prices live in `src/lib/billing/catalog.ts`, which is
+  auth-gated, and are deliberately absent from the public display catalogue
+  `src/lib/pricing/candidate-pricing.ts`. See `tests/unit/live-public-surface.test.ts` and
   `tests/e2e/live-visibility.spec.ts`.
 - **Live Share has no guest cap.** There is no guest allowance, no slot count,
   no consumption, no concurrency accounting, no activation window, and no
@@ -116,7 +117,7 @@ The previous "$100 / 30 days / 5 jobs" starter bundle and the "$10 per add-on po
 - No silent submission, ever (Standard or Smart).
 - Success-only charging for candidate apply products.
 - Employer plans and recruiter seats are subscription-eligible; candidate core usage is strictly
-  pay-per-use from the wallet.
+  prepaid credits, with no required subscription.
 - Sensitive demographic data must never be inferred; no qualifications may be manufactured.
 
 ## Legacy application credits (policy)

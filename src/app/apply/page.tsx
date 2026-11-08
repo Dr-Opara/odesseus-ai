@@ -4,8 +4,8 @@ import MarketingFooter from "@/components/marketing-footer";
 import { APPLY_TIERS } from "@/lib/pricing/candidate-pricing";
 
 export const metadata: Metadata = {
-  title: `Apply with Odesseus — from ${APPLY_TIERS.standard.priceLabel} per successful application`,
-  description: `Odesseus matches the role, tailors your resume, completes the application, and tracks it — ${APPLY_TIERS.standard.label} from ${APPLY_TIERS.standard.priceLabel}, ${APPLY_TIERS.smart.label} from ${APPLY_TIERS.smart.priceLabel}, only after a successful submission.`,
+  title: `Apply with Odesseus — ${APPLY_TIERS.standard.priceLabel} per successful application`,
+  description: `Odesseus matches the role, tailors your resume, completes the application, and tracks it — ${APPLY_TIERS.standard.priceLabel} per application, with your approval, only after a successful submission.`,
 };
 
 const platforms = [
@@ -72,16 +72,16 @@ export default function ApplyPage() {
       </div>
 
       <section className="shell page-hero">
-        <div className="badge">From {APPLY_TIERS.standard.priceLabel} · Apply with Odesseus</div>
+        <div className="badge">{APPLY_TIERS.standard.priceLabel} per application · Apply with Odesseus</div>
         <h1 className="font-display page-hero-headline">Apply anywhere your next opportunity lives.</h1>
         <p className="muted page-hero-copy">
           Odesseus matches the role, tailors your resume, completes the application, and tracks it —
-          {" "}{APPLY_TIERS.standard.label} from {APPLY_TIERS.standard.priceLabel}, {APPLY_TIERS.smart.label} from {APPLY_TIERS.smart.priceLabel}, only after a successful submission.
+          {" "}{APPLY_TIERS.standard.label} and {APPLY_TIERS.smart.label} are {APPLY_TIERS.standard.priceLabel} per application, charged only after a successful submission.
         </p>
         <div className="hero-ctas" style={{ marginTop: 26 }}>
 
           <span className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
-            Charged from your wallet only after successful submission
+            Charged only after a successful submission
           </span>
         </div>
       </section>

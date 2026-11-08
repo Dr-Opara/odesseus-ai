@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { applyRates, billingCatalog, type BillingSku, employerPlans, employerPlanForAmount, employerRecruiterSeat } from "@/lib/billing/catalog";
+import {
+  APPLICATION_CREDIT_PRICE_CENTS,
+  applicationCreditSkus,
+  applyRates,
+  billingCatalog,
+  type BillingSku,
+  employerPlans,
+  employerPlanForAmount,
+  employerRecruiterSeat,
+  legacyLiveSubscriptions,
+  liveSkus,
+} from "@/lib/billing/catalog";
 
 describe("employerPlanForAmount", () => {
   it("resolves each catalog price to its own tier", () => {
@@ -62,85 +73,82 @@ describe("employerPlanForAmount", () => {
 });
 
 describe("applyRates", () => {
-  it("prices Standard Apply at exactly $0.39 per verified successful submission", () => {
-    expect(applyRates.standard.amountCents).toBe(39);
-    expect(applyRates.standard.creditType).toBe("standard_apply");
-  });
-
-  it("prices Smart Apply at exactly $0.99 per verified successful submission", () => {
+  it("prices every verified successful submission at one application credit ($0.99)", () => {
+    expect(APPLICATION_CREDIT_PRICE_CENTS).toBe(99);
+    expect(applyRates.standard.amountCents).toBe(99);
     expect(applyRates.smart.amountCents).toBe(99);
-    expect(applyRates.smart.creditType).toBe("smart_apply");
+    expect(applyRates.standard.credits).toBe(1);
+    expect(applyRates.smart.credits).toBe(1);
   });
 
-  it("exposes exactly the two contract apply modes", () => {
+  it("exposes exactly the two apply modes", () => {
     expect(Object.keys(applyRates).sort()).toEqual(["smart", "standard"]);
   });
 });
 
 describe("billingCatalog", () => {
-  it("offers wallet top-ups at $10 / $20 / $50 in minor units, matching their credit deltas", () => {
-    expect(billingCatalog.wallet_10).toMatchObject({ amountCents: 1000, creditDelta: 1000, creditType: "wallet_topup" });
-    expect(billingCatalog.wallet_20).toMatchObject({ amountCents: 2000, creditDelta: 2000, creditType: "wallet_topup" });
-    expect(billingCatalog.wallet_50).toMatchObject({ amountCents: 5000, creditDelta: 5000, creditType: "wallet_topup" });
+  it("sells application credits: 1 = $0.99, 25 = $20, 50 = $35, 100 = $59", () => {
+    expect(billingCatalog.app_1).toMatchObject({ amountCents: 99, creditDelta: 1, creditType: "application" });
+    expect(billingCatalog.app_25).toMatchObject({ amountCents: 2000, creditDelta: 25, creditType: "application" });
+    expect(billingCatalog.app_50).toMatchObject({ amountCents: 3500, creditDelta: 50, creditType: "application" });
+    expect(billingCatalog.app_100).toMatchObject({ amountCents: 5900, creditDelta: 100, creditType: "application" });
   });
 
-  it("no longer sells pay-as-you-go application credits — Apply runs are wallet debits", () => {
-    expect(billingCatalog).not.toHaveProperty("app_1");
-    expect(billingCatalog).not.toHaveProperty("app_25");
-    expect(billingCatalog).not.toHaveProperty("app_50");
-    expect(billingCatalog).not.toHaveProperty("app_100");
+  it("sells Odesseus Live: 1 pass = $24.99, 3 passes = $59.99, Annual = $499", () => {
+    expect(billingCatalog.interview_1).toMatchObject({ amountCents: 2499, creditDelta: 1, creditType: "interview" });
+    expect(billingCatalog.interview_3).toMatchObject({ amountCents: 5999, creditDelta: 3, creditType: "interview" });
+    // creditDelta only satisfies billing_events_credit_delta_check: the
+    // fulfillment trigger branches on sku = 'interview_annual'.
+    expect(billingCatalog.interview_annual).toMatchObject({ amountCents: 49900, creditType: "interview" });
   });
 
-  // Every Live SKU records creditType "interview": billing_events_credit_type_check
-  // admits only application/interview/wallet_topup, and odesseus_private.fulfill_billing_event
-  // branches on the product key (sku), not credit_type, to decide whether a
-  // purchase becomes a discrete pass or a live_memberships row. Widening the
-  // CHECK constraint to carry per-plan credit types is unneeded complexity
-  // this contract deliberately avoids.
-  it("prices Live Single at exactly $14.99 per session", () => {
-    expect(billingCatalog.live_single.amountCents).toBe(1499);
-    expect(billingCatalog.live_single.creditType).toBe("interview");
-    expect(billingCatalog.live_single.creditDelta).toBe(1);
+  it("sells only one-time products — no required subscription", () => {
+    for (const item of Object.values(billingCatalog)) {
+      expect(item).not.toHaveProperty("billing");
+      expect(item).not.toHaveProperty("planType");
+    }
   });
 
-  it("prices Live Monthly at exactly $19.99/month", () => {
-    expect(billingCatalog.live_monthly.amountCents).toBe(1999);
-    expect(billingCatalog.live_monthly.creditType).toBe("interview");
-    expect(billingCatalog.live_monthly.creditDelta).toBe(1);
+  it("no longer sells wallet top-ups or Live subscriptions", () => {
+    for (const retired of ["wallet_10", "wallet_20", "wallet_50", "live_single", "live_monthly", "live_personal_annual", "live_share_annual"]) {
+      expect(billingCatalog).not.toHaveProperty(retired);
+    }
   });
 
-  it("prices Live Personal Annual at exactly $99/year", () => {
-    expect(billingCatalog.live_personal_annual.amountCents).toBe(9900);
-    expect(billingCatalog.live_personal_annual.creditType).toBe("interview");
-    expect(billingCatalog.live_personal_annual.creditDelta).toBe(1);
-  });
-
-  it("prices Live Share Annual at exactly $499/year", () => {
-    expect(billingCatalog.live_share_annual.amountCents).toBe(49900);
-    expect(billingCatalog.live_share_annual.creditType).toBe("interview");
-    expect(billingCatalog.live_share_annual.creditDelta).toBe(1);
-  });
-
-  it("exposes exactly the wallet top-up and Live SKUs (no legacy application or employer SKUs yet)", () => {
+  it("exposes exactly the application-credit and Live SKUs", () => {
     expect(Object.keys(billingCatalog).sort()).toEqual([
-      "live_monthly",
-      "live_personal_annual",
-      "live_share_annual",
-      "live_single",
-      "wallet_10",
-      "wallet_20",
-      "wallet_50",
+      "app_1",
+      "app_100",
+      "app_25",
+      "app_50",
+      "interview_1",
+      "interview_3",
+      "interview_annual",
     ]);
+    expect([...applicationCreditSkus]).toEqual(["app_1", "app_25", "app_50", "app_100"]);
+    expect([...liveSkus]).toEqual(["interview_1", "interview_3", "interview_annual"]);
+  });
+
+  it("maps every SKU to the reference product whose price it mirrors", () => {
+    const migration = readFileSync(
+      path.resolve(import.meta.dirname, "../../supabase/migrations/20261123000000_spec_candidate_pricing.sql"),
+      "utf8"
+    );
+    for (const item of Object.values(billingCatalog)) {
+      expect(migration).toMatch(new RegExp(`\\('${item.productKey}',\\s+${item.amountCents}\\)`));
+    }
+  });
+
+  it("keeps recognising legacy Live subscriptions at the prices they were sold for", () => {
+    expect(legacyLiveSubscriptions.live_monthly).toMatchObject({ amountCents: 1999, planType: "monthly" });
+    expect(legacyLiveSubscriptions.live_personal_annual).toMatchObject({ amountCents: 9900, planType: "personal_annual" });
+    expect(legacyLiveSubscriptions.live_share_annual).toMatchObject({ amountCents: 49900, planType: "share_annual" });
   });
 });
 
 /**
- * Regression guard for a real M11 defect: the billing page still bound
- * `createCheckoutSession` to the retired `app_1` / `app_25` / `app_50` /
- * `app_100` SKUs after those products left the sellable catalog. The action
- * fails closed, so nothing could be charged — but every wallet top-up was
- * unreachable and all four forms dead-ended on "Invalid product". These
- * assertions keep the UI and the catalog from drifting apart again.
+ * Keeps the billing page's checkout forms and the sellable catalog from
+ * drifting apart: an unknown SKU dead-ends on "Invalid product".
  */
 describe("billing page checkout wiring", () => {
   const pagePath = path.resolve(
@@ -153,40 +161,27 @@ describe("billing page checkout wiring", () => {
     ...source.matchAll(/createCheckoutSession\.bind\(null,\s*"([^"]+)"\)/g),
   ].map((m) => m[1]);
 
-  it("binds at least one checkout form to the action", () => {
-    expect(boundSkus.length).toBeGreaterThan(0);
+  it("binds checkout through the catalog-derived pack and Live lists", () => {
+    expect(source).toContain("createCheckoutSession.bind(null, pack.sku)");
+    expect(source).toContain("createCheckoutSession.bind(null, sku)");
+    expect(source).toContain("APPLICATION_CREDIT_PACKS.map(");
+    expect(source).toContain("liveSkus.map(");
   });
 
-  it("only binds SKUs that exist in the sellable catalog", () => {
+  it("only binds literal SKUs that exist in the sellable catalog", () => {
     for (const sku of boundSkus) {
       expect(
-        Object.hasOwn(billingCatalog, sku),
+        Object.hasOwn(billingCatalog, sku as BillingSku),
         `billing page binds "${sku}", which is not in billingCatalog — the checkout action would reject it`
       ).toBe(true);
     }
   });
 
-  it("never binds a retired pay-as-you-go application credit SKU", () => {
-    for (const sku of boundSkus) {
-      expect(sku).not.toMatch(/^app_/);
-    }
+  it("never binds a retired wallet top-up SKU", () => {
+    expect(source).not.toMatch(/"wallet_(10|20|50)"/);
   });
 
-  it("offers every wallet top-up so the wallet funding path is reachable", () => {
-    const walletSkus = Object.keys(billingCatalog).filter((sku) =>
-      sku.startsWith("wallet_")
-    );
-    for (const sku of walletSkus) {
-      // WALLET_TOPUPS entries are bound via the mapped variable, so assert on
-      // the declared list plus the top-up amounts being catalog-derived.
-      expect(source).toContain(sku);
-      expect(billingCatalog[sku as BillingSku].creditType).toBe("wallet_topup");
-    }
-    expect(walletSkus.sort()).toEqual(["wallet_10", "wallet_20", "wallet_50"]);
-  });
-
-  it("does not display a hardcoded per-application price that the catalog no longer sells", () => {
-    // Amounts must come from the catalog so copy cannot drift from the charge.
-    expect(source).not.toMatch(/\$0\.99/);
+  it("does not hardcode prices — amounts come from the catalog", () => {
+    expect(source).not.toMatch(/\$(0\.99|20|35|59|24\.99|59\.99|499)\b/);
   });
 });

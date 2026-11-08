@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import OdesseusWordmark from "@/components/odesseus-wordmark";
 import { logout } from "@/app/login/actions";
 import { resolveMobileScreen } from "@/lib/mobile/screen-map";
-import { formatCents } from "@/lib/pricing/candidate-pricing";
+import { applicationsAvailable } from "@/lib/pricing/candidate-pricing";
 
 function firstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "there";
@@ -13,17 +13,19 @@ function firstName(name?: string | null) {
 
 export default function AppShell({
   fullName,
+  applicationCredits = 0,
   walletBalanceCents,
   interviewPasses,
   active,
   children,
 }: {
   fullName?: string | null;
+  /** Prepaid application credits (1 credit = 1 verified submission). */
+  applicationCredits?: number;
   /**
-   * Spendable wallet balance in cents. This is the active candidate currency
-   * (Standard Apply 49c / Smart Apply 199c) and matches the eligibility gate in
-   * `src/app/api/apply/start/route.ts`, so the header can never advertise a
-   * balance that would then be refused at apply time.
+   * Legacy wallet balance in cents, still spendable at the single-credit
+   * price. The header shows credits + wallet as "applications available",
+   * the same arithmetic the apply gate uses.
    */
   walletBalanceCents: number;
   interviewPasses: number;
@@ -67,7 +69,13 @@ export default function AppShell({
 
           <div className="app-account">
             <Link href="/billing" className="app-balance-link">
-              <span>{formatCents(walletBalanceCents)} wallet</span>
+              <span>
+                {applicationsAvailable({
+                  application_credits: applicationCredits,
+                  wallet_balance_cents: walletBalanceCents,
+                })}{" "}
+                application credits
+              </span>
               <span>{interviewPasses} live passes</span>
             </Link>
             <details className="account-menu">

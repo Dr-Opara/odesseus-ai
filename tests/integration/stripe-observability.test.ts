@@ -33,7 +33,7 @@ function checkoutCompletedEvent(overrides: {
   currency?: string;
 }) {
   const {
-    sku = "wallet_10",
+    sku = "app_25",
     userId = "user-1",
     paymentStatus = "paid",
     eventId = "evt_test_1",
@@ -241,7 +241,7 @@ describe("Stripe webhook delivery observability", () => {
   });
 
   it("records a fulfilled checkout delivery with the event and candidate context", async () => {
-    constructEventMock.mockReturnValue(checkoutCompletedEvent({ sku: "wallet_10", userId: "user-1" }));
+    constructEventMock.mockReturnValue(checkoutCompletedEvent({ sku: "app_25", userId: "user-1" }));
 
     const { POST } = await import("@/app/api/webhooks/stripe/route");
     const response = await POST(webhookRequest("{}"));
@@ -254,19 +254,18 @@ describe("Stripe webhook delivery observability", () => {
       p_outcome: "fulfilled",
       p_http_status: 200,
       p_user_id: "user-1",
-      p_sku: "wallet_10",
+      p_sku: "app_25",
       p_checkout_session_id: "cs_test_1",
     });
   });
 
-  it("records a rejected delivery for a stale legacy 99-cent (app_*) checkout", async () => {
-    // Pre-wallet checkout sessions used sku "app_1" at 99 cents. The sellable
-    // catalog no longer contains app_* SKUs, so a replay must fail closed
-    // without granting anything (stale 99¢/legacy sweep).
+  it("records a rejected delivery for a stale wallet top-up checkout", async () => {
+    // Wallet top-ups are no longer sold. A replayed wallet_10 session must
+    // fail closed without granting anything.
     const event = checkoutCompletedEvent({});
     const metadata = event.data.object.metadata as { sku?: string; odesseus_user_id?: string };
-    metadata.sku = "app_1";
-    event.data.object.amount_total = 99;
+    metadata.sku = "wallet_10";
+    event.data.object.amount_total = 1000;
     constructEventMock.mockReturnValue(event);
 
     const { POST } = await import("@/app/api/webhooks/stripe/route");

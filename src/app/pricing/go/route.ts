@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const CANDIDATE_WALLET_SKUS = new Set(["wallet_10", "wallet_20", "wallet_50"]);
+const CANDIDATE_CREDIT_SKUS = new Set(["app_1", "app_25", "app_50", "app_100"]);
 const EMPLOYER_PLANS = new Set(["starter", "growth", "business"]);
 const PROMOTION_TIERS = new Set(["featured_7d", "featured_14d", "ai_30d"]);
 
@@ -70,19 +70,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/signup", request.url));
   }
 
-  if (action === "wallet") {
+  // "wallet" is the retired action name; stale links land on the credit packs.
+  if (action === "credits" || action === "wallet") {
     const sku = request.nextUrl.searchParams.get("sku");
     const destination = new URL("/billing", request.url);
-    if (sku && CANDIDATE_WALLET_SKUS.has(sku)) {
+    if (sku && CANDIDATE_CREDIT_SKUS.has(sku)) {
       destination.searchParams.set("purchase", sku);
     }
-    destination.hash = "wallet-topups";
+    destination.hash = "application-credits";
     return NextResponse.redirect(destination);
   }
 
   if (action === "apply") {
     const destination = new URL("/billing", request.url);
-    destination.hash = "wallet-topups";
+    destination.hash = "application-credits";
     return NextResponse.redirect(destination);
   }
 

@@ -3,9 +3,9 @@
 --
 -- Proves the M3 hardening against the real database:
 --   * odesseus_finalize_application() refuses a requested mode that
---     contradicts the run's committed execution_mode — a standard (39¢) run
---     cannot be charged at the smart (99¢) rate, and vice versa — while
---     correct-mode finalization still settles exactly 39¢ / 99¢,
+--     contradicts the run's committed execution_mode — a standard run cannot
+--     be settled as smart, and vice versa — while correct-mode finalization
+--     still settles the single-credit price (99¢ from a legacy wallet),
 --   * replays of an already-submitted run remain idempotent no-ops even when
 --     replayed with a differing mode argument (the mode that mattered was
 --     the one used for the original charge),
@@ -76,18 +76,18 @@ SELECT is(
   'queued', 'run untouched after the mode-mismatch refusal');
 
 -- ---------------------------------------------------------------------------
--- Correct-mode finalization still settles exactly 49¢ with evidence
+-- Correct-mode finalization still settles exactly 99¢ with evidence
 -- ---------------------------------------------------------------------------
 SELECT is(
   (SELECT amount_debited_cents FROM public.odesseus_finalize_application(
      'aaaaaaaa-aaaa-4aaa-8aaa-000000000001', '77777777-7777-4777-8777-000000000001',
      'standard', 'confirmed — thank you', 'https://m1.example.com/thanks')),
-  39, 'standard finalize debits exactly 39¢');
+  99, 'standard finalize debits exactly 99¢ from a legacy wallet');
 
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '77777777-7777-4777-8777-000000000001'),
-  961, 'wallet is 961¢ after the standard debit');
+  901, 'wallet is 901¢ after the standard debit');
 
 SELECT is(
   (SELECT status FROM public.application_runs
@@ -114,7 +114,7 @@ SELECT is(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '77777777-7777-4777-8777-000000000001'),
-  961, 'replay charges nothing (wallet stays 961¢)');
+  901, 'replay charges nothing (wallet stays 901¢)');
 
 -- ---------------------------------------------------------------------------
 -- Fixtures: m2 with a smart run (mirror asserts the other direction)

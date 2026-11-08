@@ -6,7 +6,7 @@ import MobileHome from "@/components/mobile/mobile-home";
 import { getCandidateDashboard } from "@/lib/candidate/dashboard";
 import { getCandidateUserId } from "@/lib/candidate/service";
 import type { CreditBalance } from "@/lib/candidate/types";
-import { MIN_APPLY_PRICE_CENTS, formatCents } from "@/lib/pricing/candidate-pricing";
+import { applicationsAvailable } from "@/lib/pricing/candidate-pricing";
 import LiveEntryCard from "@/components/live-entry-card";
 import CompanyLogo from "@/components/company-logo";
 
@@ -64,6 +64,7 @@ export default async function DashboardPage() {
   // The wallet section carries the two balances the shell renders, so the page
   // still issues exactly one aggregation call.
   const credits: CreditBalance = {
+    applicationCredits: wallet.applicationCredits,
     walletBalanceCents: wallet.balanceCents,
     interviewPasses: wallet.interviewPasses,
     liveUnlimitedUntil: wallet.liveUnlimitedUntil,
@@ -112,6 +113,7 @@ export default async function DashboardPage() {
   return (
     <AppShell
       fullName={dashboard.candidate.name}
+      applicationCredits={wallet.applicationCredits}
       walletBalanceCents={wallet.balanceCents}
       interviewPasses={wallet.interviewPasses}
       active="home"
@@ -251,17 +253,22 @@ export default async function DashboardPage() {
               </div>
               <div className="dashboard-balance-grid">
                 <div>
-                  <strong>{formatCents(wallet.balanceCents)}</strong>
-                  <span className="muted">Wallet</span>
+                  <strong>
+                    {applicationsAvailable({
+                      application_credits: wallet.applicationCredits,
+                      wallet_balance_cents: wallet.balanceCents,
+                    })}
+                  </strong>
+                  <span className="muted">Application credits</span>
                 </div>
                 <div>
                   <strong>{wallet.interviewPasses}</strong>
                   <span className="muted">Interview passes</span>
                 </div>
               </div>
-              {wallet.balanceCents < MIN_APPLY_PRICE_CENTS ? (
-                <Link className="btn btn-primary" href="/billing" style={{ marginTop: 14 }}>
-                  Add {formatCents(MIN_APPLY_PRICE_CENTS)} to your wallet
+              {!wallet.canApply ? (
+                <Link className="btn btn-primary" href="/billing#application-credits" style={{ marginTop: 14 }}>
+                  Buy application credits
                 </Link>
               ) : null}
               {wallet.liveUnlimitedUntil &&

@@ -199,8 +199,8 @@ describe("the applicant-only Live surface is preserved", () => {
 
   it("keeps the Live session/plan prices in the backend billing catalogue", () => {
     const catalog = readFileSync(join(process.cwd(), "src", "lib", "billing", "catalog.ts"), "utf8");
-    expect(catalog).toContain("live_single");
-    expect(catalog).toContain("1499");
+    expect(catalog).toContain("interview_1");
+    expect(catalog).toContain("2499");
   });
 
   it("carries the locked Live prices, and no retired Live SKU, in the billing catalogue", async () => {
@@ -208,15 +208,16 @@ describe("the applicant-only Live surface is preserved", () => {
     const { billingCatalog } = catalogModule;
 
     // Integer minor units, exactly as locked. A float here would be a billing bug.
-    expect(billingCatalog.live_single.amountCents).toBe(1499);
-    expect(billingCatalog.live_monthly.amountCents).toBe(1999);
-    expect(billingCatalog.live_personal_annual.amountCents).toBe(9900);
-    expect(billingCatalog.live_share_annual.amountCents).toBe(49900);
+    expect(billingCatalog.interview_1.amountCents).toBe(2499);
+    expect(billingCatalog.interview_3.amountCents).toBe(5999);
+    expect(billingCatalog.interview_annual.amountCents).toBe(49900);
 
-    // Retired SKUs are deactivated in the catalog, never deleted from history.
-    expect(billingCatalog).not.toHaveProperty("interview_1");
-    expect(billingCatalog).not.toHaveProperty("interview_3");
-    expect(billingCatalog).not.toHaveProperty("interview_annual");
+    // Live subscriptions are no longer sold (existing members keep renewing
+    // through legacyLiveSubscriptions in the webhook).
+    expect(billingCatalog).not.toHaveProperty("live_single");
+    expect(billingCatalog).not.toHaveProperty("live_monthly");
+    expect(billingCatalog).not.toHaveProperty("live_personal_annual");
+    expect(billingCatalog).not.toHaveProperty("live_share_annual");
 
     // There is no guest allowance constant, and no copy implying one.
     //
@@ -232,13 +233,12 @@ describe("the applicant-only Live surface is preserved", () => {
     ).toBe(false);
   });
 
-  it("keeps the wallet and apply rates on the locked contract", async () => {
+  it("keeps the application price and credit packs on the locked contract", async () => {
     const { applyRates, billingCatalog } = await import("@/lib/billing/catalog");
-    expect(applyRates.standard.amountCents).toBe(39);
+    expect(applyRates.standard.amountCents).toBe(99);
     expect(applyRates.smart.amountCents).toBe(99);
-    // Prepaid top-ups are unchanged by the apply-rate change.
-    expect(billingCatalog.wallet_10.amountCents).toBe(1000);
-    expect(billingCatalog.wallet_20.amountCents).toBe(2000);
-    expect(billingCatalog.wallet_50.amountCents).toBe(5000);
+    expect(billingCatalog.app_25.amountCents).toBe(2000);
+    expect(billingCatalog.app_50.amountCents).toBe(3500);
+    expect(billingCatalog.app_100.amountCents).toBe(5900);
   });
 });

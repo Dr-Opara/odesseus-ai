@@ -1,48 +1,31 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createCheckoutSession } from "@/app/actions/billing";
-import { billingCatalog, applyRates, liveSkus, LIVE_FAIR_USE } from "@/lib/billing/catalog";
+import { billingCatalog, legacyLiveSubscriptions, liveSkus, LIVE_FAIR_USE } from "@/lib/billing/catalog";
+import {
+  APPLICATION_CREDIT_PACKS,
+  APPLICATION_PRICE_LABEL,
+  formatUsd,
+} from "@/lib/pricing/candidate-pricing";
 import AppShell from "@/components/app-shell";
 import CandidateAutoCheckout from "@/components/pricing/candidate-auto-checkout";
 
-/** Formats integer minor units as a USD string (e.g. 39 -> "$0.39"). */
-const formatUsd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-
 // Amounts are read from the sellable catalog rather than hardcoded so the
-// page can never advertise a price the checkout action would reject. The
-// wallet top-ups below are the only way a candidate funds Apply under the
-// current contract (Standard Apply 39c / Smart Apply 99c are wallet debits,
-// not purchasable products).
-const WALLET_TOPUPS = [
-  { sku: "wallet_10", blurb: "Covers roughly 25 Standard Apply submissions." },
-  { sku: "wallet_20", blurb: "Covers roughly 51 Standard Apply submissions." },
-  { sku: "wallet_50", blurb: "Covers roughly 128 Standard Apply submissions." },
-] as const;
+// page can never advertise a price the checkout action would reject.
 
-/** Recurring Live plans, in the order the interview workflow presents them. */
-const LIVE_PLANS = liveSkus.filter((sku) => "planType" in billingCatalog[sku]);
-
-/** Short billing cadence for a recurring Live plan. */
-function liveCadence(sku: (typeof liveSkus)[number]): string {
-  return "planType" in billingCatalog[sku] && billingCatalog[sku].planType === "monthly"
-    ? "per month"
-    : "per year";
+/** Human label for one ledger credit_type. */
+function activityLabel(creditType: string, delta: number): string {
+  if (creditType === "wallet_topup") return "Wallet top-up";
+  if (creditType === "admin_adjustment") return "Balance adjustment";
+  if (creditType === "standard_apply" || creditType === "smart_apply") {
+    return delta < 0 ? "Application paid from wallet balance" : "Wallet refund";
+  }
+  const unit = creditType === "interview" ? "interview pass" : "application credit";
+  return `${delta > 0 ? "Added" : "Used"} ${Math.abs(delta)} ${unit}${Math.abs(delta) === 1 ? "" : "s"}`;
 }
 
-
-/** Human label for one wallet/credit ledger credit_type. */
-function activityLabel(creditType: string, delta: number): string {
-  const unit =
-    creditType === "wallet_topup"
-      ? "wallet top-up"
-      : creditType === "standard_apply"
-        ? "Standard Apply"
-        : creditType === "smart_apply"
-          ? "Smart Apply"
-          : creditType === "interview"
-            ? "interview pass"
-            : "application credit";
-  return `${delta > 0 ? "Purchased" : "Used"} ${Math.abs(delta)} ${unit}${Math.abs(delta) === 1 || creditType === "wallet_topup" ? "" : "s"}`;
+function isWalletType(creditType: string) {
+  return ["wallet_topup", "standard_apply", "smart_apply", "admin_adjustment"].includes(creditType);
 }
 
 export default async function BillingPage({
@@ -60,7 +43,7 @@ export default async function BillingPage({
   const [{ data: credits }, { data: transactions }, { data: annualPurchases }, { data: profile }] = await Promise.all([
     supabase
       .from("credit_balances")
-      .select("wallet_balance_cents,interview_passes,live_unlimited_until")
+      .select("application_credits,wallet_balance_cents,interview_passes,live_unlimited_until")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -69,12 +52,10 @@ export default async function BillingPage({
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(8),
-    // Recurring Odesseus Live plans are time-boxed entitlements, not discrete
-    // credit grants — they never write a credit_transactions row (see
+    // Time-boxed Live entitlements (Annual, and subscriptions bought under the
+    // earlier contract) never write a credit_transactions row (see
     // fulfill_billing_event), so without this they would never appear in
-    // "Recent activity" despite being real purchases. interview_annual is
-    // included because entitlements bought under the retired catalog stay
-    // usable and stay visible.
+    // "Recent activity" despite being real purchases.
     supabase
       .from("billing_events")
       .select("id,sku,amount_cents,created_at")
@@ -95,29 +76,37 @@ export default async function BillingPage({
       id: `credit:${t.id}`,
       createdAt: t.created_at,
       label: activityLabel(t.credit_type, t.delta),
-      amountText: t.delta > 0 && t.amount_cents ? `$${(t.amount_cents / 100).toFixed(2)}` : null,
-      deltaText: t.credit_type === "wallet_topup" ? `+$${(t.amount_cents ?? 0) / 100}` : `${t.delta > 0 ? "+" : ""}${t.delta}`,
+      amountText: t.delta > 0 && t.amount_cents && t.credit_type !== "admin_adjustment" ? formatUsd(t.amount_cents) : null,
+      deltaText: isWalletType(t.credit_type)
+        ? `${t.delta > 0 ? "+" : "−"}$${(Math.abs(t.delta) / 100).toFixed(2)}`
+        : `${t.delta > 0 ? "+" : ""}${t.delta}`,
     })),
     ...(annualPurchases ?? []).map((purchase) => {
-      // interview_annual is the retired catalog's SKU; it is absent from
-      // billingCatalog now, so the label falls back to its own name.
-      const item = billingCatalog[purchase.sku as keyof typeof billingCatalog] as
-        | { label?: string }
-        | undefined;
-      const isMonthly = purchase.sku === "live_monthly";
+      const label =
+        purchase.sku in billingCatalog
+          ? billingCatalog[purchase.sku as keyof typeof billingCatalog].label
+          : purchase.sku in legacyLiveSubscriptions
+            ? legacyLiveSubscriptions[purchase.sku as keyof typeof legacyLiveSubscriptions].label
+            : "Odesseus Live";
       return {
         id: `live:${purchase.id}`,
         createdAt: purchase.created_at,
-        label: `Purchased ${item?.label ?? "Odesseus Live Annual"}`,
-        amountText: `$${(purchase.amount_cents / 100).toFixed(2)}`,
-        deltaText: isMonthly ? "1 mo" : "12 mo",
+        label: `Purchased ${label}`,
+        amountText: formatUsd(purchase.amount_cents),
+        deltaText: purchase.sku === "live_monthly" ? "1 mo" : "12 mo",
       };
     }),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  const applicationCredits = credits?.application_credits ?? 0;
+  const walletBalanceCents = credits?.wallet_balance_cents ?? 0;
+  const annualUntil = credits?.live_unlimited_until ?? null;
+  const annualActive = annualUntil !== null && new Date(annualUntil) > new Date();
+
   return (
     <AppShell
       fullName={profile?.full_name}
+      applicationCredits={credits?.application_credits ?? 0}
       walletBalanceCents={credits?.wallet_balance_cents ?? 0}
       interviewPasses={credits?.interview_passes ?? 0}
     >
@@ -153,110 +142,94 @@ export default async function BillingPage({
 
         <div className="billing-balance-grid">
           <div className="card billing-balance-card">
-            <div className="muted" style={{ fontSize: 13 }}>Wallet</div>
-            <strong>${((credits?.wallet_balance_cents ?? 0) / 100).toFixed(2)}</strong>
+            <div className="muted" style={{ fontSize: 13 }}>Application credits</div>
+            <strong>{applicationCredits}</strong>
             <span className="muted">
-              Standard Apply {formatUsd(applyRates.standard.amountCents)} and Smart Apply {formatUsd(applyRates.smart.amountCents)} are charged only after a verified successful submission.
+              1 credit = 1 verified successful application ({APPLICATION_PRICE_LABEL}). Failed, unsupported,
+              cancelled, closed-role or unconfirmed applications use nothing.
             </span>
           </div>
 
           <div className="card billing-balance-card">
             <div className="muted" style={{ fontSize: 13 }}>Interview passes</div>
             <strong>{credits?.interview_passes ?? 0}</strong>
-            <span className="muted">One pass is used when Odesseus Live starts.</span>
+            <span className="muted">One pass is used only when an Odesseus Live interview activates.</span>
           </div>
         </div>
 
-        {credits?.live_unlimited_until && new Date(credits.live_unlimited_until) > new Date() ? (
-          <div className="billing-success" style={{ marginTop: 18 }}>
-            Odesseus Live Annual is active through {new Date(credits.live_unlimited_until).toLocaleDateString()}.
+        {walletBalanceCents > 0 ? (
+          <div className="review-note">
+            You have a {formatUsd(walletBalanceCents)} wallet balance from an earlier purchase. It still pays for
+            applications at {APPLICATION_PRICE_LABEL} each once your credits run out.
           </div>
         ) : null}
 
-        <section style={{ marginTop: 34 }}>
-          <div className="billing-pack-grid">
-            <div className="card billing-pack">
-              <div>
-                <div className="muted" style={{ fontSize: 13 }}>Apply with Odesseus</div>
-                <div className="billing-pack-number">
-                  ${(applyRates.standard.amountCents / 100).toFixed(2)}
-                  <span className="muted" style={{ fontSize: 18 }}> / ${(applyRates.smart.amountCents / 100).toFixed(2)}</span>
-                </div>
-                <p className="muted" style={{ lineHeight: 1.55 }}>
-                  Odesseus matches the role, tailors your resume, completes the application, submits it, and tracks it.
-                </p>
-                <p className="muted" style={{ lineHeight: 1.55 }}>
-                  Standard Apply {formatUsd(applyRates.standard.amountCents)} and Smart Apply {formatUsd(applyRates.smart.amountCents)} are taken from your wallet only after a verified successful submission.
-                </p>
-                <p className="muted" style={{ fontSize: 13, lineHeight: 1.55 }}>
-                  Apply across supported job boards and direct employer career sites — no platform-specific fee. Includes Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards and employer application sites.
-                </p>
-              </div>
-              <div className="muted" style={{ fontSize: 13 }}>Add funds below to start applying.</div>
-            </div>
-
-            <form className="card billing-pack" action={createCheckoutSession.bind(null, "live_single")}>
-              <div>
-                <div className="muted" style={{ fontSize: 13 }}>Odesseus Live</div>
-                <div className="billing-pack-number">
-                  {formatUsd(billingCatalog.live_single.amountCents)}
-                </div>
-                <p className="muted" style={{ lineHeight: 1.55 }}>
-                  Your AI interview companion—from preparation through follow-up.
-                </p>
-                <p className="muted" style={{ lineHeight: 1.55 }}>
-                  One interview. One pass. Everything included.
-                </p>
-              </div>
-              <button className="btn btn-primary" type="submit">Buy an interview pass</button>
-            </form>
+        {annualActive ? (
+          <div className="billing-success" style={{ marginTop: 18 }}>
+            Odesseus Live Annual is active through {annualUntil ? new Date(annualUntil).toLocaleDateString() : ""}.
           </div>
-        </section>
+        ) : null}
 
-        <section id="wallet-topups" style={{ marginTop: 34 }}>
-          <div className="muted" style={{ fontSize: 13 }}>Add funds</div>
-          <h2 style={{ fontSize: 24, margin: "7px 0 18px" }}>Wallet top-ups</h2>
+        <section id="application-credits" style={{ marginTop: 34 }}>
+          <div className="muted" style={{ fontSize: 13 }}>Apply with Odesseus</div>
+          <h2 style={{ fontSize: 24, margin: "7px 0 18px" }}>Application credits</h2>
           <div className="card bundle-band">
             <p className="muted" style={{ margin: "0 0 4px" }}>
-              Apply is billed from your wallet after a verified successful submission — never at the moment you start.
+              Odesseus matches the role, tailors your resume, and submits the application after you approve it.
+              A credit is used only after a verified successful submission — Apply and Smart Apply cost the same.
             </p>
             <div className="bundle-row">
-              {WALLET_TOPUPS.map((topup) => {
-                const item = billingCatalog[topup.sku];
-                return (
-                  <form className="bundle-option" key={topup.sku} action={createCheckoutSession.bind(null, topup.sku)}>
-                    <div className="bundle-option-quantity">${(item.amountCents / 100).toFixed(0)}</div>
-                    <div className="bundle-option-price">${(item.amountCents / 100).toFixed(2)}</div>
-                    <button className="btn btn-secondary" type="submit">Top up</button>
-                  </form>
-                );
-              })}
+              {APPLICATION_CREDIT_PACKS.map((pack) => (
+                <form
+                  className={pack.credits === 50 ? "bundle-option is-featured" : "bundle-option"}
+                  key={pack.sku}
+                  action={createCheckoutSession.bind(null, pack.sku)}
+                >
+                  <div className="bundle-option-quantity">
+                    {pack.credits} {pack.credits === 1 ? "credit" : "credits"}
+                  </div>
+                  <div className="bundle-option-price">{pack.priceLabel}</div>
+                  <div className="bundle-option-unit">
+                    {pack.perCreditLabel}
+                    {pack.savingsPercent > 0 ? ` · save ${pack.savingsPercent}%` : ""}
+                  </div>
+                  <button className={pack.credits === 50 ? "btn btn-primary" : "btn btn-secondary"} type="submit">
+                    Buy
+                  </button>
+                </form>
+              ))}
             </div>
-            <p className="bundle-fine-print">{WALLET_TOPUPS[0].blurb} Failed, cancelled, or unverified submissions never deduct from your wallet.</p>
+            <p className="bundle-fine-print">
+              Credits don&apos;t expire. Works across supported job boards and employer career sites — no
+              platform-specific fee. Prices are in USD.
+            </p>
           </div>
         </section>
 
         <section id="interview-passes" style={{ marginTop: 34 }}>
-          <h2 style={{ fontSize: 24, margin: "0 0 18px" }}>Interview passes</h2>
+          <div className="muted" style={{ fontSize: 13 }}>Desktop only</div>
+          <h2 style={{ fontSize: 24, margin: "7px 0 18px" }}>Odesseus Live</h2>
           <div className="card bundle-band">
             <p className="muted" style={{ margin: "0 0 4px" }}>
-              1 interview pass = 1 successfully activated Odesseus Live interview round. A pass is only ever
-              spent when a session actually starts, and reconnecting to it is free.
+              1 pass = 1 successfully activated Odesseus Live interview round. A pass is only spent when a session
+              actually starts, and reconnecting to it is free. Interview Prep is always free.
             </p>
-            <div className="bundle-row bundle-row-2">
-              {LIVE_PLANS.map((sku) => {
+            <div className="bundle-row">
+              {liveSkus.map((sku) => {
                 const item = billingCatalog[sku];
-                const isShare = "planType" in item && item.planType === "share_annual";
+                const featured = sku === "interview_3";
                 return (
                   <form
-                    className={isShare ? "bundle-option is-featured" : "bundle-option"}
+                    className={featured ? "bundle-option is-featured" : "bundle-option"}
                     key={sku}
                     action={createCheckoutSession.bind(null, sku)}
                   >
-                    <div className="bundle-option-quantity">{item.label}</div>
+                    <div className="bundle-option-quantity">{item.label.replace("Odesseus Live — ", "")}</div>
                     <div className="bundle-option-price">{formatUsd(item.amountCents)}</div>
-                    <div className="bundle-option-unit">{liveCadence(sku)}</div>
-                    <button className={isShare ? "btn btn-primary" : "btn btn-secondary"} type="submit">
+                    <div className="bundle-option-unit">
+                      {sku === "interview_annual" ? "12 months · one-time" : "one-time"}
+                    </div>
+                    <button className={featured ? "btn btn-primary" : "btn btn-secondary"} type="submit">
                       Buy
                     </button>
                   </form>
@@ -264,16 +237,15 @@ export default async function BillingPage({
               })}
             </div>
             <p className="bundle-fine-print">
-              Each plan covers up to {LIVE_FAIR_USE.sessions} Live sessions in a rolling{" "}
-              {LIVE_FAIR_USE.windowDays}-day window. Live Share Annual also lets you create and share secure guest
-              access links. Cancelling keeps your access until the period you have already paid for ends.
+              Odesseus Live Annual covers up to {LIVE_FAIR_USE.sessions} Live sessions in a rolling{" "}
+              {LIVE_FAIR_USE.windowDays}-day window (fair use). No subscription — it does not renew automatically.
             </p>
           </div>
         </section>
 
         <section style={{ marginTop: 34 }}>
           <div className="muted" style={{ fontSize: 13 }}>Recent activity</div>
-          <h2 style={{ fontSize: 24, margin: "7px 0 12px" }}>Credits</h2>
+          <h2 style={{ fontSize: 24, margin: "7px 0 12px" }}>Purchases and usage</h2>
 
           <div className="card">
             {activity.length ? activity.slice(0, 8).map((item, index) => (
@@ -299,7 +271,7 @@ export default async function BillingPage({
                 </div>
               </div>
             )) : (
-              <div className="muted" style={{ padding: 26 }}>No credit activity yet.</div>
+              <div className="muted" style={{ padding: 26 }}>No purchases or usage yet.</div>
             )}
           </div>
         </section>

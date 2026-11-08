@@ -47,13 +47,14 @@ Upload Resume -> Paste JD -> Match & Qualify -> Improve Existing Resume -> Revie
 
 ## Billing rules
 
-- Candidate core usage is pay-per-use from a prepaid wallet. No subscription for candidate core usage; employer plans and recruiter seats may be recurring subscriptions.
-- Standard Apply charges $0.39 per verified successful submission, across supported job boards and direct employer career sites (Workday, Indeed, UN Careers / UN job portals, Greenhouse, Lever, Ashby, iCIMS, direct company career websites, corporate ATS portals, and other supported job boards/employer application sites) — no platform-specific fee.
-- Smart Apply charges $0.99 per verified successful submission. Smart Apply may add deeper automation (account creation, multi-page ATS navigation, question completion from known candidate data, resume tailoring, document attachment, retry/recovery, application package preparation) but must preserve user approval before final submission, no silent submission, stop/escalate on uncertain answers, and charging only after a verified successful submission.
-- Wallet top-ups: $10, $20, $50.
-- Failed/unsupported/paused/cancelled application attempts, closed jobs, incomplete CAPTCHA/MFA/verification, and unconfirmed submissions must not deduct wallet funds.
-- Interview preparation is free.\n- Odesseus does not require email inbox access to detect interviews; users return when they receive an interview invitation.
-- Odesseus Live pricing: Single $14.99, Monthly $19.99, Personal Annual $99, Share Annual $499.
+- Candidate core usage is prepaid application credits. No required subscription for candidates; employer plans and recruiter seats may be recurring subscriptions.
+- $0.99 USD per verified successful submission = 1 application credit, for Apply and Smart Apply alike. Packs: 25 credits $20, 50 credits $35, 100 credits $59. Credits do not expire.
+- Smart Apply may add deeper automation (account creation, multi-page ATS navigation, question completion from known candidate data, document attachment, retry/recovery) but must preserve user approval before final submission, no silent submission, stop/escalate on uncertain answers, and charging only after a verified successful submission.
+- Wallet top-ups are no longer sold. Existing wallet balances stay spendable at $0.99 per application once credits run out.
+- Failed/unsupported/paused/cancelled application attempts, closed jobs, incomplete CAPTCHA/MFA/verification, and unconfirmed submissions must not consume credits or wallet funds.
+- Interview preparation is free.
+- Odesseus does not require email inbox access to detect interviews; users return when they receive an interview invitation.
+- Odesseus Live pricing: $24.99 per interview, 3 passes $59.99, Odesseus Live Annual $499 (12 months, one-time, fair use). The earlier monthly / personal annual / Share annual subscriptions are no longer sold but existing subscribers keep renewing.
 - Odesseus Live Share has **no guest cap**: no allowance, no slot consumption, no concurrency accounting, no activation window, no post-interview expiry. A Share Annual applicant generates secure Guest Live Access links and shares them. Per-token rate limits on the guest routes are abuse protection, not a commercial quota. Do not reintroduce a guest/session cap, and do not authorize on `guest_limit` or `guest_count` — those columns are historical.
 - Odesseus Live is private to signed-in applicants and token-scoped guest links. It must never be advertised on a public marketing, pricing, or employer surface. Correcting these figures does not make Live publicly marketable; the SKUs live in the auth-gated billing catalogue and are deliberately absent from the public display catalogue.
 - Interview pass should be consumed only when the live session actually starts.

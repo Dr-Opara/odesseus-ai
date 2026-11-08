@@ -9,9 +9,10 @@ import CompanyLogo from "@/components/company-logo";
 // Same derivation as src/app/billing/page.tsx / live-entry-card.tsx — kept
 // out of the shared candidate-pricing module by design; only ever renders
 // behind an authenticated mobile screen.
-const LIVE_PLANS = liveSkus.filter((sku) => "planType" in billingCatalog[sku]);
+/** Live purchase options, in the order the interview workflow presents them. All one-time. */
+const LIVE_PLANS = liveSkus;
 function liveCadence(sku: (typeof liveSkus)[number]): string {
-  return "planType" in billingCatalog[sku] && billingCatalog[sku].planType === "monthly" ? "/month" : "/year";
+  return sku === "interview_annual" ? " / 12 months" : "";
 }
 
 type MobileLiveProps = {
@@ -191,7 +192,7 @@ export default function MobileLive({
             <div className="m-card" key={sku}>
               <span className="m-copy">
                 <strong>
-                  {billingCatalog[sku].label} · ${(billingCatalog[sku].amountCents / 100).toFixed(2)}
+                  {billingCatalog[sku].label} · ${(billingCatalog[sku].amountCents / 100).toFixed(2)} USD
                   {liveCadence(sku)}
                 </strong>
               </span>

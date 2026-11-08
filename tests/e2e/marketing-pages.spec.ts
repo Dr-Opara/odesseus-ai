@@ -128,16 +128,15 @@ test.describe("shared marketing footer", () => {
 });
 
 test.describe("pricing figures", () => {
-  test("/apply prominently shows Apply $0.39 and Smart Apply $0.99 with the wallet success rule", async ({ page }) => {
+  test("/apply prominently shows $0.99 USD per application with the success-only rule", async ({ page }) => {
     await page.goto("/apply");
-    await expect(page.getByText("$0.39").filter({ visible: true }).first()).toBeVisible();
-    await expect(page.getByText("$0.99").filter({ visible: true }).first()).toBeVisible();
-    await expect(page.getByText("Charged from your wallet only after successful submission")).toBeVisible();
+    await expect(page.getByText("$0.99 USD").filter({ visible: true }).first()).toBeVisible();
+    await expect(page.getByText("Charged only after a successful submission")).toBeVisible();
   });
 
-  test("/pricing shows the apply tiers and wallet top-ups", async ({ page }) => {
+  test("/pricing shows the per-application price and credit packs", async ({ page }) => {
     await page.goto("/pricing");
-    for (const figure of ["$0.39", "$0.99", "$10", "$20", "$50"]) {
+    for (const figure of ["$0.99 USD", "$20 USD", "$35 USD", "$59 USD"]) {
       await expect(page.getByText(figure).filter({ visible: true }).first()).toBeVisible();
     }
   });
@@ -163,13 +162,12 @@ test.describe("pricing figures", () => {
   });
 });
 
-test.describe("wallet and pay-as-you-go pricing", () => {
-  test("/pricing shows wallet top-ups in place of old application credit packs", async ({ page }) => {
+test.describe("application credits pricing", () => {
+  test("/pricing shows application credit packs and no wallet top-ups", async ({ page }) => {
     await page.goto("/pricing");
-    await expect(page.getByText("Wallet top-up").filter({ visible: true }).first()).toBeVisible();
+    await expect(page.getByText("25 application credits").filter({ visible: true }).first()).toBeVisible();
     const body = (await page.locator("body").innerText()).toLowerCase();
-    expect(body).not.toContain("credit pack");
-    expect(body).not.toContain("25 credits");
+    expect(body).not.toContain("wallet top-up");
   });
 
   test("/pricing sections appear in the required order (desktop)", async ({ page, isMobile }) => {

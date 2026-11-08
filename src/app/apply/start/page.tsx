@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { APPLY_TIERS, formatCents, MIN_APPLY_PRICE_CENTS } from "@/lib/pricing/candidate-pricing";
+import { APPLICATION_PRICE_LABEL, applicationsAvailable, canStartApply } from "@/lib/pricing/candidate-pricing";
 import ApplyTierAndStart from "@/components/apply/apply-tier-and-start";
 import MobileApplyStart from "@/components/mobile/mobile-apply-start";
 
@@ -28,7 +28,7 @@ export default async function ApplyStartPage({
       .maybeSingle(),
     supabase
       .from("credit_balances")
-      .select("wallet_balance_cents")
+      .select("application_credits,wallet_balance_cents")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -44,11 +44,11 @@ export default async function ApplyStartPage({
 
   if (!job) redirect("/dashboard");
 
-  // Wallet eligibility gate: Apply needs at least 39 cents and Smart
-  // Apply needs at least 99 cents (candidate-pricing). The wallet balance is
-  // read-only for clients; mutations stay server-side. Legacy application
-  // credits no longer decide whether an application can start.
-  const walletBalanceCents = balance?.wallet_balance_cents ?? 0;
+  // Eligibility gate: 1 application credit (or the single-credit price in a
+  // legacy wallet balance). Balances are read-only for clients; the credit is
+  // spent server-side only after a verified successful submission.
+  const canApply = canStartApply(balance);
+  const available = applicationsAvailable(balance);
 
   return (
     <>
@@ -81,8 +81,8 @@ export default async function ApplyStartPage({
             <strong>{tailoring ? `Approved v${tailoring.version_number}` : "Not approved"}</strong>
           </div>
           <div className="card apply-preflight-item">
-            <span className="muted">Wallet</span>
-            <strong>{formatCents(walletBalanceCents)}</strong>
+            <span className="muted">Application credits</span>
+            <strong>{available}</strong>
           </div>
         </div>
 
@@ -90,20 +90,19 @@ export default async function ApplyStartPage({
           <div className="review-note">
             Approve a tailored resume before starting the application.
           </div>
-        ) : walletBalanceCents < MIN_APPLY_PRICE_CENTS ? (
+        ) : !canApply ? (
           <div className="review-note">
-            You need wallet balance to apply. <Link href="/billing" style={{ fontWeight: 700 }}>Go to Wallet</Link>
+            You need 1 application credit to apply. <Link href="/billing" style={{ fontWeight: 700 }}>Buy credits</Link>
           </div>
         ) : (
-          <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} walletBalanceCents={walletBalanceCents} />
+          <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} canApply={canApply} />
         )}
 
         <div className="apply-charge-note">
           <strong>No charge when you start.</strong>
           <span>
-            {APPLY_TIERS.standard.label} {formatCents(APPLY_TIERS.standard.priceCents)} and{" "}
-            {APPLY_TIERS.smart.label} {formatCents(APPLY_TIERS.smart.priceCents)} are charged only after Odesseus
-            verifies a successful submission.
+            One application credit ({APPLICATION_PRICE_LABEL}) is used only after Odesseus verifies a successful
+            submission. Failed, unsupported, cancelled or unconfirmed applications use nothing.
           </span>
         </div>
       </div>
@@ -113,7 +112,7 @@ export default async function ApplyStartPage({
       job={job}
       matchScore={job.match_score}
       approvedVersion={tailoring?.approved_resume_id ? tailoring.version_number : null}
-      walletBalanceCents={walletBalanceCents}
+      canApply={canApply}
     />
     </>
   );

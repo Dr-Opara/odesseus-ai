@@ -118,7 +118,7 @@ describe("finalizeConfirmedExistingSubmission (atomic Apply wallet finalization)
     expect(touchedTables.every((table) => table === "application_run_events")).toBe(true);
   });
 
-  it("turns an insufficient wallet balance into a needs_user pause (top up and continue) instead of charging or failing the run", async () => {
+  it("turns an insufficient balance into a needs_user pause (buy credits and continue) instead of charging or failing the run", async () => {
     const rpc = vi.fn(async () => ({
       data: null,
       error: { message: "insufficient wallet balance" },
@@ -140,9 +140,10 @@ describe("finalizeConfirmedExistingSubmission (atomic Apply wallet finalization)
 
     expect(result.terminal).toBe(false);
     expect(result.status).toBe("needs_user");
-    expect(result.reason).toMatch(/\$0\.39/);
+    expect(result.reason).toMatch(/1 application credit/);
+    expect(result.reason).toMatch(/\$0\.99 USD/);
 
-    // The run is paused (not failed) so the user can top up and continue.
+    // The run is paused (not failed) so the user can buy credits and continue.
     expect(updateFn).toHaveBeenCalledTimes(1);
     expect(updateFn.mock.calls[0][0].status).toBe("needs_user");
     expect(updateEq).toHaveBeenCalledWith("id", run.id);

@@ -8,6 +8,7 @@ import { isSafeExternalUrl } from "@/lib/security/url-safety";
 import { isTrustedOrigin } from "@/lib/security/origin-check";
 import { integrationNotConfigured, missingEnv } from "@/lib/config/readiness";
 import { applyRates, type ApplyMode } from "@/lib/billing/catalog";
+import { canStartApply } from "@/lib/pricing/candidate-pricing";
 
 const schema = z.object({
   jobId: z.string().uuid(),
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
       .maybeSingle(),
     supabase
       .from("credit_balances")
-      .select("wallet_balance_cents")
+      .select("application_credits,wallet_balance_cents")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -99,21 +100,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Approve a tailored resume before starting Apply." }, { status: 400 });
   }
 
-  // Wallet eligibility gate — the selected tier's price is the requirement
-  // (the tier's own rate, read from the billing catalog). The legacy
-  // application-credit balance never decides whether an application can start;
-  // it is preserved only as historical data. Amounts come from the billing
-  // catalog, which is the pricing source of truth the settlement RPC also
-  // reads, so the gate and the settlement cannot drift apart.
+  // Eligibility gate: one application credit (or, for balances bought under
+  // the earlier wallet contract, the single-credit price in the wallet). The
+  // credit is only spent by the settlement RPC after a verified submission;
+  // the gate just stops a run nobody can pay for from starting.
   const tier = (input.applyTier ?? input.mode ?? "standard") as ApplyMode;
   const applyRate = applyRates[tier];
-  const walletBalanceCents = balance?.wallet_balance_cents ?? 0;
-
-  if (walletBalanceCents < applyRate.amountCents) {
-    const needed = (applyRate.amountCents / 100).toFixed(2);
+  if (!canStartApply(balance)) {
     return NextResponse.json(
       {
-        error: `Your wallet needs $${needed} to start a ${applyRate.label}. Top up in Billing.`,
+        error: `You need 1 application credit to start ${applyRate.label}. Credits are $${(applyRate.amountCents / 100).toFixed(2)} USD each, or less in packs — buy them in Billing.`,
       },
       { status: 402 }
     );

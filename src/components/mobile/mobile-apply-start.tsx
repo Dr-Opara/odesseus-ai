@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { APPLY_TIERS, formatCents, MIN_APPLY_PRICE_CENTS } from "@/lib/pricing/candidate-pricing";
+import { APPLICATION_PRICE_LABEL } from "@/lib/pricing/candidate-pricing";
 import ApplyTierAndStart from "@/components/apply/apply-tier-and-start";
 import CompanyLogo from "@/components/company-logo";
 
@@ -17,8 +17,8 @@ type Job = {
 /**
  * Mobile Approval screen (screen 09) — reuses the exact same preflight data
  * and apply tier + start flow (POST /api/apply/start) the desktop approval
- * page uses. No separate approval logic; eligibility is the wallet-based
- * per-tier check (Apply 39¢ / Smart 99¢), matching the desktop gate.
+ * page uses. No separate approval logic; eligibility is the same
+ * application-credit check the desktop gate and the server use.
  *
  * A client component because the Back control is a real button with a click
  * handler. It was a server component, which made the whole `/apply/start` page
@@ -31,12 +31,12 @@ export default function MobileApplyStart({
   job,
   matchScore,
   approvedVersion,
-  walletBalanceCents,
+  canApply,
 }: {
   job: Job;
   matchScore: number | null;
   approvedVersion: number | null;
-  walletBalanceCents: number;
+  canApply: boolean;
 }) {
   return (
     <main className="odesseus-mobile-only m-screen m-screen-09">
@@ -85,22 +85,21 @@ export default function MobileApplyStart({
         <div className="m-warning" style={{ marginTop: 14 }}>
           <strong>Approve a tailored resume before starting the application.</strong>
         </div>
-      ) : walletBalanceCents < MIN_APPLY_PRICE_CENTS ? (
+      ) : !canApply ? (
         <div className="m-warning" style={{ marginTop: 14 }}>
           <strong>
-            You need wallet balance to apply. <Link href="/billing">Go to Wallet</Link>
+            You need 1 application credit to apply. <Link href="/billing">Buy credits</Link>
           </strong>
         </div>
       ) : (
         <div style={{ margin: "14px 4px 0" }}>
-          <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} walletBalanceCents={walletBalanceCents} />
+          <ApplyTierAndStart jobId={job.id} defaultUrl={job.source_url} canApply={canApply} />
         </div>
       )}
 
       <div className="m-note">
-        No charge when you start. {APPLY_TIERS.standard.label} {formatCents(APPLY_TIERS.standard.priceCents)} and{" "}
-        {APPLY_TIERS.smart.label} {formatCents(APPLY_TIERS.smart.priceCents)} are charged only after Odesseus verifies
-        a successful submission.
+        Nothing is charged when you start. One application credit ({APPLICATION_PRICE_LABEL}) is used only after
+        Odesseus verifies a successful submission.
       </div>
     </main>
   );

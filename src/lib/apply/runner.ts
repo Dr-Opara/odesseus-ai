@@ -76,7 +76,7 @@ export function classifyHoldReason(reason: string): ApplicationHoldCategory {
 
   if (text.includes("sensitive")) return "sensitive_question";
 
-  if (text.includes("wallet")) return "insufficient_funds";
+  if (text.includes("wallet") || text.includes("application credit")) return "insufficient_funds";
 
   if (
     text.includes("identify the next or final application control") ||
@@ -423,7 +423,7 @@ export async function finalizeConfirmedExistingSubmission(input: {
   const mode: ApplyMode = input.run.execution_mode === "smart" ? "smart" : "standard";
   const rate = applyRates[mode];
 
-  const { error } = await supabase.rpc("odesseus_finalize_application", {
+  const { data: settlement, error } = await supabase.rpc("odesseus_finalize_application", {
     p_run_id: input.run.id,
     p_user_id: input.run.user_id,
     p_mode: mode,
@@ -433,7 +433,7 @@ export async function finalizeConfirmedExistingSubmission(input: {
 
   if (error) {
     if (/insufficient wallet balance/i.test(error.message)) {
-      const reason = `Your wallet needs $${(rate.amountCents / 100).toFixed(2)} to finish a ${rate.label}. Top up your wallet, then continue.`;
+      const reason = `You need 1 application credit ($${(rate.amountCents / 100).toFixed(2)} USD) to finish this ${rate.label}. Buy credits in Billing, then continue.`;
 
       await supabase
         .from("application_runs")
@@ -484,11 +484,17 @@ export async function finalizeConfirmedExistingSubmission(input: {
   await logEvent(input.run.id, input.run.user_id, "submitted", "Application submission confirmed.", {
     url: input.pageUrl,
   });
+  // amount_debited_cents is 0 when a prepaid application credit paid for the
+  // submission, and the wallet amount when a legacy wallet balance did.
+  const settled = settlement?.[0];
+  const walletCents = settled?.amount_debited_cents ?? 0;
   await logEvent(
     input.run.id,
     input.run.user_id,
     "credit_consumed",
-    `${rate.label} — $${(rate.amountCents / 100).toFixed(2)} charged from your wallet.`
+    walletCents > 0
+      ? `${rate.label} — $${(walletCents / 100).toFixed(2)} charged from your wallet balance.`
+      : `${rate.label} — 1 application credit used.`
   );
   await releaseApplicationBrowserSession(input.browserSessionId).catch(() => undefined);
 

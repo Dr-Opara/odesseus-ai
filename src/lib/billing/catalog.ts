@@ -1,15 +1,23 @@
 // Candidate billing surface for the current pricing contract.
 //
-// Apply submissions are wallet debits at a per-mode rate — Standard Apply
-// 39¢ and Smart Apply 99¢ per verified successful submission — never a
-// checkout SKU. Candidates preload a monetary wallet through the wallet_*
-// top-up SKUs below; the debit is applied server-side by the atomic
-// finalization RPC only after the submission is verified as successful.
+// Applications: $0.99 USD per verified successful submission, paid with
+// prepaid application credits (1 credit = 1 submission). Credits are sold
+// singly or in discounted packs. The credit is spent server-side by
+// `odesseus_finalize_application` only after the submission is verified;
+// failed, unsupported, cancelled, closed-role or unconfirmed applications
+// consume nothing. Apply and Smart Apply cost the same — they differ in
+// automation depth, not price.
 //
-// The two apply rates are mirrored by the USD_US reference prices in
-// pricing_prices, which is what the finalization RPC actually reads. A static
-// test pins this file to those rows so the advertised rate and the charged
-// rate can never drift.
+// Odesseus Live: $24.99 per interview, 3 passes for $59.99, or Annual at
+// $499 for 12 months (fair use). All one-time purchases — no required
+// subscription. A pass is consumed only when a Live session activates.
+//
+// Every SKU below maps onto a product the database already fulfills through
+// `odesseus_private.fulfill_billing_event` (see
+// supabase/migrations/20261123000000_spec_candidate_pricing.sql), and its
+// amount mirrors the USD_US reference price for `productKey`. A static test
+// pins this file to those rows so the advertised and charged prices cannot
+// drift.
 //
 // Employer products (plans, featured listings, recruiter seats) are NOT part
 // of `billingCatalog`: they are sold through Stripe subscription/one-time
@@ -17,23 +25,24 @@
 // `employerRecruiterSeat`, and `employerFeaturedTiers` so the webhook can
 // verify paid amounts server-side before granting entitlements.
 //
-// Odesseus Live is NOT advertised on the public marketing site. These SKUs
-// exist for the authenticated interview workflow: live_single is a one-time
-// session purchase, and the three *_monthly / *_annual SKUs are recurring
-// entitlements fulfilled into a live_memberships row.
+// Odesseus Live is NOT advertised on the public marketing site. Its SKUs exist
+// for the authenticated interview workflow only.
+
+/** Price of one application credit — one verified successful submission. */
+export const APPLICATION_CREDIT_PRICE_CENTS = 99;
 
 export const applyRates = {
   standard: {
-    label: "Standard Apply",
+    label: "Apply",
     description: "One verified successful submission across supported job boards and employer career sites",
-    amountCents: 39,
-    creditType: "standard_apply" as const,
+    amountCents: APPLICATION_CREDIT_PRICE_CENTS,
+    credits: 1,
   },
   smart: {
     label: "Smart Apply",
     description: "One verified successful submission with deeper automation for multi-page applications",
-    amountCents: 99,
-    creditType: "smart_apply" as const,
+    amountCents: APPLICATION_CREDIT_PRICE_CENTS,
+    credits: 1,
   },
 } as const;
 
@@ -42,60 +51,51 @@ export type ApplyMode = keyof typeof applyRates;
 export type BillingSku = keyof typeof billingCatalog;
 
 export const billingCatalog = {
-  wallet_10: { label: "Wallet top-up — $10", description: "Add $10 to your wallet for Standard and Smart Apply submissions", amountCents: 1000, creditType: "wallet_topup" as const, creditDelta: 1000 },
-  wallet_20: { label: "Wallet top-up — $20", description: "Add $20 to your wallet for Standard and Smart Apply submissions", amountCents: 2000, creditType: "wallet_topup" as const, creditDelta: 2000 },
-  wallet_50: { label: "Wallet top-up — $50", description: "Add $50 to your wallet for Standard and Smart Apply submissions", amountCents: 5000, creditType: "wallet_topup" as const, creditDelta: 5000 },
-  // Every Live SKU records credit_type "interview": that is the only
-  // non-wallet value billing_events_credit_type_check admits, and live_single
-  // genuinely is a discrete-pass grant. The recurring plans keep the same
-  // value only to satisfy that CHECK plus billing_events_credit_delta_check —
-  // odesseus_private.fulfill_billing_event branches on the product key for
-  // those and writes a live_memberships row instead of a credit transaction,
-  // so their creditDelta is never applied to interview_passes.
-  live_single: { label: "Live — single interview", description: "One Odesseus Live interview session", amountCents: 1499, creditType: "interview" as const, creditDelta: 1, billing: "one_time" as const },
-  live_monthly: { label: "Live — monthly", description: "Personal Live access, billed monthly", amountCents: 1999, creditType: "interview" as const, creditDelta: 1, billing: "recurring" as const, planType: "monthly" as const },
-  live_personal_annual: { label: "Live — personal annual", description: "Personal Live access for 12 months", amountCents: 9900, creditType: "interview" as const, creditDelta: 1, billing: "recurring" as const, planType: "personal_annual" as const },
-  live_share_annual: { label: "Live Share — annual", description: "Personal Live access for 12 months, plus secure Guest Live Access links you can share", amountCents: 49900, creditType: "interview" as const, creditDelta: 1, billing: "recurring" as const, planType: "share_annual" as const },
+  app_1: { label: "1 application credit", description: "One verified successful application submission", amountCents: 99, creditType: "application" as const, creditDelta: 1, productKey: "candidate_application_single" },
+  app_25: { label: "25 application credits", description: "25 verified successful application submissions", amountCents: 2000, creditType: "application" as const, creditDelta: 25, productKey: "candidate_application_pack_25" },
+  app_50: { label: "50 application credits", description: "50 verified successful application submissions", amountCents: 3500, creditType: "application" as const, creditDelta: 50, productKey: "candidate_application_pack_50" },
+  app_100: { label: "100 application credits", description: "100 verified successful application submissions", amountCents: 5900, creditType: "application" as const, creditDelta: 100, productKey: "candidate_application_pack_100" },
+  interview_1: { label: "Odesseus Live — 1 interview", description: "One Odesseus Live interview pass", amountCents: 2499, creditType: "interview" as const, creditDelta: 1, productKey: "candidate_live_single" },
+  interview_3: { label: "Odesseus Live — 3 interviews", description: "Three Odesseus Live interview passes", amountCents: 5999, creditType: "interview" as const, creditDelta: 3, productKey: "candidate_live_pack_3" },
+  // creditDelta is only there to satisfy billing_events_credit_delta_check:
+  // fulfill_billing_event branches on sku = 'interview_annual' and grants a
+  // 12-month live_unlimited_until window instead of passes.
+  interview_annual: { label: "Odesseus Live Annual", description: "12 months of Odesseus Live, subject to fair use", amountCents: 49900, creditType: "interview" as const, creditDelta: 1, productKey: "candidate_live_annual" },
 } as const;
 
+/** Application-credit SKUs, in display order. */
+export const applicationCreditSkus = ["app_1", "app_25", "app_50", "app_100"] as const satisfies readonly BillingSku[];
+
 /** Live SKUs, in the order the interview workflow presents them. */
-export const liveSkus = [
-  "live_single",
-  "live_monthly",
-  "live_personal_annual",
-  "live_share_annual",
-] as const satisfies readonly BillingSku[];
+export const liveSkus = ["interview_1", "interview_3", "interview_annual"] as const satisfies readonly BillingSku[];
 
 export type LiveSku = (typeof liveSkus)[number];
 
+/**
+ * Live subscriptions sold under the earlier contract. They are no longer
+ * offered, but existing subscribers keep renewing, so the webhook must still
+ * recognise their invoices at the amounts they signed up for.
+ */
+export const legacyLiveSubscriptions = {
+  live_monthly: { label: "Live — monthly", amountCents: 1999, planType: "monthly" as const },
+  live_personal_annual: { label: "Live — personal annual", amountCents: 9900, planType: "personal_annual" as const },
+  live_share_annual: { label: "Live Share — annual", amountCents: 49900, planType: "share_annual" as const },
+} as const;
+
+export type LegacyLiveSubscriptionSku = keyof typeof legacyLiveSubscriptions;
+
 /*
- * There is deliberately no guest allowance constant here.
- *
- * An earlier `LIVE_SHARE_GUEST_LIMIT = 10` existed and was load-bearing: the
- * database refused an eleventh activation, and this was the TypeScript mirror of
- * `live_memberships.guest_limit` so the UI and the enforcement could be checked
- * against each other. The approved Live Share model has no guest cap, so there
- * is no ceiling to mirror and nothing for a static test to pin.
- *
- * What authorizes guest link generation is the entitlement, not a number:
- *
- *   canGenerateGuestLinks(row) => row.has_access
- *                                  && row.is_owner
- *                                  && row.plan === 'share_annual'
- *
- * and the per-token rate limits in the token-scoped guest routes are abuse
- * protection, not a commercial quota. If a guest allowance is ever reintroduced,
- * it needs a product decision and a database enforcement point -- not a constant
- * in this file that the UI happens to display.
+ * There is deliberately no guest allowance constant here. Live Share has no
+ * guest cap: what authorizes guest link generation is the entitlement
+ * (has_access && is_owner && plan === 'share_annual'), and per-token rate
+ * limits on the guest routes are abuse protection, not a commercial quota.
  */
 
 /**
- * Fair-use ceiling for time-boxed Live access.
+ * Fair-use ceiling for time-boxed Live access (Annual).
  *
- * The authoritative values are the fair_use_sessions / fair_use_window_days
- * entries in pricing_products.metadata, copied onto live_memberships at grant
- * time. These are the mirror used for display and for pre-flight checks only;
- * the database never reads this constant.
+ * The authoritative values live in the database; this is the mirror used for
+ * display and pre-flight checks only.
  */
 export const LIVE_FAIR_USE = {
   sessions: 20,

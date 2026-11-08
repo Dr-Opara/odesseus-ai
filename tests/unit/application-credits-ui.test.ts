@@ -3,19 +3,14 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * The wallet is the only active candidate currency: Standard Apply costs 49c
- * and Smart Apply 199c, both drawn from `credit_balances.wallet_balance_cents`
- * (the same column the apply gate reads in
- * `src/app/api/apply/start/route.ts`).
- *
- * The legacy `application_credits` column still exists in Postgres — schema
- * is backend-owned and out of the frontend lane — but it must not appear in any
- * candidate-facing surface. Leaving a stale balance on screen is worse than
- * removing it: it advertises a number that can no longer buy anything.
+ * Application credits are the active candidate currency: 1 credit ($0.99 USD,
+ * cheaper in packs) pays for 1 verified successful submission, Apply or Smart
+ * Apply. `credit_balances.wallet_balance_cents` survives only as a legacy
+ * balance that stays spendable at the single-credit price; wallet top-ups are
+ * no longer sold, so no candidate surface may offer one.
  *
  * These are static checks. The e2e suite proves what actually renders, but it
- * only sees live routes, so an unused-but-imported credit prop is invisible to
- * it and becomes a one-edit regression.
+ * only sees live routes, so a stale top-up form is invisible to it.
  */
 
 /** Candidate-facing route roots that render the authenticated app shell. */
@@ -71,62 +66,50 @@ function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
-describe("no candidate surface renders the legacy application-credit balance", () => {
+describe("candidate surfaces use application credits, not wallet top-ups", () => {
   it("finds candidate surfaces to audit (guard against a broken glob)", () => {
     expect(uiFiles.length).toBeGreaterThan(15);
   });
 
   it.each(uiFiles.map((file) => [relative(file), file] as const))(
-    "%s never reads the application_credits column",
-    (_label, file) => {
-      // Comments are stripped here too: the billing page carries a JSX note
-      // naming the legacy column to explain why it is absent, and a comment
-      // cannot read a column.
-      expect(stripComments(readFileSync(file, "utf8"))).not.toMatch(/application_credits/);
-    },
-  );
-
-  it.each(uiFiles.map((file) => [relative(file), file] as const))(
-    "%s never shows application-credit copy",
+    "%s never offers a wallet top-up",
     (_label, file) => {
       const text = stripComments(readFileSync(file, "utf8")).toLowerCase();
-      expect(text).not.toMatch(/app credits|application credits|application-credit/);
+      expect(text).not.toMatch(/\btop up\b|add funds|"wallet_(10|20|50)"/);
     },
   );
 
-  it("AppShell takes a wallet balance, not an application-credit count", () => {
+  it("AppShell shows application credits alongside the legacy wallet", () => {
     const shell = readFileSync(join(process.cwd(), "src/components/app-shell.tsx"), "utf8");
-    expect(shell).toContain("walletBalanceCents");
-    expect(shell).not.toContain("applicationCredits");
+    expect(shell).toContain("applicationCredits");
+    expect(shell).toContain("applicationsAvailable(");
   });
 
-  it("the shared CreditBalance contract exposes no application_credits field", () => {
-    const types = readFileSync(join(process.cwd(), "src/lib/candidate/types.ts"), "utf8");
-    // Only a comment may mention it; the type itself must not declare it.
-    const code = stripComments(types);
-    expect(code).not.toContain("application_credits");
-    expect(code).toContain("walletBalanceCents");
+  it("the shared CreditBalance contract exposes applicationCredits", () => {
+    const code = stripComments(readFileSync(join(process.cwd(), "src/lib/candidate/types.ts"), "utf8"));
+    expect(code).toContain("applicationCredits: number");
+    expect(code).toContain("walletBalanceCents: number");
   });
 });
 
-describe("the wallet is the single source of spend truth", () => {
-  it("the apply start gate spends from wallet_balance_cents", () => {
-    const route = readFileSync(join(APP_DIR, "api", "apply", "start", "route.ts"), "utf8");
-    expect(route).toContain("wallet_balance_cents");
-    // The gate must not accept a legacy credit balance as an alternative.
-    expect(stripComments(route)).not.toContain("application_credits");
+describe("one eligibility rule everywhere", () => {
+  it("the apply start gate uses canStartApply over credits and legacy wallet", () => {
+    const route = stripComments(readFileSync(join(APP_DIR, "api", "apply", "start", "route.ts"), "utf8"));
+    expect(route).toContain('"application_credits,wallet_balance_cents"');
+    expect(route).toContain("canStartApply(balance)");
   });
 
-  it("the candidate balance reader selects wallet_balance_cents", () => {
+  it("the candidate balance reader selects both balances", () => {
     const service = readFileSync(join(process.cwd(), "src/lib/candidate/service.ts"), "utf8");
-    expect(stripComments(service)).toContain('"wallet_balance_cents,interview_passes,live_unlimited_until"');
+    expect(stripComments(service)).toContain('"application_credits,wallet_balance_cents,interview_passes,live_unlimited_until"');
   });
 
-  it("leaves the database schema untouched (backend-owned)", () => {
-    // The column is still in the DB on purpose. This asserts we did not
-    // "fix" the UI by editing schema, which is the backend lane's call.
-    const schema = readFileSync(join(process.cwd(), "src/types/database.ts"), "utf8");
-    expect(schema).toContain("application_credits");
-    expect(schema).toContain("wallet_balance_cents");
+  it("finalization spends a credit before falling back to the wallet", () => {
+    const migration = readFileSync(
+      join(process.cwd(), "supabase/migrations/20261123000000_spec_candidate_pricing.sql"),
+      "utf8"
+    );
+    expect(migration).toMatch(/v_charge := case when coalesce\(v_credits, 0\) >= 1 then 'application_credit' else 'wallet' end/);
+    expect(migration).toContain("'application',\n      -1,");
   });
 });
