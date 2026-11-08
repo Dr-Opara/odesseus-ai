@@ -169,12 +169,10 @@ export async function listWalletTransactions(
 }
 
 /**
- * Starting a wallet top-up is a paid purchase, not a local state change.
- *
- * It is deliberately not implemented here. The top-ups are Stripe checkout
- * SKUs (`wallet_10`, `wallet_20`, `wallet_50` in `src/lib/billing/catalog.ts`)
- * started by the server action `createCheckoutSession`, and the billing webhook
- * is what writes the credit transaction and updates the balance.
+ * Wallet top-ups are no longer sold: applications are paid with application
+ * credits (`app_*` SKUs in `src/lib/billing/catalog.ts`), bought through the
+ * server action `createCheckoutSession`. Existing wallet balances stay
+ * spendable, but nothing can add to them from here.
  *
  * Implementing this as anything other than "open a checkout" would mean a
  * client-side balance write, which is exactly the wallet self-grant the

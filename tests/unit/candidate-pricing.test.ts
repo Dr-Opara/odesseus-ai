@@ -1,108 +1,96 @@
 import { describe, expect, it } from "vitest";
 import {
+  APPLICATION_CREDIT_PACKS,
+  APPLICATION_PRICE_LABEL,
   APPLY_TIERS,
   EMPLOYER_PLANS,
-  MIN_APPLY_PRICE_CENTS,
   PROMOTION_PLANS,
   RECRUITER_SEAT_PRICE_LABEL,
-  WALLET_TOPUP_AMOUNTS_CENTS,
-  canAffordTier,
+  applicationsAvailable,
+  canStartApply,
   formatCents,
+  formatUsd,
 } from "@/lib/pricing/candidate-pricing";
 import { applyRates } from "@/lib/billing/catalog";
 import * as candidatePricing from "@/lib/pricing/candidate-pricing";
 
 describe("candidate apply tiers", () => {
-  it("prices Apply at exactly $0.39", () => {
-    expect(APPLY_TIERS.standard.priceCents).toBe(39);
-    expect(APPLY_TIERS.standard.priceLabel).toBe("$0.39");
-    expect(APPLY_TIERS.standard.label).toBe("Apply");
-  });
-
-  it("prices Smart Apply at exactly $0.99", () => {
+  it("prices Apply and Smart Apply the same: $0.99 USD per successful application", () => {
+    expect(APPLY_TIERS.standard.priceCents).toBe(99);
     expect(APPLY_TIERS.smart.priceCents).toBe(99);
-    expect(APPLY_TIERS.smart.priceLabel).toBe("$0.99");
+    expect(APPLY_TIERS.standard.priceLabel).toBe("$0.99 USD");
+    expect(APPLY_TIERS.smart.priceLabel).toBe("$0.99 USD");
+    expect(APPLICATION_PRICE_LABEL).toBe("$0.99 USD");
+    expect(APPLY_TIERS.standard.label).toBe("Apply");
     expect(APPLY_TIERS.smart.label).toBe("Smart Apply");
   });
 
-  it("has no stale $0.49 / $1.99 per-application figure anywhere in the candidate tiers", () => {
-    // These two prices were the pre-contract figures. The charged rate moved to
-    // 39c / 99c and any residue here would quote a price the candidate is
-    // never billed.
-    for (const info of Object.values(APPLY_TIERS)) {
-      expect(info.priceLabel).not.toBe("$0.49");
-      expect(info.priceCents).not.toBe(49);
-      expect(info.priceLabel).not.toBe("$1.99");
-      expect(info.priceCents).not.toBe(199);
-    }
-  });
-
   it("derives every advertised amount from the backend billing catalog", () => {
-    // Amounts are derived so the advertised rate can never drift from the
-    // charged rate. Labels intentionally differ: the display copy is the
-    // Figma/product-locked "Apply" while the catalog keeps the internal
-    // "Standard Apply" — see src/lib/pricing/candidate-pricing.ts.
     expect(APPLY_TIERS.standard.priceCents).toBe(applyRates.standard.amountCents);
     expect(APPLY_TIERS.smart.priceCents).toBe(applyRates.smart.amountCents);
   });
 
-  it("keeps the charged-after-successful-submission rule on the standard tier and the pre-submission check framing on smart", () => {
+  it("keeps the approval and success-only rules in the tier copy", () => {
+    expect(APPLY_TIERS.standard.description.toLowerCase()).toMatch(/after you approve/);
     expect(APPLY_TIERS.standard.description.toLowerCase()).toMatch(/after a verified successful submission/);
-    expect(APPLY_TIERS.smart.description.toLowerCase()).toMatch(/before submission/);
+    expect(APPLY_TIERS.smart.description.toLowerCase()).toMatch(/approval before submission/);
   });
 });
 
-describe("wallet-based apply eligibility", () => {
-  it("derives the minimum start balance from the cheapest tier (39 cents)", () => {
-    expect(MIN_APPLY_PRICE_CENTS).toBe(39);
-    expect(MIN_APPLY_PRICE_CENTS).toBe(APPLY_TIERS.standard.priceCents);
+describe("application credit packs", () => {
+  it("offers 1 / 25 / 50 / 100 credits at $0.99 / $20 / $35 / $59 USD", () => {
+    expect(APPLICATION_CREDIT_PACKS.map((p) => [p.credits, p.priceLabel])).toEqual([
+      [1, "$0.99 USD"],
+      [25, "$20 USD"],
+      [50, "$35 USD"],
+      [100, "$59 USD"],
+    ]);
   });
 
-  it("requires at least 39 cents for Apply", () => {
-    expect(canAffordTier("standard", 0)).toBe(false);
-    expect(canAffordTier("standard", 38)).toBe(false);
-    expect(canAffordTier("standard", 39)).toBe(true);
-    expect(canAffordTier("standard", 120)).toBe(true);
-  });
-
-  it("requires at least 99 cents for Smart Apply", () => {
-    expect(canAffordTier("smart", 98)).toBe(false);
-    expect(canAffordTier("smart", 99)).toBe(true);
-    expect(canAffordTier("smart", 1000)).toBe(true);
-  });
-
-  it("gates Smart Apply above the Apply floor but below the Smart price", () => {
-    // A wallet that can start Apply must not unlock Smart Apply.
-    expect(canAffordTier("standard", 50)).toBe(true);
-    expect(canAffordTier("smart", 50)).toBe(false);
-  });
-
-  it("never consults a legacy application-credit balance", () => {
-    // Eligibility is purely wallet-centric; there is no credit input.
-    expect(APPLY_TIERS.standard.priceCents).toBeLessThan(APPLY_TIERS.smart.priceCents);
-    expect(MIN_APPLY_PRICE_CENTS).toBeGreaterThan(0);
+  it("shows the discount against the single-credit price", () => {
+    expect(APPLICATION_CREDIT_PACKS.map((p) => p.savingsPercent)).toEqual([0, 19, 29, 40]);
+    expect(APPLICATION_CREDIT_PACKS.map((p) => p.perCreditLabel)).toEqual([
+      "$0.99 per application",
+      "$0.80 per application",
+      "$0.70 per application",
+      "$0.59 per application",
+    ]);
   });
 });
 
-describe("wallet top-ups", () => {
-  it("offers exactly $10 / $20 / $50 top-ups", () => {
-    expect(WALLET_TOPUP_AMOUNTS_CENTS).toEqual([1000, 2000, 5000]);
-    expect(WALLET_TOPUP_AMOUNTS_CENTS.map(formatCents)).toEqual(["$10", "$20", "$50"]);
+describe("apply eligibility", () => {
+  it("allows a start with one application credit", () => {
+    expect(canStartApply({ application_credits: 1, wallet_balance_cents: 0 })).toBe(true);
+    expect(canStartApply({ application_credits: 0, wallet_balance_cents: 0 })).toBe(false);
+    expect(canStartApply(null)).toBe(false);
+  });
+
+  it("keeps legacy wallet balances spendable at the single-credit price", () => {
+    expect(canStartApply({ application_credits: 0, wallet_balance_cents: 98 })).toBe(false);
+    expect(canStartApply({ application_credits: 0, wallet_balance_cents: 99 })).toBe(true);
+  });
+
+  it("counts applications available across credits and legacy wallet", () => {
+    expect(applicationsAvailable({ application_credits: 3, wallet_balance_cents: 250 })).toBe(5);
+    expect(applicationsAvailable({ application_credits: 0, wallet_balance_cents: 98 })).toBe(0);
+    expect(applicationsAvailable(undefined)).toBe(0);
   });
 });
 
-describe("formatCents", () => {
+describe("formatCents / formatUsd", () => {
   it("omits decimals on whole dollars", () => {
-    expect(formatCents(1000)).toBe("$10");
     expect(formatCents(2000)).toBe("$20");
-    expect(formatCents(5000)).toBe("$50");
+    expect(formatCents(5900)).toBe("$59");
     expect(formatCents(100)).toBe("$1");
   });
 
   it("keeps two decimals below a dollar", () => {
-    expect(formatCents(39)).toBe("$0.39");
     expect(formatCents(99)).toBe("$0.99");
-    expect(formatCents(49)).toBe("$0.49");
+  });
+
+  it("labels the currency explicitly", () => {
+    expect(formatUsd(99)).toBe("$0.99 USD");
+    expect(formatUsd(3500)).toBe("$35 USD");
   });
 });
 

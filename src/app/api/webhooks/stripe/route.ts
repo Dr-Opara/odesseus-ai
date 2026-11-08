@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
-import { billingCatalog, liveSkus, type BillingSku, employerPlans, type EmployerPlanSku, employerRecruiterSeat, employerFeaturedTiers, type EmployerFeaturedTier, employerPlanForAmount } from "@/lib/billing/catalog";
+import { billingCatalog, legacyLiveSubscriptions, type LegacyLiveSubscriptionSku, type BillingSku, employerPlans, type EmployerPlanSku, employerRecruiterSeat, employerFeaturedTiers, type EmployerFeaturedTier, employerPlanForAmount } from "@/lib/billing/catalog";
 import { createClient } from "@supabase/supabase-js";
 import { partnerService } from "@/lib/partners/service";
 import { logWebhookEvent } from "@/lib/observability/events";
@@ -511,13 +511,14 @@ function liveSubscriptionTarget(
   const userId = metadata?.odesseus_user_id;
   if (!userId) return null;
 
-  const byPlan = liveSkus.find((sku) => {
-    const item = billingCatalog[sku];
-    return "planType" in item && item.planType === planType;
-  });
+  // Live subscriptions are no longer sold, but existing subscribers keep
+  // renewing at the amount they signed up for.
+  const byPlan = (Object.keys(legacyLiveSubscriptions) as LegacyLiveSubscriptionSku[]).find(
+    (sku) => legacyLiveSubscriptions[sku].planType === planType
+  );
   if (!byPlan) return null;
 
-  const item = billingCatalog[byPlan];
+  const item = legacyLiveSubscriptions[byPlan];
   if (amountCents != null && item.amountCents !== amountCents) return null;
 
   return { userId, planType, sku: byPlan };
@@ -1051,36 +1052,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // A recurring Live plan is fulfilled into a live_memberships row by the
-  // billing_events trigger, which needs the subscription id and the paid
-  // period to do it. Fetching the period is best-effort: the trigger falls
-  // back to the catalog's billing_period_days when it is absent, so a failed
-  // lookup must not cost the customer their purchase.
-  let liveSubscriptionMetadata: Record<string, string> = {};
-  if ("planType" in item) {
-    const subscriptionId =
-      typeof session.subscription === "string" ? session.subscription : null;
-    liveSubscriptionMetadata = { plan_type: item.planType };
-    if (subscriptionId) liveSubscriptionMetadata.stripe_subscription_id = subscriptionId;
-
-    if (subscriptionId) {
-      try {
-        const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
-        const period = liveSubscriptionPeriod(subscription);
-        if (period.start) {
-          liveSubscriptionMetadata.current_period_start = period.start.toISOString();
-        }
-        if (period.end) {
-          liveSubscriptionMetadata.current_period_end = period.end.toISOString();
-        }
-      } catch (lookupError) {
-        // Recorded but not fatal: the catalog period fallback still grants a
-        // correctly-bounded membership.
-        console.error("[ODESSEUS_LIVE] could not read the subscription period", lookupError);
-      }
-    }
-  }
-
   const supabase = createServiceClient();
   const { error } = await supabase.from("billing_events").insert({
     stripe_event_id: event.id,
@@ -1094,7 +1065,6 @@ export async function POST(request: Request) {
     stripe_customer_id: typeof session.customer === "string" ? session.customer : null,
     metadata: {
       payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : null,
-      ...liveSubscriptionMetadata,
     },
   });
 

@@ -1,74 +1,110 @@
 /**
- * Display-only candidate pricing for the wallet/pay-per-apply contract.
+ * Display-only candidate pricing.
  *
  * These are presentation constants for UI copy. They are NOT the billing
- * engine — the wallet debit is performed server-side by
- * `odesseus_finalize_application`, which reads the rate from `pricing_prices`.
+ * engine — the application credit is spent server-side by
+ * `odesseus_finalize_application`, which reads the price from
+ * `pricing_prices`.
  *
- * What matters is that the advertised rate and the charged rate cannot drift
- * apart, so the numbers here are *derived* from the backend-owned catalog
- * (`src/lib/billing/catalog.ts`, itself pinned to the USD_US reference prices
- * by a test) rather than written out again. This module used to hardcode
- * 49c/199c while the catalog and the database had already moved to 39c/99c,
- * which meant the site quoted a price the candidate was never charged.
+ * What matters is that the advertised price and the charged price cannot
+ * drift apart, so every number here is *derived* from the backend-owned
+ * catalog (`src/lib/billing/catalog.ts`, itself pinned to the USD_US
+ * reference prices by a test) rather than written out again.
+ *
+ * Official prices are USD for now, so labels carry the currency explicitly
+ * ("$0.99 USD") for international readers.
  */
 
-import { applyRates } from "@/lib/billing/catalog";
+import {
+  APPLICATION_CREDIT_PRICE_CENTS,
+  applicationCreditSkus,
+  applyRates,
+  billingCatalog,
+} from "@/lib/billing/catalog";
 
 export type ApplyTier = "standard" | "smart";
+
+export function formatCents(cents: number): string {
+  return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
+}
+
+/** "$0.99 USD" — the currency is explicit because prices are USD worldwide for now. */
+export function formatUsd(cents: number): string {
+  return `${formatCents(cents)} USD`;
+}
+
+export const APPLICATION_PRICE_LABEL = formatUsd(APPLICATION_CREDIT_PRICE_CENTS);
 
 export const APPLY_TIERS: Record<
   ApplyTier,
   { label: string; priceCents: number; priceLabel: string; description: string }
 > = {
   standard: {
-    // Label is the Figma/product-locked display copy ("Apply", not the
-    // catalog's internal "Standard Apply") — amount is derived from the
-    // billing catalog so the advertised rate can never drift from the
-    // charged rate (see this file's header comment for why that matters).
-    label: "Apply",
+    // "Apply", not the internal "Standard Apply" — product-locked display copy.
+    label: applyRates.standard.label,
     priceCents: applyRates.standard.amountCents,
-    priceLabel: `$${(applyRates.standard.amountCents / 100).toFixed(2)}`,
+    priceLabel: APPLICATION_PRICE_LABEL,
     description:
-      "Odesseus tailors your resume and submits the application. Charged only after a verified successful submission.",
+      "Odesseus tailors your resume and submits the application after you approve it. One credit is used only after a verified successful submission.",
   },
   smart: {
-    label: "Smart Apply",
+    label: applyRates.smart.label,
     priceCents: applyRates.smart.amountCents,
-    priceLabel: `$${(applyRates.smart.amountCents / 100).toFixed(2)}`,
+    priceLabel: APPLICATION_PRICE_LABEL,
     description:
-      "Everything in Apply, plus deeper role-specific tailoring and a closer pass on hard requirements before submission.",
+      "Everything in Apply, plus deeper automation for multi-page applications. Still needs your approval before submission, and uses one credit only on success.",
   },
 };
+
+/** Application credit packs as the billing UI shows them. */
+export const APPLICATION_CREDIT_PACKS = applicationCreditSkus.map((sku) => {
+  const item = billingCatalog[sku];
+  const perCreditCents = Math.round(item.amountCents / item.creditDelta);
+  return {
+    sku,
+    credits: item.creditDelta,
+    priceCents: item.amountCents,
+    priceLabel: formatUsd(item.amountCents),
+    perCreditLabel: `${formatCents(perCreditCents)} per application`,
+    savingsPercent:
+      item.creditDelta > 1
+        ? Math.round((1 - item.amountCents / (item.creditDelta * APPLICATION_CREDIT_PRICE_CENTS)) * 100)
+        : 0,
+  };
+});
 
 export const PREP_AGENT_LABEL = "Interview Prep";
 export const PREP_AGENT_DESCRIPTION = "Practice from your job and application context.";
 export const FAILED_SUBMISSION_LABEL = "Failed submission";
-export const FAILED_SUBMISSION_PRICE_LABEL = "$0";
-export const FAILED_SUBMISSION_DESCRIPTION = "No verified success means no application charge.";
+export const FAILED_SUBMISSION_PRICE_LABEL = "0 credits";
+export const FAILED_SUBMISSION_DESCRIPTION =
+  "Failed, unsupported, cancelled, closed-role or unconfirmed applications never use a credit.";
 
-export const WALLET_TOPUP_AMOUNTS_CENTS = [1000, 2000, 5000] as const;
-export type WalletTopUpAmountCents = (typeof WALLET_TOPUP_AMOUNTS_CENTS)[number];
+/** The two balances that can pay for an application. */
+export type ApplyBalance =
+  | { application_credits?: number | null; wallet_balance_cents?: number | null }
+  | null
+  | undefined;
 
-export function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
+/**
+ * Whether a candidate can START an application: one prepaid credit, or — for
+ * balances bought under the earlier wallet contract — the single-credit price
+ * in the wallet. Nothing is charged at start; the settlement RPC spends the
+ * credit only after a verified successful submission.
+ */
+export function canStartApply(balance: ApplyBalance): boolean {
+  return (
+    (balance?.application_credits ?? 0) >= 1 ||
+    (balance?.wallet_balance_cents ?? 0) >= APPLICATION_CREDIT_PRICE_CENTS
+  );
 }
 
-/**
- * Minimum wallet balance (cents) required to START any apply. The cheapest
- * tier is Apply, so no candidate with less than this can begin an
- * application — charging only happens on verified successful submission, but
- * the start gate uses the tier price so no one burns an assisted run they
- * cannot pay for.
- */
-export const MIN_APPLY_PRICE_CENTS = APPLY_TIERS.standard.priceCents;
-
-/**
- * Wallet-based eligibility for a single apply tier, at the tier's real rate.
- * Application-credit balances never participate in apply eligibility.
- */
-export function canAffordTier(tier: ApplyTier, walletBalanceCents: number): boolean {
-  return walletBalanceCents >= APPLY_TIERS[tier].priceCents;
+/** Applications the candidate can pay for right now (credits + legacy wallet). */
+export function applicationsAvailable(balance: ApplyBalance): number {
+  return (
+    (balance?.application_credits ?? 0) +
+    Math.floor((balance?.wallet_balance_cents ?? 0) / APPLICATION_CREDIT_PRICE_CENTS)
+  );
 }
 
 export const PREP_AGENT_PRICE_LABEL = "Free";

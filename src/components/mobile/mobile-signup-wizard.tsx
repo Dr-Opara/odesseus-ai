@@ -94,7 +94,7 @@ export default function MobileSignupWizard({ error }: { error?: string }) {
       <div className="m-trust-row">
         <span>10K+ resumes optimized</span>
         <span>3.4× more interviews</span>
-        <span>From {APPLY_TIERS.standard.priceLabel} per application</span>
+        <span>{APPLY_TIERS.standard.priceLabel} per successful application</span>
       </div>
 
       <div className="m-match-preview-card">

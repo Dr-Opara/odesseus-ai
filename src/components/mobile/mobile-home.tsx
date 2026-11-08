@@ -6,7 +6,7 @@ import type {
   CandidateDashboardApplication,
 } from "@/lib/candidate/dashboard";
 import type { CandidateJob, CreditBalance } from "@/lib/candidate/types";
-import { formatCents } from "@/lib/pricing/candidate-pricing";
+import { applicationsAvailable } from "@/lib/pricing/candidate-pricing";
 
 function firstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "there";
@@ -46,7 +46,7 @@ function statusLabel(value: string) {
 
 /**
  * Mobile Home screen (screen 05) — the candidate's real dashboard data:
- * verified profile name, live wallet balance, strong matches, recent
+ * verified profile name, application credits, strong matches, recent
  * applications and recent agent activity. Empty sections show a proper
  * empty state; nothing here is demo content.
  */
@@ -97,8 +97,13 @@ export default function MobileHome({
 
       <div className="m-balance-strip">
         <div>
-          <strong>{formatCents(credits.walletBalanceCents)}</strong>
-          <span>wallet</span>
+          <strong>
+            {applicationsAvailable({
+              application_credits: credits.applicationCredits,
+              wallet_balance_cents: credits.walletBalanceCents,
+            })}
+          </strong>
+          <span>credits</span>
         </div>
         <div>
           <strong>{credits.interviewPasses}</strong>

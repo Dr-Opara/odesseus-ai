@@ -112,23 +112,25 @@ describe("candidate service layer (Phase 5 shared reads)", () => {
     await expect(getCandidateProfile(candidateFake({}) as never, "user-1")).resolves.toBeNull();
   });
 
-  it("defaults a missing balance to zeros and never exposes application credits", async () => {
+  it("defaults a missing balance to zeros", async () => {
     await expect(getCreditBalance(candidateFake({}) as never, "user-1")).resolves.toEqual({
+      applicationCredits: 0,
       walletBalanceCents: 0,
       interviewPasses: 0,
       liveUnlimitedUntil: null,
     });
   });
 
-  it("reads the wallet balance the apply gate spends from", async () => {
-    // The header, dashboard and /billing all show this number, and
-    // src/app/api/apply/start/route.ts gates on the same column. If the two
+  it("reads both balances the apply gate spends from", async () => {
+    // The header, dashboard and /billing all show these numbers, and
+    // src/app/api/apply/start/route.ts gates on the same columns. If the two
     // ever read different columns a candidate would see a balance that is
     // then refused at apply time.
     const client = candidateFake({
-      credit_balances: [{ user_id: "user-1", wallet_balance_cents: 199, interview_passes: 1, live_unlimited_until: null }],
+      credit_balances: [{ user_id: "user-1", application_credits: 7, wallet_balance_cents: 199, interview_passes: 1, live_unlimited_until: null }],
     });
     await expect(getCreditBalance(client as never, "user-1")).resolves.toEqual({
+      applicationCredits: 7,
       walletBalanceCents: 199,
       interviewPasses: 1,
       liveUnlimitedUntil: null,

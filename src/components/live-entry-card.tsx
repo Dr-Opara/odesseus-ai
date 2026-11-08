@@ -3,14 +3,10 @@
 import Link from "next/link";
 import { billingCatalog, liveSkus } from "@/lib/billing/catalog";
 
-// Recurring Live plans only (excludes the one-time live_single pass), same
-// derivation as src/app/billing/page.tsx — kept out of the public/shared
-// candidate-pricing module by design (see that file's header comment: Live
-// pricing must never be one import away from a public page). This component
-// only ever renders behind an authenticated dashboard.
-const LIVE_PLANS = liveSkus.filter((sku) => "planType" in billingCatalog[sku]);
+/** Live purchase options, in the order the interview workflow presents them. All one-time. */
+const LIVE_PLANS = liveSkus;
 function liveCadence(sku: (typeof liveSkus)[number]): string {
-  return "planType" in billingCatalog[sku] && billingCatalog[sku].planType === "monthly" ? "/month" : "/year";
+  return sku === "interview_annual" ? " / 12 months" : "";
 }
 
 type LiveEntryCardProps = {
@@ -129,7 +125,7 @@ export default function LiveEntryCard({
         View Live plans:{" "}
         {LIVE_PLANS.map((sku) => (
           <span key={sku} className="live-plan-item">
-            {billingCatalog[sku].label} · ${(billingCatalog[sku].amountCents / 100).toFixed(2)}
+            {billingCatalog[sku].label} · ${(billingCatalog[sku].amountCents / 100).toFixed(2)} USD
             {liveCadence(sku)}
           </span>
         ))}

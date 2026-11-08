@@ -5,28 +5,17 @@ import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import { billingCatalog, type BillingSku } from "@/lib/billing/catalog";
 
-type CatalogEntry = (typeof billingCatalog)[BillingSku];
-
-/**
- * Stripe checkout interval for a recurring Live SKU.
- *
- * A recurring SKU must be sold in `subscription` mode or Stripe will treat it
- * as a one-off charge and never emit the subscription lifecycle events the
- * membership depends on.
- */
-function recurringIntervalFor(item: CatalogEntry): "month" | "year" | null {
-  if (!("billing" in item) || item.billing !== "recurring") return null;
-  return item.planType === "monthly" ? "month" : "year";
-}
-
+// Every candidate SKU is a one-time purchase: there is no required
+// subscription. Optional pre-created Stripe Price IDs; without one, checkout
+// uses inline price_data at the catalog amount.
 const STRIPE_PRICE_ENV_BY_SKU: Partial<Record<BillingSku, string>> = {
-  wallet_10: "STRIPE_PRICE_WALLET_10",
-  wallet_20: "STRIPE_PRICE_WALLET_20",
-  wallet_50: "STRIPE_PRICE_WALLET_50",
-  live_single: "STRIPE_PRICE_LIVE_SINGLE",
-  live_monthly: "STRIPE_PRICE_LIVE_MONTHLY",
-  live_personal_annual: "STRIPE_PRICE_LIVE_PERSONAL_ANNUAL",
-  live_share_annual: "STRIPE_PRICE_LIVE_SHARE_ANNUAL",
+  app_1: "STRIPE_PRICE_APP_1",
+  app_25: "STRIPE_PRICE_APP_25",
+  app_50: "STRIPE_PRICE_APP_50",
+  app_100: "STRIPE_PRICE_APP_100",
+  interview_1: "STRIPE_PRICE_LIVE_1",
+  interview_3: "STRIPE_PRICE_LIVE_3",
+  interview_annual: "STRIPE_PRICE_LIVE_ANNUAL",
 };
 
 function configuredStripePriceId(sku: BillingSku): string | undefined {
@@ -49,10 +38,10 @@ async function getOrCreateStripeCustomer(userId: string, email?: string) {
   });
 }
 
-// Accepts a plain string on purpose: pre-migration UI may still submit legacy
-// application-credit SKUs ("app_*"). Any SKU absent from the sellable catalog
+// Accepts a plain string on purpose: stale UI may still submit retired SKUs
+// (wallet_*, live_monthly, ...). Any SKU absent from the sellable catalog
 // fails closed with an "Invalid product" redirect — nothing can be charged for
-// a product that no longer exists.
+// a product that is no longer sold.
 export async function createCheckoutSession(sku: string) {
   const item = billingCatalog[sku as BillingSku];
   if (!item) redirect("/billing?error=Invalid%20product");
@@ -72,7 +61,6 @@ export async function createCheckoutSession(sku: string) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   if (!siteUrl || !process.env.STRIPE_SECRET_KEY) redirect("/billing?error=Billing%20is%20not%20configured");
 
-  const interval = recurringIntervalFor(item);
   const stripePriceId = configuredStripePriceId(sku as BillingSku);
   const customer = await getOrCreateStripeCustomer(userId, email);
 
@@ -82,16 +70,14 @@ export async function createCheckoutSession(sku: string) {
         price_data: {
           currency: "usd",
           unit_amount: item.amountCents,
+          // Fallback when a pre-created Stripe Price ID is not configured.
           product_data: { name: item.label, description: item.description },
-          // Local-development fallback when a pre-created Stripe Price ID has
-          // not been configured yet.
-          ...(interval ? { recurring: { interval } } : {}),
         },
         quantity: 1,
       }];
 
   const session = await getStripe().checkout.sessions.create({
-    mode: interval ? "subscription" : "payment",
+    mode: "payment",
     customer: customer.id,
     line_items: lineItems,
     success_url: `${siteUrl}/billing?status=success`,
@@ -101,10 +87,6 @@ export async function createCheckoutSession(sku: string) {
       sku,
       credit_type: item.creditType,
       credit_delta: String(item.creditDelta),
-      // plan_type is what the fulfillment trigger reads the Live membership
-      // configuration from; a subscription carries it on the session too so a
-      // replayed webhook resolves the same plan.
-      ...("planType" in item ? { plan_type: item.planType } : {}),
     },
   });
 

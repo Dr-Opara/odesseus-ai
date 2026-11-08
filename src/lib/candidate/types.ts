@@ -38,21 +38,17 @@ export type CandidateWorkAuthorization = {
 /**
  * The candidate's spendable and Live balances.
  *
- * `walletBalanceCents` is the active currency for applications: Standard Apply
- * and Smart Apply are both drawn from this balance (see
- * `src/lib/pricing/candidate-pricing.ts` and the eligibility gate in
- * `src/app/api/apply/start/route.ts`, both of which derive their figures from
- * `src/lib/billing/catalog.ts`). It is the same column the apply gate reads,
- * so the number a candidate sees is the number that decides whether an
- * application can start.
+ * `applicationCredits` is the active currency for applications: 1 credit
+ * pays for 1 verified successful submission (Apply or Smart Apply).
+ * `walletBalanceCents` is a legacy prepaid balance from the earlier wallet
+ * contract; it stays spendable at the single-credit price. Both are what the
+ * eligibility gate in `src/app/api/apply/start/route.ts` reads.
  *
  * `interviewPasses` / `liveUnlimitedUntil` remain because Odesseus Live is a
  * real authenticated product; only its *public* visibility is restricted.
- *
- * The legacy `application_credits` column still exists in the database but is
- * deliberately absent here: it no longer gates or displays anything.
  */
 export type CreditBalance = {
+  applicationCredits: number;
   walletBalanceCents: number;
   interviewPasses: number;
   /** Set only when an Odesseus Live annual entitlement is active (candidate-owned, server-driven). */

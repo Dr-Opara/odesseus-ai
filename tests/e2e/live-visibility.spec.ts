@@ -164,14 +164,14 @@ test.describe("signed-in applicants still see Odesseus Live where intended", () 
     // interview-pass product are offered. Live session pricing appears here
     // even though it is absent from every public marketing page.
     await expect(page.getByText("Odesseus Live", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("$14.99").first()).toBeVisible();
-    await expect(page.getByText("$19.99").first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Interview passes" })).toBeVisible();
+    await expect(page.getByText("$24.99 USD").first()).toBeVisible();
+    await expect(page.getByText("$59.99 USD").first()).toBeVisible();
+    await expect(page.getByText("$499 USD").first()).toBeVisible();
 
-    // The wallet is the only candidate currency: top-ups are sold here, and
-    // the retired application-credit balance is not presented as one.
-    await expect(page.getByRole("heading", { name: "Wallet top-ups" })).toBeVisible();
-    await expect(page.getByText(/application credits/i)).toHaveCount(0);
+    // Application credits are the candidate currency; wallet top-ups are no
+    // longer sold.
+    await expect(page.getByRole("heading", { name: "Application credits" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Wallet top-ups" })).toHaveCount(0);
 
     await context.close();
   });

@@ -3,8 +3,9 @@
 --
 -- Proves the Phase 3 backend slice end to end against the real database:
 --   * application_runs.execution_mode is the {standard, smart} domain,
---   * the new atomic finalization RPC debits 39¢ (standard) / 99¢ (smart)
---     from the wallet only after verified success, atomically with the
+--   * with no application credits, the finalization RPC debits the
+--     single-credit price (99¢, both modes) from a legacy wallet only after
+--     verified success, atomically with the
 --     application upsert, with correct ledger rows and balance_cents_after,
 --   * replays are idempotent and never re-charge,
 --   * insufficient wallet balance raises and rolls everything back,
@@ -216,7 +217,7 @@ SELECT is(
   false, 'authenticated browsers may not execute the finalize RPC');
 
 -- ---------------------------------------------------------------------------
--- Standard Apply finalization (39¢)
+-- Standard Apply finalization (wallet fallback, 99¢)
 -- ---------------------------------------------------------------------------
 SELECT lives_ok(
   $$INSERT INTO public.credit_transactions
@@ -243,7 +244,7 @@ SELECT lives_ok(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1'),
-  961, 'standard apply debits exactly 39¢');
+  901, 'standard apply debits exactly 99¢ from a legacy wallet');
 
 SELECT is(
   (SELECT count(*)::int FROM public.credit_transactions
@@ -258,17 +259,17 @@ SELECT is(
 SELECT is(
   (SELECT delta FROM public.credit_transactions
    WHERE external_reference = 'application:dddddddd-dddd-4ddd-8ddd-ddddddddddd1'),
-  -39, 'debit delta is the signed −39¢');
+  -99, 'debit delta is the signed −99¢');
 
 SELECT is(
   (SELECT amount_cents FROM public.credit_transactions
    WHERE external_reference = 'application:dddddddd-dddd-4ddd-8ddd-ddddddddddd1'),
-  39, 'amount_cents = abs(delta) for the wallet row');
+  99, 'amount_cents = abs(delta) for the wallet row');
 
 SELECT is(
   (SELECT balance_cents_after FROM public.credit_transactions
    WHERE external_reference = 'application:dddddddd-dddd-4ddd-8ddd-ddddddddddd1'),
-  961, 'trigger records balance_cents_after');
+  901, 'trigger records balance_cents_after');
 
 SELECT is(
   (SELECT metadata->>'execution_mode' FROM public.credit_transactions
@@ -278,7 +279,7 @@ SELECT is(
 SELECT is(
   (SELECT metadata->>'rate_cents' FROM public.credit_transactions
    WHERE external_reference = 'application:dddddddd-dddd-4ddd-8ddd-ddddddddddd1'),
-  '39', 'debit metadata records the applied rate');
+  '99', 'debit metadata records the applied rate');
 
 SELECT is(
   (SELECT status FROM public.application_runs WHERE id = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd1'),
@@ -331,7 +332,7 @@ SELECT is(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1'),
-  961, 'wallet unchanged after replay');
+  901, 'wallet unchanged after replay');
 
 SELECT is(
   (SELECT count(*)::int FROM public.credit_transactions

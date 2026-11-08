@@ -7,7 +7,7 @@
 --     path credits exactly credit_delta and stamps balance_cents_after,
 --   * duplicate webhook events are rejected by the unique stripe_event_id
 --     (no double credit),
---   * Standard (39¢) and Smart (99¢) Apply debits leave exact balances and
+--   * Standard and Smart Apply legacy-wallet debits (99¢ each) leave exact balances and
 --     exactly one debit per run (replays never re-charge),
 --   * odesseus_reverse_credit_transaction() posts an opposite-delta ledger
 --     row exactly once (replays are no-ops), restoring the prior balance,
@@ -86,12 +86,12 @@ SELECT is(
   (SELECT amount_debited_cents FROM public.odesseus_finalize_application(
      '55555555-5555-4555-8555-000000000001', '22222222-2222-4222-8222-000000000001',
      'standard', 'submitted successfully — you are in the running', 'https://acme.example.com/thanks')),
-  39, 'standard apply debits exactly 39¢ on verified success');
+  99, 'standard apply debits exactly 99¢ (legacy wallet) on verified success');
 
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '22222222-2222-4222-8222-000000000001'),
-  961, 'wallet is exactly 961¢ after a standard apply debit');
+  901, 'wallet is exactly 901¢ after a standard apply debit');
 
 SELECT is(
   (SELECT count(*)::int FROM public.applications
@@ -112,7 +112,7 @@ SELECT is(
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances
    WHERE user_id = '22222222-2222-4222-8222-000000000001'),
-  961, 'replayed finalization never re-charges the wallet');
+  901, 'replayed finalization never re-charges the wallet');
 
 SELECT is(
   (SELECT count(*)::int FROM public.credit_transactions
@@ -124,7 +124,7 @@ SELECT is(
 SELECT is(
   (SELECT reversal_delta FROM public.odesseus_reverse_credit_transaction(
      'application:55555555-5555-4555-8555-000000000001', 'test reversal')),
-  39, 'reversing the standard debit posts an opposite delta of +39');
+  99, 'reversing the standard debit posts an opposite delta of +99');
 
 SELECT is(
   (SELECT wallet_balance_cents FROM public.credit_balances

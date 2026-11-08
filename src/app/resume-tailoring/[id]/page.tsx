@@ -41,6 +41,7 @@ export default async function ResumeTailoringPage({
   return (
     <AppShell
       fullName={profile?.full_name}
+      applicationCredits={credits.applicationCredits}
       walletBalanceCents={credits.walletBalanceCents}
       interviewPasses={credits.interviewPasses}
     >

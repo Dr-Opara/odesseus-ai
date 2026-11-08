@@ -282,7 +282,7 @@ describe("the application agent section", () => {
 describe("the wallet section", () => {
   it("reports the balance and says whether an application is affordable", async () => {
     // "Has money" and "can apply" are different statements: a candidate with
-    // 38 cents has money and cannot start a Standard Apply.
+    // 98 cents of legacy wallet and no credits cannot start an application.
     const { client: c } = client({
       tables: {
         ...emptyTables,
@@ -310,14 +310,10 @@ describe("the wallet section", () => {
     expect((await getCandidateDashboard(c, USER)).wallet.canApply).toBe(false);
   });
 
-  it("claims affordability at exactly the standard apply rate", async () => {
-    // The regression this pins: the threshold used to be a hardcoded `49`,
-    // left over from when Standard Apply was $0.49. After the rate moved to
-    // $0.39 a candidate holding 39–48 cents was told they could not apply,
-    // even though the server would have accepted the charge. The threshold is
-    // now derived from the catalog, and this asserts the exact boundary in
-    // both directions so a future price change cannot silently desynchronise
-    // it again.
+  it("claims affordability at exactly the single-credit price in a legacy wallet", async () => {
+    // The threshold is derived from the catalog, and this asserts the exact
+    // boundary in both directions so a future price change cannot silently
+    // desynchronise it from the server gate.
     const atRate = client({
       tables: {
         ...emptyTables,
@@ -325,6 +321,18 @@ describe("the wallet section", () => {
       },
     });
     expect((await getCandidateDashboard(atRate.client, USER)).wallet.canApply).toBe(true);
+  });
+
+  it("lets one application credit start an application with an empty wallet", async () => {
+    const { client: c } = client({
+      tables: {
+        ...emptyTables,
+        credit_balances: { application_credits: 1, wallet_balance_cents: 0 },
+      },
+    });
+    const dash = await getCandidateDashboard(c, USER);
+    expect(dash.wallet.applicationCredits).toBe(1);
+    expect(dash.wallet.canApply).toBe(true);
   });
 
   it("includes recent wallet movements with their sign", async () => {
