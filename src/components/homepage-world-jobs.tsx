@@ -10,7 +10,7 @@ import type { HomepageJob, HomepageJobsResult } from "@/lib/jobs/homepage-types"
 
 const quickLinks = [
   { icon: "⚡", label: "Find jobs" },
-  { icon: "▣", label: "Auto apply" },
+  { icon: "▣", label: "Smart Apply" },
   { icon: "▥", label: "Interview prep" },
   { icon: "$", label: "Earn while you search" },
 ];

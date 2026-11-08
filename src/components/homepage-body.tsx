@@ -92,7 +92,7 @@ export default function HomepageBody({ initialJobsResult }: { initialJobsResult?
             </span>
           </h1>
           <p className="oh-hero-description-refresh">
-            Odesseus finds matched roles, tailors your resume, auto-applies, helps you prepare for
+            Odesseus finds matched roles, tailors your resume, applies with your approval, helps you prepare for
             interviews, and gives you another way to earn while you search.
           </p>
         </div>
