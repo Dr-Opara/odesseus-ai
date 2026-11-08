@@ -4,13 +4,14 @@ const socialIcons = [
   { label: "X", slug: "x", href: "https://x.com/odesseusai" },
   { label: "Instagram", slug: "instagram", href: "https://instagram.com/odesseus.ai" },
   { label: "TikTok", slug: "tiktok", href: "https://www.tiktok.com/@odesseus_ai" },
-  { label: "LinkedIn", slug: "linkedin", href: "https://linkedin.com/odesseus" },
+  { label: "LinkedIn", slug: "linkedin", href: "https://www.linkedin.com/company/odesseus/" },
 ] as const;
 
 const technologyBrands = [
-  { label: "Google Cloud", slug: "googlecloud" },
-  { label: "Anthropic", slug: "anthropic" },
-  { label: "Grok / xAI", slug: "xai" },
+  { label: "OpenAI", slug: "openai" },
+  { label: "Supabase", slug: "supabase" },
+  { label: "Vercel", slug: "vercel" },
+  { label: "Stripe", slug: "stripe" },
 ] as const;
 
 function BrandIcon({ slug, label }: { slug: string; label: string }) {
@@ -57,16 +58,12 @@ export default function MarketingFooter() {
         <div className="figma-footer-locations">
           <strong>Location</strong>
           <div className="figma-footer-location">
-            <small>N. America Headquarters</small>
+            <small>Headquarters</small>
             <span>Austin, Texas</span>
           </div>
           <div className="figma-footer-location">
-            <small>International Global Offices</small>
-            <span>London, UK</span>
-            <span>Dubai, UAE</span>
-            <span>Berlin, Germany</span>
-            <span>Lagos, Nigeria</span>
-            <span>Nairobi, Kenya</span>
+            <small>Serving job seekers worldwide</small>
+            <span>Built in the U.S. for careers everywhere.</span>
           </div>
         </div>
 

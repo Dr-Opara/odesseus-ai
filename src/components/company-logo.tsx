@@ -67,6 +67,18 @@ const ATS_HOSTS = [
   "arbeitnow.com",
 ];
 
+/**
+ * Job boards and ATS vendors serve the same brand from several country domains
+ * (arbeitnow.com, arbeitnow.co.uk, arbeitnow.nl, ...). Match on the brand label
+ * so a board's favicon is never shown as the hiring company's logo.
+ */
+const ATS_BRAND_LABELS = new Set(ATS_HOSTS.map((host) => host.split(".")[0]));
+
+function isAtsHost(hostname: string) {
+  if (ATS_HOSTS.some((host) => hostname === host || hostname.endsWith(`.${host}`))) return true;
+  return hostname.split(".").some((label) => ATS_BRAND_LABELS.has(label));
+}
+
 function favicon(domain: string) {
   return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
 }
@@ -75,9 +87,7 @@ function sourceDomain(url: string | null | undefined) {
   if (!url) return null;
   try {
     const hostname = new URL(url).hostname.replace(/^www\./, "");
-    if (ATS_HOSTS.some((host) => hostname === host || hostname.endsWith(`.${host}`))) {
-      return null;
-    }
+    if (isAtsHost(hostname)) return null;
     return hostname;
   } catch {
     return null;
