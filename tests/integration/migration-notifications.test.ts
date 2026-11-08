@@ -15,12 +15,17 @@ import { WALLET_LOW_THRESHOLD_CENTS } from "@/lib/notifications/email";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 const MIGRATION = "supabase/migrations/20261029000000_notifications.sql";
+// The type vocabulary and employer channel map were widened by the spec
+// employer pricing migration (three credit-lifecycle email types). It is now
+// the authoritative copy of both; the original migration holds the rest.
+const LATEST_TYPES_MIGRATION = "supabase/migrations/20261124000000_spec_employer_pricing.sql";
 const M8_PREFS = "supabase/migrations/20261002000000_notification_preferences.sql";
 
 const read = (relative: string) =>
   readFileSync(path.join(repoRoot, relative), "utf8").replace(/\r\n/g, "\n");
 
 const sql = read(MIGRATION);
+const latestTypesSql = read(LATEST_TYPES_MIGRATION);
 
 /** Body of a function, from its declaration to the end of its body. */
 function functionBody(declaration: string, body = sql): string {
@@ -41,16 +46,16 @@ function listTokens(pattern: RegExp, body = sql): string[] {
 
 describe("20261029000000_notifications.sql <-> TS contract", () => {
   it("declares exactly the catalog's notification types, in both directions", () => {
-    const sqlTypes = listTokens(/CHECK \(notification_type IN \(\s*([\s\S]*?)\)\)/);
-    expect(sqlTypes).toHaveLength(35);
+    const sqlTypes = listTokens(/CHECK \(notification_type IN \(\s*([\s\S]*?)\)\)/, latestTypesSql);
+    expect(sqlTypes).toHaveLength(38);
     expect([...sqlTypes].sort()).toEqual([...NOTIFICATION_TYPES].sort());
     for (const type of CANDIDATE_NOTIFICATION_TYPES) expect(sqlTypes).toContain(type);
     for (const type of EMPLOYER_NOTIFICATION_TYPES) expect(sqlTypes).toContain(type);
   });
 
-  it("keeps the 24/11 candidate/employer split in the migration header", () => {
-    expect(sql).toMatch(/-- Candidate catalog \(24\)/);
-    expect(sql).toMatch(/-- Employer catalog \(11\)/);
+  it("keeps the 24/14 candidate/employer split in the latest type list", () => {
+    expect(latestTypesSql).toMatch(/-- Candidate catalog \(24\)/);
+    expect(latestTypesSql).toMatch(/-- Employer catalog \(14\)/);
   });
 
   it("pins the entity_type vocabulary the catalog and routes rely on", () => {
@@ -96,7 +101,8 @@ describe("20261029000000_notifications.sql <-> TS contract", () => {
 
   it("maps every employer type to the same org channel the catalog does", () => {
     const channelFn = functionBody(
-      "CREATE OR REPLACE FUNCTION odesseus_private.notification_employer_channel"
+      "CREATE OR REPLACE FUNCTION odesseus_private.notification_employer_channel",
+      latestTypesSql
     );
     const sqlMap = new Map(
       [...channelFn.matchAll(/when '([A-Z_]+)' then '([a-z_]+)'/g)].map((m) => [m[1], m[2]])

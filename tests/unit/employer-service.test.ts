@@ -51,6 +51,16 @@ function employerFake(options: {
     };
     builder.order = () => builder;
     builder.limit = () => builder;
+    // Unexpired-credit filter (`expires_at.is.null,expires_at.gt.<now>`): the
+    // fixtures model it directly so an expired grant is excluded.
+    builder.or = (expression: string) => {
+      const match = /expires_at\.gt\.(.+)$/.exec(expression);
+      if (match) {
+        const cutoff = new Date(match[1]).getTime();
+        filters.push((row) => row.expires_at == null || new Date(String(row.expires_at)).getTime() > cutoff);
+      }
+      return builder;
+    };
     builder.maybeSingle = async () => {
       const [first] = matches();
       return { data: first ?? null, error: null };
@@ -357,8 +367,10 @@ describe("employer jobs and promotions", () => {
       published: 2,
       draft: 1,
       closed: 1,
+      paused: 0,
+      expired: 0,
     });
-    expect(countJobsByStatus([])).toEqual({ total: 0, published: 0, draft: 0, closed: 0 });
+    expect(countJobsByStatus([])).toEqual({ total: 0, published: 0, draft: 0, closed: 0, paused: 0, expired: 0 });
   });
 });
 
@@ -394,6 +406,9 @@ describe("employer subscription, allowance and seats", () => {
       remaining: 6,
       grantedAt: null,
       expiresAt: null,
+      baseRemaining: 6,
+      addonRemaining: 0,
+      addons: [],
     });
 
     const overspent = employerFake({
@@ -405,6 +420,25 @@ describe("employer subscription, allowance and seats", () => {
     });
     const allowance = await getJobPostAllowance(overspent as never, "org-1");
     expect(allowance?.remaining).toBe(0);
+  });
+
+  it("sums base and add-on credits that are still inside their credit clock", async () => {
+    const future = new Date(Date.now() + 10 * 86_400_000).toISOString();
+    const past = new Date(Date.now() - 86_400_000).toISOString();
+    const client = employerFake({
+      routes: {
+        employer_job_post_credits: [
+          { org_id: "org-1", total: 5, used: 2, granted_at: "2026-11-01T00:00:00Z", expires_at: future, kind: "base" },
+          { org_id: "org-1", total: 3, used: 1, granted_at: "2026-11-05T00:00:00Z", expires_at: future, kind: "addon" },
+          { org_id: "org-1", total: 4, used: 0, granted_at: "2026-09-01T00:00:00Z", expires_at: past, kind: "addon" },
+        ],
+      },
+    });
+    const allowance = await getJobPostAllowance(client as never, "org-1");
+    expect(allowance).toMatchObject({ total: 8, used: 3, remaining: 5, baseRemaining: 3, addonRemaining: 2 });
+    expect(allowance?.addons).toEqual([
+      { remaining: 2, total: 3, purchasedAt: "2026-11-05T00:00:00Z", expiresAt: future },
+    ]);
   });
 
   it("merges the paid seat row with the entitled seat count from the RPC", async () => {
@@ -458,46 +492,42 @@ describe("employer subscription, allowance and seats", () => {
 });
 
 describe("employer job quota", () => {
-  it("uses the granted allowance while the subscription is live", () => {
+  it("counts usable credits and allows add-on purchases with an active AI Starter Bundle", () => {
     const quota = resolveJobQuota(
-      { tier: "growth", status: "active", jobPostsIncluded: 10, periodStart: null, periodEnd: null },
-      { total: 10, used: 4, remaining: 6, grantedAt: null, expiresAt: null }
+      { tier: "ai_starter", status: "active", jobPostsIncluded: 5, periodStart: null, periodEnd: null },
+      { total: 5, used: 2, remaining: 3, grantedAt: null, expiresAt: null, baseRemaining: 3, addonRemaining: 0, addons: [] }
     );
-    expect(quota).toEqual({ included: 10, used: 4, remaining: 6, canPublishJob: true });
+    expect(quota).toEqual({ included: 5, used: 2, remaining: 3, canPublishJob: true, canBuyAddons: true });
   });
 
-  it("falls back to the plan's own included count when no allowance row exists", () => {
-    const quota = resolveJobQuota(
-      { tier: "starter", status: "active", jobPostsIncluded: 3, periodStart: null, periodEnd: null },
-      null
-    );
-    expect(quota).toEqual({ included: 3, used: 0, remaining: 3, canPublishJob: true });
-  });
-
-  /**
-   * A past-due or canceled subscription entitles nothing. Showing the included
-   * quota anyway would promise job posts the company has not paid for.
-   */
-  it("entitles nothing when the subscription is not live", () => {
+  it("keeps add-on credits publishable after the bundle lapses, but blocks new add-on purchases", () => {
     for (const status of ["past_due", "canceled", "incomplete"]) {
       expect(
         resolveJobQuota(
-          { tier: "business", status, jobPostsIncluded: 25, periodStart: null, periodEnd: null },
-          { total: 25, used: 2, remaining: 23, grantedAt: null, expiresAt: null }
+          { tier: "ai_starter", status, jobPostsIncluded: 5, periodStart: null, periodEnd: null },
+          { total: 2, used: 0, remaining: 2, grantedAt: null, expiresAt: null, baseRemaining: 2, addonRemaining: 0, addons: [] }
         )
-      ).toEqual({ included: 0, used: 2, remaining: 0, canPublishJob: false });
+      ).toEqual({ included: 2, used: 0, remaining: 2, canPublishJob: true, canBuyAddons: false });
     }
   });
 
-  it("refuses to publish once the allowance is spent", () => {
+  it("never offers $10 add-ons on an earlier plan", () => {
     const quota = resolveJobQuota(
-      { tier: "starter", status: "active", jobPostsIncluded: 3, periodStart: null, periodEnd: null },
-      { total: 3, used: 3, remaining: 0, grantedAt: null, expiresAt: null }
+      { tier: "growth", status: "active", jobPostsIncluded: 10, periodStart: null, periodEnd: null },
+      { total: 10, used: 4, remaining: 6, grantedAt: null, expiresAt: null, baseRemaining: 6, addonRemaining: 0, addons: [] }
+    );
+    expect(quota).toEqual({ included: 10, used: 4, remaining: 6, canPublishJob: true, canBuyAddons: false });
+  });
+
+  it("refuses to publish once every credit is spent", () => {
+    const quota = resolveJobQuota(
+      { tier: "ai_starter", status: "active", jobPostsIncluded: 5, periodStart: null, periodEnd: null },
+      { total: 5, used: 5, remaining: 0, grantedAt: null, expiresAt: null, baseRemaining: 0, addonRemaining: 0, addons: [] }
     );
     expect(quota).toMatchObject({ remaining: 0, canPublishJob: false });
   });
 
-  it("returns null when there is no subscription at all", () => {
+  it("returns null when there is no subscription and no credits at all", () => {
     expect(resolveJobQuota(null, null)).toBeNull();
   });
 });
@@ -587,30 +617,29 @@ describe("employer publish capacity (2Q)", () => {
     return { client: { from: countingFrom } as never, updateSpy };
   }
 
-  it("publishes a draft while plan capacity remains", async () => {
-    const { client, updateSpy } = publishFake({ publishedCount: 2 });
+  it("publishes a draft and leaves credit enforcement to the claim trigger", async () => {
+    const { client, updateSpy } = publishFake({});
     const result = await publishJob(client, "org-1", "job-1");
     expect(result).toMatchObject({ ok: true });
     expect(updateSpy).toHaveBeenCalledOnce();
   });
 
-  it("rejects with at_capacity at exactly the Starter limit of 3", async () => {
-    const { client, updateSpy } = publishFake({ publishedCount: 3 });
+  it("reposts an expired job (a new 30-day window and a new credit)", async () => {
+    const { client, updateSpy } = publishFake({ jobStatus: "expired" });
     const result = await publishJob(client, "org-1", "job-1");
-    expect(result).toEqual({ ok: false, reason: "at_capacity" });
-    expect(updateSpy).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ ok: true });
+    expect(updateSpy).toHaveBeenCalledOnce();
   });
 
-  it("rejects with no_credits when no live subscription backs the org", async () => {
-    const { client, updateSpy } = publishFake({ subscription: null });
+  it("refuses to publish a closed job", async () => {
+    const { client, updateSpy } = publishFake({ jobStatus: "closed" });
     const result = await publishJob(client, "org-1", "job-1");
-    expect(result).toEqual({ ok: false, reason: "no_credits" });
+    expect(result).toEqual({ ok: false, reason: "wrong_status" });
     expect(updateSpy).not.toHaveBeenCalled();
   });
 
   it("maps the credit-claim trigger message to no_credits instead of throwing", async () => {
     const { client } = publishFake({
-      publishedCount: 0,
       updateError: "no job post credits available for this employer",
     });
     const result = await publishJob(client, "org-1", "job-1");
@@ -648,8 +677,8 @@ describe("employer overview", () => {
     expect(overview.organization?.name).toBe("Acme Corp");
     expect(overview.needsOrganization).toBe(false);
     expect(overview.yourRole).toBe("owner");
-    expect(overview.jobCounts).toEqual({ total: 2, published: 1, draft: 1, closed: 0 });
-    expect(overview.quota).toEqual({ included: 10, used: 4, remaining: 6, canPublishJob: true });
+    expect(overview.jobCounts).toEqual({ total: 2, published: 1, draft: 1, closed: 0, paused: 0, expired: 0 });
+    expect(overview.quota).toEqual({ included: 10, used: 4, remaining: 6, canPublishJob: true, canBuyAddons: false });
     expect(overview.seats).toMatchObject({ required: 3, active: 3, extraSeats: 0 });
     expect(overview.members).toHaveLength(2);
     expect(overview.notices).toEqual([]);
@@ -691,7 +720,7 @@ describe("employer overview", () => {
     expect(overview.needsOrganization).toBe(true);
     expect(overview.organization).toBeNull();
     expect(overview.jobs).toEqual([]);
-    expect(overview.jobCounts).toEqual({ total: 0, published: 0, draft: 0, closed: 0 });
+    expect(overview.jobCounts).toEqual({ total: 0, published: 0, draft: 0, closed: 0, paused: 0, expired: 0 });
     expect(overview.quota).toBeNull();
     expect(overview.account.companyName).toBe("Acme Corp");
   });

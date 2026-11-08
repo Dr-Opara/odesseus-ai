@@ -11,7 +11,7 @@
  * Two rules govern this file:
  *
  * 1. The tier / promotion keys are exactly the check-constraint values in the
- *    live schema (`starter|growth|business` and
+ *    live schema (`ai_starter|starter|growth|business` and
  *    `featured_7d|featured_14d|ai_30d`). A new stored tier that is not mapped
  *    here must degrade to an honest "unrecognised plan" state rather than
  *    silently inherit some other plan's numbers.
@@ -21,8 +21,17 @@
  *    cannot quietly desynchronise from the numbers a signed-in employer sees.
  */
 
-/** Subscription tiers as stored in `employer_subscriptions.tier`. */
-export const EMPLOYER_TIERS = ["starter", "growth", "business"] as const;
+/**
+ * Subscription tiers as stored in `employer_subscriptions.tier`.
+ *
+ * `ai_starter` is the AI Starter Bundle — the plan for sale. `starter`,
+ * `growth` and `business` are earlier plans kept so existing subscribers keep
+ * resolving to the terms they bought.
+ */
+export const EMPLOYER_TIERS = ["ai_starter", "starter", "growth", "business"] as const;
+
+/** The only tier offered for new purchases. */
+export const SELLABLE_EMPLOYER_TIER = "ai_starter" as const;
 export type EmployerTier = (typeof EMPLOYER_TIERS)[number];
 
 /** Member roles as stored in `employer_members.role`. */
@@ -30,7 +39,7 @@ export const EMPLOYER_MEMBER_ROLES = ["owner", "admin", "recruiter", "viewer"] a
 export type EmployerMemberRole = (typeof EMPLOYER_MEMBER_ROLES)[number];
 
 /** Job statuses as stored in `employer_jobs.status`. */
-export const EMPLOYER_JOB_STATUSES = ["draft", "published", "closed"] as const;
+export const EMPLOYER_JOB_STATUSES = ["draft", "published", "paused", "closed", "expired"] as const;
 export type EmployerJobStatus = (typeof EMPLOYER_JOB_STATUSES)[number];
 
 /** Subscription statuses as stored in `employer_subscriptions.status`. */
@@ -50,7 +59,7 @@ export type FeaturedTier = (typeof FEATURED_TIERS)[number];
 export type EmployerPlan = {
   tier: EmployerTier;
   name: string;
-  /** Monthly price in whole US dollars, as approved. */
+  /** Price per billing cycle in whole US dollars, as approved. */
   priceUsd: number;
   priceLabel: string;
   unit: string;
@@ -58,6 +67,8 @@ export type EmployerPlan = {
   jobPostsIncluded: number;
   /** Copy for the included quota. */
   jobsLabel: string;
+  /** False for earlier plans that existing subscribers keep but nobody can buy. */
+  sellable: boolean;
 };
 
 /**
@@ -66,6 +77,16 @@ export type EmployerPlan = {
  * integer so the dashboard can show remaining quota without parsing copy.
  */
 export const EMPLOYER_PLAN_BY_TIER: Record<EmployerTier, EmployerPlan> = {
+  ai_starter: {
+    tier: "ai_starter",
+    name: "AI Starter Bundle",
+    priceUsd: 100,
+    priceLabel: "$100",
+    unit: "/ 30 days",
+    jobPostsIncluded: 5,
+    jobsLabel: "5 job-post credits every 30 days",
+    sellable: true,
+  },
   starter: {
     tier: "starter",
     name: "Starter",
@@ -74,6 +95,7 @@ export const EMPLOYER_PLAN_BY_TIER: Record<EmployerTier, EmployerPlan> = {
     unit: "/mo",
     jobPostsIncluded: 3,
     jobsLabel: "3 active jobs",
+    sellable: false,
   },
   growth: {
     tier: "growth",
@@ -83,6 +105,7 @@ export const EMPLOYER_PLAN_BY_TIER: Record<EmployerTier, EmployerPlan> = {
     unit: "/mo",
     jobPostsIncluded: 10,
     jobsLabel: "10 active jobs",
+    sellable: false,
   },
   business: {
     tier: "business",
@@ -92,8 +115,31 @@ export const EMPLOYER_PLAN_BY_TIER: Record<EmployerTier, EmployerPlan> = {
     unit: "/mo",
     jobPostsIncluded: 25,
     jobsLabel: "25 active jobs",
+    sellable: false,
   },
 };
+
+/**
+ * Additional job posts: $10 each, only while the AI Starter Bundle is active.
+ * Each one expires 30 days after its own purchase.
+ */
+export const ADDON_JOB_POST = {
+  name: "Additional job post",
+  priceUsd: 10,
+  priceLabel: "$10",
+  validDays: 30,
+  maxPerPurchase: 50,
+} as const;
+
+/** A posted job stays live for 30 days from the moment its credit is used. */
+export const JOB_POST_LIFESPAN_DAYS = 30;
+
+export const PAUSE_TOOLTIP =
+  "Pausing hides your listing from candidates, but does not pause or extend the original 30-day lifespan of the post.";
+export const CLOSE_TOOLTIP =
+  "Closing this job will permanently end the listing and archive candidate data. The credit used for this post cannot be refunded or reused.";
+export const AUTO_RENEW_LABEL =
+  "Automatically consume a credit to renew this job for another 30 days when it expires.";
 
 export const EXTRA_RECRUITER_SEAT_PRICE_USD = 20;
 export const EXTRA_RECRUITER_SEAT_PRICE_LABEL = "$20";
@@ -195,8 +241,10 @@ export function subscriptionStatusLabel(status: string | null | undefined): stri
 
 const JOB_STATUS_LABELS: Record<EmployerJobStatus, string> = {
   draft: "Draft",
-  published: "Live",
+  published: "Active",
+  paused: "Paused",
   closed: "Closed",
+  expired: "Expired",
 };
 
 /** Human label for a stored job status; unknown values are shown verbatim. */

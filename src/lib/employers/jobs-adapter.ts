@@ -35,6 +35,7 @@ import {
   createJob,
   deleteJob,
   getEmployerSubscription,
+  getJobPostAllowance,
   getJob,
   listJobs,
   publishJob,
@@ -49,12 +50,14 @@ import type { EmployerJob, EmployerJobDetail, EmployerJobStatus, WorkArrangement
 import type { EmployerResult } from "./result";
 
 /** The plan names the Figma components render. */
-type PlanName = "Starter" | "Growth" | "Business";
+type PlanName = "AI Starter Bundle" | "Starter" | "Growth" | "Business";
 
 /** The backend's stored job statuses, narrowed to the Figma vocabulary. */
 function jobStatus(status: string): EmployerJobStatus {
   if (status === "published") return "Published";
+  if (status === "paused") return "Paused";
   if (status === "closed") return "Closed";
+  if (status === "expired") return "Expired";
   return "Draft";
 }
 
@@ -74,6 +77,8 @@ type ServiceJob = {
   status: string;
   postedAt: string | null;
   createdAt: string | null;
+  expiresAt?: string | null;
+  autoRenew?: boolean;
   featured?: { tier: string; isActive: boolean; expiresAt: string | null } | null;
 };
 
@@ -102,6 +107,9 @@ function toDisplayJob(row: ServiceJob): EmployerJob {
     status: jobStatus(row.status),
     createdAt: row.createdAt ?? row.postedAt ?? new Date().toISOString(),
     publishedAt: row.postedAt ?? undefined,
+    // Service reads return either the camelCase projection or the raw row.
+    expiresAt: row.expiresAt ?? (row as { expires_at?: string | null }).expires_at ?? undefined,
+    autoRenew: row.autoRenew ?? (row as { auto_renew?: boolean }).auto_renew ?? false,
     featured: Boolean(row.featured?.isActive),
     featuredUntil: row.featured?.isActive ? (row.featured.expiresAt ?? undefined) : undefined,
   };
@@ -179,9 +187,9 @@ function toWorkArrangement(value: string | undefined): "remote" | "hybrid" | "on
  */
 const JOB_REFUSALS = {
   not_found: "That job could not be found.",
-  wrong_status: "Only a draft job can be edited or published. Close a published job first.",
-  no_credits: "Your plan has no active job posts. Update your plan to publish this job.",
-  at_capacity: "Your plan's active job limit is reached. Close a job or upgrade your plan.",
+  wrong_status: "That action isn't available for this job's current status.",
+  no_credits: "No job-post credits available. Buy an additional job post or renew your AI Starter Bundle.",
+  window_ended: "This post's 30-day window has ended. Repost it with a credit.",
 } as const;
 
 type JobRefusal = keyof typeof JOB_REFUSALS;
@@ -380,10 +388,9 @@ export async function updateEmployerJob(
 /**
  * Publishes a job.
  *
- * Capacity is the service's decision, checked against the organization's real
- * plan allowance and the live count of published jobs, then re-asserted by the
- * `claim_job_post_credit` trigger under concurrency. This adapter never
- * counts locally and never assumes success.
+ * Credit availability is enforced by the `claim_job_post_credit` trigger,
+ * which consumes one usable credit (base or add-on) and starts a 30-day
+ * window. This adapter never counts locally and never assumes success.
  */
 export async function publishEmployerJob(jobId: string): Promise<EmployerResult<EmployerJob>> {
   const resolved = await resolveEmployerContext();
@@ -480,12 +487,12 @@ export async function featureEmployerJob(
 }
 
 /**
- * The plan's active-job capacity, for the capacity badge.
+ * Job-post credit usage, for the capacity badge.
  *
- * The limit is read from the stored subscription and mapped through the
- * approved plan table, so it is the number the server will enforce rather than
- * a copy. An unrecognised tier yields a `null` limit, which the badge renders
- * as unknown instead of borrowing another plan's number.
+ * Read from the same usable-credit grants the publish trigger spends (base
+ * credits this cycle plus unexpired add-ons), so the badge shows the number
+ * the server will enforce. `planLimit` is null when the org has no usable
+ * credit grant at all, which the badge renders as unknown.
  */
 export async function getEmployerCapacity(): Promise<
   EmployerResult<{ activeJobCount: number; planLimit: number | null; planId: PlanName | null }>
@@ -495,9 +502,9 @@ export async function getEmployerCapacity(): Promise<
 
   try {
     const supabase = await createClient();
-    const [subscription, jobs] = await Promise.all([
+    const [subscription, allowance] = await Promise.all([
       getEmployerSubscription(supabase, resolved.context.orgId),
-      listJobs(supabase, resolved.context.orgId, { limit: 100 }),
+      getJobPostAllowance(supabase, resolved.context.orgId),
     ]);
 
     const plan = planForTier(subscription?.tier);
@@ -506,13 +513,13 @@ export async function getEmployerCapacity(): Promise<
       status: "ok",
       source: "live",
       data: {
-        activeJobCount: jobs.items.filter((job) => job.status === "published").length,
-        planLimit: plan ? plan.jobPostsIncluded : null,
+        activeJobCount: allowance?.used ?? 0,
+        planLimit: allowance ? allowance.total : null,
         planId: (plan?.name as PlanName | undefined) ?? null,
       },
     };
   } catch (error) {
-    return toFailure("load your plan capacity", error);
+    return toFailure("load your job-post credits", error);
   }
 }
 

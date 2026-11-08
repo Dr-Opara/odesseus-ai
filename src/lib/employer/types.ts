@@ -74,6 +74,12 @@ export type EmployerJob = {
   status: EmployerJobStatus | string;
   postedAt: string | null;
   createdAt: string | null;
+  /** The JOB POST clock: 30 days from the credit that published it. Pausing never moves it. */
+  expiresAt?: string | null;
+  /** Renew automatically with a credit when the 30-day window ends. */
+  autoRenew?: boolean;
+  /** Set when the job was closed: "filled" or "closed". */
+  closedReason?: string | null;
   /** The promotion currently running on this job, when any. */
   featured: {
     tier: string;
@@ -93,12 +99,22 @@ export type EmployerSubscription = {
 };
 
 /** Granted job-post allowance for the current period. */
+/**
+ * Usable job-post credits across every unexpired grant (the CREDIT clock).
+ *
+ * `total` / `used` / `remaining` sum base and add-on credits. `grantedAt` and
+ * `expiresAt` describe the current cycle's base grant. Each add-on purchase is
+ * listed with its own 30-day expiry.
+ */
 export type EmployerJobPostAllowance = {
   total: number;
   used: number;
   remaining: number;
   grantedAt: string | null;
   expiresAt: string | null;
+  baseRemaining: number;
+  addonRemaining: number;
+  addons: Array<{ remaining: number; total: number; purchasedAt: string; expiresAt: string | null }>;
 };
 
 /** Recruiter seat state, merged from the `recruiter_seats` row and the RPCs. */
@@ -123,11 +139,14 @@ export type EmployerSeats = {
  * UI must not imply it does.
  */
 export type EmployerJobQuota = {
+  /** Base + add-on credits granted and still inside their credit clock. */
   included: number;
   used: number;
   remaining: number;
-  /** True when the remaining allowance is what gates publishing another job. */
+  /** True when at least one usable credit exists (add-ons survive a lapsed bundle). */
   canPublishJob: boolean;
+  /** Whether $10 add-ons can be bought right now (active AI Starter Bundle). */
+  canBuyAddons: boolean;
 };
 
 /**
@@ -156,6 +175,8 @@ export type EmployerOverview = {
     published: number;
     draft: number;
     closed: number;
+    paused: number;
+    expired: number;
   };
   members: EmployerMembership[];
   invitations: EmployerInvitation[];

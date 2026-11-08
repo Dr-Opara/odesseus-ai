@@ -9,6 +9,7 @@ import {
   toFormEmploymentType,
 } from "@/lib/employer/service";
 import EmployerStatePanel from "@/components/employers/state-panel";
+import { AUTO_RENEW_LABEL } from "@/lib/employer/plans";
 
 function linesToArray(value: string): string[] {
   return value
@@ -56,6 +57,7 @@ export default function PostJobForm({ orgId }: { orgId: string }) {
       responsibilities: linesToArray(String(formData.get("responsibilities") || "")),
       requiredQualifications: linesToArray(String(formData.get("requiredQualifications") || "")),
       preferredQualifications: linesToArray(String(formData.get("preferredQualifications") || "")),
+      autoRenew: formData.get("autoRenew") === "on",
     });
 
     setSaving(false);
@@ -172,10 +174,17 @@ export default function PostJobForm({ orgId }: { orgId: string }) {
         <textarea className="input" name="preferredQualifications" rows={4} />
       </label>
 
+      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 18, fontSize: 14 }}>
+        <input type="checkbox" name="autoRenew" />
+        <span>{AUTO_RENEW_LABEL}</span>
+      </label>
+
       {hasDraft ? (
         <div className="emp-capacity-badge" style={{ marginTop: 20 }} role="status">
           <div className="emp-capacity-badge-row">
-            <span>Draft saved. Publishing uses one of your plan&rsquo;s job posts.</span>
+            <span>
+              Draft saved. Publishing uses 1 job-post credit and keeps the post live for 30 days.
+            </span>
           </div>
           <div className="emp-page-actions">
             <button

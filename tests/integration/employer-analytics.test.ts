@@ -98,7 +98,7 @@ describe("GET dashboard (2S)", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.dashboard.jobCounts).toEqual({ total: 0, published: 0, draft: 0, closed: 0 });
+    expect(body.dashboard.jobCounts).toEqual({ total: 0, published: 0, draft: 0, closed: 0, paused: 0, expired: 0 });
     expect(body.dashboard.applicantTotal).toBe(0);
     expect(body.dashboard.strongFitCount).toBe(0);
     expect(rpc).toHaveBeenCalledWith(

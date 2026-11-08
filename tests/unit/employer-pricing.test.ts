@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADDON_JOB_POST,
+  AUTO_RENEW_LABEL,
+  CLOSE_TOOLTIP,
+  JOB_POST_LIFESPAN_DAYS,
+  PAUSE_TOOLTIP,
   EXTRA_RECRUITER_SEAT_PRICE_LABEL,
   FEATURED_OPTION_BY_TIER,
   FEATURED_TIERS,
@@ -18,6 +23,7 @@ import {
   subscriptionStatusLabel,
 } from "@/lib/employer/plans";
 import {
+  ADDON_JOB_POST_PRICE_LABEL,
   EMPLOYER_PLANS,
   PROMOTION_PLANS,
   RECRUITER_SEAT_PRICE_LABEL,
@@ -32,13 +38,43 @@ import {
  * fail a test rather than reach a signed-in customer's invoice screen.
  */
 describe("employer plan terms (approved pricing)", () => {
-  it("prices the three subscriptions exactly as approved", () => {
+  it("sells the AI Starter Bundle at $100 every 30 days with 5 base credits", () => {
+    expect(EMPLOYER_PLAN_BY_TIER.ai_starter).toMatchObject({
+      priceUsd: 100,
+      priceLabel: "$100",
+      unit: "/ 30 days",
+      jobPostsIncluded: 5,
+      sellable: true,
+    });
+  });
+
+  it("prices additional job posts at $10, valid 30 days from purchase", () => {
+    expect(ADDON_JOB_POST).toMatchObject({ priceUsd: 10, priceLabel: "$10", validDays: 30 });
+    expect(JOB_POST_LIFESPAN_DAYS).toBe(30);
+  });
+
+  it("carries the approved pause, close and auto-renew copy", () => {
+    expect(PAUSE_TOOLTIP).toBe(
+      "Pausing hides your listing from candidates, but does not pause or extend the original 30-day lifespan of the post."
+    );
+    expect(CLOSE_TOOLTIP).toBe(
+      "Closing this job will permanently end the listing and archive candidate data. The credit used for this post cannot be refunded or reused."
+    );
+    expect(AUTO_RENEW_LABEL).toBe(
+      "Automatically consume a credit to renew this job for another 30 days when it expires."
+    );
+  });
+
+  it("keeps the earlier plans' terms for existing subscribers, not for sale", () => {
+    expect(EMPLOYER_PLAN_BY_TIER.starter.sellable).toBe(false);
+    expect(EMPLOYER_PLAN_BY_TIER.growth.sellable).toBe(false);
+    expect(EMPLOYER_PLAN_BY_TIER.business.sellable).toBe(false);
     expect(EMPLOYER_PLAN_BY_TIER.starter.priceUsd).toBe(79);
     expect(EMPLOYER_PLAN_BY_TIER.growth.priceUsd).toBe(149);
     expect(EMPLOYER_PLAN_BY_TIER.business.priceUsd).toBe(299);
   });
 
-  it("includes 3 / 10 / 25 job posts as approved", () => {
+  it("keeps 3 / 10 / 25 job posts on the earlier plans", () => {
     expect(EMPLOYER_PLAN_BY_TIER.starter.jobPostsIncluded).toBe(3);
     expect(EMPLOYER_PLAN_BY_TIER.growth.jobPostsIncluded).toBe(10);
     expect(EMPLOYER_PLAN_BY_TIER.business.jobPostsIncluded).toBe(25);
@@ -66,25 +102,16 @@ describe("employer plan terms (approved pricing)", () => {
    * publicly and shown another after signing in.
    */
   it("agrees with the public pricing catalogue", () => {
-    const publicPlans = [...EMPLOYER_PLANS].sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
-    const portalPlans = EMPLOYER_TIERS.map((tier) => EMPLOYER_PLAN_BY_TIER[tier]).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
-
-    expect(portalPlans.map((plan) => plan.name)).toEqual(
-      publicPlans.map((plan) => plan.name)
-    );
-    for (const [index, publicPlan] of publicPlans.entries()) {
-      expect(portalPlans[index].priceLabel).toBe(publicPlan.priceLabel);
-      expect(portalPlans[index].unit).toBe(publicPlan.unit);
-      // The public page says "N active jobs"; the portal needs the same N as an
-      // integer, so the two are cross-checked rather than trusted separately.
-      expect(publicPlan.jobs).toBe(
-        `${portalPlans[index].jobPostsIncluded} active jobs`
-      );
+    // Only sellable plans are on the public page.
+    const sellable = EMPLOYER_TIERS.map((tier) => EMPLOYER_PLAN_BY_TIER[tier]).filter((plan) => plan.sellable);
+    expect(sellable.map((plan) => plan.name)).toEqual(EMPLOYER_PLANS.map((plan) => plan.name));
+    for (const [index, publicPlan] of EMPLOYER_PLANS.entries()) {
+      expect(sellable[index].priceLabel).toBe(publicPlan.priceLabel);
+      expect(sellable[index].unit).toBe(publicPlan.unit);
+      expect(sellable[index].jobsLabel).toBe(publicPlan.jobs);
+      expect(publicPlan.activeJobLimit).toBe(sellable[index].jobPostsIncluded);
     }
+    expect(ADDON_JOB_POST_PRICE_LABEL).toBe(ADDON_JOB_POST.priceLabel);
   });
 
   it("agrees with the public promotion catalogue", () => {
@@ -111,7 +138,7 @@ describe("employer plan terms (approved pricing)", () => {
  */
 describe("employer stored vocabulary", () => {
   it("knows exactly the stored subscription tiers", () => {
-    expect([...EMPLOYER_TIERS]).toEqual(["starter", "growth", "business"]);
+    expect([...EMPLOYER_TIERS]).toEqual(["ai_starter", "starter", "growth", "business"]);
   });
 
   it("knows exactly the stored member roles", () => {
@@ -131,6 +158,8 @@ describe("employer stored vocabulary", () => {
     expect(isEmployerMemberRole("superuser")).toBe(false);
 
     expect(isEmployerJobStatus("published")).toBe(true);
+    expect(isEmployerJobStatus("paused")).toBe(true);
+    expect(isEmployerJobStatus("expired")).toBe(true);
     expect(isEmployerJobStatus("archived")).toBe(false);
 
     expect(isFeaturedTier("ai_30d")).toBe(true);
@@ -140,6 +169,7 @@ describe("employer stored vocabulary", () => {
 
 describe("employer plan and status resolution", () => {
   it("maps a stored tier onto its plan", () => {
+    expect(planForTier("ai_starter")?.name).toBe("AI Starter Bundle");
     expect(planForTier("growth")?.name).toBe("Growth");
     expect(planForTier("business")?.jobPostsIncluded).toBe(25);
   });
@@ -189,8 +219,10 @@ describe("employer plan and status resolution", () => {
 
   it("labels job statuses and member roles, showing unknown values verbatim", () => {
     expect(jobStatusLabel("draft")).toBe("Draft");
-    expect(jobStatusLabel("published")).toBe("Live");
+    expect(jobStatusLabel("published")).toBe("Active");
+    expect(jobStatusLabel("paused")).toBe("Paused");
     expect(jobStatusLabel("closed")).toBe("Closed");
+    expect(jobStatusLabel("expired")).toBe("Expired");
     expect(jobStatusLabel("archived")).toBe("archived");
     expect(jobStatusLabel(null)).toBe("Unknown");
 

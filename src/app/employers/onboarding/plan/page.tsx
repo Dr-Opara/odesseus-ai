@@ -39,9 +39,7 @@ export default async function EmployerOnboardingPlanPage({
                 <span>
                   <strong>{plan.name}</strong>
                   <small>
-                    {plan.priceLabel}
-                    {plan.unit} · {plan.jobs}
-                    {plan.name === "Growth" ? " + analytics" : plan.name === "Business" ? " + AI matching" : ""}
+                    {plan.priceLabel} USD {plan.unit} · {plan.jobs} · additional posts $10 each
                   </small>
                 </span>
               </label>

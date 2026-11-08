@@ -1,7 +1,15 @@
 import Link from "next/link";
 import EmployerNav from "@/components/employer-nav";
 import MarketingFooter from "@/components/marketing-footer";
-import { EMPLOYER_PLANS, PROMOTION_PLANS, RECRUITER_SEAT_PRICE_LABEL, RECRUITER_SEAT_UNIT } from "@/lib/pricing/candidate-pricing";
+import {
+  ADDON_JOB_POST_PRICE_LABEL,
+  ADDON_JOB_POST_UNIT,
+  EMPLOYER_PLANS,
+  EMPLOYER_PRICING_NOTE,
+  PROMOTION_PLANS,
+  RECRUITER_SEAT_PRICE_LABEL,
+  RECRUITER_SEAT_UNIT,
+} from "@/lib/pricing/candidate-pricing";
 
 export default function EmployerPricingPage() {
   return (
@@ -10,15 +18,15 @@ export default function EmployerPricingPage() {
         <EmployerNav inverse />
         <section className="figma-page-hero inverse" style={{ minHeight: 0 }}>
           <span className="figma-eyebrow">EMPLOYER PRICING</span>
-          <h1>Plans that scale with your hiring.</h1>
-          <p>Pricing shown in your local currency, determined by your company&rsquo;s billing country.</p>
+          <h1>The AI Multi-Post Bundle.</h1>
+          <p>{EMPLOYER_PRICING_NOTE} Prices are in USD.</p>
         </section>
 
         <section className="figma-three-grid employer-prices" style={{ paddingBottom: 20 }}>
           {EMPLOYER_PLANS.map((plan) => (
             <article className="figma-info-card lavender" key={plan.name}>
               <span className="figma-eyebrow">{plan.name.toUpperCase()}</span>
-              <h2>{plan.priceLabel} <small>{plan.unit}</small></h2>
+              <h2>{plan.priceLabel} <small>USD {plan.unit}</small></h2>
               {plan.features.map((feature) => (
                 <p key={feature}>✓ {feature}</p>
               ))}
@@ -38,6 +46,17 @@ export default function EmployerPricingPage() {
             {PROMOTION_PLANS.map((plan) => (
               <p key={`${plan.name}-${plan.unit}`}><strong>{plan.name} {plan.unit}</strong><br />{plan.priceLabel}</p>
             ))}
+          </article>
+          <article className="figma-info-card white">
+            <h2>Additional job posts</h2>
+            <p>
+              <strong>{ADDON_JOB_POST_PRICE_LABEL} USD</strong> {ADDON_JOB_POST_UNIT}, available while your AI Starter
+              Bundle is active. Each credit is valid for 30 days from purchase.
+            </p>
+            <p>
+              Base credits must be used during their 30-day billing cycle and do not roll over. Every published post
+              stays live for 30 days from the moment its credit is used.
+            </p>
           </article>
           <article className="figma-info-card white">
             <h2>Recruiter seats</h2>

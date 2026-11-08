@@ -17,10 +17,10 @@ import {
 } from "@/lib/notifications/service";
 
 describe("notification type catalog", () => {
-  it("names at least the 24 candidate and 11 employer types the 2K spec requires", () => {
+  it("names the 24 candidate and 14 employer types (2K spec + credit lifecycle emails)", () => {
     expect(CANDIDATE_NOTIFICATION_TYPES).toHaveLength(24);
-    expect(EMPLOYER_NOTIFICATION_TYPES).toHaveLength(11);
-    expect(NOTIFICATION_TYPES).toHaveLength(35);
+    expect(EMPLOYER_NOTIFICATION_TYPES).toHaveLength(14);
+    expect(NOTIFICATION_TYPES).toHaveLength(38);
   });
 
   it("covers every type exactly once, with no duplicates", () => {

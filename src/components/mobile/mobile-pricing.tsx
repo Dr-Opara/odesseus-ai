@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import {
+  ADDON_JOB_POST_PRICE_LABEL,
   APPLICATION_CREDIT_PACKS,
   APPLY_TIERS,
   EMPLOYER_PLANS,
@@ -181,17 +182,24 @@ export default function MobilePricing() {
         <p className="pricing-column-title">Employer Pricing</p>
         <p className="pricing-section-label">EMPLOYER PLANS</p>
         <div className="pricing-list">
-          {EMPLOYER_PLANS.map((plan, index) => (
+          {EMPLOYER_PLANS.map((plan) => (
             <PricingCard
               key={plan.name}
-              icon={index === 0 ? "starter" : index === 1 ? "growth" : "business"}
-              tone={index === 1 ? "green" : "neutral"}
-              title={<>{plan.name} · {plan.priceLabel}{plan.unit}</>}
-              description={<>{plan.jobs}{index === 0 ? " · Great for getting started." : index === 1 ? " · Most popular for growing teams." : " · For larger teams with higher volume."}</>}
-              href={pricingGo({ audience: "employer", action: "plan", plan: plan.name.toLowerCase() })}
-              recommended={index === 1}
+              icon="starter"
+              tone="green"
+              title={<>{plan.name} · {plan.priceLabel} USD {plan.unit}</>}
+              description={<>{plan.jobs} · AI candidate matching included.</>}
+              href={pricingGo({ audience: "employer", action: "plan", plan: plan.id })}
+              recommended
             />
           ))}
+          <PricingCard
+            icon="growth"
+            tone="neutral"
+            title={<>Additional job post · {ADDON_JOB_POST_PRICE_LABEL} USD</>}
+            description={<>Each post is valid for 30 days from purchase. Available with an active AI Starter Bundle.</>}
+            href={pricingGo({ audience: "employer", action: "plan", plan: "ai_starter" })}
+          />
         </div>
 
         <p className="pricing-section-label pricing-section-spaced">PROMOTIONS</p>

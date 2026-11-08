@@ -72,28 +72,26 @@ export default async function EmployerPostJobPage() {
                 Set up your workspace
               </Link>
             </div>
-          ) : !plan ? (
+          ) : !plan && !quota?.canPublishJob ? (
             <div className="figma-info-card white employer-card" style={{ marginTop: 28 }}>
-              <h2>No plan on this organization</h2>
+              <h2>No job-post credits yet</h2>
               <p>
-                Posting a job needs a plan, because each published job uses one of the job posts
-                included in your subscription. This organization has no plan on file.
+                Each published job uses one job-post credit and stays live for 30 days. The AI
+                Starter Bundle includes 5 credits every 30 days.
               </p>
-              <Link className="figma-btn figma-btn-orange" href="/employers/pricing">
-                See plans
+              <Link className="figma-btn figma-btn-orange" href="/employers/dashboard/billing">
+                Get the AI Starter Bundle
               </Link>
             </div>
           ) : (
             <>
               <div className="figma-info-card peach" style={{ marginTop: 20 }}>
-                <strong>
-                  Publishing uses 1 of your {quota?.included ?? plan.jobPostsIncluded} job posts.
-                </strong>
+                <strong>Publishing uses 1 job-post credit and keeps the post live for 30 days.</strong>
                 <p>
                   {quota
-                    ? `${quota.remaining} remaining on the ${plan.name} plan.`
-                    : "Your remaining allowance is not available to display right now."}{" "}
-                  {subscriptionStatusLabel(overview.subscription?.status)}.
+                    ? `${quota.remaining} usable ${quota.remaining === 1 ? "credit" : "credits"} left.`
+                    : "Your remaining credits are not available to display right now."}{" "}
+                  {plan ? `${plan.name}: ${subscriptionStatusLabel(overview.subscription?.status)}.` : ""}
                 </p>
               </div>
 

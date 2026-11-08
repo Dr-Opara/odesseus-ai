@@ -73,7 +73,7 @@ export type EmployerDashboard = {
   subscriptionStatus: string | null;
   capacity: { included: number; published: number; remaining: number } | null;
   seats: { required: number; active: number } | null;
-  jobCounts: { total: number; published: number; draft: number; closed: number };
+  jobCounts: { total: number; published: number; draft: number; closed: number; paused: number; expired: number };
   applicantTotal: number;
   applicantsByJob: Array<{
     jobId: string;

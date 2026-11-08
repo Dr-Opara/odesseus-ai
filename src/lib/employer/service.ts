@@ -151,10 +151,10 @@ export type OrgAuthorization =
 const ORG_COLUMNS = "id,name,owner_user_id,created_at";
 const MEMBER_COLUMNS = "user_id,role,created_at";
 const INVITATION_COLUMNS = "id,email,role,status,expires_at,created_at";
-const JOB_COLUMNS = "id,title,location,status,posted_at,created_at";
+const JOB_COLUMNS = "id,title,location,status,posted_at,created_at,expires_at,auto_renew,closed_reason";
 const SUBSCRIPTION_COLUMNS =
   "tier,status,job_posts_included,period_start,period_end";
-const ALLOWANCE_COLUMNS = "total,used,granted_at,expires_at";
+const ALLOWANCE_COLUMNS = "total,used,granted_at,expires_at,kind";
 const SEAT_COLUMNS = "count,active_until";
 const FEATURED_COLUMNS = "job_id,tier,is_active,starts_at,expires_at";
 
@@ -416,6 +416,9 @@ export async function getEmployerJobs(
     status: string;
     posted_at: string | null;
     created_at: string | null;
+    expires_at?: string | null;
+    auto_renew?: boolean | null;
+    closed_reason?: string | null;
   }>;
 
   const featured = await getFeaturedListings(client, orgId);
@@ -430,6 +433,9 @@ export async function getEmployerJobs(
       status: isEmployerJobStatus(job.status) ? job.status : job.status,
       postedAt: job.posted_at,
       createdAt: job.created_at,
+      expiresAt: job.expires_at ?? null,
+      autoRenew: job.auto_renew ?? false,
+      closedReason: job.closed_reason ?? null,
       featured: listing
         ? {
             tier: listing.tier,
@@ -505,35 +511,53 @@ export async function getEmployerSubscription(
 }
 
 /**
- * The granted job-post allowance for the current period (latest grant).
+ * Usable job-post credits: every grant still inside its credit clock.
  *
- * `total` and `used` come from `employer_job_post_credits`, which is written by
- * the subscription sync; the remaining count is derived here and clamped at
- * zero so a `used` value that overshot (for example a job published just as a
- * period closed) can never render as negative quota. Renewals insert a new
- * row per period, so the latest grant is read, not an arbitrary one.
+ * Base credits come from the current billing cycle and expire at its end;
+ * add-on credits expire 30 days after their own purchase. Both are summed so
+ * the dashboard quotes exactly what the publish trigger can spend. Remaining
+ * counts are clamped at zero so an overshoot can never render as negative.
  */
 export async function getJobPostAllowance(
   client: EmployerClient,
   orgId: string
 ): Promise<EmployerJobPostAllowance | null> {
+  const nowIso = new Date().toISOString();
   const { data, error } = await client
     .from("employer_job_post_credits")
     .select(ALLOWANCE_COLUMNS)
     .eq("org_id", orgId)
-    .order("granted_at", { ascending: false, nullsFirst: false })
-    .limit(1)
-    .maybeSingle<Row>();
+    .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+    .order("granted_at", { ascending: false, nullsFirst: false });
 
-  if (error || !data) return null;
+  if (error || !data || data.length === 0) return null;
 
-  const row = data as { total: number; used: number; granted_at: string | null; expires_at: string | null };
+  const rows = data as unknown as Array<{
+    total: number;
+    used: number;
+    granted_at: string;
+    expires_at: string | null;
+    kind?: string | null;
+  }>;
+  const base = rows.filter((row) => (row.kind ?? "base") === "base");
+  const addons = rows.filter((row) => row.kind === "addon");
+  const remainingOf = (row: { total: number; used: number }) => Math.max(0, (row.total ?? 0) - (row.used ?? 0));
+  const latestBase = base[0] ?? null;
+
   return {
-    total: row.total ?? 0,
-    used: row.used ?? 0,
-    remaining: Math.max(0, (row.total ?? 0) - (row.used ?? 0)),
-    grantedAt: row.granted_at,
-    expiresAt: row.expires_at,
+    total: rows.reduce((sum, row) => sum + (row.total ?? 0), 0),
+    used: rows.reduce((sum, row) => sum + (row.used ?? 0), 0),
+    remaining: rows.reduce((sum, row) => sum + remainingOf(row), 0),
+    grantedAt: latestBase?.granted_at ?? null,
+    expiresAt: latestBase?.expires_at ?? null,
+    baseRemaining: base.reduce((sum, row) => sum + remainingOf(row), 0),
+    addonRemaining: addons.reduce((sum, row) => sum + remainingOf(row), 0),
+    addons: addons.map((row) => ({
+      remaining: remainingOf(row),
+      total: row.total ?? 0,
+      purchasedAt: row.granted_at,
+      expiresAt: row.expires_at,
+    })),
   };
 }
 
@@ -616,26 +640,30 @@ export async function getActiveSeatCount(
 /**
  * The publishable job quota.
  *
- * The included allowance is only meaningful while the subscription is live, so
- * a `past_due` / `canceled` / `incomplete` row contributes nothing. When there
- * is no allowance row at all the subscription's own included count is used,
- * which is what the plan promises on paper.
+ * Publishing is gated by usable credits, not by the subscription status:
+ * add-on credits stay valid until their own expiry even if the bundle lapses.
+ * Buying a $10 add-on, however, needs an active AI Starter Bundle.
  */
 export function resolveJobQuota(
   subscription: EmployerSubscription | null,
   allowance: EmployerJobPostAllowance | null
 ): EmployerJobQuota | null {
-  if (!subscription) return null;
+  if (!subscription && !allowance) return null;
 
-  const entitled = isActiveSubscriptionStatus(subscription.status);
-  const included = allowance?.total ?? subscription.jobPostsIncluded ?? 0;
+  const bundleActive =
+    subscription?.tier === "ai_starter" &&
+    isActiveSubscriptionStatus(subscription.status) &&
+    (!subscription.periodEnd || new Date(subscription.periodEnd) > new Date());
+  const included = allowance?.total ?? 0;
   const used = allowance?.used ?? 0;
+  const remaining = allowance?.remaining ?? 0;
 
   return {
-    included: entitled ? included : 0,
+    included,
     used,
-    remaining: entitled ? Math.max(0, included - used) : 0,
-    canPublishJob: entitled && Math.max(0, included - used) > 0,
+    remaining,
+    canPublishJob: remaining > 0,
+    canBuyAddons: bundleActive,
   };
 }
 
@@ -647,9 +675,11 @@ export function countJobsByStatus(jobs: EmployerJob[]): EmployerOverview["jobCou
       if (job.status === "published") counts.published += 1;
       else if (job.status === "draft") counts.draft += 1;
       else if (job.status === "closed") counts.closed += 1;
+      else if (job.status === "paused") counts.paused += 1;
+      else if (job.status === "expired") counts.expired += 1;
       return counts;
     },
-    { total: 0, published: 0, draft: 0, closed: 0 }
+    { total: 0, published: 0, draft: 0, closed: 0, paused: 0, expired: 0 }
   );
 }
 
@@ -696,7 +726,7 @@ export async function getEmployerOverview(
       quota: null,
       seats: null,
       jobs: [],
-      jobCounts: { total: 0, published: 0, draft: 0, closed: 0 },
+      jobCounts: { total: 0, published: 0, draft: 0, closed: 0, paused: 0, expired: 0 },
       members: [],
       invitations: [],
       notices,
@@ -1309,6 +1339,8 @@ export type CreateJobInput = {
   employmentType?: JobEmploymentType | null;
   compensationText?: string | null;
   responsibilitiesText?: string | null;
+  /** Renew automatically with a credit when the 30-day window ends. */
+  autoRenew?: boolean;
 };
 
 export type CreateJobResult =
@@ -1346,6 +1378,7 @@ export async function createJob(
       employment_type: input.employmentType ?? null,
       compensation_text: input.compensationText?.trim() || null,
       responsibilities_text: input.responsibilitiesText?.trim() || null,
+      auto_renew: input.autoRenew ?? false,
       status: "draft",
     })
     .select(
@@ -1519,24 +1552,19 @@ export async function updateJob(
 }
 
 /**
- * Publish a draft job.
+ * Publish a job: consume one job-post credit and start a 30-day posting window.
  *
- * Capacity is enforced server-side in two layers that agree:
- *   1. The plan cap for the org's active subscription tier (Starter 3,
- *      Growth 10, Business 25), checked here against the live count of
- *      published jobs, so the caller gets a clean at_capacity answer.
- *   2. The claim_job_post_credit database trigger, which atomically consumes
- *      one granted credit on the draft -> published transition and stays the
- *      final authority under concurrency.
- *
- * Re-publishing an already-published job is a no-op and does not consume a
- * second credit.
+ * Publishing is allowed from draft, and from expired (a repost, which uses a
+ * new credit and starts a new 30-day clock). The credit is consumed by the
+ * `claim_job_post_credit` trigger, which picks the usable credit that expires
+ * soonest; base credits and add-on credits are interchangeable here, so a
+ * lapsed bundle does not strand add-ons that are still inside their clock.
  */
 export async function publishJob(
   client: EmployerClient,
   orgId: string,
   jobId: string
-): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: "not_found" | "wrong_status" | "no_credits" | "at_capacity" }> {
+): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: "not_found" | "wrong_status" | "no_credits" }> {
   const { data: job, error: fetchError } = await client
     .from("employer_jobs")
     .select("status")
@@ -1549,99 +1577,140 @@ export async function publishJob(
   }
   if (!job) return { ok: false, reason: "not_found" };
 
-  if (job.status !== "draft") {
+  if (job.status !== "draft" && job.status !== "expired") {
     return { ok: false, reason: "wrong_status" };
   }
 
-  const subscription = await getEmployerSubscription(client, orgId);
-  const plan =
-    subscription && isActiveSubscriptionStatus(subscription.status)
-      ? planForTier(subscription.tier)
-      : null;
-
-  if (!plan) {
-    return { ok: false, reason: "no_credits" };
-  }
-
-  const { count: publishedCount, error: countError } = await client
-    .from("employer_jobs")
-    .select("id", { count: "exact", head: true })
-    .eq("org_id", orgId)
-    .eq("status", "published");
-
-  if (countError) {
-    throw new Error("Could not check job capacity: " + countError.message);
-  }
-
-  if ((publishedCount ?? 0) >= plan.jobPostsIncluded) {
-    return { ok: false, reason: "at_capacity" };
-  }
-
-  const { data, error } = await client
-    .from("employer_jobs")
-    .update({ status: "published", posted_at: new Date().toISOString() })
-    .eq("id", jobId)
-    .eq("org_id", orgId)
-    .select(
-      JOB_COLUMNS
-    )
-    .maybeSingle();
-
-  if (error) {
-    // The claim trigger raises "no job post credits available for this
-    // employer" when the grant ledger is exhausted (e.g. lost a race with
-    // another publish); map it to the same clean answer as the cap check.
-    if (error.message.includes("no job post credits")) {
-      return { ok: false, reason: "no_credits" };
-    }
-    throw new Error("Could not publish job: " + error.message);
-  }
-
-  if (!data) {
-    return { ok: false, reason: "no_credits" };
-  }
-
-  return { ok: true, job: data as unknown as EmployerJob };
+  return setJobStatus(client, orgId, jobId, { status: "published" }, "no_credits");
 }
 
 /**
- * Close a published job.
+ * Pause an active job. It is hidden from candidates immediately, but its
+ * original 30-day window keeps running and no credit is refunded.
  */
-export async function closeJob(
+export async function pauseJob(
   client: EmployerClient,
   orgId: string,
   jobId: string
 ): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: "not_found" | "wrong_status" }> {
-  const { data: job, error: fetchError } = await client
-    .from("employer_jobs")
-    .select("status")
-    .eq("id", jobId)
-    .eq("org_id", orgId)
-    .maybeSingle();
+  const current = await readJobLifecycle(client, orgId, jobId);
+  if (!current) return { ok: false, reason: "not_found" };
+  if (current.status !== "published") return { ok: false, reason: "wrong_status" };
+  const result = await setJobStatus(client, orgId, jobId, { status: "paused" }, "wrong_status");
+  return result.ok ? result : { ok: false, reason: "wrong_status" };
+}
 
-  if (fetchError) {
-    throw new Error("Could not load job: " + fetchError.message);
+/**
+ * Reactivate a paused job for free, as long as its original 30-day window has
+ * not ended. After the window ends the job is expired and must be reposted.
+ */
+export async function resumeJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string
+): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: "not_found" | "wrong_status" | "window_ended" }> {
+  const current = await readJobLifecycle(client, orgId, jobId);
+  if (!current) return { ok: false, reason: "not_found" };
+  if (current.status !== "paused") return { ok: false, reason: "wrong_status" };
+  if (!current.expires_at || new Date(current.expires_at) <= new Date()) {
+    return { ok: false, reason: "window_ended" };
   }
-  if (!job) return { ok: false, reason: "not_found" };
+  const result = await setJobStatus(client, orgId, jobId, { status: "published" }, "wrong_status");
+  return result.ok ? result : { ok: false, reason: "wrong_status" };
+}
 
-  if (job.status !== "published") {
+/**
+ * Close a job as Filled or Closed. Permanent: the listing ends, candidate data
+ * is archived, and the credit used for it is not refunded or reusable.
+ */
+export async function closeJob(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string,
+  reason: "filled" | "closed" = "closed"
+): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: "not_found" | "wrong_status" }> {
+  const current = await readJobLifecycle(client, orgId, jobId);
+  if (!current) return { ok: false, reason: "not_found" };
+
+  if (!["published", "paused", "expired"].includes(current.status)) {
     return { ok: false, reason: "wrong_status" };
   }
 
+  const result = await setJobStatus(
+    client,
+    orgId,
+    jobId,
+    { status: "closed", closed_reason: reason },
+    "wrong_status"
+  );
+  return result.ok ? result : { ok: false, reason: "wrong_status" };
+}
+
+/** Turn automatic renewal on or off for a job that is not closed. */
+export async function setJobAutoRenew(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string,
+  autoRenew: boolean
+): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: "not_found" | "wrong_status" }> {
+  const current = await readJobLifecycle(client, orgId, jobId);
+  if (!current) return { ok: false, reason: "not_found" };
+  if (current.status === "closed") return { ok: false, reason: "wrong_status" };
+
   const { data, error } = await client
     .from("employer_jobs")
-    .update({ status: "closed" })
+    .update({ auto_renew: autoRenew, updated_at: new Date().toISOString() })
     .eq("id", jobId)
     .eq("org_id", orgId)
-    .select(
-      JOB_COLUMNS
-    )
-    .single();
+    .select(JOB_COLUMNS)
+    .maybeSingle();
+
+  if (error) throw new Error("Could not update auto-renew: " + error.message);
+  if (!data) return { ok: false, reason: "not_found" };
+  return { ok: true, job: data as unknown as EmployerJob };
+}
+
+async function readJobLifecycle(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string
+): Promise<{ status: string; expires_at: string | null } | null> {
+  const { data, error } = await client
+    .from("employer_jobs")
+    .select("status,expires_at")
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+  if (error) throw new Error("Could not load job: " + error.message);
+  return (data as { status: string; expires_at: string | null } | null) ?? null;
+}
+
+async function setJobStatus<R extends string>(
+  client: EmployerClient,
+  orgId: string,
+  jobId: string,
+  patch: { status: string; closed_reason?: "filled" | "closed" },
+  failure: R
+): Promise<{ ok: true; job: EmployerJob } | { ok: false; reason: R }> {
+  const { data, error } = await client
+    .from("employer_jobs")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", jobId)
+    .eq("org_id", orgId)
+    .select(JOB_COLUMNS)
+    .maybeSingle();
 
   if (error) {
-    throw new Error("Could not close job: " + error.message);
+    // The claim trigger raises "no job post credits available for this
+    // employer" when no usable credit exists (or a concurrent publish took
+    // the last one), and "a closed job cannot be reopened" for a closed job.
+    if (error.message.includes("no job post credits") || error.message.includes("cannot be reopened")) {
+      return { ok: false, reason: failure };
+    }
+    throw new Error("Could not update job: " + error.message);
   }
 
+  if (!data) return { ok: false, reason: failure };
   return { ok: true, job: data as unknown as EmployerJob };
 }
 

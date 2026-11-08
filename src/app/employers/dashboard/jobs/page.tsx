@@ -71,7 +71,8 @@ export default async function EmployerJobsPage() {
               <span className="figma-eyebrow">JOBS</span>
               <h1>Your jobs</h1>
               <p className="muted">
-                {overview.jobCounts.published} live · {overview.jobCounts.draft} draft ·{" "}
+                {overview.jobCounts.published} active · {overview.jobCounts.paused} paused ·{" "}
+                {overview.jobCounts.expired} expired · {overview.jobCounts.draft} draft ·{" "}
                 {overview.jobCounts.closed} closed
               </p>
             </div>
@@ -133,7 +134,7 @@ export default async function EmployerJobsPage() {
           lead={
             overview.needsOrganization
               ? "Your company workspace is not set up yet."
-              : `${overview.jobCounts.published} live · ${overview.jobCounts.draft} draft · ${overview.jobCounts.closed} closed`
+              : `${overview.jobCounts.published} active · ${overview.jobCounts.paused} paused · ${overview.jobCounts.expired} expired · ${overview.jobCounts.draft} draft`
           }
         >
           {overview.jobs.length ? (

@@ -58,6 +58,9 @@ const CATEGORY_BY_TYPE: Record<string, EmployerNotificationCategory> = {
   EMPLOYER_SUBSCRIPTION_EVENT: "billing",
   EMPLOYER_FEATURED_JOB_EXPIRING: "featured_expiring",
   EMPLOYER_FEATURED_JOB_EXPIRED: "featured_expiring",
+  EMPLOYER_BASE_CREDITS_EXPIRING: "billing",
+  EMPLOYER_ADDON_CREDIT_EXPIRING: "billing",
+  EMPLOYER_JOB_POST_EXPIRED: "capacity_warning",
 };
 
 /**

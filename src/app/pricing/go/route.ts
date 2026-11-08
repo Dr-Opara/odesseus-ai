@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 const CANDIDATE_CREDIT_SKUS = new Set(["app_1", "app_25", "app_50", "app_100"]);
-const EMPLOYER_PLANS = new Set(["starter", "growth", "business"]);
+const EMPLOYER_PLANS = new Set(["ai_starter"]);
 const PROMOTION_TIERS = new Set(["featured_7d", "featured_14d", "ai_30d"]);
 
 /**

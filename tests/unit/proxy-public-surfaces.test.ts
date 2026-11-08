@@ -175,7 +175,7 @@ describe("machine-to-machine API paths", () => {
     // stops judging the caller, so the route must judge it instead.
     const crons = ["job-discovery", "refresh-job-feed", "process-retry-jobs",
                    "process-notification-emails", "process-interview-reminders",
-                   "expire-featured-listings"];
+                   "expire-featured-listings", "employer-job-lifecycle"];
     for (const name of crons) {
       const p = join(ROOT, `src/app/api/cron/${name}/route.ts`);
       const t = readFileSync(p, "utf8");

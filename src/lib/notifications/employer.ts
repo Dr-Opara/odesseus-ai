@@ -107,6 +107,9 @@ function channelFor(type: NotificationType): string | null {
     EMPLOYER_PAYMENT_FAILED: "billing",
     EMPLOYER_FEATURED_JOB_EXPIRING: "featured",
     EMPLOYER_FEATURED_JOB_EXPIRED: "featured",
+    EMPLOYER_BASE_CREDITS_EXPIRING: "billing",
+    EMPLOYER_ADDON_CREDIT_EXPIRING: "billing",
+    EMPLOYER_JOB_POST_EXPIRED: "capacity",
   };
   return employerChannels[type] ?? null;
 }

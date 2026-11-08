@@ -20,8 +20,8 @@ export default async function EmployerOnboardingReviewPage({
   }
 
   const carried = await searchParams;
-  const planId = (carried.planId as "Starter" | "Growth" | "Business" | undefined) ?? "Starter";
-  const plan = EMPLOYER_PLANS.find((p) => p.name === planId) ?? EMPLOYER_PLANS[0];
+  // The AI Starter Bundle is the only plan for sale.
+  const plan = EMPLOYER_PLANS[0];
 
   return (
     <main className="figma-site figma-soft-page employer-portal">
@@ -39,17 +39,16 @@ export default async function EmployerOnboardingReviewPage({
             <div className="emp-review-row">
               <span>Plan</span>
               <span>
-                {plan.name} · {plan.priceLabel}
-                {plan.unit}
+                {plan.name} · {plan.priceLabel} USD {plan.unit}
               </span>
             </div>
             <div className="emp-review-row">
-              <span>Active job limit</span>
-              <span>{plan.activeJobLimit}</span>
+              <span>Job-post credits</span>
+              <span>{plan.activeJobLimit} every 30 days · additional posts $10 each</span>
             </div>
             <div className="emp-review-row">
               <span>Recruiter seats</span>
-              <span>{plan.name === "Business" ? "Multiple seats + add-ons" : "1 seat + add-ons"}</span>
+              <span>1 seat included · more at $20/month each</span>
             </div>
 
             <OnboardingReviewForm
